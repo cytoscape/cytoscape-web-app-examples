@@ -1,9 +1,9 @@
 {
-  "name": "hello-cy-web",
-  "description": "A simple React component for demonstration using Module Federation",
+  "name": "cyweb-add-menu",
+  "description": "Add a menu to the Cytoscape Web",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/hello-cy-web.js",
+  "main": "dist/cyweb-add-menu.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "dev": "webpack serve --open /remoteEntry.js --mode development"

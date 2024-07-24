@@ -1,8 +1,4 @@
-interface CyApp {
-  id: string
-  name: string
-  url: string
-}
+import { CyApp } from '@cytoscape-web/types'
 
 export const HelloApp: CyApp = {
   id: 'hello-cy-web',

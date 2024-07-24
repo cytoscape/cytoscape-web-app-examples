@@ -13,7 +13,7 @@ const { name } = packageJson
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DEV_SERVER_PORT = 3000
+const DEV_SERVER_PORT = 3001
 
 export default {
   mode: 'development',
@@ -37,15 +37,14 @@ export default {
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'hello',
+      name: 'menu1',
       filename: 'remoteEntry.js',
       remotes: {
         // Import some data providers from the host application
         cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
       },
       exposes: {
-        './HelloApp': './src/HelloApp',
-        './HelloPanel': './src/components/HelloPanel.tsx',
+        './SimpleMenu': './src/components/SimpleMenu.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },

@@ -1,6 +1,4 @@
-import { ReactElement } from 'react';
-import { MenuItem } from '@mui/material';
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
+import { MenuItem } from '@mui/material'
 
 /**
  * TutorialMenuItemOne component:
@@ -10,7 +8,7 @@ import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
  * - handleClose: A function from the parent component that will be called to close the menu.
  */
 
-export const TutorialMenuItemOne = ({ handleClose }: BaseMenuProps): ReactElement => {
+const SimpleMenu = (): JSX.Element => {
   /**
    * handleClick function:
    * This function is called when the menu item is clicked.
@@ -18,15 +16,13 @@ export const TutorialMenuItemOne = ({ handleClose }: BaseMenuProps): ReactElemen
    */
   const handleClick = (): void => {
     // Trigger an alert window with a demo message
-    alert('This is a demo of adding a menu item');
+    alert('This is a demo of adding a menu item')
     // Call the handleClose function passed from the parent component
-    handleClose();
-  };
+    // handleClose()
+  }
 
   // Render a MenuItem component from Material-UI with the onClick event handler set to handleClick
-  return (
-    <MenuItem onClick={handleClick}>
-      Example Menu Item
-    </MenuItem>
-  );
-};
+  return <MenuItem onClick={handleClick}>Example Menu from App</MenuItem>
+}
+
+export default SimpleMenu

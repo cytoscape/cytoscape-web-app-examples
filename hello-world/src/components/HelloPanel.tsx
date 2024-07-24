@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 // Dynamic import from the host app
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 
+import { Network, IdType } from '@cytoscape-web/types'
+
 interface HelloPanelProps {
   message: string
 }
