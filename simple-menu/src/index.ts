@@ -1,1 +1,1 @@
-export * from './components/SimpleMenu'
+export { SimpleMenuApp as default } from './SimpleMenuApp'

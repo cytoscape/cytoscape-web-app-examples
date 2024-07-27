@@ -1,9 +1,8 @@
 {
   "name": "cyweb-add-menu",
-  "description": "Add a menu to the Cytoscape Web",
+  "description": "Add a menu item to the Cytoscape Web's App menu",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/cyweb-add-menu.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "dev": "webpack serve --open /remoteEntry.js --mode development"

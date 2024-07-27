@@ -4,17 +4,13 @@
   "private": true,
   "workspaces": [
     "hello-world",
-    "simple-menu",
-    "TutorialExampleTwo",
-    "TutorialExampleThree"
+    "simple-menu"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "npm run dev --workspaces"
+    "dev": "concurrently \"npm:dev:*\""
   },
   "peerDependencies": {
-    "@emotion/react": "^11.13.0",
-    "@emotion/styled": "^11.13.0",
     "@mui/material": "^5.16.4",
     "react": "18.3.1",
     "react-dom": "18.3.1"
@@ -23,6 +19,7 @@
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "clean-webpack-plugin": "^4.0.0",
+    "concurrently": "^8.2.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "ts-loader": "^9.5.1",

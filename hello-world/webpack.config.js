@@ -13,7 +13,7 @@ const { name } = packageJson
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DEV_SERVER_PORT = 3000
+const DEV_SERVER_PORT = 2222
 
 export default {
   mode: 'development',
@@ -21,16 +21,18 @@ export default {
   target: 'web',
   optimization: {
     minimize: false,
+    runtimeChunk: false,
+    splitChunks: {
+      chunks: 'async',
+      name: false,
+    },
   },
   entry: './src/index.ts',
   output: {
     clean: true,
     path: path.resolve(__dirname, 'dist'),
-    filename: `${name}.js`,
-    publicPath: `http://localhost:${DEV_SERVER_PORT}/`,
-    library: {
-      type: 'module',
-    },
+    // publicPath: `http://localhost:${DEV_SERVER_PORT}/`,
+    publicPath: 'auto',
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
@@ -46,6 +48,8 @@ export default {
       exposes: {
         './HelloApp': './src/HelloApp',
         './HelloPanel': './src/components/HelloPanel.tsx',
+        './SubPanel': './src/components/SubPanel.tsx',
+        './MenuExample': './src/components/MenuExample.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
@@ -61,9 +65,6 @@ export default {
         exclude: /node_modules/,
       },
     ],
-  },
-  experiments: {
-    outputModule: true,
   },
   devServer: {
     hot: true,
