@@ -1,8 +1,8 @@
 import { CyMenuItem, RootMenu } from '@cytoscape-web/types'
-import SimpleMenu from './AppMenuItem'
+import AppMenuItem from './AppMenuItem'
 
 export const CySimpleMenuItem: CyMenuItem = {
-  id: 'simple-menu1',
-  parent: RootMenu.Edit,
-  menuItem: <SimpleMenu />,
+  id: 'simple-app-menu',
+  parent: RootMenu.Apps,
+  menuItem: <AppMenuItem />,
 }

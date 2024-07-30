@@ -29,7 +29,6 @@ export default {
   output: {
     clean: true,
     path: path.resolve(__dirname, 'dist'),
-    // publicPath: `http://localhost:${DEV_SERVER_PORT}/`,
     publicPath: 'auto',
   },
   resolve: {
@@ -37,15 +36,15 @@ export default {
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'menu',
+      name: 'simpleMenu',
       filename: 'remoteEntry.js',
       remotes: {
         // Import some data providers from the host application
         cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
       },
       exposes: {
+        './SimpleMenuApp': './src/SimpleMenuApp',
         './AppMenuItem': './src/components/AppMenuItem',
-        './MenuPanel': './src/components/MenuPanel',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
