@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "concurrently \"npm:dev:*\""
+    "dev": "concurrently \"npm:dev:*\"",
+    "dev:hello-world": "npm run dev -w hello-world",
+    "dev:simple-menu": "npm run dev -w simple-menu"
   },
   "peerDependencies": {
     "@mui/material": "^5.16.4",
