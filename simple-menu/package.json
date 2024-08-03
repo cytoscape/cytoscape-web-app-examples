@@ -1,5 +1,5 @@
 {
-  "name": "cyweb-add-menu",
+  "name": "simple-menu-app",
   "description": "Add a menu item to the Cytoscape Web's App menu",
   "version": "1.0.0",
   "type": "module",

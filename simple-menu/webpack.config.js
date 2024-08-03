@@ -44,6 +44,7 @@ export default {
       },
       exposes: {
         './SimpleMenuApp': './src/SimpleMenuApp',
+        './CySimpleMenuItem': './src/components/CySimpleMenuItem',
         './AppMenuItem': './src/components/AppMenuItem',
       },
       shared: {
