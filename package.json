@@ -4,13 +4,15 @@
   "private": true,
   "workspaces": [
     "hello-world",
-    "simple-menu"
+    "simple-menu",
+    "simple-panel"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "concurrently \"npm:dev:*\"",
     "dev:hello-world": "npm run dev -w hello-world",
-    "dev:simple-menu": "npm run dev -w simple-menu"
+    "dev:simple-menu": "npm run dev -w simple-menu",
+    "dev:simple-panel": "npm run dev -w simple-panel"
   },
   "peerDependencies": {
     "@mui/material": "^5.16.4",
