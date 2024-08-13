@@ -11,7 +11,7 @@ const deps = packageJson.peerDependencies
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DEV_SERVER_PORT = 3333
+const DEV_SERVER_PORT = 4001
 
 export default {
   mode: 'development',
@@ -36,24 +36,19 @@ export default {
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'simpleMenu',
+      name: 'createNetwork',
       filename: 'remoteEntry.js',
       remotes: {
         // Import some data providers from the host application
         cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
       },
       exposes: {
-        './SimpleMenuApp': './src/SimpleMenuApp',
-        './CySimpleMenuItem': './src/components/CySimpleMenuItem',
-        './AppMenuItem': './src/components/AppMenuItem',
+        './CreateNetworkApp': './src/CreateNetworkApp',
+        './CreateNetworkPanel': './src/components/CreateNetworkPanel.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-        '@mui/material': {
-          singleton: true,
-          requiredVersion: deps['@mui/material'],
-        },
       },
     }),
   ],

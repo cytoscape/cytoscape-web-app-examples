@@ -54,6 +54,10 @@ export default {
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+        '@mui/material': {
+          singleton: true,
+          requiredVersion: deps['@mui/material'],
+        },
       },
     }),
   ],

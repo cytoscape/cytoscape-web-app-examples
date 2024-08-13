@@ -1,0 +1,11 @@
+{
+  "name": "@cytoscape-web/create-network",
+  "description": "An example app to create a network in workspace",
+  "version": "1.0.0",
+  "private": "true",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "dev": "webpack serve --open /remoteEntry.js --mode development"
+  }
+}
