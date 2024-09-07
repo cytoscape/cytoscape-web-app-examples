@@ -5,23 +5,40 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
+import { Box } from '@mui/material'
 
 interface MessageDialogProps {
   open: boolean
   onClose: () => void
   message: string
+  linkText?: string
+  linkUrl?: string
 }
 
 const MessageDialog: React.FC<MessageDialogProps> = ({
   open,
   onClose,
   message,
+  linkText,
+  linkUrl,
 }) => {
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Simple Menu App</DialogTitle>
       <DialogContent>
-        <DialogContentText>{message}</DialogContentText>
+        <DialogContentText>
+          <Box sx={{ p: '1em' }}>{message}</Box>
+          <Box sx={{ p: '1em' }}>
+            {linkText && linkUrl && (
+              <>
+                {' '}
+                <a href={linkUrl} target="_blank" rel="noopener noreferrer">
+                  {linkText}
+                </a>
+              </>
+            )}
+          </Box>
+        </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">

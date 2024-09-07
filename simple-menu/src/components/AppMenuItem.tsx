@@ -36,6 +36,8 @@ const AppMenuItem = ({
         open={dialogOpen}
         onClose={handleCloseDialog}
         message="Hello from the Simple Menu app! (AppMenuItem)"
+        linkText="App developer guide"
+        linkUrl="https://github.com/cytoscape/cytoscape-web/wiki"
       />
     </>
   )
