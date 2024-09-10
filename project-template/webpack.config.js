@@ -11,7 +11,12 @@ const deps = packageJson.peerDependencies
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DEV_SERVER_PORT = 4001
+// For local testing
+const CYWEB_NAME = 'cyweb'
+const LOCAL_CYWEB = 'http://localhost:5500/remoteEntry.js'
+
+// This port is used to run the development server
+const DEV_SERVER_PORT = 5555
 
 export default {
   mode: 'development',
@@ -40,15 +45,19 @@ export default {
       filename: 'remoteEntry.js',
       remotes: {
         // Import some data providers from the host application
-        cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
+        cyweb: `${CYWEB_NAME}@${LOCAL_CYWEB}`,
       },
       exposes: {
-        './CreateNetworkApp': './src/CreateNetworkApp',
-        './CreateNetworkPanel': './src/components/CreateNetworkPanel.tsx',
+        './TemplateApp': './src/TemplateApp',
+        './TemplatePanel': './src/components/TemplatePanel.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+        '@mui/material': {
+          singleton: true,
+          requiredVersion: deps['@mui/material'],
+        },
       },
     }),
   ],

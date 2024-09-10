@@ -1,6 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { useState } from 'react'
 import MessageDialog from './MessageDialog'
+import { JSX } from 'react/jsx-runtime'
 
 interface AppMenuItemProps {
   title: string
@@ -14,7 +15,7 @@ interface AppMenuItemProps {
  * @returns
  */
 const AppMenuItem = ({
-  title = 'Simple Menu Example',
+  title = 'Simple Dialog Example',
   handleClose,
 }: AppMenuItemProps): JSX.Element => {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -35,8 +36,9 @@ const AppMenuItem = ({
       <MessageDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
+        title="Hello Cytoscape World!"
         message="Hello from the Simple Menu app! (AppMenuItem)"
-        linkText="App developer guide"
+        linkText="App developer's guide (TBD)"
         linkUrl="https://github.com/cytoscape/cytoscape-web/wiki"
       />
     </>

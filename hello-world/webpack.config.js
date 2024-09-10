@@ -8,8 +8,6 @@ const { ModuleFederationPlugin } = webpack.container
 // Extract some properties from the package.json file to avoid duplication
 const deps = packageJson.peerDependencies
 
-const { name } = packageJson
-
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -31,11 +29,10 @@ export default {
   output: {
     clean: true,
     path: path.resolve(__dirname, 'dist'),
-    // publicPath: `http://localhost:${DEV_SERVER_PORT}/`,
     publicPath: 'auto',
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.d.ts'],
   },
   plugins: [
     new ModuleFederationPlugin({
@@ -48,7 +45,6 @@ export default {
       exposes: {
         './HelloApp': './src/HelloApp',
         './HelloPanel': './src/components/HelloPanel.tsx',
-        './SubPanel': './src/components/SubPanel.tsx',
         './MenuExample': './src/components/MenuExample.tsx',
       },
       shared: {

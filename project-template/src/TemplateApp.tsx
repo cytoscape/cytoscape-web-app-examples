@@ -1,12 +1,11 @@
 import { ComponentType, CyApp } from '@cytoscape-web/types'
 
-export const CreateNetworkApp: CyApp = {
-  id: 'createNetwork',
-  name: 'Create Network App',
-  url: '',
+export const TemplateApp: CyApp = {
+  id: 'template',
+  name: 'App Template',
   components: [
     {
-      id: 'SimplePanel',
+      id: 'TemplatePanel',
       type: ComponentType.Panel,
     },
   ],

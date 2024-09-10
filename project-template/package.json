@@ -1,6 +1,6 @@
 {
-  "name": "@cytoscape-web/create-network",
-  "description": "An example app to create a network in workspace",
+  "name": "@cytoscape-web/project-template",
+  "description": "Boilerplate for creating a Cytoscape Web app",
   "version": "1.0.0",
   "private": "true",
   "type": "module",

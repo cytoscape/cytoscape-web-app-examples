@@ -10,6 +10,7 @@ import { Box } from '@mui/material'
 interface MessageDialogProps {
   open: boolean
   onClose: () => void
+  title: string
   message: string
   linkText?: string
   linkUrl?: string
@@ -18,13 +19,14 @@ interface MessageDialogProps {
 const MessageDialog: React.FC<MessageDialogProps> = ({
   open,
   onClose,
+  title,
   message,
   linkText,
   linkUrl,
 }) => {
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Simple Menu App</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>
           <Box sx={{ p: '1em' }}>{message}</Box>

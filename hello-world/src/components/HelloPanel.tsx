@@ -1,9 +1,6 @@
-import { useEffect } from 'react'
-
 // Dynamic import from the host app
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
-
-import { Network, IdType } from '@cytoscape-web/types'
+import { Box, Typography } from '@mui/material'
 
 interface HelloPanelProps {
   message: string
@@ -12,18 +9,25 @@ interface HelloPanelProps {
 const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
   const workspace = useWorkspaceStore((state: any) => state.workspace)
 
-  const { networkIds } = workspace
-
-  useEffect(() => {
-    console.log('Hello Panel initialized with workspace:::', workspace)
-  }, [])
-
   return (
-    <div>
-      <h5>Hello, Cytoscape from external server! {message}</h5>
-      <p>Current Network ID: {workspace.currentNetworkId}</p>
-      <p>Networks: {networkIds}</p>
-    </div>
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '1em',
+      }}
+    >
+      <Typography variant="h5">
+        Hello, Cytoscape (from external app!) {message}
+      </Typography>
+      <Typography variant="subtitle1">
+        Current Network ID: {workspace.currentNetworkId}
+      </Typography>
+    </Box>
   )
 }
 
