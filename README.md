@@ -6,6 +6,11 @@ Cytoscape Web has a built-in _App_ hosting mechanism. This repository is the ref
 
 (TBD)
 
+## Quick Start
+To run all of the apps locally, type:
+
+npm run dev
+
 ## Example Apps
 
 ### hello-world
