@@ -14,7 +14,9 @@
     "dev:hello-world": "npm run dev -w hello-world",
     "dev:simple-menu": "npm run dev -w simple-menu",
     "dev:simple-panel": "npm run dev -w simple-panel",
-    "dev:project-template": "npm run dev -w project-template"
+    "dev:project-template": "npm run dev -w project-template",
+    "deploy": "npm run build && npm run copy-dist",
+    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r simple-menu/dist docs/simple-menu && cp -r simple-panel/dist docs/simple-panel"
   },
   "peerDependencies": {
     "@emotion/react": "^11.13.3",

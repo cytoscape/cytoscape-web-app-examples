@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/hello-cy-web.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "dev": "webpack serve --open /remoteEntry.js --mode development"
+    "build": "webpack --config webpack.config.js --env production=true",
+    "build-dev": "webpack --config webpack.config.js --env production=false",
+    "dev": "webpack serve --open /remoteEntry.js --mode development --env production=false"
   }
 }
