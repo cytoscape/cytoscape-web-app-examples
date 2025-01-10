@@ -1,19 +1,16 @@
 # Apps for _Cytoscape Web_
 
-**App developer's guide for Cytoscape Web v1**
+App developer's guide for Cytoscape Web v1
 
-January 2025
+(January 2025)
 
-## Example Apps
+Examples:
 
 - https://cytoscape.org/cytoscape-web-app-examples/
 
 ## Introduction
 
-Cytoscape Web has a built-in app hosting mechanism that allows developers to
-extend its functionality and user interface. This repository contains
-reference implementations demonstrating basic app development patterns,
-including:
+Cytoscape Web has a built-in app hosting mechanism that allows developers to extend its functionality and user interface. This repository contains reference implementations demonstrating basic app development patterns, including:
 
 - Example apps showcasing menu items, panels, and network manipulation
 - Detailed explanations of **Module Federation** parameters used in app configuration
@@ -22,89 +19,16 @@ including:
 Each example includes source code and documentation to help you understand how to:
 
 - Implement custom UI components
-- Configure Webpack setting files for Module Federation
-- Deploy your apps to your own web servers
+- Configure webpack for Module Federation
+- Deploy your apps to web servers
 
-Whether you're building your first Cytoscape Web app or looking for
-implementation patterns, these examples will help you get started quickly.
-
-### App Integration with Module Federation
-
-Cytoscape Web uses Webpack's [Module Federation](https://webpack.js.org/concepts/module-federation/)
-to dynamically load external apps at runtime. Here's how it works:
-
-1. **Module Federation**: This Webpack feature allows multiple independent
-   bundles to form a single application:
-
-   - Apps expose their components as remote modules
-   - The host (Cytoscape Web) loads these modules at runtime
-   - Shared dependencies are managed automatically
-
-2. **App Loading Process**:
-
-   - Cytoscape Web maintains a whitelist of approved apps
-   - When started, it checks the whitelist and loads approved apps
-   - Each app is loaded through its `remoteEntry.js` file
-
-3. **Data Model Access**:
-   - Core data models are exposed as shared modules
-   - Apps can access data stores for network data, styles, and layouts
-   - Changes made by apps are reflected in real-time
-
-This architecture ensures secure and efficient integration of external apps
-while maintaining data consistency.
+Whether you're building your first Cytoscape Web app or looking for implementation patterns, these examples will help you get started quickly.
 
 ## Overview Of this repository
 
 This repository contains several example apps and utilities organized as follows:
 
-### Repository Structure
-
-This repository is managed as an npm workspace, allowing multiple apps to share common dependencies and build configurations. The workspace is organized as follows:
-
-```bash
-.
-├── package.json         # NPM Workspace root configuration
-├── docs/                # Bundled apps deployed to this server
-├── hello-world/         # Example app 1: hello-world
-│   ├── package.json     # App-specific dependencies
-│   └── src/
-├── simple-menu/         # Example app 2: simple-menu
-│   ├── package.json
-│   └── src/
-├── simple-panel/        # Example app 3: simple-panel
-│   ├── package.json
-│   └── src/
-└── project-template/    # Template project directory for new apps
-    ├── package.json
-    └── src/
-```
-
-All apps can be built and run simultaneously using workspace-level commands.
-
-To run all example apps locally, you need to run the following:
-
-```bash
-npm install    # Installs dependencies for all apps
-npm run dev    # Starts development servers for all apps
-```
-
-To build all example apps bundles locally, you need to run:
-
-```bash
-npm run build  # Builds all apps
-```
-
-Each app can also be developed independently in its directory:
-
-```bash
-cd hello-world
-npm run dev    # Starts only hello-world app
-```
-
 ### Example Apps
-
-These are the actual apps
 
 - **[hello-world/](hello-world/)** - Basic example showing menu and panel integration
 
@@ -156,12 +80,7 @@ The apps use Module Federation to integrate with Cytoscape Web as remote modules
 
 ### Run Example Apps
 
-To run all of the apps locally, you need to checkout the Cytoscape Web code base
-because the public version has its official approved list of apps and if you need
-to run your own versions of Apps, you need to update the list stored in a config file.
-
-1. Checkout Cytoscape Web
-2. type:
+To run all of the apps locally, type:
 
 `npm run dev`
 
@@ -221,7 +140,7 @@ shared: An object that defines the shared modules between the builds. This helps
 
 #### Example Configuration
 
-```js
+```
 module.exports = {
   // ...
   plugins: [
@@ -246,5 +165,5 @@ module.exports = {
       },
     }),
   ],
-}
+};
 ```
