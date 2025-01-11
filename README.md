@@ -2,15 +2,21 @@
 
 App developer's guide for Cytoscape Web v1
 
-(January 2025)
+First release: January 2025
 
-Examples:
+Example Apps:
 
 - https://cytoscape.org/cytoscape-web-app-examples/
 
+## Note
+
+Please be aware that this functionality is in an early stage of
+development and may be updated frequently. We appreciate your
+understanding and welcome any feedback to help improve the project.
+
 ## Introduction
 
-Cytoscape Web has a built-in app hosting mechanism that allows developers to extend its functionality and user interface. This repository contains reference implementations demonstrating basic app development patterns, including:
+Cytoscape Web has a built-in _App_ hosting mechanism that allows developers to extend its functionality and user interface. This repository contains reference implementations demonstrating basic app development patterns, including:
 
 - Example apps showcasing menu items, panels, and network manipulation
 - Detailed explanations of **Module Federation** parameters used in app configuration
@@ -24,13 +30,57 @@ Each example includes source code and documentation to help you understand how t
 
 Whether you're building your first Cytoscape Web app or looking for implementation patterns, these examples will help you get started quickly.
 
+## Extend Cytoscape Web with Apps
+
+![App UI Screenshot](docs/images/app-overview-ui.png)
+
+Cytoscape Web has two ways to expand its system.
+In this release, Apps can extend Cytoscape Web in two main ways:
+
+### Add Menu Items
+
+- Create new menu items under the "App" menu
+- Define custom actions for menu clicks
+- Access core data models through menu item handlers
+
+The menu item can implement various types of functionality. For example:
+
+- **Network and Table Data Operations**
+
+  - Create or modify networks
+  - Import/export network
+  - Manipulate table data
+
+- **Custom Dialog Windows**
+
+  - Show complex parameter input forms
+  - Display analysis results
+
+- **External Service Integration**
+  - Connect to public database and import data
+  - Call web services for network analysis
+
+Beyond these examples, menu can call any custom functionality by creating their own React components and utilizing the core data models exposed by Cytoscape Web.
+
+### Add Panel Components
+
+On the right-hand side of the UI, there are dedicated tabs for adding custom UI panels by Apps (_App Panel_).
+
+- Add custom React components to the App Panel
+- Interact with network data and visual styles
+- Show any custom visualizations or analysis result side-by-side
+
+Since App Panels are in the collapsible base panel, this is suitable for implementing custom data viewers / editors. For example, if you want to visualize statistics of the selected network using popular JS library such as D3.js, this is a good choice to show it.
+
+Each example app in this repository demonstrates these extension points with practical implementations.
+
 ## Overview Of this repository
 
 This repository contains several example apps and utilities organized as follows:
 
 ### Example Apps
 
-- **[hello-world/](hello-world/)** - Basic example showing menu and panel integration
+- **[hello-world/](hello-world/)** - Basic example showing both of menu and panel
 
   - Components: `MenuExample`, `HelloPanel`
   - Entry point: `hello@http://localhost:2222/remoteEntry.js`
@@ -87,10 +137,6 @@ To run all of the apps locally, type:
 ## Example Apps
 
 This repository contains three example applications and one project template for creating new apps. Each example demonstrates different aspects of Cytoscape Web app development - from basic menu integration to custom panel creation and network manipulation. The following sections explain how these apps work and their implementation details.
-
-### hello-world
-
-...existing code...
 
 ### hello-world
 
@@ -167,3 +213,15 @@ module.exports = {
   ],
 };
 ```
+
+## App Patterns
+
+### Create a network
+
+### Add data to the table
+
+### Apply layout
+
+### Modify Visual Style
+
+(TBD)
