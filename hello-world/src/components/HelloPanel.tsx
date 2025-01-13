@@ -2,7 +2,6 @@
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
 import { Box, Typography, Button } from '@mui/material'
-import { useState } from 'react'
 import {
   WorkspaceStore,
   Workspace,
@@ -25,23 +24,31 @@ const randomColor = (): string => {
 }
 
 const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
+  // Import the workspace data from the host app
   const workspace: Workspace = useWorkspaceStore(
     (state: WorkspaceStore) => state.workspace,
   )
+  const setName = useWorkspaceStore((state: WorkspaceStore) => state.setName)
 
+  // Import a function from the host
   const setDefault: (
     networkId: IdType,
     vpName: VisualPropertyName,
     vpValue: VisualPropertyValueType,
   ) => void = useVisualStyleStore((state: VisualStyleStore) => state.setDefault)
-  const [buttonClicked, setButtonClicked] = useState(false)
 
   const handleButtonClick = () => {
-    setButtonClicked(true)
+    const newNodeColor = randomColor()
+    const newEdgeColor = randomColor()
     setDefault(
       workspace.currentNetworkId,
-      VisualPropertyName.NetworkBackgroundColor,
-      randomColor(),
+      VisualPropertyName.NodeBackgroundColor,
+      newNodeColor,
+    )
+    setDefault(
+      workspace.currentNetworkId,
+      VisualPropertyName.EdgeLineColor,
+      newEdgeColor,
     )
   }
 
@@ -57,20 +64,19 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
         padding: '1em',
       }}
     >
-      <Typography variant="h5">Hello, Cytoscape Web!</Typography>
-      <Typography variant="subtitle1">
-        Current Network ID: {workspace.currentNetworkId}
-      </Typography>
+      <Typography variant="h4">Hello, Cytoscape Web!</Typography>
       <Typography variant="body1">from an external App: {message}</Typography>
       <Box sx={{ padding: '1em', width: '20em' }}>
         <Button
           size="large"
           fullWidth
-          variant="outlined"
           color="primary"
           onClick={handleButtonClick}
         >
-          {buttonClicked ? 'Background Color Updated!' : 'Click Me'}
+          Click Me!
+        </Button>
+        <Button size="large" fullWidth color="primary">
+          Click Me2!
         </Button>
       </Box>
     </Box>

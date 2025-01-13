@@ -1,6 +1,20 @@
-import { Network, NetworkWithView } from '@cytoscape-web/types'
+import {
+  EdgeView,
+  Network,
+  NetworkStore,
+  NetworkWithView,
+  NodeView,
+  TableStore,
+  ViewModelStore,
+  VisualPropertyName,
+  VisualPropertyValueType,
+} from '@cytoscape-web/types'
+
 import { MenuItem } from '@mui/material'
 import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'
+import { useNetworkStore } from 'cyweb/NetworkStore'
+import { useViewModelStore } from 'cyweb/ViewModelStore'
+import { useTableStore } from 'cyweb/TableStore'
 
 interface MenuExampleProps {
   handleClose?: () => void
@@ -12,15 +26,22 @@ const MenuExample = ({ handleClose }: MenuExampleProps): JSX.Element => {
 
   const handleClick = (): void => {
     const newNetwork: NetworkWithView = createNetworkWithView({
-      name: 'Empty Network1',
+      name: 'Created by hello-world App',
+      description: 'This network was created by hello-world app',
+      edgeList: [
+        ['1', '2', 'type1'],
+        ['2', '3', 'type2'],
+        ['3', '1', 'type1'],
+      ],
     })
-    console.log('Empty network created', newNetwork)
-    const network: Network = newNetwork.network
-    alert(`An empty network created: ${network.id}`)
+
+    // Update some Visual Style properties
+
+    console.log('Sample network created', newNetwork)
     handleClose && handleClose()
   }
 
-  return <MenuItem onClick={handleClick}>Create an empty network</MenuItem>
+  return <MenuItem onClick={handleClick}>Create an example network</MenuItem>
 }
 
 export default MenuExample

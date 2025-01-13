@@ -1,4 +1,8 @@
 declare module 'cyweb/WorkspaceStore'
+declare module 'cyweb/NetworkStore'
+declare module 'cyweb/NetworkSummaryStore'
+declare module 'cyweb/TableStore'
+declare module 'cyweb/ViewModelStore'
 declare module 'cyweb/VisualStyleStore'
 declare module 'cyweb/LayoutStore'
 declare module 'cyweb/CreateNetwork'

@@ -174,6 +174,9 @@ Update the webpack.config.js if necessary.
 Build and run your new app using the following commands:
 Your new app will be available at http://localhost:2222/remoteEntry.js. ```
 
+## Submit your App
+(TBD)
+
 ## Module Federation Parameters
 
 Module Federation is a mechanism in Webpack that allows multiple independent builds to form a single application. Here are the key parameters:
