@@ -29,9 +29,9 @@ const MenuExample = ({ handleClose }: MenuExampleProps): JSX.Element => {
       name: 'Created by hello-world App',
       description: 'This network was created by hello-world app',
       edgeList: [
-        ['1', '2', 'type1'],
-        ['2', '3', 'type2'],
-        ['3', '1', 'type1'],
+        ['A', 'B', 'type1'],
+        ['B', 'C', 'type2'],
+        ['C', 'A', 'type1'],
       ],
     })
 
