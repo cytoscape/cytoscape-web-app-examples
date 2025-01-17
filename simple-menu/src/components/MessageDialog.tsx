@@ -28,7 +28,9 @@ const MessageDialog: React.FC<MessageDialogProps> = ({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>
+        <DialogContentText
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        >
           <Box sx={{ p: '1em' }}>{message}</Box>
           <Box sx={{ p: '1em' }}>
             {linkText && linkUrl && (

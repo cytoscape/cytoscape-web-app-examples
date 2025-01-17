@@ -54,6 +54,7 @@ export default (env = {}) => {
           './HelloPanel': './src/components/HelloPanel.tsx',
           './MenuExample': './src/components/MenuExample.tsx',
           './MenuExample2': './src/components/MenuExample2.tsx',
+          './OpenExternalAppMenu': './src/components/OpenExternalAppMenu.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },

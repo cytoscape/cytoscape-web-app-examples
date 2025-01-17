@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import MessageDialog from './MessageDialog'
 import { JSX } from 'react/jsx-runtime'
 
@@ -25,7 +25,8 @@ const AppMenuItem = ({
     handleClose && handleClose()
   }
 
-  const handleClick = (): void => {
+  const handleClick = (e: React.MouseEvent): void => {
+    
     console.log('Click detected in Simple Menu app')
     setDialogOpen(true)
   }

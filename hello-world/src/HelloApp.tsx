@@ -14,6 +14,10 @@ export const HelloApp: CyApp = {
       type: ComponentType.Menu,
     },
     {
+      id: 'OpenExternalAppMenu',
+      type: ComponentType.Menu,
+    },
+    {
       id: 'HelloPanel',
       type: ComponentType.Panel,
     },

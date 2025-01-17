@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>External Web App Test (Cross-Domain)</title>
+  </head>
+  <body>
+    <h1>External App (Cross-Domain Example)</h1>
+    <button id="focusParentBtn">Focus Parent</button>
+    <script>
+      const fetchCx2fromURL = async (url) => {
+        const response = await fetch(url)
+        const cx2 = await response.json()
+        console.log('Go data from CX2', cx2)
+        return cx2
+      }
+
+      const sampleUrl =
+        'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/pre-release-cleanup/docs/data/sample2.cx2'
+
+      document
+        .getElementById('focusParentBtn')
+        .addEventListener('click', () => {
+          fetchCx2fromURL(sampleUrl).then((cx2) => {
+            console.log('Sample network', cx2)
+            console.log(
+              '## Sending message to parent new',
+              window.opener,
+              window.parent,
+            )
+            window.open('', 'cytoscape-web-v1', '', true)
+            if (window.opener) {
+              window.opener.postMessage(
+                { source: 'app', payload: cx2 },
+                'http://localhost:5500',
+              )
+            }
+          })
+        })
+    </script>
+  </body>
+</html>

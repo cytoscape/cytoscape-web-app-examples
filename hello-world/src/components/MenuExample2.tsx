@@ -6,7 +6,7 @@ interface MenuExample2Props {
 }
 
 const sampleUrl =
-  'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/pre-release-cleanup/docs/data/sample1.cx'
+  'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/pre-release-cleanup/docs/data/sample2.cx2'
 
 const MenuExample2 = ({ handleClose }: MenuExample2Props): JSX.Element => {
   const createNetworkFromCx2 = useCreateNetworkFromCx2()
