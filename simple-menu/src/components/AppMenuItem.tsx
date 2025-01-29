@@ -26,8 +26,6 @@ const AppMenuItem = ({
   }
 
   const handleClick = (e: React.MouseEvent): void => {
-    
-    console.log('Click detected in Simple Menu app')
     setDialogOpen(true)
   }
 
@@ -37,10 +35,10 @@ const AppMenuItem = ({
       <MessageDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        title="Hello Cytoscape World!"
-        message="Hello from the Simple Menu app! (AppMenuItem)"
-        linkText="App developer's guide (TBD)"
-        linkUrl="https://github.com/cytoscape/cytoscape-web/wiki"
+        title="Hello Cytoscape World"
+        message="This dialog is created by an App (AppMenuItem)"
+        linkText="App developer's guide"
+        linkUrl="https://github.com/cytoscape/cytoscape-web-app-examples"
       />
     </>
   )

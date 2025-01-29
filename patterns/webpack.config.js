@@ -48,7 +48,7 @@ export default {
         cyweb: `${CYWEB_NAME}@${LOCAL_CYWEB}`,
       },
       exposes: {
-        './TemplateApp': './src/TemplateApp',
+        './PatternApp': './src/PatternApp',
         './TemplatePanel': './src/components/TemplatePanel.tsx',
       },
       shared: {

@@ -23,13 +23,20 @@ const SimplePanel = ({ message }: HelloPanelProps): JSX.Element => {
   const nodes: Node[] = curNetwork?.nodes ?? []
   const edges: Edge[] = curNetwork?.edges ?? []
 
+  if (!curNetwork) {
+    return <Box sx={{ padding: '2em' }}>Please load a network</Box>
+  }
+
   return (
     <Box sx={{ padding: '2em' }}>
       <h4>Simple Panel App {message}</h4>
-      <p>Current Network ID: {workspace.currentNetworkId}</p>
-      <h5>Num. nodes: {nodes.length}</h5>
-      <h5>Num. edges: {edges.length}</h5>
-      <h6>(You can add any custom components here...)</h6>
+      <h5>Sample panel-type app to display custom components</h5>
+      <Box sx={{ padding: '1em', border: '1px solid #777' }}>
+        <p>Current Network ID: {workspace.currentNetworkId}</p>
+        <h5>Num. nodes: {nodes.length}</h5>
+        <h5>Num. edges: {edges.length}</h5>
+        <h6>(You can add any custom components here...)</h6>
+      </Box>
     </Box>
   )
 }
