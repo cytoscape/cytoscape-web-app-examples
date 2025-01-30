@@ -24,14 +24,19 @@ const MenuExample = ({ handleClose }) => {
     const createNetworkWithView = (0,cyweb_CreateNetwork__WEBPACK_IMPORTED_MODULE_2__.useCreateNetworkWithView)();
     const handleClick = () => {
         const newNetwork = createNetworkWithView({
-            name: 'Empty Network1',
+            name: 'Created by hello-world App',
+            description: 'This network was created by hello-world app',
+            edgeList: [
+                ['A', 'B', 'type1'],
+                ['B', 'C', 'type2'],
+                ['C', 'A', 'type1'],
+            ],
         });
-        console.log('Empty network created', newNetwork);
-        const network = newNetwork.network;
-        alert(`An empty network created: ${network.id}`);
+        // Update some Visual Style properties
+        console.log('Sample network created', newNetwork);
         handleClose && handleClose();
     };
-    return (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_mui_material__WEBPACK_IMPORTED_MODULE_1__.MenuItem, { onClick: handleClick, children: "Create an empty network" });
+    return (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_mui_material__WEBPACK_IMPORTED_MODULE_1__.MenuItem, { onClick: handleClick, children: "Create an example network" });
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (MenuExample);
 

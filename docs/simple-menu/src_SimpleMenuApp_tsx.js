@@ -19,8 +19,8 @@ __webpack_require__.r(__webpack_exports__);
  */
 const SimpleMenuApp = {
     id: 'simpleMenu',
-    name: 'Simple menu app',
-    description: 'Example app to add a menu item under the App menu',
+    name: 'Simple Menu App',
+    description: 'Example app to add a menu item under the Apps menu',
     components: [
         {
             id: 'AppMenuItem',

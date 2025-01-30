@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 const SimplePanelApp = {
     id: 'simplePanel',
     name: 'Simple Panel App',
-    description: 'Sample app to add a panel to Cytoscape Web',
+    description: 'Sample app to add a panel on the right side of the window',
     components: [
         {
             id: 'SimplePanel',

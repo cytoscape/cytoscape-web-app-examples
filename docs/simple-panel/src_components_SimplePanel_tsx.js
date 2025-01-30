@@ -30,7 +30,10 @@ const SimplePanel = ({ message }) => {
     const curNetwork = networks.get(currentNetworkId);
     const nodes = curNetwork?.nodes ?? [];
     const edges = curNetwork?.edges ?? [];
-    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)(_mui_material__WEBPACK_IMPORTED_MODULE_3__.Box, { sx: { padding: '2em' }, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h4", { children: ["Simple Panel App ", message] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { children: ["Current Network ID: ", workspace.currentNetworkId] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h5", { children: ["Num. nodes: ", nodes.length] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h5", { children: ["Num. edges: ", edges.length] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h6", { children: "(You can add any custom components here...)" })] }));
+    if (!curNetwork) {
+        return (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_mui_material__WEBPACK_IMPORTED_MODULE_3__.Box, { sx: { padding: '2em' }, children: "Please load a network" });
+    }
+    return ((0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)(_mui_material__WEBPACK_IMPORTED_MODULE_3__.Box, { sx: { padding: '2em' }, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h4", { children: ["Simple Panel App ", message] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h5", { children: "Sample panel-type app to display custom components" }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)(_mui_material__WEBPACK_IMPORTED_MODULE_3__.Box, { sx: { padding: '1em', border: '1px solid #777' }, children: [(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("p", { children: ["Current Network ID: ", workspace.currentNetworkId] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h5", { children: ["Num. nodes: ", nodes.length] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("h5", { children: ["Num. edges: ", edges.length] }), (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h6", { children: "(You can add any custom components here...)" })] })] }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (SimplePanel);
 

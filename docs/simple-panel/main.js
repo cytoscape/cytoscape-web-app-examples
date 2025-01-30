@@ -242,7 +242,7 @@ const getVisualEditorProperties = (cx2) => {
     const properties = Object.values(Object.values(filtered[0])[0][0])[0];
     return {
         visualEditorProperties: {
-            nodeSizeLocked: properties.nodeSizeLocked ?? false,
+            nodeSizeLocked: properties?.nodeSizeLocked ?? false,
             arrowColorMatchesEdge: properties.arrowColorMatchesEdge ?? false,
         },
     };
@@ -878,6 +878,19 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 /***/ }),
 
+/***/ "../node_modules/@cytoscape-web/types/dist/OpaqueAspectModel/index.js":
+/*!****************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/OpaqueAspectModel/index.js ***!
+  \****************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
 /***/ "../node_modules/@cytoscape-web/types/dist/PropertyModel/index.js":
 /*!************************************************************************!*\
   !*** ../node_modules/@cytoscape-web/types/dist/PropertyModel/index.js ***!
@@ -900,6 +913,228 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/AppStoreModel.js":
+/*!*****************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/AppStoreModel.js ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/CredentialStoreModel.js":
+/*!************************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/CredentialStoreModel.js ***!
+  \************************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/LayoutStoreModel.js":
+/*!********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/LayoutStoreModel.js ***!
+  \********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/MessageStoreModel.js":
+/*!*********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/MessageStoreModel.js ***!
+  \*********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkStoreModel.js":
+/*!*********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkStoreModel.js ***!
+  \*********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UpdateEventType = void 0;
+exports.UpdateEventType = {
+    ADD: 'ADD',
+    DELETE: 'DELETE',
+};
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkSummaryStoreModel.js":
+/*!****************************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkSummaryStoreModel.js ***!
+  \****************************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/OpaqueAspectStoreModel.js":
+/*!**************************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/OpaqueAspectStoreModel.js ***!
+  \**************************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/RendererStoreModel.js":
+/*!**********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/RendererStoreModel.js ***!
+  \**********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/TableStoreModel.js":
+/*!*******************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/TableStoreModel.js ***!
+  \*******************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TableType = void 0;
+exports.TableType = {
+    NODE: 'node',
+    EDGE: 'edge',
+};
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/UiStateStoreModel.js":
+/*!*********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/UiStateStoreModel.js ***!
+  \*********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/ViewModelStoreModel.js":
+/*!***********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/ViewModelStoreModel.js ***!
+  \***********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/VisualStyleStoreModel.js":
+/*!*************************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/VisualStyleStoreModel.js ***!
+  \*************************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/WorkspaceStoreModel.js":
+/*!***********************************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/WorkspaceStoreModel.js ***!
+  \***********************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ "../node_modules/@cytoscape-web/types/dist/StoreModel/index.js":
+/*!*********************************************************************!*\
+  !*** ../node_modules/@cytoscape-web/types/dist/StoreModel/index.js ***!
+  \*********************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+/**
+ * Export all Store Models from each store
+ */
+__exportStar(__webpack_require__(/*! ./AppStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/AppStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./CredentialStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/CredentialStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./LayoutStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/LayoutStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./MessageStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/MessageStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./NetworkStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./NetworkSummaryStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/NetworkSummaryStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./OpaqueAspectStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/OpaqueAspectStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./RendererStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/RendererStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./TableStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/TableStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./UiStateStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/UiStateStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./ViewModelStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/ViewModelStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./VisualStyleStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/VisualStyleStoreModel.js"), exports);
+__exportStar(__webpack_require__(/*! ./WorkspaceStoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/WorkspaceStoreModel.js"), exports);
 
 
 /***/ }),
@@ -1937,6 +2172,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 1.0,
         bypassMap: new Map(),
         maxVal: 1,
+        tooltip: 'The transparency of the node border. 100% is fully opaque, 0% is fully transparent.',
     },
     nodeHeight: {
         group: 'node',
@@ -2002,6 +2238,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 0,
         bypassMap: new Map(),
         maxVal: 360,
+        tooltip: 'The rotation angle of the node label in degrees(from 0 to 360).',
     },
     nodeLabelOpacity: {
         group: 'node',
@@ -2011,6 +2248,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 1.0,
         bypassMap: new Map(),
         maxVal: 1,
+        tooltip: 'The transparency of the node label. 100% is fully opaque, 0% is fully transparent.',
     },
     nodeLabelPosition: {
         group: 'node',
@@ -2052,6 +2290,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 1.0,
         bypassMap: new Map(),
         maxVal: 1,
+        tooltip: 'The transparency of the node fill. 100% is fully opaque, 0% is fully transparent.',
     },
     nodeVisibility: {
         group: 'node',
@@ -2060,6 +2299,7 @@ const getDefaultVisualStyle = () => ({
         type: 'visibility',
         defaultValue: 'element',
         bypassMap: new Map(),
+        tooltip: 'The flag to show or hide the node.',
     },
     nodeSelectedPaint: {
         group: 'node',
@@ -2076,7 +2316,7 @@ const getDefaultVisualStyle = () => ({
         type: 'number',
         defaultValue: 100,
         bypassMap: new Map(),
-        tooltip: 'The maximum width of the node label',
+        tooltip: 'The maximum width of the node label.',
     },
     nodeZOrder: {
         group: 'node',
@@ -2085,6 +2325,7 @@ const getDefaultVisualStyle = () => ({
         type: 'number',
         defaultValue: 0,
         bypassMap: new Map(),
+        tooltip: 'The stacking order of nodes on the canvas. Higher values are drawn on top.'
     },
     edgeLineColor: {
         group: 'edge',
@@ -2093,6 +2334,7 @@ const getDefaultVisualStyle = () => ({
         type: 'color',
         defaultValue: '#000000',
         bypassMap: new Map(),
+        tooltip: 'The fill color of the edge line when not selected.',
     },
     edgeLineType: {
         group: 'edge',
@@ -2110,6 +2352,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 1.0,
         bypassMap: new Map(),
         maxVal: 1,
+        tooltip: 'The transparency of the edge. 100% is fully opaque, 0% is fully transparent.',
     },
     edgeSourceArrowColor: {
         group: 'edge',
@@ -2118,6 +2361,7 @@ const getDefaultVisualStyle = () => ({
         type: 'color',
         defaultValue: '#000000',
         bypassMap: new Map(),
+        tooltip: 'The color of the edge source arrow when not selected.',
     },
     edgeSourceArrowShape: {
         group: 'edge',
@@ -2134,6 +2378,7 @@ const getDefaultVisualStyle = () => ({
         type: 'color',
         defaultValue: '#000000',
         bypassMap: new Map(),
+        tooltip: 'The color of the edge target arrow when not selected.',
     },
     edgeTargetArrowShape: {
         group: 'edge',
@@ -2183,6 +2428,7 @@ const getDefaultVisualStyle = () => ({
         defaultValue: 0,
         bypassMap: new Map(),
         maxVal: 360,
+        tooltip: 'The rotation angle of the edge label in degrees(from 0 to 360).',
     },
     edgeLabelOpacity: {
         group: 'edge',
@@ -2192,6 +2438,7 @@ const getDefaultVisualStyle = () => ({
         type: 'number',
         bypassMap: new Map(),
         maxVal: 1,
+        tooltip: 'The transparency of the edge label. 100% is fully opaque, 0% is fully transparent.',
     },
     // edgeLabelAutoRotation: {
     //   group: 'edge',
@@ -2216,6 +2463,7 @@ const getDefaultVisualStyle = () => ({
         type: 'visibility',
         defaultValue: 'element',
         bypassMap: new Map(),
+        tooltip: 'The flag to show or hide the edge.',
     },
     edgeSelectedPaint: {
         group: 'edge',
@@ -2232,15 +2480,16 @@ const getDefaultVisualStyle = () => ({
         type: 'number',
         defaultValue: 100,
         bypassMap: new Map(),
-        tooltip: 'The maximum width of the edge label',
+        tooltip: 'The maximum width of the edge label.',
     },
     edgeZOrder: {
         group: 'edge',
-        name: 'nodeZOrder',
+        name: 'edgeZOrder',
         displayName: 'Z Order',
         type: 'number',
         defaultValue: 0,
         bypassMap: new Map(),
+        tooltip: 'The stacking order of edges on the canvas. Higher values are drawn on top.'
     },
     networkBackgroundColor: {
         group: 'network',
@@ -2331,7 +2580,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createContinuousMapper = exports.createPassthroughMapper = exports.createDiscreteMapper = void 0;
+exports.getMapper = exports.createContinuousMapper = exports.createPassthroughMapper = exports.createDiscreteMapper = void 0;
 const VisibilityType_1 = __webpack_require__(/*! ../../VisualStyleModel/VisualPropertyValue/VisibilityType */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/VisualPropertyValue/VisibilityType.js");
 const d3Scale = __importStar(__webpack_require__(/*! d3-scale */ "../node_modules/d3-scale/src/index.js"));
 // import * as d3Color from 'd3-color'
@@ -2388,10 +2637,10 @@ const createContinuousMapper = (cm) => {
     return (value) => {
         // TODO: Implement this
         if (cm.visualPropertyType === VisualPropertyValueTypeName_1.VisualPropertyValueTypeName.Color) {
-            return getMapper(cm)(value);
+            return (0, exports.getMapper)(cm)(value);
         }
         else if (cm.visualPropertyType === VisualPropertyValueTypeName_1.VisualPropertyValueTypeName.Number) {
-            return getMapper(cm)(value);
+            return (0, exports.getMapper)(cm)(value);
         }
         return cm.defaultValue;
     };
@@ -2409,29 +2658,36 @@ const toRangeAndDomain = (controlPoints) => {
     return [domain, range];
 };
 const getMapper = (cm) => {
-    const { controlPoints, defaultValue } = cm;
+    const { min, max, controlPoints, defaultValue, ltMinVpValue, gtMaxVpValue } = cm;
+    const minValue = min.value;
+    const maxValue = max.value;
     const [domain, range] = toRangeAndDomain(controlPoints);
     const d3Mapper = d3Scale.scaleLinear().domain(domain).range(range);
+    d3Mapper.clamp(true);
     const mapper = (attrValue) => {
         if (attrValue !== undefined) {
-            return d3Mapper(attrValue);
+            const numericAttrValue = attrValue;
+            const isLessThanMin = (min.inclusive ?? false)
+                ? numericAttrValue <= minValue
+                : numericAttrValue < minValue;
+            const isGreaterThanMax = (max.inclusive ?? false)
+                ? numericAttrValue >= maxValue
+                : numericAttrValue > maxValue;
+            if (isGreaterThanMax) {
+                return gtMaxVpValue ?? max.vpValue;
+            }
+            else if (isLessThanMin) {
+                return ltMinVpValue ?? min.vpValue;
+            }
+            else {
+                return d3Mapper(numericAttrValue);
+            }
         }
         return defaultValue;
     };
     return mapper;
 };
-// const getColorMapper = (cm: ContinuousMappingFunction): Mapper => {
-//   const { controlPoints, defaultValue } = cm
-//   const [domain, range] = toRangeAndDomain<ColorType>(controlPoints)
-//   const colorMapper = d3Scale.scaleLinear<string>().domain(domain).range(range)
-//   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
-//     if (attrValue !== undefined) {
-//       return colorMapper(attrValue as number) as ColorType
-//     }
-//     return defaultValue
-//   }
-//   return mapper
-// }
+exports.getMapper = getMapper;
 
 
 /***/ }),
@@ -2478,6 +2734,7 @@ const __1 = __webpack_require__(/*! .. */ "../node_modules/@cytoscape-web/types/
 const cxVisualPropertyConverter_1 = __webpack_require__(/*! ./cxVisualPropertyConverter */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/cxVisualPropertyConverter.js");
 const DefaultVisualStyle_1 = __webpack_require__(/*! ./DefaultVisualStyle */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/DefaultVisualStyle.js");
 const compute_view_util_1 = __webpack_require__(/*! ./compute-view-util */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/compute-view-util.js");
+const CyNetwork_1 = __webpack_require__(/*! ../../NetworkModel/impl/CyNetwork */ "../node_modules/@cytoscape-web/types/dist/NetworkModel/impl/CyNetwork.js");
 const sortByDisplayName = (a, b) => {
     const nameA = a.displayName.toLowerCase();
     const nameB = b.displayName.toLowerCase();
@@ -2562,11 +2819,11 @@ const createVisualStyleFromCx = (cx) => {
                 const [vpName, cxVPConverter] = entry;
                 if (edgeBypassMap.has(vpName)) {
                     const entry = edgeBypassMap.get(vpName) ?? new Map();
-                    entry.set(String(id), cxVPConverter.valueConverter(v[cxVPName]));
+                    entry.set((0, CyNetwork_1.translateCXEdgeId)(String(id)), cxVPConverter.valueConverter(v[cxVPName]));
                     edgeBypassMap.set(vpName, entry);
                 }
                 else {
-                    edgeBypassMap.set(vpName, new Map().set(String(id), cxVPConverter.valueConverter(v[cxVPName])));
+                    edgeBypassMap.set(vpName, new Map().set((0, CyNetwork_1.translateCXEdgeId)(String(id)), cxVPConverter.valueConverter(v[cxVPName])));
                 }
             }
         });
@@ -2612,6 +2869,7 @@ const createVisualStyleFromCx = (cx) => {
                                 visualPropertyType: vp.type,
                                 attribute: cxMapping.definition.attribute,
                                 defaultValue: vp.defaultValue,
+                                attributeType: cxMapping.definition.type,
                             };
                             visualStyle[vpName].mapping = m;
                             break;
@@ -2628,6 +2886,7 @@ const createVisualStyleFromCx = (cx) => {
                                 vpValueMap,
                                 visualPropertyType: vp.type,
                                 defaultValue: vp.defaultValue,
+                                attributeType: cxMapping.definition.type,
                             };
                             visualStyle[vpName].mapping = m;
                             break;
@@ -2687,6 +2946,9 @@ const createVisualStyleFromCx = (cx) => {
                                     controlPoints: sortedCtrlPts,
                                     visualPropertyType: vp.type,
                                     defaultValue: vp.defaultValue,
+                                    gtMaxVpValue: converter.valueConverter(max.vpValue),
+                                    ltMinVpValue: converter.valueConverter(min.vpValue),
+                                    attributeType: cxMapping.definition.type,
                                 };
                                 visualStyle[vpName].mapping = m;
                             }
@@ -2759,7 +3021,6 @@ const VisualStyleFnImpl = __importStar(__webpack_require__(/*! ./VisualStyleFnIm
 const MapperFactory = __importStar(__webpack_require__(/*! ./MapperFactory */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/MapperFactory.js"));
 const DirectMappingSelector_1 = __webpack_require__(/*! ./CyjsProperties/CyjsStyleModels/DirectMappingSelector */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector.js");
 const EdgeArrowShapeImpl_1 = __webpack_require__(/*! ./EdgeArrowShapeImpl */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/EdgeArrowShapeImpl.js");
-const CyNetwork_1 = __webpack_require__(/*! ../../NetworkModel/impl/CyNetwork */ "../node_modules/@cytoscape-web/types/dist/NetworkModel/impl/CyNetwork.js");
 const nodeLabelPositionMap_1 = __webpack_require__(/*! ./nodeLabelPositionMap */ "../node_modules/@cytoscape-web/types/dist/VisualStyleModel/impl/nodeLabelPositionMap.js");
 // Build mapping functions from all visual properties
 const buildMappers = (vs) => {
@@ -2914,8 +3175,7 @@ const computeView = (id, visualProperties, mappers, row, columns) => {
     const pairs = new Map();
     visualProperties.forEach((vp) => {
         const { defaultValue, mapping, bypassMap, name, group } = vp;
-        const bypassId = group === 'node' ? id : (0, CyNetwork_1.translateEdgeIdToCX)(id);
-        const bypass = bypassMap.get(bypassId);
+        const bypass = bypassMap.get(id);
         let pairsToAdd = [];
         if (bypass !== undefined) {
             pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass);
@@ -2973,17 +3233,18 @@ const vpToCX = (vpName, vpValue) => {
     return vpValue;
 };
 exports.vpToCX = vpToCX;
-const convertPassthroughMappingToCX = (vs, vp, mapping) => {
+const convertPassthroughMappingToCX = (vs, vp, mapping, isNameInTable) => {
     const { attribute } = mapping;
     return {
         type: 'PASSTHROUGH',
         definition: {
             attribute,
+            ...(isNameInTable ? {} : { type: mapping.attributeType }),
         },
     };
 };
 exports.convertPassthroughMappingToCX = convertPassthroughMappingToCX;
-const convertDiscreteMappingToCX = (vs, vp, mapping) => {
+const convertDiscreteMappingToCX = (vs, vp, mapping, isNameInTable) => {
     const { vpValueMap, attribute } = mapping;
     return {
         type: 'DISCRETE',
@@ -2993,12 +3254,13 @@ const convertDiscreteMappingToCX = (vs, vp, mapping) => {
                 v: value,
                 vp: (0, exports.vpToCX)(vp.name, vpValue),
             })),
+            ...(isNameInTable ? {} : { type: mapping.attributeType }),
         },
     };
 };
 exports.convertDiscreteMappingToCX = convertDiscreteMappingToCX;
-const convertContinuousMappingToCX = (vs, vp, mapping) => {
-    const { min, max, controlPoints, attribute } = mapping;
+const convertContinuousMappingToCX = (vs, vp, mapping, isNameInTable) => {
+    const { min, max, controlPoints, attribute, ltMinVpValue, gtMaxVpValue } = mapping;
     const intervals = [];
     for (let i = 0; i < controlPoints.length - 1; i++) {
         const curr = controlPoints[i];
@@ -3020,19 +3282,20 @@ const convertContinuousMappingToCX = (vs, vp, mapping) => {
             map: [
                 {
                     max: min.value,
-                    maxVPValue: (0, exports.vpToCX)(vp.name, min.vpValue),
-                    includeMax: min.inclusive ?? true,
-                    includeMin: true, // dummy value, not actually used here
+                    maxVPValue: (0, exports.vpToCX)(vp.name, ltMinVpValue),
+                    includeMax: min.inclusive ?? false,
+                    includeMin: false, // dummy value, not actually used here
                 },
                 ...intervals,
                 {
                     min: max.value,
-                    minVPValue: (0, exports.vpToCX)(vp.name, max.vpValue),
-                    includeMin: max.inclusive ?? true,
-                    includeMax: true, // dummy value, not actually used here
+                    minVPValue: (0, exports.vpToCX)(vp.name, gtMaxVpValue),
+                    includeMin: max.inclusive ?? false,
+                    includeMax: false, // dummy value, not actually used here
                 },
             ],
             attribute,
+            ...(isNameInTable ? {} : { type: mapping.attributeType }),
         },
     };
 };
@@ -3178,8 +3441,152 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.computeNodeLabelPosition = exports.nodeLabelPositionMap = void 0;
+exports.computeNodeLabelPosition = exports.nodeLabelPositionMap = exports.orientationToPositionMap = exports.translateNodePositionToOrientation = exports.NodeLabelOrientationType = void 0;
 const lodash_1 = __importDefault(__webpack_require__(/*! lodash */ "../node_modules/lodash/lodash.js"));
+exports.NodeLabelOrientationType = {
+    TopLeft: 'top-left',
+    TopCenter: 'top-center',
+    TopRight: 'top-right',
+    CenterLeft: 'center-left',
+    Center: 'center',
+    CenterRight: 'center-right',
+    BottomLeft: 'bottom-left',
+    BottomCenter: 'bottom-center',
+    BottomRight: 'bottom-right',
+};
+const orientationToCyJsValueMap = {
+    [exports.NodeLabelOrientationType.TopLeft]: {
+        horizontalAlign: 'left',
+        verticalAlign: 'top',
+    },
+    [exports.NodeLabelOrientationType.TopCenter]: {
+        horizontalAlign: 'center',
+        verticalAlign: 'top',
+    },
+    [exports.NodeLabelOrientationType.TopRight]: {
+        horizontalAlign: 'right',
+        verticalAlign: 'top',
+    },
+    [exports.NodeLabelOrientationType.CenterLeft]: {
+        horizontalAlign: 'left',
+        verticalAlign: 'center',
+    },
+    [exports.NodeLabelOrientationType.Center]: {
+        horizontalAlign: 'center',
+        verticalAlign: 'center',
+    },
+    [exports.NodeLabelOrientationType.CenterRight]: {
+        horizontalAlign: 'right',
+        verticalAlign: 'center',
+    },
+    [exports.NodeLabelOrientationType.BottomLeft]: {
+        horizontalAlign: 'left',
+        verticalAlign: 'bottom',
+    },
+    [exports.NodeLabelOrientationType.BottomCenter]: {
+        horizontalAlign: 'center',
+        verticalAlign: 'bottom',
+    },
+    [exports.NodeLabelOrientationType.BottomRight]: {
+        horizontalAlign: 'right',
+        verticalAlign: 'bottom',
+    },
+};
+const translateNodePositionToOrientation = (position) => {
+    const computedPosition = (0, exports.computeNodeLabelPosition)(position);
+    let orientation = exports.NodeLabelOrientationType.Center;
+    Object.entries(orientationToCyJsValueMap).forEach(([orientationKey, cyjsValue]) => {
+        if (computedPosition.horizontalAlign == cyjsValue.horizontalAlign &&
+            computedPosition.verticalAlign == cyjsValue.verticalAlign) {
+            orientation = orientationKey;
+        }
+    });
+    return orientation;
+};
+exports.translateNodePositionToOrientation = translateNodePositionToOrientation;
+exports.orientationToPositionMap = {
+    [exports.NodeLabelOrientationType.TopLeft]: {
+        HORIZONTAL_ALIGN: 'right',
+        VERTICAL_ALIGN: 'bottom',
+        HORIZONTAL_ANCHOR: 'left',
+        VERTICAL_ANCHOR: 'top',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.TopCenter]: {
+        HORIZONTAL_ALIGN: 'center',
+        VERTICAL_ALIGN: 'bottom',
+        HORIZONTAL_ANCHOR: 'center',
+        VERTICAL_ANCHOR: 'top',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.TopRight]: {
+        HORIZONTAL_ALIGN: 'left',
+        VERTICAL_ALIGN: 'bottom',
+        HORIZONTAL_ANCHOR: 'right',
+        VERTICAL_ANCHOR: 'top',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.CenterLeft]: {
+        HORIZONTAL_ALIGN: 'right',
+        VERTICAL_ALIGN: 'center',
+        HORIZONTAL_ANCHOR: 'left',
+        VERTICAL_ANCHOR: 'center',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.Center]: {
+        HORIZONTAL_ALIGN: 'center',
+        VERTICAL_ALIGN: 'center',
+        HORIZONTAL_ANCHOR: 'center',
+        VERTICAL_ANCHOR: 'center',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.CenterRight]: {
+        HORIZONTAL_ALIGN: 'left',
+        VERTICAL_ALIGN: 'center',
+        HORIZONTAL_ANCHOR: 'right',
+        VERTICAL_ANCHOR: 'center',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.BottomLeft]: {
+        HORIZONTAL_ALIGN: 'right',
+        VERTICAL_ALIGN: 'top',
+        HORIZONTAL_ANCHOR: 'left',
+        VERTICAL_ANCHOR: 'bottom',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.BottomCenter]: {
+        HORIZONTAL_ALIGN: 'center',
+        VERTICAL_ALIGN: 'top',
+        HORIZONTAL_ANCHOR: 'center',
+        VERTICAL_ANCHOR: 'bottom',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+    [exports.NodeLabelOrientationType.BottomRight]: {
+        HORIZONTAL_ALIGN: 'left',
+        VERTICAL_ALIGN: 'top',
+        HORIZONTAL_ANCHOR: 'right',
+        VERTICAL_ANCHOR: 'bottom',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        JUSTIFICATION: 'center',
+    },
+};
 exports.nodeLabelPositionMap = {
     center: {
         center: {
@@ -3449,8 +3856,10 @@ __exportStar(__webpack_require__(/*! ./MessageModel */ "../node_modules/@cytosca
 __exportStar(__webpack_require__(/*! ./NetworkModel */ "../node_modules/@cytoscape-web/types/dist/NetworkModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./NetworkSummaryModel */ "../node_modules/@cytoscape-web/types/dist/NetworkSummaryModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./NetworkWithViewModel */ "../node_modules/@cytoscape-web/types/dist/NetworkWithViewModel/index.js"), exports);
+__exportStar(__webpack_require__(/*! ./OpaqueAspectModel */ "../node_modules/@cytoscape-web/types/dist/OpaqueAspectModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./PropertyModel */ "../node_modules/@cytoscape-web/types/dist/PropertyModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./RendererModel */ "../node_modules/@cytoscape-web/types/dist/RendererModel/index.js"), exports);
+__exportStar(__webpack_require__(/*! ./StoreModel */ "../node_modules/@cytoscape-web/types/dist/StoreModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./TableModel */ "../node_modules/@cytoscape-web/types/dist/TableModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./UiModel */ "../node_modules/@cytoscape-web/types/dist/UiModel/index.js"), exports);
 __exportStar(__webpack_require__(/*! ./ViewModel */ "../node_modules/@cytoscape-web/types/dist/ViewModel/index.js"), exports);
@@ -13961,10 +14370,14 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     }
 
     // shift by margin and expand by outline and border
-    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
-    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+    var leftPad = marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+    var rightPad = marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+    var topPad = marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+    var botPad = marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+    lx1 += leftPad;
+    lx2 += rightPad;
+    ly1 += topPad;
+    ly2 += botPad;
 
     // always store the unrotated label bounds separately
     var bbPrefix = prefix || 'main';
@@ -13976,6 +14389,10 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
+    bb.leftPad = leftPad;
+    bb.rightPad = rightPad;
+    bb.topPad = topPad;
+    bb.botPad = botPad;
     var isAutorotate = isEdge && rotation.strValue === 'autorotate';
     var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
     if (isAutorotate || isPfValue) {
@@ -14367,7 +14784,7 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var isDirty = function isDirty(ele) {
     return ele._private.bbCache == null || ele._private.styleDirty;
   };
-  var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
+  var needRecalc = !useCache || isDirty(ele) || isEdge && (isDirty(ele.source()) || isDirty(ele.target()));
   if (needRecalc) {
     if (!isPosKeySame) {
       ele.recalculateRenderedStyle(useCache);
@@ -19197,9 +19614,7 @@ styfn$8.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
     // only for beziers -- so performance of other edges isn't affected
     prop.triggersBoundsOfParallelBeziers && name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) {
       ele.parallelEdges().forEach(function (pllEdge) {
-        if (pllEdge.isBundledBezier()) {
-          pllEdge.dirtyBoundingBoxCache();
-        }
+        pllEdge.dirtyBoundingBoxCache();
       });
     }
     if (prop.triggersBoundsOfConnectedEdges && name === 'display' && (fromValue === 'none' || toValue === 'none')) {
@@ -26620,7 +27035,9 @@ BRp$c.findEdgeControlPoints = function (edges) {
           hasUnbundled: pairInfo.hasUnbundled,
           eles: pairInfo.eles,
           srcPos: tgtPos,
+          srcRs: tgtRs,
           tgtPos: srcPos,
+          tgtRs: srcRs,
           srcW: tgtW,
           srcH: tgtH,
           tgtW: srcW,
@@ -26707,17 +27124,17 @@ function getPts(pts) {
 }
 BRp$c.getSegmentPoints = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
   var type = rs.edgeType;
   if (type === 'segments') {
-    this.recalculateRenderedStyle(edge);
     return getPts(rs.segpts);
   }
 };
 BRp$c.getControlPoints = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
   var type = rs.edgeType;
   if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
-    this.recalculateRenderedStyle(edge);
     return getPts(rs.ctrlpts);
   }
 };
@@ -27777,6 +28194,18 @@ var BRp$3 = {};
 BRp$3.registerBinding = function (target, event, handler, useCapture) {
   // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply(arguments, [1]); // copy
+
+  if (Array.isArray(target)) {
+    var res = [];
+    for (var i = 0; i < target.length; i++) {
+      var t = target[i];
+      if (t !== undefined) {
+        var b = this.binder(t);
+        res.push(b.on.apply(b, args));
+      }
+    }
+    return res;
+  }
   var b = this.binder(target);
   return b.on.apply(b, args);
 };
@@ -27835,6 +28264,13 @@ BRp$3.load = function () {
   var containerWindow = r.cy.window();
   var isSelected = function isSelected(ele) {
     return ele.selected();
+  };
+  var getShadowRoot = function getShadowRoot(element) {
+    var rootNode = element.getRootNode();
+    // Check if the root node is a shadow root
+    if (rootNode && rootNode.nodeType === 11 && rootNode.host !== undefined) {
+      return rootNode;
+    }
   };
   var triggerEvents = function triggerEvents(target, names, e, position) {
     if (target == null) {
@@ -28249,7 +28685,8 @@ BRp$3.load = function () {
     select[0] = select[2] = pos[0];
     select[1] = select[3] = pos[1];
   }, false);
-  r.registerBinding(containerWindow, 'mousemove', function mousemoveHandler(e) {
+  var shadowRoot = getShadowRoot(r.container);
+  r.registerBinding([containerWindow, shadowRoot], 'mousemove', function mousemoveHandler(e) {
     // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
     if (!capture && !eventInContainer(e)) {
@@ -31133,6 +31570,7 @@ var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
+var maxLayerDim = 32767; // maximum size for the width/height of layer canvases
 var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
 // var log = function(){ console.log.apply( console, arguments ); };
@@ -31273,7 +31711,12 @@ LTCp.getLayers = function (eles, pxRatio, lvl) {
     opts = opts || {};
     var after = opts.after;
     getBb();
-    var area = bb.w * scale * (bb.h * scale);
+    var w = Math.ceil(bb.w * scale);
+    var h = Math.ceil(bb.h * scale);
+    if (w > maxLayerDim || h > maxLayerDim) {
+      return null;
+    }
+    var area = w * h;
     if (area > maxLayerArea) {
       return null;
     }
@@ -34329,18 +34772,18 @@ function CanvasRenderer(options) {
     if (ele.isNode()) {
       switch (ele.pstyle('text-halign').value) {
         case 'left':
-          p.x = -bb.w;
+          p.x = -bb.w - (bb.leftPad || 0);
           break;
         case 'right':
-          p.x = 0;
+          p.x = -(bb.rightPad || 0);
           break;
       }
       switch (ele.pstyle('text-valign').value) {
         case 'top':
-          p.y = -bb.h;
+          p.y = -bb.h - (bb.topPad || 0);
           break;
         case 'bottom':
-          p.y = 0;
+          p.y = -(bb.botPad || 0);
           break;
       }
     }
@@ -34794,7 +35237,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.30.2";
+var version = "3.30.4";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default
@@ -52066,7 +52509,7 @@ __webpack_require__.r(__webpack_exports__);
 const SimplePanelApp = {
     id: 'simplePanel',
     name: 'Simple Panel App',
-    description: 'Sample app to add a panel to Cytoscape Web',
+    description: 'Sample app to add a panel on the right side of the window',
     components: [
         {
             id: 'SimplePanel',
@@ -57814,7 +58257,7 @@ function keyof(value) {
 /******/ 			var promises = [];
 /******/ 			switch(name) {
 /******/ 				case "default": {
-/******/ 					register("@mui/material", "5.16.7", () => (Promise.all([__webpack_require__.e("vendors-node_modules_mui_material_index_js"), __webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_react-dom_react-dom")]).then(() => (() => (__webpack_require__(/*! ../node_modules/@mui/material/index.js */ "../node_modules/@mui/material/index.js"))))));
+/******/ 					register("@mui/material", "5.16.14", () => (Promise.all([__webpack_require__.e("vendors-node_modules_mui_material_index_js"), __webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_react-dom_react-dom")]).then(() => (() => (__webpack_require__(/*! ../node_modules/@mui/material/index.js */ "../node_modules/@mui/material/index.js"))))));
 /******/ 					register("react-dom", "18.3.1", () => (Promise.all([__webpack_require__.e("vendors-node_modules_react-dom_index_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react")]).then(() => (() => (__webpack_require__(/*! ../node_modules/react-dom/index.js */ "../node_modules/react-dom/index.js"))))));
 /******/ 					register("react", "18.3.1", () => (__webpack_require__.e("vendors-node_modules_react_index_js").then(() => (() => (__webpack_require__(/*! ../node_modules/react/index.js */ "../node_modules/react/index.js"))))));
 /******/ 				}

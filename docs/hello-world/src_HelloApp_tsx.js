@@ -24,6 +24,14 @@ const HelloApp = {
             type: _cytoscape_web_types__WEBPACK_IMPORTED_MODULE_0__.ComponentType.Menu,
         },
         {
+            id: 'MenuExample2',
+            type: _cytoscape_web_types__WEBPACK_IMPORTED_MODULE_0__.ComponentType.Menu,
+        },
+        {
+            id: 'OpenExternalAppMenu',
+            type: _cytoscape_web_types__WEBPACK_IMPORTED_MODULE_0__.ComponentType.Menu,
+        },
+        {
             id: 'HelloPanel',
             type: _cytoscape_web_types__WEBPACK_IMPORTED_MODULE_0__.ComponentType.Panel,
         },

@@ -14,10 +14,16 @@ var moduleMap = {
 		return Promise.all([__webpack_require__.e("vendors-node_modules_cytoscape-web_types_dist_index_js"), __webpack_require__.e("src_HelloApp_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/HelloApp */ "./src/HelloApp.tsx")))));
 	},
 	"./HelloPanel": () => {
-		return Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_mui_material_mui_material"), __webpack_require__.e("src_components_HelloPanel_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/components/HelloPanel.tsx */ "./src/components/HelloPanel.tsx")))));
+		return Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("vendors-node_modules_cytoscape-web_types_dist_index_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_mui_material_mui_material"), __webpack_require__.e("webpack_container_remote_cyweb_CreateNetworkFromCx2"), __webpack_require__.e("src_components_HelloPanel_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/components/HelloPanel.tsx */ "./src/components/HelloPanel.tsx")))));
 	},
 	"./MenuExample": () => {
 		return Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_mui_material_mui_material"), __webpack_require__.e("src_components_MenuExample_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/components/MenuExample.tsx */ "./src/components/MenuExample.tsx")))));
+	},
+	"./MenuExample2": () => {
+		return Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_mui_material_mui_material"), __webpack_require__.e("webpack_container_remote_cyweb_CreateNetworkFromCx2"), __webpack_require__.e("src_components_MenuExample2_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/components/MenuExample2.tsx */ "./src/components/MenuExample2.tsx")))));
+	},
+	"./OpenExternalAppMenu": () => {
+		return Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_mui_material_mui_material"), __webpack_require__.e("src_components_OpenExternalAppMenu_tsx")]).then(() => (() => ((__webpack_require__(/*! ./src/components/OpenExternalAppMenu.tsx */ "./src/components/OpenExternalAppMenu.tsx")))));
 	}
 };
 var get = (module, getScope) => {
@@ -240,17 +246,31 @@ module.exports = new Promise((resolve, reject) => {
 /******/ 	/* webpack/runtime/remotes loading */
 /******/ 	(() => {
 /******/ 		var chunkMapping = {
+/******/ 			"webpack_container_remote_cyweb_CreateNetworkFromCx2": [
+/******/ 				"webpack/container/remote/cyweb/CreateNetworkFromCx2"
+/******/ 			],
 /******/ 			"src_components_HelloPanel_tsx": [
-/******/ 				"webpack/container/remote/cyweb/WorkspaceStore"
+/******/ 				"webpack/container/remote/cyweb/WorkspaceStore",
+/******/ 				"webpack/container/remote/cyweb/VisualStyleStore"
 /******/ 			],
 /******/ 			"src_components_MenuExample_tsx": [
 /******/ 				"webpack/container/remote/cyweb/CreateNetwork"
 /******/ 			]
 /******/ 		};
 /******/ 		var idToExternalAndNameMapping = {
+/******/ 			"webpack/container/remote/cyweb/CreateNetworkFromCx2": [
+/******/ 				"default",
+/******/ 				"./CreateNetworkFromCx2",
+/******/ 				"webpack/container/reference/cyweb"
+/******/ 			],
 /******/ 			"webpack/container/remote/cyweb/WorkspaceStore": [
 /******/ 				"default",
 /******/ 				"./WorkspaceStore",
+/******/ 				"webpack/container/reference/cyweb"
+/******/ 			],
+/******/ 			"webpack/container/remote/cyweb/VisualStyleStore": [
+/******/ 				"default",
+/******/ 				"./VisualStyleStore",
 /******/ 				"webpack/container/reference/cyweb"
 /******/ 			],
 /******/ 			"webpack/container/remote/cyweb/CreateNetwork": [
@@ -345,7 +365,7 @@ module.exports = new Promise((resolve, reject) => {
 /******/ 			var promises = [];
 /******/ 			switch(name) {
 /******/ 				case "default": {
-/******/ 					register("@mui/material", "5.16.7", () => (Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("vendors-node_modules_mui_material_index_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_react-dom_react-dom")]).then(() => (() => (__webpack_require__(/*! ../node_modules/@mui/material/index.js */ "../node_modules/@mui/material/index.js"))))));
+/******/ 					register("@mui/material", "5.16.14", () => (Promise.all([__webpack_require__.e("vendors-node_modules_react_jsx-runtime_js"), __webpack_require__.e("vendors-node_modules_mui_material_index_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react"), __webpack_require__.e("webpack_sharing_consume_default_react-dom_react-dom")]).then(() => (() => (__webpack_require__(/*! ../node_modules/@mui/material/index.js */ "../node_modules/@mui/material/index.js"))))));
 /******/ 					register("react-dom", "18.3.1", () => (Promise.all([__webpack_require__.e("vendors-node_modules_react-dom_index_js"), __webpack_require__.e("webpack_sharing_consume_default_react_react")]).then(() => (() => (__webpack_require__(/*! ../node_modules/react-dom/index.js */ "../node_modules/react-dom/index.js"))))));
 /******/ 					register("react", "18.3.1", () => (__webpack_require__.e("vendors-node_modules_react_index_js").then(() => (() => (__webpack_require__(/*! ../node_modules/react/index.js */ "../node_modules/react/index.js"))))));
 /******/ 					initExternal("webpack/container/reference/cyweb");
@@ -574,7 +594,7 @@ module.exports = new Promise((resolve, reject) => {
 /******/ 					if(installedChunkData) {
 /******/ 						promises.push(installedChunkData[2]);
 /******/ 					} else {
-/******/ 						if(!/^webpack_sharing_consume_default_(react(\-dom_react\-dom|_react)|mui_material_mui_material)$/.test(chunkId)) {
+/******/ 						if(!/^webpack_(sharing_consume_default_(react(\-dom_react\-dom|_react)|mui_material_mui_material)|container_remote_cyweb_CreateNetworkFromCx2)$/.test(chunkId)) {
 /******/ 							// setup Promise in chunk cache
 /******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
 /******/ 							promises.push(installedChunkData[2] = promise);
