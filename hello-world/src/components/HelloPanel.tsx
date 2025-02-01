@@ -35,7 +35,6 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
   )
 
   const initializeListener = () => {
-    console.log('#############!!!!!!!!!!!!!!!!! adding')
     window.addEventListener('message', (event) => {
       const { data } = event
       console.log('###3 Received message from child', data)
@@ -97,7 +96,8 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
         padding: '1em',
       }}
     >
-      <Typography variant="h4">Hello, Cytoscape Web!</Typography>
+      <Typography variant="h3">Hello, from App!</Typography>
+
       <Typography variant="body1">from an external App: {message}</Typography>
       <Box sx={{ padding: '1em', width: '20em' }}>
         <Button

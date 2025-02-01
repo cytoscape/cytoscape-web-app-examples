@@ -52,9 +52,8 @@ export default (env = {}) => {
         exposes: {
           './HelloApp': './src/HelloApp',
           './HelloPanel': './src/components/HelloPanel.tsx',
-          './MenuExample': './src/components/MenuExample.tsx',
-          './MenuExample2': './src/components/MenuExample2.tsx',
-          './OpenExternalAppMenu': './src/components/OpenExternalAppMenu.tsx',
+          './CreateNetworkMenu': './src/components/CreateNetworkMenu.tsx',
+          './CreateNetworkFromCx2Menu': './src/components/CreateNetworkFromCx2Menu.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },

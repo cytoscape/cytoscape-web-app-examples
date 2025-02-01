@@ -4,15 +4,15 @@ App developer's guide for Cytoscape Web v1
 
 First release: January 2025
 
-Example Apps:
+**Example Apps:**
 
 - https://cytoscape.org/cytoscape-web-app-examples/
 
 ## Note
 
-Please be aware that this functionality is in an early stage of
-development and may be updated frequently. We appreciate your
-understanding and welcome any feedback to help improve the project.
+Please be aware that **this functionality is in an early stage of development and may be updated frequently**. We appreciate your understanding and welcome any feedback to help improve the project.
+
+Latest examples and their code is in development branch of this repository.
 
 ## Introduction
 
@@ -29,6 +29,37 @@ Each example includes source code and documentation to help you understand how t
 - Deploy your apps to web servers
 
 Whether you're building your first Cytoscape Web app or looking for implementation patterns, these examples will help you get started quickly.
+
+### What is [Module Federation](https://webpack.js.org/concepts/module-federation/)?
+
+Module Federation is a powerful webpack feature that enables Cytoscape Web's app ecosystem by allowing apps to:
+
+- Load Independently: Apps can be developed, deployed, and loaded separately from the main Cytoscape Web application
+- Share Dependencies: Common libraries like React and Material-UI are shared between apps to avoid duplication
+- Access Core Features: Apps can import and use Cytoscape Web's core functionality through federated modules
+- Update Dynamically: Apps can be updated without requiring changes to the main application
+
+For Cytoscape Web app developers, Module Federation provides:
+
+```js
+// Example webpack configuration
+{
+  plugins: [
+    new ModuleFederationPlugin({
+      name: 'myApp',
+      filename: 'remoteEntry.js',
+      remotes: {
+        // Access Cytoscape Web core features
+        cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
+      },
+      exposes: {
+        // Expose your app's components
+        './MyApp': './src/MyApp',
+      },
+    }),
+  ]
+}
+```
 
 ## Extend Cytoscape Web with Apps
 
@@ -175,17 +206,18 @@ Build and run your new app using the following commands:
 Your new app will be available at http://localhost:2222/remoteEntry.js. ```
 
 ## Submit your App
+
 (TBD)
 
 ## Module Federation Parameters
 
 Module Federation is a mechanism in Webpack that allows multiple independent builds to form a single application. Here are the key parameters:
 
-name: The unique name of the module. This is used to identify the module in the federation.
-filename: The name of the output file that will be created for the module. Typically, this is remoteEntry.js.
-exposes: An object that defines the modules that are exposed by this build. The keys are the local module names, and the values are the paths to the modules.
-remotes: An object that defines the remote modules that this build depends on. The keys are the names of the remote modules, and the values are the URLs to the remote entry files.
-shared: An object that defines the shared modules between the builds. This helps to avoid duplication of dependencies and ensures that the same version of a module is used across all builds.
+- name: The unique name of the module. This is used to identify the module in the federation.
+- filename: The name of the output file that will be created for the module. Typically, this is remoteEntry.js.
+- exposes: An object that defines the modules that are exposed by this build. The keys are the local module names, and the values are the paths to the modules.
+- remotes: An object that defines the remote modules that this build depends on. The keys are the names of the remote modules, and the values are the URLs to the remote entry files.
+- shared: An object that defines the shared modules between the builds. This helps to avoid duplication of dependencies and ensures that the same version of a module is used across all builds.
 
 #### Example Configuration
 
@@ -217,9 +249,46 @@ module.exports = {
 };
 ```
 
-## App Patterns
+# App Patterns
 
-### Create a network
+## Open external Web application
+
+## Create a network
+
+### Create from an external web apps
+
+Typical use case of Cytoscape Web is sending data from/to 3rd party
+external applications.
+
+Step 1: Open the target web app from Cytoscape Web
+
+- Why Parent-Child Relationship Matters
+
+Establishing a parent-child relationship between windows
+or tabs is important for cross-domain local data exchange
+because it ensures both parties have proper references to
+each other (for example, `window.opener` in the child can
+target the parent). This relationship simplifies message
+passing and avoids security issues by allowing only the
+specified windows to exchange data directly, preserving a
+controlled communication channel.
+
+Open external Web application and communicate via postMessage()
+To open an external web application and send data back to Cytoscape Web, you can:
+
+Create a menu or button in your Cytoscape Web app to launch the external page. For example, see the OpenExternalAppMenu component.
+In your app’s panel (such as HelloPanel), add a listener for the postMessage event:
+
+```js
+useEffect(() => {
+  window.addEventListener('message', (event) => {
+    // Handle incoming data
+    const { data } = event
+    console.log('Received message from external app', data)
+    // Do something with `data.payload`
+  })
+}, [])
+```
 
 ### Add data to the table
 

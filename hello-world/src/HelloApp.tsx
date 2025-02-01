@@ -6,15 +6,11 @@ export const HelloApp: CyApp = {
   description: 'Hello-world example app for Cytoscape Web',
   components: [
     {
-      id: 'MenuExample',
+      id: 'CreateNetworkMenu',
       type: ComponentType.Menu,
     },
     {
-      id: 'MenuExample2',
-      type: ComponentType.Menu,
-    },
-    {
-      id: 'OpenExternalAppMenu',
+      id: 'CreateNetworkFromCx2Menu',
       type: ComponentType.Menu,
     },
     {

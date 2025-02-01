@@ -1,20 +1,20 @@
 import { MenuItem } from '@mui/material'
 import { useCreateNetworkFromCx2 } from 'cyweb/CreateNetworkFromCx2'
 
-interface MenuExample2Props {
+interface CreateNetworkFromCx2MenuProps {
   handleClose?: () => void
 }
 
 const sampleUrl =
   'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/pre-release-cleanup/docs/data/sample2.cx2'
 
-const MenuExample2 = ({ handleClose }: MenuExample2Props): JSX.Element => {
+const CreateNetworkFromCx2Menu = ({
+  handleClose,
+}: CreateNetworkFromCx2MenuProps): JSX.Element => {
   const createNetworkFromCx2 = useCreateNetworkFromCx2()
   const fetchCx2fromURL = async (url: string): Promise<any> => {
     const response = await fetch(url)
-    const cx2 = await response.json()
-    console.log('From CX2', cx2)
-    return cx2
+    return await response.json()
   }
 
   const handleClick = (): void => {
@@ -26,8 +26,10 @@ const MenuExample2 = ({ handleClose }: MenuExample2Props): JSX.Element => {
   }
 
   return (
-    <MenuItem onClick={handleClick}>Create a network from remote CX2</MenuItem>
+    <MenuItem onClick={handleClick}>
+      Create a sample network from remote CX2
+    </MenuItem>
   )
 }
 
-export default MenuExample2
+export default CreateNetworkFromCx2Menu
