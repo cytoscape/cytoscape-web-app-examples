@@ -1,5 +1,4 @@
 import { NetworkWithView, WorkspaceStore } from '@cytoscape-web/types'
-
 import { MenuItem } from '@mui/material'
 import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
@@ -8,6 +7,12 @@ interface CreateNetworkMenuProps {
   handleClose?: () => void
 }
 
+/**
+ * Add a menu item to create a small network with a view
+ *
+ * @param handleClose
+ * @returns
+ */
 const CreateNetworkMenu = ({
   handleClose,
 }: CreateNetworkMenuProps): JSX.Element => {
@@ -33,12 +38,9 @@ const CreateNetworkMenu = ({
     })
 
     addNetworkIds(newNetwork.network.id)
-    console.log('Sample network created', newNetwork)
 
     // Set this new network as the current network in the workspace
-    setTimeout(() => {
-      setCurrentNetworkId(newNetwork.network.id)
-    }, 1000)
+    setCurrentNetworkId(newNetwork.network.id)
 
     handleClose && handleClose()
   }

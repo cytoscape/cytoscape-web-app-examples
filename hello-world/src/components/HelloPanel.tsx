@@ -1,7 +1,14 @@
 // Dynamic import from the host app
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
-import { Box, Typography, Button, TextField } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Divider,
+  Grid,
+} from '@mui/material'
 import {
   WorkspaceStore,
   Workspace,
@@ -36,23 +43,34 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
 
   const initializeListener = () => {
     window.addEventListener('message', (event) => {
+      console.log('* Received message from external web app', event)
       const { data } = event
-      console.log('###3 Received message from child', data)
-      const networkWithView = createNetworkFromCx2({ cxData: data.payload })
-      console.log('Sample network created by external App', networkWithView)
+      if (!data || !data.payload) {
+        return
+      }
+
+      // Check data type and create network
+      const { type, payload } = data
+      if (!type || !payload || type !== 'jupyter_cx2') {
+        return
+      }
+
+      console.log('Received CX2 data from Jupyter Lab', payload)
+
+      const networkWithView = createNetworkFromCx2({ cxData: payload })
       window.focus()
     })
   }
+
   useEffect(() => {
     // Check if the message listener is already added
-
     if (initRef.current) {
       return
     }
-
     initializeListener()
     initRef.current = true
   }, [])
+
   // Import a function from the host
   const setDefault: (
     networkId: IdType,
@@ -60,9 +78,7 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
     vpValue: VisualPropertyValueType,
   ) => void = useVisualStyleStore((state: VisualStyleStore) => state.setDefault)
 
-  const [url, setUrl] = useState(
-    'http://localhost:3000/hello-world/external-webapp/',
-  )
+  const [url, setUrl] = useState('http://localhost:8888/lab')
 
   const handleButtonClick = () => {
     const newNodeColor = randomColor()
@@ -80,7 +96,7 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
   }
 
   const handleOpen = () => {
-    const newTab = window.open(url, '_blank')
+    const newTab = window.open(url + '?parentName=' + window.name, '_blank')
     console.log('New tab instance', newTab)
   }
 
@@ -96,28 +112,67 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
         padding: '1em',
       }}
     >
-      <Typography variant="h3">Hello, from App!</Typography>
-
-      <Typography variant="body1">from an external App: {message}</Typography>
-      <Box sx={{ padding: '1em', width: '20em' }}>
-        <Button
-          size="large"
-          fullWidth
-          color="primary"
-          onClick={handleButtonClick}
+      <Box sx={{ marginBottom: '1em' }}>
+        <Typography variant="h3">Hello, from App!</Typography>
+        <Typography variant="subtitle1">Sample panel style App</Typography>
+      </Box>
+      <Divider />
+      <Box sx={{ padding: '1em', width: '100%' }}>
+        <Grid container spacing={1} alignItems="center" justifyContent="center">
+          <Grid item xs={9}>
+            <Typography variant="h5">Example 1: Update Visual Style</Typography>
+            <Typography variant="body1">
+              Click the button to randomly change the default color of nodes and
+              edges
+            </Typography>
+          </Grid>
+          <Grid item xs={3}>
+            <Button
+              size="medium"
+              color="primary"
+              variant="contained"
+              onClick={handleButtonClick}
+            >
+              Update Style
+            </Button>
+          </Grid>
+        </Grid>
+        <Grid
+          sx={{ paddingTop: '2em' }}
+          container
+          spacing={4}
+          alignItems="center"
+          justifyContent="center"
         >
-          Click Me!
-        </Button>
-        <TextField
-          label="Enter URL"
-          variant="outlined"
-          fullWidth
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-        <Button size="large" fullWidth color="primary" onClick={handleOpen}>
-          Open External App
-        </Button>
+          <Grid item xs={12}>
+            <Typography variant="h5">
+              Example 2: Connect to an external web app
+            </Typography>
+            <Typography variant="body1">
+              Enter a URL in the input field and click the button to open the
+              external app in a new tab
+            </Typography>
+          </Grid>
+          <Grid item xs={8}>
+            <TextField
+              label="Enter URL"
+              variant="outlined"
+              fullWidth
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <Button
+              size="medium"
+              color="primary"
+              variant="contained"
+              onClick={handleOpen}
+            >
+              Open External App
+            </Button>
+          </Grid>
+        </Grid>
       </Box>
     </Box>
   )

@@ -6,7 +6,7 @@ interface CreateNetworkFromCx2MenuProps {
 }
 
 const sampleUrl =
-  'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/pre-release-cleanup/docs/data/sample2.cx2'
+  'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/development/docs/data/sample2.cx2'
 
 const CreateNetworkFromCx2Menu = ({
   handleClose,
@@ -20,15 +20,12 @@ const CreateNetworkFromCx2Menu = ({
   const handleClick = (): void => {
     fetchCx2fromURL(sampleUrl).then((cx2) => {
       const networkWithView = createNetworkFromCx2({ cxData: cx2 })
-      console.log('Sample network created from CX2', networkWithView)
     })
     handleClose && handleClose()
   }
 
   return (
-    <MenuItem onClick={handleClick}>
-      Create a sample network from remote CX2
-    </MenuItem>
+    <MenuItem onClick={handleClick}>Create a network from remote CX2</MenuItem>
   )
 }
 
