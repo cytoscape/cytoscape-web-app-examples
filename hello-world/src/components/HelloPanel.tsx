@@ -1,14 +1,7 @@
 // Dynamic import from the host app
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Divider,
-  Grid,
-} from '@mui/material'
+import { Box, Typography, Button, Divider, Grid } from '@mui/material'
 import {
   WorkspaceStore,
   Workspace,
@@ -17,8 +10,6 @@ import {
   VisualPropertyName,
   VisualPropertyValueType,
 } from '@cytoscape-web/types'
-import { useEffect, useRef, useState } from 'react'
-import { useCreateNetworkFromCx2 } from 'cyweb/CreateNetworkFromCx2'
 
 interface HelloPanelProps {
   message: string
@@ -33,43 +24,10 @@ const randomColor = (): string => {
 }
 
 const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
-  const initRef = useRef<boolean>(false)
-  const createNetworkFromCx2 = useCreateNetworkFromCx2()
-
   // Import the workspace data from the host app
   const workspace: Workspace = useWorkspaceStore(
     (state: WorkspaceStore) => state.workspace,
   )
-
-  const initializeListener = () => {
-    window.addEventListener('message', (event) => {
-      console.log('* Received message from external web app', event)
-      const { data } = event
-      if (!data || !data.payload) {
-        return
-      }
-
-      // Check data type and create network
-      const { type, payload } = data
-      if (!type || !payload || type !== 'jupyter_cx2') {
-        return
-      }
-
-      console.log('Received CX2 data from Jupyter Lab', payload)
-
-      const networkWithView = createNetworkFromCx2({ cxData: payload })
-      window.focus()
-    })
-  }
-
-  useEffect(() => {
-    // Check if the message listener is already added
-    if (initRef.current) {
-      return
-    }
-    initializeListener()
-    initRef.current = true
-  }, [])
 
   // Import a function from the host
   const setDefault: (
@@ -77,8 +35,6 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
     vpName: VisualPropertyName,
     vpValue: VisualPropertyValueType,
   ) => void = useVisualStyleStore((state: VisualStyleStore) => state.setDefault)
-
-  const [url, setUrl] = useState('http://localhost:8888/lab')
 
   const handleButtonClick = () => {
     const newNodeColor = randomColor()
@@ -93,11 +49,6 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
       VisualPropertyName.EdgeLineColor,
       newEdgeColor,
     )
-  }
-
-  const handleOpen = () => {
-    const newTab = window.open(url + '?parentName=' + window.name, '_blank')
-    console.log('New tab instance', newTab)
   }
 
   return (
@@ -134,42 +85,6 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
               onClick={handleButtonClick}
             >
               Update Style
-            </Button>
-          </Grid>
-        </Grid>
-        <Grid
-          sx={{ paddingTop: '2em' }}
-          container
-          spacing={4}
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Grid item xs={12}>
-            <Typography variant="h5">
-              Example 2: Connect to an external web app
-            </Typography>
-            <Typography variant="body1">
-              Enter a URL in the input field and click the button to open the
-              external app in a new tab
-            </Typography>
-          </Grid>
-          <Grid item xs={8}>
-            <TextField
-              label="Enter URL"
-              variant="outlined"
-              fullWidth
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <Button
-              size="medium"
-              color="primary"
-              variant="contained"
-              onClick={handleOpen}
-            >
-              Open External App
             </Button>
           </Grid>
         </Grid>

@@ -17,5 +17,9 @@ export const HelloApp: CyApp = {
       id: 'HelloPanel',
       type: ComponentType.Panel,
     },
+    {
+      id: 'JupyterConnectorPanel',
+      type: ComponentType.Panel,
+    },
   ],
 }

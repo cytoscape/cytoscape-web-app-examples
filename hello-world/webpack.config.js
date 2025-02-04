@@ -52,6 +52,7 @@ export default (env = {}) => {
         exposes: {
           './HelloApp': './src/HelloApp',
           './HelloPanel': './src/components/HelloPanel.tsx',
+          './JupyterConnectorPanel': './src/components/JupyterConnectorPanel.tsx',
           './CreateNetworkMenu': './src/components/CreateNetworkMenu.tsx',
           './CreateNetworkFromCx2Menu': './src/components/CreateNetworkFromCx2Menu.tsx',
         },
