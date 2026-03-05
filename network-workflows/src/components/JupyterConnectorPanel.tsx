@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import Snackbar from '@mui/material/Snackbar'
-import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { Box, Typography, Button, TextField, Grid } from '@mui/material'
-import { NetworkWithView, WorkspaceStore } from '@cytoscape-web/types'
-import { useCreateNetworkFromCx2 } from 'cyweb/CreateNetworkFromCx2'
+import { useNetworkApi } from 'cyweb/NetworkApi'
 
 const JupyterType: string = 'jupyter_cx2'
 
@@ -13,14 +11,9 @@ const JupyterConnectorPanel: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [jupyterWindow, setJupyterWindow] = useState<Window | null>(null)
 
-  const createNetworkFromCx2 = useCreateNetworkFromCx2()
-
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state: WorkspaceStore) => state.setCurrentNetworkId,
-  )
+  const networkApi = useNetworkApi()
 
   const messageHandler = (event: MessageEvent) => {
-    console.log('Received message from external web app', event)
     const { data } = event
     if (!data || !data.payload) {
       return
@@ -32,12 +25,15 @@ const JupyterConnectorPanel: React.FC = () => {
       return
     }
 
-    console.log('Received CX2 data from Jupyter Lab', payload)
-
-    const networkWithView: NetworkWithView = createNetworkFromCx2({
+    const result = networkApi.createNetworkFromCx2({
       cxData: payload,
+      navigate: true,
+      addToWorkspace: true,
     })
-    setCurrentNetworkId(networkWithView.network.id)
+    if (!result.success) {
+      console.error(result.error.message)
+      return
+    }
 
     window.focus()
   }
@@ -55,7 +51,6 @@ const JupyterConnectorPanel: React.FC = () => {
       'newWindow',
       'height=800,width=800',
     )
-    console.log('Connected:', childWindow)
 
     // Add delay to wait for the new window to be ready
     setTimeout(() => {
@@ -66,11 +61,9 @@ const JupyterConnectorPanel: React.FC = () => {
 
     const checkWindowInterval = setInterval(() => {
       if (!childWindow || childWindow.closed) {
-        console.log('The new window has been closed.')
         clearInterval(checkWindowInterval)
         setIsLinked(false)
         setSnackbarOpen(true)
-        // Additional cleanup code can be added here if needed
       }
     }, 2000)
   }
@@ -142,13 +135,13 @@ const JupyterConnectorPanel: React.FC = () => {
               onChange={(e) => setUrl(e.target.value)}
             />
           </Grid>
+        <Grid item xs={12}>
           <Grid
-            paddingTop={'1em'}
-            xs={12}
-            spacing={1}
             container
+            spacing={1}
+            paddingTop={'1em'}
             justifyContent="flex-end"
-            alignItems={'end'}
+            alignItems="end"
           >
             <Grid item>
               <Button
@@ -173,6 +166,7 @@ const JupyterConnectorPanel: React.FC = () => {
               </Button>
             </Grid>
           </Grid>
+        </Grid>
         </Grid>
       </Box>
       <Snackbar

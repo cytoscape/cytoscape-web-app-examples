@@ -111,11 +111,17 @@ This repository contains several example apps and utilities organized as follows
 
 ### Example Apps
 
-- **[hello-world/](hello-world/)** - Basic example showing both of menu and panel
+- **[hello-world/](hello-world/)** - Minimal panel-only app structure
 
-  - Components: `MenuExample`, `HelloPanel`
+  - Components: `HelloPanel`
   - Entry point: `hello@http://localhost:2222/remoteEntry.js`
-  - Demo: Basic menu and panel functionality
+  - Demo: Smallest useful `CyApp` + panel example
+
+- **[network-workflows/](network-workflows/)** - Advanced workflows and integration example
+
+  - Components: `CreateNetworkMenu`, `CreateNetworkFromCx2Menu`, `JupyterConnectorPanel`
+  - Entry point: `networkWorkflows@http://localhost:7000/remoteEntry.js`
+  - Demo: Network creation, CX2 import, and Jupyter integration
 
 - **[simple-menu/](simple-menu/)** - Example for adding menu items
 
@@ -167,14 +173,21 @@ To run all of the apps locally, type:
 
 ## Example Apps
 
-This repository contains three example applications and one project template for creating new apps. Each example demonstrates different aspects of Cytoscape Web app development - from basic menu integration to custom panel creation and network manipulation. The following sections explain how these apps work and their implementation details.
+This repository contains four example applications and one project template for creating new apps. Each example demonstrates different aspects of Cytoscape Web app development - from minimal app structure to custom panel creation and network workflows. The following sections explain how these apps work and their implementation details.
 
 ### hello-world
 
 - App ID: hello
-- Description: This app adds one menu item (MenuExample) and a panel (HelloPanel).
+- Description: This app keeps only a single panel (`HelloPanel`) to show the minimum useful app structure.
 - Entry Point: hello@http://localhost:2222/remoteEntry.js
 - Source: HelloApp.tsx
+
+### network-workflows
+
+- App ID: networkWorkflows
+- Description: This app demonstrates network creation, CX2 import, and Jupyter integration.
+- Entry Point: networkWorkflows@http://localhost:7000/remoteEntry.js
+- Source: NetworkWorkflowsApp.tsx
 
 ### simple-menu
 

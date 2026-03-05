@@ -11,7 +11,7 @@ const deps = packageJson.peerDependencies
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DEV_SERVER_PORT = 2222
+const DEV_SERVER_PORT = 7000
 
 export default (env = {}) => {
   // Extract the environment variables to modify URLs and other settings
@@ -43,15 +43,18 @@ export default (env = {}) => {
     },
     plugins: [
       new ModuleFederationPlugin({
-        name: 'hello',
+        name: 'networkWorkflows',
         filename: 'remoteEntry.js',
         remotes: {
-          // Import some data providers from the host application
           cyweb: cywebUrl,
         },
         exposes: {
-          './HelloApp': './src/HelloApp',
-          './HelloPanel': './src/components/HelloPanel.tsx',
+          './NetworkWorkflowsApp': './src/NetworkWorkflowsApp',
+          './CreateNetworkMenu': './src/components/CreateNetworkMenu.tsx',
+          './CreateNetworkFromCx2Menu':
+            './src/components/CreateNetworkFromCx2Menu.tsx',
+          './JupyterConnectorPanel':
+            './src/components/JupyterConnectorPanel.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },
@@ -76,7 +79,7 @@ export default (env = {}) => {
       hot: true,
       port: DEV_SERVER_PORT,
       headers: {
-        'Access-Control-Allow-Origin': '*', // allow access from any origin
+        'Access-Control-Allow-Origin': '*',
       },
     },
   }

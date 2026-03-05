@@ -28,7 +28,8 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 
 | App              | Federation Name | Port | Components                               |
 |------------------|-----------------|------|------------------------------------------|
-| hello-world      | `hello`         | 2222 | HelloApp, HelloPanel, JupyterConnectorPanel, CreateNetworkMenu, CreateNetworkFromCx2Menu |
+| hello-world      | `hello`         | 2222 | HelloApp, HelloPanel                     |
+| network-workflows| `networkWorkflows` | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
 | simple-menu      | `simpleMenu`    | 3333 | SimpleMenuApp, AppMenuItem               |
 | simple-panel     | `simplePanel`   | 4001 | SimplePanelApp, SimplePanel              |
 | project-template | `createNetwork` | 5555 | TemplateApp, TemplatePanel               |
@@ -121,7 +122,7 @@ import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { useNetworkStore }   from 'cyweb/NetworkStore'
 import { useTableStore }     from 'cyweb/TableStore'
 import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
-// etc. — see hello-world/src/remotes.d.ts for full list
+// etc. — see network-workflows/src/remotes.d.ts for a fuller example
 ```
 
 ### Importing App APIs (Phase 1 — `new-app-api` branch)
@@ -159,10 +160,11 @@ if (result.success) {
 
 ```bash
 # In this repo root:
-npm run dev   # starts all 4 apps concurrently
+npm run dev   # starts all 5 apps concurrently
 
 # Or individually:
 npm run dev:hello-world
+npm run dev:network-workflows
 npm run dev:simple-menu
 npm run dev:simple-panel
 npm run dev:project-template
@@ -211,7 +213,7 @@ Shared config files at repo root apply to all apps:
 | Panel component pattern        | `simple-panel/src/components/SimplePanel.tsx`               |
 | Menu component pattern         | `simple-menu/src/components/AppMenuItem.tsx`                |
 | MF config pattern              | `hello-world/webpack.config.js`                             |
-| Type declarations for host MF  | `hello-world/src/remotes.d.ts`                              |
+| Type declarations for host MF  | `network-workflows/src/remotes.d.ts`                        |
 | Template for new apps          | `project-template/`                                         |
 | Root workspace scripts         | `package.json`                                              |
 | Host API types (source of truth) | `../cytoscape-web/src/app-api/types/index.ts`             |

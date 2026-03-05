@@ -11,6 +11,7 @@ design/
 ├── specifications/     ← Cross-cutting specs (API contracts, shared conventions)
 └── apps/               ← Per-app design documents
     ├── hello-world/
+    ├── network-workflows/
     ├── simple-menu/
     ├── simple-panel/
     └── project-template/

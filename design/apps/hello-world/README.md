@@ -2,7 +2,7 @@
 
 ## Overview
 
-The most comprehensive example app. Demonstrates menus, panels, network creation, and external web app integration via `postMessage`.
+Minimal panel-only example app. Keeps one panel so developers can see the basic `CyApp` shape without extra workflow code.
 
 | Property | Value |
 |----------|-------|
@@ -13,36 +13,24 @@ The most comprehensive example app. Demonstrates menus, panels, network creation
 
 ## Components
 
-### Menu Components
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| `CreateNetworkMenu` | `src/components/CreateNetworkMenu.tsx` | Creates a sample network via `cyweb/CreateNetwork` |
-| `CreateNetworkFromCx2Menu` | `src/components/CreateNetworkFromCx2Menu.tsx` | Creates a network by loading a CX2 file |
-
-### Panel Components
-
 | Component | File | Purpose |
 |-----------|------|---------|
 | `HelloPanel` | `src/components/HelloPanel.tsx` | Basic panel showing current network info |
-| `JupyterConnectorPanel` | `src/components/JupyterConnectorPanel.tsx` | Receives CX2 data from Jupyter via `postMessage` and creates a network |
 
 ## Key Design Decisions
 
-- **Two menu items + two panels** — covers both `ComponentType.Menu` and `ComponentType.Panel` in one app.
-- **Jupyter integration** — `JupyterConnectorPanel` listens for `message` events from a child window (Jupyter Lab), demonstrating the parent-child `postMessage` pattern.
-- **CX2 format** — Network creation uses CX2 data format (see `@cytoscape-web/types`).
+- **One panel only** — keeps the example focused on the minimum viable panel app.
+- **Readable app config** — `HelloApp.tsx` now shows the smallest practical `components` array.
+- **Simple host interaction** — `HelloPanel` still demonstrates reading workspace state and mutating visual style.
 
 ## Host Modules Used
 
 ```typescript
 cyweb/WorkspaceStore
-cyweb/NetworkStore
-cyweb/CreateNetwork
-cyweb/CreateNetworkFromCx2
+cyweb/VisualStyleStore
 ```
 
 ## Planned Updates
 
-- [ ] Add usage of `cyweb/NetworkApi` (Phase 1a) once available in host
+- [ ] Add usage of `cyweb/WorkspaceApi` and `cyweb/VisualStyleApi`
 - [ ] Update `remotes.d.ts` as new `cyweb/*` modules are exposed

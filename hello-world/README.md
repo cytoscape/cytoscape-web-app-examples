@@ -5,4 +5,6 @@
 
 ## Description
 
-This app add one menu item (MenuExample) and a panel (HelloPanel).
+This app is the smallest useful panel example in this repository.
+It keeps a single `HelloPanel` component so developers can see the minimum
+structure of a Cytoscape Web app without extra workflow or integration code.

@@ -25,7 +25,7 @@ const edges: Edge[] = currentNetwork?.edges ?? []
 
 ## 2. Create a Network from Scratch
 
-**Source:** `hello-world/src/components/CreateNetworkMenu.tsx`
+**Source:** `network-workflows/src/components/CreateNetworkMenu.tsx`
 
 ```typescript
 import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'
@@ -42,7 +42,7 @@ const handleCreate = async () => {
 
 ## 3. Create a Network from a CX2 File
 
-**Source:** `hello-world/src/components/CreateNetworkFromCx2Menu.tsx`
+**Source:** `network-workflows/src/components/CreateNetworkFromCx2Menu.tsx`
 
 ```typescript
 import { useCreateNetworkFromCx2WithView } from 'cyweb/CreateNetworkFromCx2'
@@ -59,7 +59,7 @@ const handleFileSelect = async (cx2Data: Cx2) => {
 
 ## 4. Open External Web App and Receive Data via postMessage
 
-**Source:** `hello-world/src/components/` (JupyterConnectorPanel)
+**Source:** `network-workflows/src/components/` (`JupyterConnectorPanel`)
 
 ```typescript
 // In a menu component — open the child window

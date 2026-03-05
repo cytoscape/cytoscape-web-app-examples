@@ -1,0 +1,12 @@
+{
+  "name": "@cytoscape-web/network-workflows",
+  "description": "Advanced workflow examples for Cytoscape Web",
+  "version": "1.0.0",
+  "private": "true",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.js --env production=true",
+    "build-dev": "webpack --config webpack.config.js --env production=false",
+    "dev": "webpack serve --open /remoteEntry.js --mode development --env production=false"
+  }
+}

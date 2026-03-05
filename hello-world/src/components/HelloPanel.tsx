@@ -1,14 +1,8 @@
-// Dynamic import from the host app
-import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
-import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
 import { Box, Typography, Button, Divider, Grid } from '@mui/material'
+import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 import {
-  WorkspaceStore,
-  Workspace,
-  VisualStyleStore,
-  IdType,
   VisualPropertyName,
-  VisualPropertyValueType,
 } from '@cytoscape-web/types'
 
 interface HelloPanelProps {
@@ -24,31 +18,34 @@ const randomColor = (): string => {
 }
 
 const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
-  // Import the workspace data from the host app
-  const workspace: Workspace = useWorkspaceStore(
-    (state: WorkspaceStore) => state.workspace,
-  )
-
-  // Import a function from the host
-  const setDefault: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    vpValue: VisualPropertyValueType,
-  ) => void = useVisualStyleStore((state: VisualStyleStore) => state.setDefault)
+  const workspaceApi = useWorkspaceApi()
+  const visualStyleApi = useVisualStyleApi()
 
   const handleButtonClick = () => {
+    const currentNetwork = workspaceApi.getCurrentNetworkId()
+    if (!currentNetwork.success) {
+      console.error(currentNetwork.error.message)
+      return
+    }
+
     const newNodeColor = randomColor()
     const newEdgeColor = randomColor()
-    setDefault(
-      workspace.currentNetworkId,
+    const nodeColorResult = visualStyleApi.setDefault(
+      currentNetwork.data.networkId,
       VisualPropertyName.NodeBackgroundColor,
       newNodeColor,
     )
-    setDefault(
-      workspace.currentNetworkId,
+    const edgeColorResult = visualStyleApi.setDefault(
+      currentNetwork.data.networkId,
       VisualPropertyName.EdgeLineColor,
       newEdgeColor,
     )
+    if (!nodeColorResult.success) {
+      console.error(nodeColorResult.error.message)
+    }
+    if (!edgeColorResult.success) {
+      console.error(edgeColorResult.error.message)
+    }
   }
 
   return (
