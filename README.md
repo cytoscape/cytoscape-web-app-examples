@@ -8,11 +8,11 @@ First release: January 2025
 
 - https://cytoscape.org/cytoscape-web-app-examples/
 
-## Note
+## ⚠️ Active Development Warning
 
-Please be aware that **this functionality is in an early stage of development and may be updated frequently**. We appreciate your understanding and welcome any feedback to help improve the project.
+> **This repository is under frequent and active development.** APIs, component interfaces, and configuration patterns may change without notice. Documentation may lag behind the latest code. Always refer to the source files in this repo and the host's `src/app-api/CLAUDE.md` as the authoritative reference.
 
-Latest examples and their code is in development branch of this repository.
+Latest examples and their code is in the `new-app-api` development branch of this repository.
 
 ## Introduction
 
@@ -188,26 +188,38 @@ This repository contains three example applications and one project template for
 
 # App Developer's Guide
 
-## How to build and deploy
+## How to Build and Deploy
 
-To build the apps, run:
+```bash
+# Build all apps
+npm run build
 
-To deploy the apps, run:
+# Build a single app
+cd hello-world && npm run build
 
-# Create a new App
+# Deploy: build + copy dist to docs/ (GitHub Pages target)
+npm run deploy
+```
 
-To create a new app from the project-template:
+## Create a New App
 
-Copy the project-template folder and rename it to your desired app name.
-Update the name and description fields in the package.json file.
-Implement your app logic in the src/ folder.
-Update the webpack.config.js if necessary.
-Build and run your new app using the following commands:
-Your new app will be available at http://localhost:2222/remoteEntry.js. ```
+1. Copy `project-template/` and rename the folder to your app name.
+2. Edit `package.json`: update `name`.
+3. Edit `webpack.config.js`:
+   - Set `DEV_SERVER_PORT` to an unused port (see port table in CLAUDE.md).
+   - Set `name` in `ModuleFederationPlugin` to a unique camelCase identifier.
+   - Update `exposes` to list your app config and component files.
+4. Rename `TemplateApp.tsx` and `TemplatePanel.tsx` in `src/` to match your app.
+5. Update `src/remotes.d.ts` to declare any `cyweb/*` modules you need.
+6. Register your app in the host's `src/assets/apps.local.json` for local testing.
+
+```bash
+npm run dev:project-template  # verify at http://localhost:5555/remoteEntry.js
+```
 
 ## Submit your App
 
-(TBD)
+To have your app listed in the official Cytoscape Web app registry, please open an issue or pull request in this repository with your app's metadata and a link to its hosted `remoteEntry.js`.
 
 ## Module Federation Parameters
 
@@ -251,49 +263,55 @@ module.exports = {
 
 # App Patterns
 
-## Open external Web application
+See [`patterns/README.md`](patterns/README.md) for implementation patterns with code examples.
 
-## Create a network
+## Quick Reference
 
-### Create from an external web apps
+### Read Network Data from Host Stores
 
-Typical use case of Cytoscape Web is sending data from/to 3rd party
-external applications.
+```typescript
+import { useWorkspaceStore } from ‘cyweb/WorkspaceStore’
+import { useNetworkStore }   from ‘cyweb/NetworkStore’
 
-Step 1: Open the target web app from Cytoscape Web
+const workspace = useWorkspaceStore((state: any) => state.workspace)
+const networks  = useNetworkStore((state: any) => state.networks)
+const network   = networks.get(workspace.currentNetworkId)
+```
 
-- Why Parent-Child Relationship Matters
+### Open External Web App and Receive Data via postMessage
 
-Establishing a parent-child relationship between windows
-or tabs is important for cross-domain local data exchange
-because it ensures both parties have proper references to
-each other (for example, `window.opener` in the child can
-target the parent). This relationship simplifies message
-passing and avoids security issues by allowing only the
-specified windows to exchange data directly, preserving a
-controlled communication channel.
+```typescript
+// 1. Open child window from a menu component
+window.open(‘https://your-external-app.com’, ‘_blank’)
 
-Open external Web application and communicate via postMessage()
-To open an external web application and send data back to Cytoscape Web, you can:
-
-Create a menu or button in your Cytoscape Web app to launch the external page. For example, see the OpenExternalAppMenu component.
-In your app’s panel (such as HelloPanel), add a listener for the postMessage event:
-
-```js
+// 2. Listen for data in a panel component
 useEffect(() => {
-  window.addEventListener('message', (event) => {
-    // Handle incoming data
+  const handler = (event: MessageEvent) => {
     const { data } = event
-    console.log('Received message from external app', data)
-    // Do something with `data.payload`
-  })
+    // process data.payload
+  }
+  window.addEventListener(‘message’, handler)
+  return () => window.removeEventListener(‘message’, handler)
 }, [])
 ```
 
-### Add data to the table
+### Create a Network (via host task hook)
 
-### Apply layout
+```typescript
+import { useCreateNetworkWithView } from ‘cyweb/CreateNetwork’
 
-### Modify Visual Style
+const createNetwork = useCreateNetworkWithView()
+await createNetwork(networkData)
+```
 
-(TBD)
+### Use the App API (Phase 1 — `new-app-api` branch)
+
+```typescript
+import { useNetworkApi } from ‘cyweb/NetworkApi’
+
+const networkApi = useNetworkApi()
+const result = await networkApi.getNetworkSummary(networkId)
+if (result.success) {
+  console.log(result.data)
+}
+```
