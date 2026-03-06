@@ -33,8 +33,7 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [currentNetworkId, setCurrentNetworkId] = useState<IdType>('')
-  const [selectedNodeCount, setSelectedNodeCount] = useState(0)
-  const [selectedEdgeCount, setSelectedEdgeCount] = useState(0)
+  const [selection, setSelection] = useState({ nodes: 0, edges: 0 })
   const [layoutStatus, setLayoutStatus] = useState<'idle' | 'running' | 'done'>(
     'idle',
   )
@@ -43,8 +42,7 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
   const handleNetworkSwitched = useCallback(
     ({ networkId }: { networkId: IdType; previousId: IdType }) => {
       setCurrentNetworkId(networkId)
-      setSelectedNodeCount(0)
-      setSelectedEdgeCount(0)
+      setSelection({ nodes: 0, edges: 0 })
     },
     [],
   )
@@ -60,8 +58,7 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
       selectedNodes: IdType[]
       selectedEdges: IdType[]
     }) => {
-      setSelectedNodeCount(selectedNodes.length)
-      setSelectedEdgeCount(selectedEdges.length)
+      setSelection({ nodes: selectedNodes.length, edges: selectedEdges.length })
     },
     [],
   )
@@ -204,14 +201,14 @@ const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
                 : 'No network'
             }
           />
-          <Chip size="small" label={`Nodes: ${selectedNodeCount}`} />
-          <Chip size="small" label={`Edges: ${selectedEdgeCount}`} />
+          <Chip size="small" label={`Nodes: ${selection.nodes}`} />
+          <Chip size="small" label={`Edges: ${selection.edges}`} />
         </Box>
         <Button
           size="small"
           variant="outlined"
           onClick={handleClearSelection}
-          disabled={selectedNodeCount === 0 && selectedEdgeCount === 0}
+          disabled={selection.nodes === 0 && selection.edges === 0}
         >
           Clear Selection
         </Button>
