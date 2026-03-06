@@ -1,6 +1,14 @@
 {
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
+  "files": [
+    "../node_modules/@cytoscape-web/api-types/index.d.ts"
+  ],
   "compilerOptions": {
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",

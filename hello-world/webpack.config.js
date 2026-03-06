@@ -50,7 +50,7 @@ export default (env = {}) => {
           cyweb: cywebUrl,
         },
         exposes: {
-          './HelloApp': './src/HelloApp',
+          './AppConfig': './src/index.ts',
           './HelloPanel': './src/components/HelloPanel.tsx',
         },
         shared: {

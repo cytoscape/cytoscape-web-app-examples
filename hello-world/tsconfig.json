@@ -1,13 +1,16 @@
 {
   "include": ["src/**/*"],
+  "files": [
+    "../node_modules/@cytoscape-web/api-types/index.d.ts"
+  ],
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types", "./src/types"],
-    "jsx": "react-jsx",
+    "typeRoots": ["./node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",
     "noImplicitAny": true,
     "module": "ESNext",
     "target": "ESNext",
+    "jsx": "react-jsx",
     "allowJs": true,
     "esModuleInterop": true,
     "moduleResolution": "node",

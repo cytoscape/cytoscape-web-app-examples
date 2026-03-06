@@ -49,7 +49,7 @@ export default (env = {}) => {
           cyweb: cywebUrl,
         },
         exposes: {
-          './NetworkWorkflowsApp': './src/NetworkWorkflowsApp',
+          './AppConfig': './src/index.ts',
           './CreateNetworkMenu': './src/components/CreateNetworkMenu.tsx',
           './CreateNetworkFromCx2Menu':
             './src/components/CreateNetworkFromCx2Menu.tsx',

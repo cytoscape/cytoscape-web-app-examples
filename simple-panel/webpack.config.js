@@ -50,7 +50,7 @@ export default (env = {}) => {
           cyweb: cywebUrl,
         },
         exposes: {
-          './SimplePanelApp': './src/SimplePanelApp',
+          './AppConfig': './src/index.ts',
           './SimplePanel': './src/components/SimplePanel.tsx',
         },
         shared: {

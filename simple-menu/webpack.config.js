@@ -50,7 +50,7 @@ export default (env = {}) => {
           cyweb: cywebUrl,
         },
         exposes: {
-          './SimpleMenuApp': './src/SimpleMenuApp',
+          './AppConfig': './src/index.ts',
           './AppMenuItem': './src/components/AppMenuItem',
         },
         shared: {
