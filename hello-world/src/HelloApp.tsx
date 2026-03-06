@@ -3,7 +3,11 @@ import { ComponentType, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 // This keeps the app version in sync with the npm package automatically —
 // no need to update it in two places. Requires `resolveJsonModule: true`
 // in tsconfig.json (already enabled in this project).
-import { version } from '../package.json'
+// Note: use default import + destructure (not named import) to avoid a
+// webpack warning about named exports from default-exporting JSON modules.
+import packageJson from '../package.json'
+
+const { version } = packageJson
 
 export const HelloApp: CyAppWithLifecycle = {
   // Unique identifier for this app within the Cytoscape Web ecosystem.

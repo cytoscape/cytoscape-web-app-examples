@@ -45,7 +45,8 @@ Every plugin exports a `CyApp` object that declares its identity and components:
 ```typescript
 // src/<AppName>.tsx
 import { ComponentType, CyApp } from '@cytoscape-web/types'
-import { version } from '../package.json'  // requires resolveJsonModule: true in tsconfig
+import packageJson from '../package.json'   // requires resolveJsonModule: true in tsconfig
+const { version } = packageJson            // destructure after default import (avoids webpack warning)
 
 export const MyApp: CyApp = {
   id: 'myApp',           // unique, matches Module Federation name
