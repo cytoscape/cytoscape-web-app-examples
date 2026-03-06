@@ -1,7 +1,8 @@
 {
-  "name": "simple-menu-app",
+  "name": "@cytoscape-web/simple-menu",
   "description": "Add a menu item to the Cytoscape Web's App menu",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "webpack --config webpack.config.js --env production=true",

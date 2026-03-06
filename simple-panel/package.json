@@ -2,7 +2,7 @@
   "name": "@cytoscape-web/simple-panel",
   "description": "A simple panel component for Cytoscape Web",
   "version": "1.0.0",
-  "private": "true",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "webpack --config webpack.config.js --env production=true",

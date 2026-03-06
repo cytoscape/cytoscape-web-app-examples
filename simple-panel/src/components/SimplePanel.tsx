@@ -2,7 +2,7 @@
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
 import { useNetworkStore } from 'cyweb/NetworkStore'
 
-import { IdType, Network, Workspace, Node, Edge } from '@cytoscape-web/types'
+import { IdType, Network, Node, Edge } from 'cyweb/ApiTypes'
 import { Box } from '@mui/material'
 
 interface HelloPanelProps {
@@ -10,7 +10,7 @@ interface HelloPanelProps {
 }
 
 const SimplePanel = ({ message }: HelloPanelProps): JSX.Element => {
-  const workspace: Workspace = useWorkspaceStore(
+  const workspace: { currentNetworkId: IdType } = useWorkspaceStore(
     (state: any) => state.workspace,
   )
 

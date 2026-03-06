@@ -2,7 +2,7 @@
   "name": "@cytoscape-web/network-workflows",
   "description": "Advanced workflow examples for Cytoscape Web",
   "version": "1.0.0",
-  "private": "true",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "webpack --config webpack.config.js --env production=true",

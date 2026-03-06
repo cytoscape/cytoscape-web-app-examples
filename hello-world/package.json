@@ -1,9 +1,9 @@
 {
-  "name": "hello-cy-web",
-  "description": "A simple React component for demonstration using Module Federation",
+  "name": "@cytoscape-web/hello-world",
+  "description": "A minimal Hello World panel example for Cytoscape Web app developers",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "main": "dist/hello-cy-web.js",
   "scripts": {
     "build": "webpack --config webpack.config.js --env production=true",
     "build-dev": "webpack --config webpack.config.js --env production=false",
