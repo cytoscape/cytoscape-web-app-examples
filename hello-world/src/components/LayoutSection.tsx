@@ -1,3 +1,23 @@
+/**
+ * Example 3: LayoutApi + EventBus (async operation + completion event)
+ *
+ * Shows the pattern for triggering an async host operation and tracking its
+ * completion through the event bus rather than through the Promise alone.
+ *
+ * Key patterns demonstrated:
+ *   - `layoutApi.applyLayout(networkId)` is async: it returns a Promise that
+ *     resolves when the layout algorithm finishes (or rejects on error).
+ *     Always `.catch()` the Promise even when using the event bus — the Promise
+ *     carries error information that the event bus does not.
+ *   - `layout:completed` is dispatched by the host after the layout Promise
+ *     resolves successfully. Using the event bus for status updates decouples
+ *     the UI from the direct Promise chain and allows multiple components to
+ *     react independently.
+ *   - Disable the trigger button while the layout is running to prevent
+ *     duplicate submissions (`disabled={layoutStatus === 'running'}`).
+ *   - Reset `layoutStatus` to `'idle'` on error so the button becomes
+ *     re-enabled and the user can retry.
+ */
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'

@@ -5,6 +5,19 @@ import { LayoutSection } from './LayoutSection'
 import { SelectionSection } from './SelectionSection'
 import { VisualStyleSection } from './VisualStyleSection'
 
+/**
+ * HelloPanel — root panel component for the Hello World app.
+ *
+ * Acts as a thin layout shell: it composes four self-contained section
+ * components separated by Dividers. Each section owns its own state,
+ * API hooks, and error handling — no props are passed between them.
+ *
+ * Sections:
+ *   HelloHeader       — app title and serving URL (Example 0)
+ *   VisualStyleSection — random color via VisualStyleApi (Example 1)
+ *   SelectionSection  — selection tracking via EventBus (Example 2)
+ *   LayoutSection     — layout execution via LayoutApi (Example 3)
+ */
 const HelloPanel = (): JSX.Element => (
   <Box
     sx={{

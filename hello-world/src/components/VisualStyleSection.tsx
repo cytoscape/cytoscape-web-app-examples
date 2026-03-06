@@ -1,3 +1,18 @@
+/**
+ * Example 1: VisualStyleApi
+ *
+ * Shows how to call a Cytoscape Web App API to mutate the visual style of
+ * the currently active network.
+ *
+ * Key patterns demonstrated:
+ *   - Import an API hook from the host via the `cyweb/` Module Federation prefix.
+ *   - Use `useWorkspaceApi().getCurrentNetworkId()` to resolve the active network
+ *     before performing any operation — all API calls require a network ID.
+ *   - Check `result.success` before using `result.data`; on failure, display
+ *     `result.error.message`. All App API functions return ApiResult<T> and
+ *     never throw across the API boundary.
+ *   - Manage component-local error state independently (no shared error bus).
+ */
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'

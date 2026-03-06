@@ -1,3 +1,21 @@
+/**
+ * Example 2: EventBus + SelectionApi
+ *
+ * Shows how to subscribe to host events and respond to them in real time,
+ * and how to call SelectionApi to modify the selection programmatically.
+ *
+ * Key patterns demonstrated:
+ *   - `useCyWebEvent(eventType, handler)` wraps window.addEventListener with
+ *     automatic cleanup on unmount. The handler must be stable — wrap it in
+ *     useCallback with an empty dependency array so the effect does not
+ *     re-register on every render.
+ *   - `network:switched` fires when the user switches to a different network.
+ *     Reset any network-scoped state (selection counts, etc.) here.
+ *   - `selection:changed` fires after every node/edge selection change. The
+ *     detail contains arrays of selected node and edge IDs.
+ *   - `selectionApi.exclusiveSelect(networkId, [], [])` clears the selection
+ *     by selecting an empty set, replacing all current selections atomically.
+ */
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
