@@ -1,6 +1,7 @@
 import path from 'path'
 import url from 'url'
 import webpack from 'webpack'
+import TerserPlugin from 'terser-webpack-plugin'
 import packageJson from '../package.json' with { type: 'json' }
 
 const { ModuleFederationPlugin } = webpack.container
@@ -21,16 +22,16 @@ export default (env = {}) => {
     : 'cyweb@http://localhost:5500/remoteEntry.js'
 
   return {
-    mode: 'development',
+    mode: isProduction ? 'production' : 'development',
     devtool: false,
     target: 'web',
     optimization: {
-      minimize: false,
-      runtimeChunk: false,
-      splitChunks: {
-        chunks: 'async',
-        name: false,
-      },
+      runtimeChunk: false, // Required for Module Federation
+      minimizer: [
+        new TerserPlugin({
+          extractComments: false, // Suppress .LICENSE.txt files in dist
+        }),
+      ],
     },
     entry: './src/index.ts',
     output: {
@@ -39,14 +40,13 @@ export default (env = {}) => {
       publicPath: 'auto',
     },
     resolve: {
-      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.d.ts'],
+      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
     },
     plugins: [
       new ModuleFederationPlugin({
         name: 'hello',
         filename: 'remoteEntry.js',
         remotes: {
-          // Import some data providers from the host application
           cyweb: cywebUrl,
         },
         exposes: {

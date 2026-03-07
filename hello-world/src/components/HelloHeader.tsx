@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import packageJson from '../../package.json'
 
 /**
  * Example 0: MUI components + Module Federation public path
@@ -15,12 +16,18 @@ import Typography from '@mui/material/Typography'
 
 // __webpack_public_path__ is a Webpack-injected global — declare it for TypeScript.
 declare const __webpack_public_path__: string
+
 // Capture at module load time; the value does not change after initialization.
 const moduleServerUrl = __webpack_public_path__
 
+// Version number of this app extracted from package.json at
+// build time — also injected by Webpack's DefinePlugin.
+// This is just an example of how to share the version number with the UI.
+const { version } = packageJson
+
 export const HelloHeader = (): JSX.Element => (
   <Box>
-    <Typography variant="h5">Hello Cytoscape!</Typography>
+    <Typography variant="h4">Hello Cytoscape!</Typography>
     <Typography variant="caption" color="text.secondary">
       This app is served from:{' '}
       <a
@@ -29,7 +36,8 @@ export const HelloHeader = (): JSX.Element => (
         rel="noopener noreferrer"
       >
         {moduleServerUrl}
-      </a>
+      </a>{' '}
+      (v{version})
     </Typography>
   </Box>
 )

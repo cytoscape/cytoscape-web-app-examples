@@ -17,12 +17,12 @@
     "dev:simple-menu": "npm run dev -w simple-menu",
     "dev:simple-panel": "npm run dev -w simple-panel",
     "dev:project-template": "npm run dev -w project-template",
+    "clean": "rm -rf hello-world/dist network-workflows/dist simple-menu/dist simple-panel/dist project-template/dist",
+    "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && npm run copy-dist",
     "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r network-workflows/dist docs/network-workflows && cp -r simple-menu/dist docs/simple-menu && cp -r simple-panel/dist docs/simple-panel && cp -r project-template/dist docs/project-template"
   },
   "peerDependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
     "@mui/material": "^5.16.7",
     "react": "18.3.1",
     "react-dom": "18.3.1"
@@ -38,11 +38,8 @@
     "typescript": "^5.6.2",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "webpack-dev-server": "^5.1.0",
+    "@cytoscape-web/api-types": "file:../cytoscape-web/packages/api-types"
   },
-  "dependencies": {
-    "@cytoscape-web/api-types": "file:../cytoscape-web/packages/api-types",
-    "cytoscape": "^3.30.2",
-    "d3-scale": "^4.0.2"
-  }
+  "dependencies": {}
 }
