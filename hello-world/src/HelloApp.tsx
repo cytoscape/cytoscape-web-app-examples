@@ -1,3 +1,5 @@
+import { lazy } from 'react'
+
 import { ComponentType, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 // Import the version string directly from package.json.
 // This keeps the app version in sync with the npm package automatically —
@@ -39,6 +41,9 @@ export const HelloApp: CyAppWithLifecycle = {
     {
       id: 'HelloPanel',
       type: ComponentType.Panel,
+      // Pre-build the lazy component here so the host can render it directly.
+      // This eliminates the need for a separate './HelloPanel' entry in webpack exposes.
+      component: lazy(() => import('./components/HelloPanel')),
     },
   ],
 }

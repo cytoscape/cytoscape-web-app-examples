@@ -51,7 +51,6 @@ export default (env = {}) => {
         },
         exposes: {
           './AppConfig': './src/index.ts',
-          './HelloPanel': './src/components/HelloPanel.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },
