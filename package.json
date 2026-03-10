@@ -41,7 +41,7 @@
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.1.0",
-    "@cytoscape-web/api-types": "file:../cytoscape-web/packages/api-types"
+    "@cytoscape-web/api-types": "^0.1.0-alpha.1"
   },
   "dependencies": {}
 }
