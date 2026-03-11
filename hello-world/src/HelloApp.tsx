@@ -33,11 +33,14 @@ export const HelloApp: CyAppWithLifecycle = {
   id: 'hello',
 
   // Human-readable display name shown in the App Settings panel.
-  name: 'Hello Cy World App',
+  name: 'Hello Cytoscape World App',
 
   // Short description shown beneath the app name in the App Settings panel.
   // Optional, but recommended so users understand what the app does.
-  description: 'Minimal panel example for Cytoscape Web app developers',
+  description:
+    'Reference app demonstrating core App API patterns: visual style editing, ' +
+    'selection tracking / clearing, async layout execution, app lifecycle hooks, ' +
+    'and both component-scoped and app-scoped event handling.',
 
   // Semantic version of this app, imported from package.json.
   // Displayed in the App Settings panel alongside the app name.
@@ -59,6 +62,12 @@ export const HelloApp: CyAppWithLifecycle = {
       // Pre-build the lazy component here so the host can render it directly.
       // This eliminates the need for a separate './HelloPanel' entry in webpack exposes.
       component: lazy(() => import('./components/HelloPanel')),
+    },
+    {
+      id: 'NetworkSummaryMenuItem',
+      type: ComponentType.Menu,
+      // Menu components can also be lazy-loaded, just like panels.
+      component: lazy(() => import('./components/NetworkSummaryMenuItem')),
     },
   ],
 

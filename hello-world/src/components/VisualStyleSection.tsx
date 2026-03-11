@@ -70,9 +70,7 @@ export const VisualStyleSection = (): JSX.Element => {
       )}
       <Grid container spacing={1} alignItems="center">
         <Grid item xs={8}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Example 1: Visual Style
-          </Typography>
+          <Typography variant="h6">Example 1: Visual Style</Typography>
           <Typography variant="body2" color="text.secondary">
             Randomly change default node and edge colors
           </Typography>

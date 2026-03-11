@@ -51,6 +51,8 @@ export default (env = {}) => {
         },
         exposes: {
           './AppConfig': './src/index.ts',
+          './NetworkSummaryMenuItem':
+            './src/components/NetworkSummaryMenuItem.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },

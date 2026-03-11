@@ -84,9 +84,7 @@ export const SelectionSection = (): JSX.Element => {
           {errorMessage}
         </Alert>
       )}
-      <Typography variant="subtitle1" fontWeight="bold">
-        Example 2: Event Bus + Selection
-      </Typography>
+      <Typography variant="h6">Example 2: Event Bus + Selection</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         Reacts to network switches and selection changes via EventBus
       </Typography>

@@ -20,19 +20,18 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 **Host application:** `cytoscape-web` runs on `localhost:5500` and exposes federated modules under the `cyweb/` prefix.
 
 **Plugin apps** in this repo:
+
 - Import host stores and APIs via `cyweb/<ModuleName>` imports
 - Export React components (menus, panels) via their own `remoteEntry.js`
 - Are registered in the host's `src/assets/apps.json` (production) or `src/assets/apps.local.json` (local dev)
 
 ### App Registry
 
-| App              | Federation Name | Port | Components                               |
-|------------------|-----------------|------|------------------------------------------|
-| hello-world      | `hello`         | 2222 | HelloApp, HelloPanel                     |
-| network-workflows| `networkWorkflows` | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
-| simple-menu      | `simpleMenu`    | 3333 | SimpleMenuApp, AppMenuItem               |
-| simple-panel     | `simplePanel`   | 4001 | SimplePanelApp, SimplePanel              |
-| project-template | `createNetwork` | 5555 | TemplateApp, TemplatePanel               |
+| App               | Federation Name    | Port | Components                                                                              |
+| ----------------- | ------------------ | ---- | --------------------------------------------------------------------------------------- |
+| hello-world       | `hello`            | 2222 | HelloApp, HelloPanel                                                                    |
+| network-workflows | `networkWorkflows` | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
+| project-template  | `createNetwork`    | 5555 | TemplateApp, TemplatePanel                                                              |
 
 ---
 
@@ -45,17 +44,17 @@ Every plugin exports a `CyApp` object that declares its identity and components:
 ```typescript
 // src/<AppName>.tsx
 import { ComponentType, CyApp } from '@cytoscape-web/types'
-import packageJson from '../package.json'   // requires resolveJsonModule: true in tsconfig
-const { version } = packageJson            // destructure after default import (avoids webpack warning)
+import packageJson from '../package.json' // requires resolveJsonModule: true in tsconfig
+const { version } = packageJson // destructure after default import (avoids webpack warning)
 
 export const MyApp: CyApp = {
-  id: 'myApp',           // unique, matches Module Federation name
+  id: 'myApp', // unique, matches Module Federation name
   name: 'My App',
   description: '...',
-  version,               // import from package.json to stay in sync automatically
+  version, // import from package.json to stay in sync automatically
   components: [
     { id: 'MyMenuItem', type: ComponentType.Menu },
-    { id: 'MyPanel',    type: ComponentType.Panel },
+    { id: 'MyPanel', type: ComponentType.Panel },
   ],
 }
 ```
@@ -91,6 +90,7 @@ declare module 'cyweb/CreateNetworkFromCx2'
 ### webpack.config.js Pattern
 
 All plugin apps follow the same webpack structure. Key points:
+
 - `name`: unique federation name (no spaces, camelCase)
 - `filename`: always `remoteEntry.js`
 - `remotes.cyweb`: points to host (`localhost:5500` dev, `web.cytoscape.org` prod)
@@ -101,15 +101,18 @@ All plugin apps follow the same webpack structure. Key points:
 new ModuleFederationPlugin({
   name: 'myApp',
   filename: 'remoteEntry.js',
-  remotes: { cyweb: cywebUrl },   // cywebUrl switches by env.production
+  remotes: { cyweb: cywebUrl }, // cywebUrl switches by env.production
   exposes: {
-    './MyApp':       './src/MyApp',
-    './MyMenuItem':  './src/components/MyMenuItem.tsx',
+    './MyApp': './src/MyApp',
+    './MyMenuItem': './src/components/MyMenuItem.tsx',
   },
   shared: {
-    react:          { singleton: true, requiredVersion: deps.react },
-    'react-dom':    { singleton: true, requiredVersion: deps['react-dom'] },
-    '@mui/material':{ singleton: true, requiredVersion: deps['@mui/material'] },
+    react: { singleton: true, requiredVersion: deps.react },
+    'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+    '@mui/material': {
+      singleton: true,
+      requiredVersion: deps['@mui/material'],
+    },
   },
 })
 ```
@@ -122,8 +125,8 @@ new ModuleFederationPlugin({
 
 ```typescript
 import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
-import { useNetworkStore }   from 'cyweb/NetworkStore'
-import { useTableStore }     from 'cyweb/TableStore'
+import { useNetworkStore } from 'cyweb/NetworkStore'
+import { useTableStore } from 'cyweb/TableStore'
 import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
 // etc. — see network-workflows/src/remotes.d.ts for a fuller example
 ```
@@ -133,9 +136,9 @@ import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
 The host exposes high-level App APIs. **Read `cytoscape-web/src/app-api/CLAUDE.md`** before using these.
 
 ```typescript
-import { useNetworkApi }    from 'cyweb/NetworkApi'
-import { useElementApi }    from 'cyweb/ElementApi'
-import { useSelectionApi }  from 'cyweb/SelectionApi'
+import { useNetworkApi } from 'cyweb/NetworkApi'
+import { useElementApi } from 'cyweb/ElementApi'
+import { useSelectionApi } from 'cyweb/SelectionApi'
 // See cytoscape-web/webpack.config.js for the full list of exposed modules
 ```
 
@@ -144,7 +147,7 @@ All API functions return `ApiResult<T>`, a discriminated union:
 ```typescript
 const result = await networkApi.getNetworkSummary(networkId)
 if (result.success) {
-  console.log(result.data)   // typed T
+  console.log(result.data) // typed T
 } else {
   console.error(result.error) // ApiError
 }
@@ -163,13 +166,11 @@ if (result.success) {
 
 ```bash
 # In this repo root:
-npm run dev   # starts all 5 apps concurrently
+npm run dev   # starts all 3 apps concurrently
 
 # Or individually:
 npm run dev:hello-world
 npm run dev:network-workflows
-npm run dev:simple-menu
-npm run dev:simple-panel
 npm run dev:project-template
 ```
 
@@ -182,6 +183,7 @@ To load local plugins in the host, copy `src/assets/apps.local.json` over `src/a
 ### When Host API Changes
 
 When `cytoscape-web` adds or changes exposed modules:
+
 1. Update `remotes.d.ts` in affected apps to declare new `cyweb/*` modules
 2. Update `webpack.config.js` remotes if the host URL structure changes
 3. Update component imports and usage to match new API signatures
@@ -192,16 +194,19 @@ When `cytoscape-web` adds or changes exposed modules:
 ## 6. Code Style
 
 Shared config files at repo root apply to all apps:
+
 - `.eslintrc.json` — ESLint with TypeScript + React + Prettier
 - `.prettierrc.json` — Formatting rules
 
 **Formatting:**
+
 - No semicolons
 - Single quotes
 - Trailing commas
 - 2-space indentation, 80-char line width
 
 **Components:**
+
 - Functional components only
 - `react-jsx` transform — do NOT add `import React from 'react'`
 - No `console.log` in committed code
@@ -210,21 +215,21 @@ Shared config files at repo root apply to all apps:
 
 ## 7. Key Files
 
-| Purpose                        | Path                                                        |
-|-------------------------------|-------------------------------------------------------------|
-| App config pattern             | `hello-world/src/HelloApp.tsx`                              |
-| Panel component pattern        | `simple-panel/src/components/SimplePanel.tsx`               |
-| Menu component pattern         | `simple-menu/src/components/AppMenuItem.tsx`                |
-| MF config pattern              | `hello-world/webpack.config.js`                             |
-| Type declarations for host MF  | `network-workflows/src/remotes.d.ts`                        |
-| Template for new apps          | `project-template/`                                         |
-| Root workspace scripts         | `package.json`                                              |
-| Host API types (source of truth) | `../cytoscape-web/src/app-api/types/index.ts`             |
-| Host API architecture          | `../cytoscape-web/src/app-api/CLAUDE.md`                    |
-| Host webpack exposes           | `../cytoscape-web/webpack.config.js`                        |
-| Agent lessons                  | `.serena/memories/lessons.md`                               |
-| Design docs (cross-cutting)    | `design/specifications/README.md`                           |
-| Design docs (per-app)          | `design/apps/<app-name>/README.md`                          |
+| Purpose                          | Path                                                     |
+| -------------------------------- | -------------------------------------------------------- |
+| App config pattern               | `hello-world/src/HelloApp.tsx`                           |
+| Panel component pattern          | `hello-world/src/components/HelloPanel.tsx`              |
+| Menu component pattern           | `network-workflows/src/components/CreateNetworkMenu.tsx` |
+| MF config pattern                | `hello-world/webpack.config.js`                          |
+| Type declarations for host MF    | `network-workflows/src/remotes.d.ts`                     |
+| Template for new apps            | `project-template/`                                      |
+| Root workspace scripts           | `package.json`                                           |
+| Host API types (source of truth) | `../cytoscape-web/src/app-api/types/index.ts`            |
+| Host API architecture            | `../cytoscape-web/src/app-api/CLAUDE.md`                 |
+| Host webpack exposes             | `../cytoscape-web/webpack.config.js`                     |
+| Agent lessons                    | `.serena/memories/lessons.md`                            |
+| Design docs (cross-cutting)      | `design/specifications/README.md`                        |
+| Design docs (per-app)            | `design/apps/<app-name>/README.md`                       |
 
 ---
 

@@ -59,9 +59,7 @@ export const LifecycleSection = (): JSX.Element => {
 
   return (
     <Box>
-      <Typography variant="subtitle1" fontWeight="bold">
-        Example 4: App Lifecycle
-      </Typography>
+      <Typography variant="h6">Example 4: App Lifecycle</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         mount() registers a raw DOM listener outside React; unmount() removes
         it. <code>useSyncExternalStore</code> bridges that non-React state into
@@ -77,10 +75,7 @@ export const LifecycleSection = (): JSX.Element => {
         {/* Counts 'network:switched' events received by the app-level listener.
             Compare with SelectionSection: both track network switches, but this
             counter keeps running even while the panel is hidden. */}
-        <Chip
-          size="small"
-          label={`Network switches: ${networkSwitchCount}`}
-        />
+        <Chip size="small" label={`Network switches: ${networkSwitchCount}`} />
         {/* Initial value comes from context.apis.workspace in mount();
             subsequent updates come from the window event listener. */}
         <Chip

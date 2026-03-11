@@ -4,13 +4,14 @@ import Divider from '@mui/material/Divider'
 import { HelloHeader } from './HelloHeader'
 import { LayoutSection } from './LayoutSection'
 import { LifecycleSection } from './LifecycleSection'
+import { MenuSection } from './MenuSection'
 import { SelectionSection } from './SelectionSection'
 import { VisualStyleSection } from './VisualStyleSection'
 
 /**
  * HelloPanel — root panel component for the Hello World app.
  *
- * Acts as a thin layout shell: it composes five self-contained section
+ * Acts as a thin layout shell: it composes six self-contained section
  * components separated by Dividers. Each section owns its own state,
  * API hooks, and error handling — no props are passed between them.
  *
@@ -20,6 +21,7 @@ import { VisualStyleSection } from './VisualStyleSection'
  *   SelectionSection   — selection tracking via EventBus (Example 2)
  *   LayoutSection      — layout execution via LayoutApi (Example 3)
  *   LifecycleSection   — mount/unmount lifecycle via useSyncExternalStore (Example 4)
+ *   MenuSection         — dropdown menu component pattern (Example 5)
  */
 const HelloPanel = (): JSX.Element => (
   <Box
@@ -42,6 +44,8 @@ const HelloPanel = (): JSX.Element => (
     <LayoutSection />
     <Divider />
     <LifecycleSection />
+    <Divider />
+    <MenuSection />
   </Box>
 )
 

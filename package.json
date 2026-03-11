@@ -5,8 +5,6 @@
   "workspaces": [
     "hello-world",
     "network-workflows",
-    "simple-menu",
-    "simple-panel",
     "project-template"
   ],
   "scripts": {
@@ -14,13 +12,11 @@
     "dev": "concurrently \"npm:dev:*\"",
     "dev:hello-world": "npm run dev -w hello-world",
     "dev:network-workflows": "npm run dev -w network-workflows",
-    "dev:simple-menu": "npm run dev -w simple-menu",
-    "dev:simple-panel": "npm run dev -w simple-panel",
     "dev:project-template": "npm run dev -w project-template",
-    "clean": "rm -rf hello-world/dist network-workflows/dist simple-menu/dist simple-panel/dist project-template/dist",
+    "clean": "rm -rf hello-world/dist network-workflows/dist project-template/dist",
     "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && npm run copy-dist",
-    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r network-workflows/dist docs/network-workflows && cp -r simple-menu/dist docs/simple-menu && cp -r simple-panel/dist docs/simple-panel && cp -r project-template/dist docs/project-template"
+    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r network-workflows/dist docs/network-workflows && cp -r project-template/dist docs/project-template"
   },
   "peerDependencies": {
     "@mui/material": "^5.16.7",

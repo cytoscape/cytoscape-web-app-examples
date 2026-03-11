@@ -76,9 +76,7 @@ export const LayoutSection = (): JSX.Element => {
       )}
       <Grid container spacing={1} alignItems="center">
         <Grid item xs={8}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Example 3: Layout
-          </Typography>
+          <Typography variant="h6">Example 3: Layout</Typography>
           <Typography variant="body2" color="text.secondary">
             Apply the preferred layout; status updates via{' '}
             <code>layout:completed</code> event

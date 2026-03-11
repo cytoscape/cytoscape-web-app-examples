@@ -27,7 +27,7 @@ const { version } = packageJson
 
 export const HelloHeader = (): JSX.Element => (
   <Box>
-    <Typography variant="h4">Hello Cytoscape!</Typography>
+    <Typography variant="h2">Hello Cytoscape!</Typography>
     <Typography variant="caption" color="text.secondary">
       This app is served from:{' '}
       <a
