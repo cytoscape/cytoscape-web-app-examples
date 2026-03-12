@@ -1,0 +1,5 @@
+declare module 'cyweb/ApiTypes'
+declare module 'cyweb/EventBus'
+declare module 'cyweb/NetworkApi'
+declare module 'cyweb/TableApi'
+declare module 'cyweb/WorkspaceApi'

@@ -49,7 +49,6 @@ export default {
       },
       exposes: {
         './AppConfig': './src/index.ts',
-        './TemplatePanel': './src/components/TemplatePanel.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },

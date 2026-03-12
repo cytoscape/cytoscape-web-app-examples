@@ -6,6 +6,7 @@ Shared lessons learned across agent sessions. Update this file after corrections
 
 - **Shared singletons are mandatory:** If `react`, `react-dom`, or `@mui/material` are missing from the `shared` section in `webpack.config.js`, the plugin will load its own copy and break React context (hooks won't work).
 - **`remotes.d.ts` must stay in sync:** Any `cyweb/XxxModule` import used in source code must have a `declare module 'cyweb/XxxModule'` entry in `remotes.d.ts`, or TypeScript will error at build time.
+- **Templates need their own `remotes.d.ts`:** The `project-template` app does not inherit remote module declarations automatically. If you add `cyweb/*` imports to the template, create or update `project-template/src/remotes.d.ts` in the same change.
 - **Port conflicts:** Each plugin must use a unique dev server port. Current assignments: hello-world=2222, simple-menu=3333, simple-panel=4001, project-template=5555. Check before assigning a new port.
 - **`publicPath: 'auto'`** must be set in webpack output to enable dynamic URL resolution for the remote entry.
 
@@ -25,6 +26,7 @@ Shared lessons learned across agent sessions. Update this file after corrections
 ## File Update Checklist (when host API changes)
 
 When the host exposes a new `cyweb/XxxModule`:
+
 1. `<app>/src/remotes.d.ts` — add `declare module 'cyweb/XxxModule'`
 2. Component files — update imports and usage
 3. `npm run build` — verify no TS errors
