@@ -1,3 +1,4 @@
+import { Cx2 } from 'cyweb/ApiTypes'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 
 interface CreateNetworkFromCx2MenuProps {
@@ -12,9 +13,9 @@ const CreateNetworkFromCx2Menu = ({
 }: CreateNetworkFromCx2MenuProps): JSX.Element => {
   const networkApi = useNetworkApi()
 
-  const fetchCx2fromURL = async (url: string): Promise<any[]> => {
+  const fetchCx2fromURL = async (url: string): Promise<Cx2> => {
     const response = await fetch(url)
-    return await response.json()
+    return (await response.json()) as Cx2
   }
 
   const handleClick = (): void => {
