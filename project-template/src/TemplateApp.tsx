@@ -9,8 +9,8 @@ export const TemplateApp: CyAppWithLifecycle = {
   id: 'template',
   name: 'App Template',
   description:
-    'Boilerplate app showing the recommended Cytoscape Web plugin shape: ' +
-    'panel and menu components, App API usage, and simple store reads.',
+    'Boilerplate app with a minimal panel, a simple menu action, and the ' +
+    'recommended Cytoscape Web plugin shape.',
   version,
   apiVersion: '1.0',
   components: [

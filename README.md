@@ -1,67 +1,230 @@
-# Apps for _Cytoscape Web_
+# Developing Apps for _[Cytoscape Web](https://web.cytoscape.org/)_
+
+- API version 1.0 beta: March 2026
 
 > Reference implementations for Cytoscape Web app development
 
 - [Live examples](https://cytoscape.org/cytoscape-web-app-examples/)
 - [API types package (`@cytoscape-web/api-types`)](https://www.npmjs.com/package/@cytoscape-web/api-types)
 
----
+## Introduction
 
-## Overview
+This repository is for third-party developers who want to build apps for
+[Cytoscape Web](https://web.cytoscape.org).
 
-[Cytoscape Web](https://web.cytoscape.org) is a browser-based network visualization and analysis application. Its app system lets you extend the UI and functionality through **Webpack Module Federation** — no modifications to the host application required.
+You do not need to change the host source code. Your app is loaded by the host
+through Webpack Module Federation.
 
-Apps can:
+Apps can add:
 
-- **Add menu items** — appear under the _App_ menu in the menu bar
-- **Add panel components** — appear as tabs in the right-side _App Panel_
-
-This repository provides reference implementations you can use as a starting point.
-
----
+- menu items in the **Apps** menu
+- context menu actions for right-click workflows
+- panel components in the right-side **App Panel**
 
 ## Quick Start
 
-### Prerequisites
+The cleanest way to try examples in this repository is to create a new directory and
+clone both repositories into it.
 
-- Node.js (LTS)
-- The [Cytoscape Web](https://github.com/cytoscape/cytoscape-web) host running locally on `localhost:5500`
+### Recommended local workspace
 
-> **Note:** The production Cytoscape Web server loads apps from a curated allowlist.
-> If you would like your app listed on the public server, please contact the Cytoscape Web team after your app is ready for review.
+```bash
+mkdir cytoscape-web-dev
+cd cytoscape-web-dev
 
-### Run all example apps
+git clone https://github.com/cytoscape/cytoscape-web.git
+git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
+```
+
+You should end up with this structure:
+
+```text
+cytoscape-web-dev/
+├── cytoscape-web/
+└── cytoscape-web-app-examples/
+```
+
+This keeps the host app and your example or third-party app projects side by
+side, which makes local development simpler.
+
+### What you need
+
+- Node.js LTS
+- the [Cytoscape Web](https://github.com/cytoscape/cytoscape-web) host repo
+- the host running on `http://localhost:5500`
+
+> **The public Cytoscape Web site loads apps from a curated allowlist.
+> To publish your app there, contact the Cytoscape Web team after your app is
+> ready.**
+
+### 1. Run the example apps
 
 ```bash
 npm install
-npm run dev   # starts all 3 example apps concurrently
+npm run dev
 ```
 
-### Connect to the host
+This starts all example apps in this repository.
 
-The host application loads apps from its registry file. To load local dev apps:
+### 2. Run the host with the local app registry
 
 ```bash
-# In the cytoscape-web host repo:
-cp src/assets/apps.local.json src/assets/apps.json
-npm run dev   # starts host on localhost:5500
+# in the cytoscape-web host repo
+npm install
+npm run dev:local
 ```
 
-`apps.local.json` is pre-configured with the dev-server URLs for all example apps in this repository.
+This runs the host with `APPS_JSON=./src/assets/apps.local.json`.
+`apps.local.json` already points to the local dev servers used by the example
+apps, so you do not need to copy files manually.
+
+### 3. Check that it works
+
+1. Open `http://localhost:5500`.
+2. Open **Apps** -> **App Settings**.
+3. Enable one of the example apps.
+4. Open the **Apps** menu or the right-side **App Panel**.
+
+If you want the smallest starting point, enable the template app first.
 
 ---
 
-## App API
+## Build Your First App
 
-All app development uses the **Cytoscape Web App API** — a typed, stable interface exposed by the host via Module Federation.
+The recommended path is to copy [project-template/](project-template/).
 
-### Install types
+### 1. Copy the template
+
+```bash
+cp -r project-template my-app
+cd my-app
+```
+
+### 2. Update the basic app identity
+
+Update these files first:
+
+- `package.json` for the npm package name and version
+- `webpack.config.js` for the Module Federation `name` and dev server port
+- `src/TemplateApp.tsx` for the app `id`, `name`, and `description`
+
+The app `id` must match the Module Federation `name`.
+
+### 3. Replace the starter UI
+
+Start by replacing these files with your own code:
+
+- `src/TemplateApp.tsx`
+- `src/components/TemplatePanel.tsx`
+- `src/components/TemplateMenuItem.tsx`
+
+Keep the `src/index.ts` pattern:
+
+```typescript
+export { MyApp as default } from './MyApp'
+```
+
+### 4. Register the app in the host
+
+Add your local app to the host file `src/assets/apps.local.json`:
+
+```json
+{ "name": "myApp", "url": "http://localhost:6000/remoteEntry.js" }
+```
+
+### 5. Verify in the browser
+
+```bash
+npm install
+npm run dev
+```
+
+Then confirm all of these:
+
+1. `http://localhost:6000/remoteEntry.js` loads.
+2. Your app appears in **Apps** -> **App Settings**.
+3. Your menu item or panel appears in the Cytoscape Web UI.
+
+---
+
+## App Structure
+
+Most apps need only a few files:
+
+```text
+my-app/
+├── src/
+│   ├── index.ts
+│   ├── MyApp.tsx
+│   └── components/
+│       ├── MyPanel.tsx
+│       └── MyMenuItem.tsx
+├── webpack.config.js
+├── tsconfig.json
+└── package.json
+```
+
+What each file does:
+
+- `src/index.ts` exports your app config as the default export
+- `src/MyApp.tsx` defines your `CyAppWithLifecycle` object
+- `src/components/` contains your UI components
+- `webpack.config.js` exposes your app to the host as `remoteEntry.js`
+- `package.json` provides the app version and package metadata
+
+The template app already uses this shape.
+
+---
+
+## The App Entry Point
+
+Every app exports one `CyAppWithLifecycle` object.
+This object tells the host what your app is called and which UI parts it adds.
+
+```typescript
+import { lazy } from 'react'
+import { ComponentType, CyAppWithLifecycle } from '@cytoscape-web/api-types'
+import packageJson from '../package.json'
+
+const { version } = packageJson
+
+export const MyApp: CyAppWithLifecycle = {
+  id: 'myApp',
+  name: 'My App',
+  description: 'Short description of your app',
+  version,
+  apiVersion: '1.0',
+  components: [
+    {
+      id: 'MyPanel',
+      type: ComponentType.Panel,
+      component: lazy(() => import('./components/MyPanel')),
+    },
+    {
+      id: 'MyMenuItem',
+      type: ComponentType.Menu,
+      component: lazy(() => import('./components/MyMenuItem')),
+    },
+  ],
+}
+```
+
+If you need app-level setup or cleanup, add optional `mount()` and `unmount()`
+callbacks.
+
+---
+
+## Use the App API
+
+New third-party apps should use the Cytoscape Web App API, not internal stores.
+
+If you are building outside this repository, install the types package:
 
 ```bash
 npm install --save-dev @cytoscape-web/api-types
 ```
 
-Add to `tsconfig.json`:
+Then add it to `tsconfig.json`:
 
 ```json
 {
@@ -71,387 +234,178 @@ Add to `tsconfig.json`:
 }
 ```
 
-This gives you full TypeScript types for all API objects, events, and `window.CyWebApi`.
+### Main APIs
 
----
+| API              | Import                 | Use it for                     |
+| ---------------- | ---------------------- | ------------------------------ |
+| `ElementApi`     | `cyweb/ElementApi`     | nodes and edges                |
+| `NetworkApi`     | `cyweb/NetworkApi`     | creating and deleting networks |
+| `SelectionApi`   | `cyweb/SelectionApi`   | current selection              |
+| `ViewportApi`    | `cyweb/ViewportApi`    | zoom, pan, fit                 |
+| `TableApi`       | `cyweb/TableApi`       | node and edge tables           |
+| `VisualStyleApi` | `cyweb/VisualStyleApi` | style changes                  |
+| `LayoutApi`      | `cyweb/LayoutApi`      | layouts                        |
+| `ExportApi`      | `cyweb/ExportApi`      | export                         |
+| `WorkspaceApi`   | `cyweb/WorkspaceApi`   | workspace and current network  |
 
-### CyAppWithLifecycle — the app entry point
-
-Every app exports a `CyAppWithLifecycle` object as its default export. This declares the app's identity, components, and optional lifecycle callbacks.
-
-```typescript
-// src/MyApp.tsx
-import {
-  CyAppWithLifecycle,
-  AppContext,
-  ComponentType,
-} from '@cytoscape-web/api-types'
-import { lazy } from 'react'
-import packageJson from '../package.json'
-
-const { version } = packageJson
-
-const MyApp: CyAppWithLifecycle = {
-  id: 'myApp', // must match Module Federation `name`
-  name: 'My App',
-  description: 'What this app does',
-  version,
-  apiVersion: '1.0',
-  components: [
-    {
-      id: 'MyPanel',
-      type: ComponentType.Panel,
-      component: lazy(() => import('./components/MyPanel')),
-    },
-  ],
-
-  mount(context: AppContext): void {
-    // Called after the app is registered.
-    // context.apis === window.CyWebApi
-    console.log(
-      'App mounted, network:',
-      context.apis.workspace.getCurrentNetworkId(),
-    )
-  },
-
-  unmount(): void {
-    // Called when the app is disabled or unloaded.
-    // Clean up all event listeners and timers here.
-  },
-}
-
-export default MyApp
-```
-
-**Entry point** (`src/index.ts`):
+All API methods return `ApiResult<T>`.
+Always check `result.success` before reading `result.data`.
 
 ```typescript
-export { default } from './MyApp'
-```
+import { useNetworkApi } from 'cyweb/NetworkApi'
 
----
-
-### Domain APIs
-
-The host exposes nine domain APIs. Import them as React hooks from the `cyweb/` prefix:
-
-| API              | Import                 | What it does                              |
-| ---------------- | ---------------------- | ----------------------------------------- |
-| `ElementApi`     | `cyweb/ElementApi`     | Create / read / delete nodes and edges    |
-| `NetworkApi`     | `cyweb/NetworkApi`     | Create, delete, and navigate networks     |
-| `SelectionApi`   | `cyweb/SelectionApi`   | Get and set selected nodes / edges        |
-| `ViewportApi`    | `cyweb/ViewportApi`    | Zoom, pan, and fit the viewport           |
-| `TableApi`       | `cyweb/TableApi`       | Read and write node / edge table data     |
-| `VisualStyleApi` | `cyweb/VisualStyleApi` | Read and apply visual styles              |
-| `LayoutApi`      | `cyweb/LayoutApi`      | Run layout algorithms                     |
-| `ExportApi`      | `cyweb/ExportApi`      | Export networks (CX2, SIF, …)             |
-| `WorkspaceApi`   | `cyweb/WorkspaceApi`   | Query workspace and current network state |
-
-All API functions return `ApiResult<T>` — a discriminated union that never throws:
-
-```typescript
-import { useElementApi } from 'cyweb/ElementApi'
-import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
-
-export const MyComponent = () => {
-  const elementApi = useElementApi()
-  const workspaceApi = useWorkspaceApi()
-
-  const handleCreate = () => {
-    const current = workspaceApi.getCurrentNetworkId()
-    if (!current.success) return
-
-    const result = elementApi.createNode(current.data.networkId, [100, 200], {
-      attributes: { name: 'New Node' },
-    })
-
-    if (result.success) {
-      console.log('Created:', result.data.nodeId)
-    } else {
-      console.error(result.error.code, result.error.message)
-    }
-  }
-
-  return <button onClick={handleCreate}>Add Node</button>
-}
-```
-
----
-
-### Event Bus
-
-Subscribe to host events with `useCyWebEvent` (React) or `window.addEventListener` (anywhere):
-
-**React component:**
-
-```typescript
-import { useCyWebEvent } from 'cyweb/EventBus'
-import { useCallback } from 'react'
-
-export const MyComponent = () => {
-  const handleSelection = useCallback(({ networkId, selectedNodes }) => {
-    console.log('Selected nodes:', selectedNodes)
-  }, [])
-
-  useCyWebEvent('selection:changed', handleSelection)
-  return <div>...</div>
-}
-```
-
-**Lifecycle callback (outside React):**
-
-```typescript
-mount(context: AppContext): void {
-  this._handler = ({ detail }) => {
-    console.log('Switched to network:', detail.networkId)
-  }
-  window.addEventListener('network:switched', this._handler)
-},
-
-unmount(): void {
-  window.removeEventListener('network:switched', this._handler)
-},
-```
-
-Available events:
-
-| Event               | Payload                                       |
-| ------------------- | --------------------------------------------- |
-| `network:created`   | `{ networkId }`                               |
-| `network:deleted`   | `{ networkId }`                               |
-| `network:switched`  | `{ networkId, previousId }`                   |
-| `selection:changed` | `{ networkId, selectedNodes, selectedEdges }` |
-| `layout:started`    | `{ networkId, algorithm }`                    |
-| `layout:completed`  | `{ networkId, algorithm }`                    |
-| `style:changed`     | `{ networkId, property }`                     |
-| `data:changed`      | `{ networkId, tableType, rowIds }`            |
-
----
-
-### window.CyWebApi — non-React usage
-
-The same API is available on `window.CyWebApi` for browser extensions, scripts, or LLM agent bridges:
-
-```javascript
-window.addEventListener('cywebapi:ready', () => {
-  const result = window.CyWebApi.workspace.getCurrentNetworkId()
-  if (result.success) {
-    console.log('Current network:', result.data.networkId)
-  }
-})
-```
-
----
-
-## Extension Points
-
-![App UI Screenshot](docs/images/app-overview-ui.png)
-
-### Menu items (`ComponentType.Menu`)
-
-Menu components appear under the _App_ menu. They receive a `handleClose` prop to dismiss the menu after an action:
-
-```typescript
-export const MyMenuItem = ({ handleClose }: { handleClose: () => void }) => {
+export const MyMenuItem = () => {
   const networkApi = useNetworkApi()
 
   const handleClick = () => {
-    networkApi.deleteCurrentNetwork()
-    handleClose()
+    const result = networkApi.createNetworkFromEdgeList({
+      name: 'My Example Network',
+      edgeList: [['A', 'B', 'interacts-with']],
+      addToWorkspace: true,
+    })
+
+    if (!result.success) {
+      return
+    }
   }
 
-  return <MenuItem onClick={handleClick}>Delete current network</MenuItem>
-}
-```
-
-Register in your `CyAppWithLifecycle`:
-
-```typescript
-components: [{ id: 'MyMenuItem', type: ComponentType.Menu }]
-```
-
-### Panel components (`ComponentType.Panel`)
-
-Panel components appear as tabs in the right-side App Panel. They receive a `message` prop:
-
-```typescript
-export const MyPanel = ({ message }: { message: string }) => {
-  const selectionApi = useSelectionApi()
-  // ...
-  return <Box>...</Box>
+  return <button onClick={handleClick}>Run action</button>
 }
 ```
 
 ---
 
-## Example Apps
+## Events and Non-React Access
 
-| App                                      | Port | Federation Name    | Demonstrates                                          |
-| ---------------------------------------- | ---- | ------------------ | ----------------------------------------------------- |
-| [hello-world/](hello-world/)             | 2222 | `hello`            | **Full reference** — lifecycle, all 9 APIs, Event Bus |
-| [network-workflows/](network-workflows/) | 7000 | `networkWorkflows` | Menu items, network creation, CX2 import              |
-| [project-template/](project-template/)   | 5555 | `createNetwork`    | Boilerplate — start here for new apps                 |
+Use `useCyWebEvent` inside React components when your UI needs to refresh after
+host changes.
 
-**Recommended reading order:**
+Common events include:
 
-1. `project-template/` — understand the minimal structure
-2. `hello-world/` — see everything working together with lifecycle and events
+- `network:created`
+- `network:deleted`
+- `network:switched`
+- `selection:changed`
+- `data:changed`
+
+Outside React, the same APIs are available through `window.CyWebApi`, and you
+can listen with `window.addEventListener(...)`.
 
 ---
 
-## Creating a New App
+## UI Extension Points
 
-### 1. Copy the project template
+![App UI Screenshot](docs/images/app-overview-ui.png)
+
+### Menu items
+
+Use menu items for clear actions such as importing data, creating a network, or
+opening another tool.
+
+Menu components receive `handleClose`, which should usually be called after the
+action succeeds.
+
+### Context menu actions
+
+Use context menu actions when the action depends on what the user right-clicked.
+Examples include node-specific, edge-specific, or canvas-specific actions.
+
+Keep these actions short and focused.
+
+### Panel components
+
+Use panels for richer UI, status displays, forms, and multi-step workflows.
+
+Panels are a good place to show data from `WorkspaceApi`, `TableApi`, and
+`SelectionApi`.
+
+---
+
+## Which Example to Read
+
+| Example                                  | Best for                                                   |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| [project-template/](project-template/)   | your first app and the smallest starting point             |
+| [hello-world/](hello-world/)             | full app lifecycle, multiple APIs, and event handling      |
+| [network-workflows/](network-workflows/) | menu-driven workflows, CX2 import, and Jupyter integration |
+
+Recommended order:
+
+1. [project-template/](project-template/)
+2. [hello-world/](hello-world/)
+3. [network-workflows/](network-workflows/)
+
+---
+
+## Troubleshooting
+
+### My app does not appear in the host
+
+Check these first:
+
+1. The host is running on `localhost:5500`.
+2. Your app dev server is running.
+3. The app is listed in the host `apps.local.json`.
+4. The app is enabled in **Apps** -> **App Settings**.
+
+### `remoteEntry.js` loads, but the app still does not show up
+
+The most common cause is a name mismatch.
+
+Make sure these values match:
+
+- the Module Federation `name` in `webpack.config.js`
+- the app `id` in your `CyAppWithLifecycle` object
+
+### TypeScript cannot find the Cytoscape Web types
+
+Install `@cytoscape-web/api-types` and add it to the `types` field in
+`tsconfig.json`.
+
+---
+
+## Development Commands
 
 ```bash
-cp -r project-template my-app
-cd my-app
-```
-
-### 2. Update `package.json`
-
-```json
-{
-  "name": "@cytoscape-web/my-app",
-  "version": "1.0.0"
-}
-```
-
-### 3. Update `webpack.config.js`
-
-```javascript
-const DEV_SERVER_PORT = 6000 // pick an unused port
-
-new ModuleFederationPlugin({
-  name: 'myApp', // unique camelCase — must match CyApp.id
-  filename: 'remoteEntry.js',
-  remotes: { cyweb: cywebUrl },
-  exposes: {
-    './AppConfig': './src/index.ts',
-    './MyPanel': './src/components/MyPanel.tsx',
-  },
-  shared: {
-    react: { singleton: true, requiredVersion: deps.react },
-    'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-    '@mui/material': {
-      singleton: true,
-      requiredVersion: deps['@mui/material'],
-    },
-  },
-})
-```
-
-### 4. Implement your app
-
-Replace the template source files in `src/` with your implementation. Keep the `index.ts → default export` pattern.
-
-### 5. Declare host module types
-
-In `src/remotes.d.ts`, declare any `cyweb/*` modules you import:
-
-```typescript
-declare module 'cyweb/ElementApi'
-declare module 'cyweb/NetworkApi'
-declare module 'cyweb/EventBus'
-// add others as needed
-```
-
-### 6. Register for local testing
-
-Add an entry to the host's `src/assets/apps.local.json`:
-
-```json
-{ "name": "myApp", "url": "http://localhost:6000/remoteEntry.js" }
-```
-
-### 7. Verify
-
-```bash
-npm install
+# run all example apps
 npm run dev
-# check http://localhost:6000/remoteEntry.js loads in browser
-```
 
----
-
-## Local Development
-
-### Start everything
-
-```bash
-# Terminal 1 — host (cytoscape-web repo)
-npm run dev   # localhost:5500
-
-# Terminal 2 — apps (this repo)
-npm run dev   # all 3 apps concurrently
-```
-
-Or use the VS Code task: **🚀 Start Both Dev Servers**
-
-### Individual app commands
-
-```bash
+# run one example app
 npm run dev:hello-world
 npm run dev:network-workflows
 npm run dev:project-template
-```
 
----
-
-## Deployment
-
-```bash
-# Build all apps
+# build all example apps
 npm run build
 
-# Build + copy dist to docs/ (GitHub Pages target)
+# build and copy to docs/
 npm run deploy
 ```
 
-To list your app in the official Cytoscape Web app registry, open an issue or pull request with your app's metadata and the public URL of your `remoteEntry.js`.
+You can also use the VS Code task **Start Both Dev Servers**.
 
 ---
 
-## Advanced
+## Advanced Example
 
-### Connecting to external services via postMessage
-
-For panels that need to communicate with an external web app (e.g., a Jupyter notebook), open a child window from a menu item and receive data back via `postMessage`:
-
-```typescript
-// Menu component: open external app
-const handleOpen = () => {
-  window.open('https://your-service.example.com', '_blank')
-  handleClose()
-}
-
-// Panel component: receive data
-useEffect(() => {
-  const handler = (event: MessageEvent) => {
-    if (event.origin !== 'https://your-service.example.com') return
-    const { payload } = event.data
-    // process payload ...
-  }
-  window.addEventListener('message', handler)
-  return () => window.removeEventListener('message', handler)
-}, [])
-```
-
-See [network-workflows/](network-workflows/) for a working example with the `JupyterConnectorPanel`.
+If your app needs to talk to another browser app, you can use `postMessage`.
+See [network-workflows/](network-workflows/) for the Jupyter integration
+example.
 
 ---
 
-## ⚠️ Deprecated APIs
+## Deprecated APIs
 
-The following patterns were used in earlier versions of this repository. They are **still functional** but will be removed in a future release. Migrate to the App API instead.
+Older examples used direct store imports. They still work, but new third-party
+apps should use the App API instead.
 
-| Deprecated pattern                                                     | Recommended replacement                                                                     |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `import { useWorkspaceStore } from 'cyweb/WorkspaceStore'`             | `import { useWorkspaceApi } from 'cyweb/WorkspaceApi'`                                      |
-| `import { useNetworkStore } from 'cyweb/NetworkStore'`                 | `import { useNetworkApi } from 'cyweb/NetworkApi'`                                          |
-| `import { useTableStore } from 'cyweb/TableStore'`                     | `import { useTableApi } from 'cyweb/TableApi'`                                              |
-| `import { useVisualStyleStore } from 'cyweb/VisualStyleStore'`         | `import { useVisualStyleApi } from 'cyweb/VisualStyleApi'`                                  |
-| `import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'`       | `import { useNetworkApi } from 'cyweb/NetworkApi'`                                          |
-| `import { useCreateNetworkFromCx2 } from 'cyweb/CreateNetworkFromCx2'` | `import { useNetworkApi } from 'cyweb/NetworkApi'` — `networkApi.createNetworkFromCx2(...)` |
+| Deprecated pattern         | Recommended replacement |
+| -------------------------- | ----------------------- |
+| `useWorkspaceStore`        | `useWorkspaceApi`       |
+| `useNetworkStore`          | `useNetworkApi`         |
+| `useTableStore`            | `useTableApi`           |
+| `useVisualStyleStore`      | `useVisualStyleApi`     |
+| `useCreateNetworkWithView` | `useNetworkApi`         |
+| `useCreateNetworkFromCx2`  | `useNetworkApi`         |
 
-Direct store access exposes internal implementation details and bypasses the stable API contract. Using the App API ensures forward compatibility as the host evolves.
+Using the App API keeps your app aligned with the public integration contract.

@@ -1,44 +1,35 @@
-# Cytoscape Web App Project Template
+# Cytoscape Web App Template
 
-This app is the boilerplate for third-party developers creating a new
-Cytoscape Web App.
+This directory is the smallest starting point for a new Cytoscape Web app.
 
-It is intentionally small, but it includes the patterns most apps need on day
-one:
+For full setup instructions, App API details, and local development workflow,
+see the repository root [README.md](../README.md).
 
-- a `CyAppWithLifecycle` app config
-- both a panel component and a menu component
-- a simple `NetworkApi` action example
-- read patterns using `WorkspaceApi` and `TableApi`
-- reactive refresh using `EventBus`
+## What is in this template
 
-| Field                   | Value                                                |
-| ----------------------- | ---------------------------------------------------- |
-| Federation name         | `createNetwork`                                      |
-| Dev server port         | `5555`                                               |
-| Entry point (local dev) | `createNetwork@http://localhost:5555/remoteEntry.js` |
+- a minimal `CyAppWithLifecycle` app config
+- one panel component
+- one menu component
+- a simple example action using the public App API
+- a minimal context menu example for the canvas
 
-## Run locally
+| Field           | Value                                                |
+| --------------- | ---------------------------------------------------- |
+| Federation name | `createNetwork`                                      |
+| Dev server port | `5555`                                               |
+| Entry point     | `createNetwork@http://localhost:5555/remoteEntry.js` |
 
-```bash
-# Terminal 1 — host app
-cd ../cytoscape-web
-npm install
-npm run dev
+## Files to edit first
 
-# Terminal 2 — this template app
-cd project-template
-npm install
-npm run dev
-```
+When you copy this template, update these files first:
 
-Open `http://localhost:5500`, enable the app from **Apps** → **App Settings**,
-then:
+1. `package.json`
+2. `webpack.config.js`
+3. `src/TemplateApp.tsx`
+4. `src/components/TemplatePanel.tsx`
+5. `src/components/TemplateMenuItem.tsx`
 
-- open the right-side panel to inspect the App API examples
-- open the **Apps** menu and click `Create example network`
-
-## Project structure
+## Minimal structure
 
 ```text
 project-template/
@@ -53,90 +44,36 @@ project-template/
 └── package.json
 ```
 
-## What the template demonstrates
+## What each file does
 
-### 1. App config with panel and menu
+- `src/index.ts` exports the app config as the default export.
+- `src/TemplateApp.tsx` defines the app id, name, version, and registered components.
+- `src/components/TemplatePanel.tsx` is a minimal panel that shows the workspace name.
+- `src/components/TemplatePanel.tsx` also includes a minimal context menu example.
+- `src/components/TemplateMenuItem.tsx` is a simple menu action example.
+- `webpack.config.js` defines the Module Federation name, port, and exposed modules.
 
-`src/TemplateApp.tsx` registers both UI surface types:
+## Copy and rename
 
-- `ComponentType.Panel` for the app panel area
-- `ComponentType.Menu` for the Apps menu
-
-The template uses `lazy()` inside the app config, so webpack only needs to
-expose `./AppConfig`.
-
-### 2. App API usage
-
-`src/components/TemplatePanel.tsx` uses `useWorkspaceApi()` to read workspace
-metadata, network lists, and network summaries, then calls
-`switchCurrentNetwork()`.
-
-Use this pattern when you want a stable, app-facing contract:
-
-```tsx
-const workspaceApi = useWorkspaceApi()
-const result = workspaceApi.getWorkspaceInfo()
-
-if (result.success) {
-  console.log(result.data.networkCount)
-}
+```bash
+cp -r project-template my-app
+cd my-app
 ```
 
-In real apps, replace the example UI with your own rendering and error
-handling. Always branch on `result.success` before reading `result.data`.
-
-### 3. Menu-triggered actions
-
-`src/components/TemplateMenuItem.tsx` uses `useNetworkApi()` and creates a
-small example network with `createNetworkFromEdgeList()`.
-
-This is the recommended menu pattern:
-
-- perform one clear action
-- use an App API where possible
-- call `handleClose?.()` after success so the menu closes cleanly
-
-### 4. Table API reads and EventBus refresh
-
-The panel also shows a simple `TableApi.getRow()` example for the sample
-network created by the menu item. It refreshes automatically with:
-
-- `useCyWebEvent('network:created', ...)`
-- `useCyWebEvent('network:deleted', ...)`
-- `useCyWebEvent('network:switched', ...)`
-- `useCyWebEvent('data:changed', ...)`
-
-This is the recommended replacement for direct store subscriptions in external
-apps: re-read through App APIs when the host emits a relevant event.
-
-Pattern used in the template:
-
-```tsx
-const refreshSnapshot = useCallback(() => {
-  const workspace = workspaceApi.getWorkspaceInfo()
-  const networkList = workspaceApi.getNetworkList()
-  const nodeRow = tableApi.getRow(networkId, 'node', '0')
-}, [tableApi, workspaceApi])
-
-useCyWebEvent('network:created', refreshSnapshot)
-useCyWebEvent('network:switched', refreshSnapshot)
-```
-
-## Customization checklist
-
-When turning this template into a real app, update these first:
+After copying, make these changes:
 
 1. Rename the package in `package.json`.
 2. Change the Module Federation `name` and dev server port in `webpack.config.js`.
-3. Update `id`, `name`, `description`, and `version` usage in `src/TemplateApp.tsx`.
-4. Replace `TemplatePanel` and `TemplateMenuItem` with your actual UI.
-5. Register the app in the host's `src/assets/apps.local.json` for local testing.
+3. Change the app `id`, `name`, and `description` in `src/TemplateApp.tsx`.
+4. Replace the placeholder panel and menu with your own UI.
 
-## Recommended development direction
+To try the context menu example, open the template panel and click
+`Register Context Menu Item`, then right-click the canvas background.
 
-- Prefer `cyweb/WorkspaceApi`, `cyweb/NetworkApi`, and the other App APIs for
-  integration logic.
-- Avoid `cyweb/*Store` imports in new external apps. They are deprecated.
-- Keep React, ReactDOM, and MUI as shared singletons in webpack.
-- Expose only `./AppConfig` unless you have a specific reason to use the legacy
-  per-component expose pattern.
+The app `id` must match the Module Federation `name`.
+
+## Notes
+
+- Prefer the public App API such as `cyweb/WorkspaceApi` and `cyweb/NetworkApi`.
+- Avoid `cyweb/*Store` imports in new third-party apps.
+- Keep the template small. Use [hello-world/](../hello-world/) if you need a fuller reference.
