@@ -1,20 +1,6 @@
 import { lazy } from 'react'
 
 import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
-
-// Temporary: extend CyAppWithLifecycle with `resources` and make `components`
-// optional until api-types package is bumped to include Phase 2 types.
-interface CyAppWithResources extends Omit<CyAppWithLifecycle, 'components'> {
-  components?: CyAppWithLifecycle['components']
-  resources?: Array<{
-    slot: 'right-panel' | 'apps-menu'
-    id: string
-    title?: string
-    order?: number
-    component: React.ComponentType<any>
-    closeOnAction?: boolean
-  }>
-}
 // Import the version string directly from package.json.
 // This keeps the app version in sync with the npm package automatically —
 // no need to update it in two places. Requires `resolveJsonModule: true`
@@ -40,7 +26,7 @@ const { version } = packageJson
 // Initialised to null to make it clear the listener is not yet registered.
 let _networkHandler: ((e: Event) => void) | null = null
 
-export const HelloApp: CyAppWithResources = {
+export const HelloApp: CyAppWithLifecycle = {
   // Unique identifier for this app within the Cytoscape Web ecosystem.
   // Must match the `name` field in webpack.config.js ModuleFederationPlugin
   // so the host can locate this app's remoteEntry.js at runtime.

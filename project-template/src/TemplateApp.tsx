@@ -5,21 +5,7 @@ import packageJson from '../package.json'
 
 const { version } = packageJson
 
-// Temporary: extend CyAppWithLifecycle with `resources` and make `components`
-// optional until api-types package is bumped to include Phase 2 types.
-interface CyAppWithResources extends Omit<CyAppWithLifecycle, 'components'> {
-  components?: CyAppWithLifecycle['components']
-  resources?: Array<{
-    slot: 'right-panel' | 'apps-menu'
-    id: string
-    title?: string
-    order?: number
-    component: React.ComponentType<any>
-    closeOnAction?: boolean
-  }>
-}
-
-export const TemplateApp: CyAppWithResources = {
+export const TemplateApp: CyAppWithLifecycle = {
   id: 'template',
   name: 'App Template',
   description:
