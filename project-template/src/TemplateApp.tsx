@@ -1,11 +1,25 @@
 import { lazy } from 'react'
 
-import { ComponentType, CyAppWithLifecycle } from 'cyweb/ApiTypes'
+import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 import packageJson from '../package.json'
 
 const { version } = packageJson
 
-export const TemplateApp: CyAppWithLifecycle = {
+// Temporary: extend CyAppWithLifecycle with `resources` and make `components`
+// optional until api-types package is bumped to include Phase 2 types.
+interface CyAppWithResources extends Omit<CyAppWithLifecycle, 'components'> {
+  components?: CyAppWithLifecycle['components']
+  resources?: Array<{
+    slot: 'right-panel' | 'apps-menu'
+    id: string
+    title?: string
+    order?: number
+    component: React.ComponentType<any>
+    closeOnAction?: boolean
+  }>
+}
+
+export const TemplateApp: CyAppWithResources = {
   id: 'template',
   name: 'App Template',
   description:
@@ -13,16 +27,22 @@ export const TemplateApp: CyAppWithLifecycle = {
     'recommended Cytoscape Web plugin shape.',
   version,
   apiVersion: '1.0',
-  components: [
+
+  // ── Declarative resource registration (Phase 2) ─────────────────────────
+  // Replaces the deprecated `components` array.
+  resources: [
     {
+      slot: 'right-panel',
       id: 'TemplatePanel',
-      type: ComponentType.Panel,
+      title: 'Template',
       component: lazy(() => import('./components/TemplatePanel')),
     },
     {
+      slot: 'apps-menu',
       id: 'TemplateMenuItem',
-      type: ComponentType.Menu,
+      title: 'Template Action',
       component: lazy(() => import('./components/TemplateMenuItem')),
+      closeOnAction: true,
     },
   ],
 }

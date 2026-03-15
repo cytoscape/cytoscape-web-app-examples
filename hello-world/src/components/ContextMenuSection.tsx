@@ -1,11 +1,13 @@
 /**
- * Example 6: ContextMenuApi
+ * Example 6: ContextMenuApi (via useAppContext)
  *
  * Shows how to register and remove custom context menu items via the
- * Cytoscape Web Context Menu API.
+ * per-app Context Menu API accessed through useAppContext().
  *
  * Key patterns demonstrated:
- *   - Import `useContextMenuApi` from the host via Module Federation.
+ *   - Import `useAppContext` from `cyweb/AppIdContext` (Phase 2 pattern).
+ *   - Access `ctx.apis.contextMenu` — the per-app factory instance that
+ *     carries the bound appId and supports automatic cleanup on disable.
  *   - Register separate menu items for node, edge, and canvas (background)
  *     targets — each with a different label and handler.
  *   - Store returned `itemId` values to enable clean removal.
@@ -13,6 +15,11 @@
  *   - Check `result.success` before using result data; on failure, display
  *     `result.error.message`. All API functions return ApiResult<T> and
  *     never throw across the API boundary.
+ *
+ * Note: Items registered via AppContext.apis.contextMenu are also
+ * automatically cleaned up when the app is disabled by the host
+ * (via cleanupAllForApp). Explicit cleanup in useEffect is redundant
+ * but harmless and makes intent clear.
  */
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
@@ -22,7 +29,7 @@ import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useRef, useState } from 'react'
-import { useContextMenuApi } from 'cyweb/ContextMenuApi'
+import { useAppContext } from 'cyweb/AppIdContext'
 import type { ContextMenuHandlerContext } from 'cyweb/ApiTypes'
 
 /**
@@ -35,7 +42,7 @@ interface LastAction {
 }
 
 export const ContextMenuSection = (): JSX.Element => {
-  const contextMenuApi = useContextMenuApi()
+  const ctx = useAppContext()
 
   // IDs returned by addContextMenuItem — stored so we can remove them later.
   const nodeItemId = useRef<string | null>(null)
@@ -48,13 +55,14 @@ export const ContextMenuSection = (): JSX.Element => {
 
   // Register three context menu items — one per target type.
   const handleRegister = (): void => {
+    if (ctx === null) return
     setErrorMessage(null)
 
-    const nodeResult = contextMenuApi.addContextMenuItem({
+    const nodeResult = ctx.apis.contextMenu.addContextMenuItem({
       label: 'Hello: Inspect Node',
       targetTypes: ['node'],
-      handler: (ctx: ContextMenuHandlerContext) => {
-        setLastAction({ label: 'Inspect Node', type: ctx.type, id: ctx.id })
+      handler: (c: ContextMenuHandlerContext) => {
+        setLastAction({ label: 'Inspect Node', type: c.type, id: c.id })
       },
     })
     if (!nodeResult.success) {
@@ -63,11 +71,11 @@ export const ContextMenuSection = (): JSX.Element => {
     }
     nodeItemId.current = nodeResult.data.itemId
 
-    const edgeResult = contextMenuApi.addContextMenuItem({
+    const edgeResult = ctx.apis.contextMenu.addContextMenuItem({
       label: 'Hello: Inspect Edge',
       targetTypes: ['edge'],
-      handler: (ctx: ContextMenuHandlerContext) => {
-        setLastAction({ label: 'Inspect Edge', type: ctx.type, id: ctx.id })
+      handler: (c: ContextMenuHandlerContext) => {
+        setLastAction({ label: 'Inspect Edge', type: c.type, id: c.id })
       },
     })
     if (!edgeResult.success) {
@@ -76,11 +84,11 @@ export const ContextMenuSection = (): JSX.Element => {
     }
     edgeItemId.current = edgeResult.data.itemId
 
-    const canvasResult = contextMenuApi.addContextMenuItem({
+    const canvasResult = ctx.apis.contextMenu.addContextMenuItem({
       label: 'Hello: Canvas Action',
       targetTypes: ['canvas'],
-      handler: (ctx: ContextMenuHandlerContext) => {
-        setLastAction({ label: 'Canvas Action', type: ctx.type })
+      handler: (c: ContextMenuHandlerContext) => {
+        setLastAction({ label: 'Canvas Action', type: c.type })
       },
     })
     if (!canvasResult.success) {
@@ -94,6 +102,7 @@ export const ContextMenuSection = (): JSX.Element => {
 
   // Remove all three registered items.
   const handleRemove = (): void => {
+    if (ctx === null) return
     setErrorMessage(null)
     for (const id of [
       nodeItemId.current,
@@ -101,7 +110,7 @@ export const ContextMenuSection = (): JSX.Element => {
       canvasItemId.current,
     ]) {
       if (id !== null) {
-        const result = contextMenuApi.removeContextMenuItem(id)
+        const result = ctx.apis.contextMenu.removeContextMenuItem(id)
         if (!result.success) {
           setErrorMessage(result.error.message)
         }
@@ -114,22 +123,30 @@ export const ContextMenuSection = (): JSX.Element => {
     setLastAction(null)
   }
 
-  // Clean up on unmount so stale menu items are not left in the registry.
+  // Clean up on unmount (redundant with host auto-cleanup but harmless).
   useEffect(() => {
     return () => {
+      if (ctx === null) return
       for (const id of [
         nodeItemId.current,
         edgeItemId.current,
         canvasItemId.current,
       ]) {
         if (id !== null) {
-          contextMenuApi.removeContextMenuItem(id)
+          ctx.apis.contextMenu.removeContextMenuItem(id)
         }
       }
     }
-    // contextMenuApi is a stable singleton — no dependency needed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  if (ctx === null) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        AppContext not available
+      </Typography>
+    )
+  }
 
   return (
     <Box>

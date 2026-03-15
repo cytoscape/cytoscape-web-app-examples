@@ -1,23 +1,21 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ContextMenuHandlerContext } from 'cyweb/ApiTypes'
-import { useContextMenuApi } from 'cyweb/ContextMenuApi'
+import { useAppContext } from 'cyweb/AppIdContext'
 
 const TemplateContextMenuExample = (): JSX.Element => {
-  const contextMenuApi = useContextMenuApi()
+  const ctx = useAppContext()
   const contextMenuItemId = useRef<string | null>(null)
   const [lastContextTarget, setLastContextTarget] = useState<string | null>(
     null,
   )
 
   const handleRegisterContextMenu = (): void => {
-    if (contextMenuItemId.current !== null) {
-      return
-    }
+    if (ctx === null || contextMenuItemId.current !== null) return
 
-    const result = contextMenuApi.addContextMenuItem({
+    const result = ctx.apis.contextMenu.addContextMenuItem({
       label: 'Template: Say hello',
       targetTypes: ['canvas'],
       handler: (context: ContextMenuHandlerContext) => {
@@ -30,13 +28,17 @@ const TemplateContextMenuExample = (): JSX.Element => {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      if (contextMenuItemId.current !== null) {
-        contextMenuApi.removeContextMenuItem(contextMenuItemId.current)
-      }
-    }
-  }, [contextMenuApi])
+  // Note: explicit cleanup is not strictly needed — the host auto-cleans
+  // all items registered via AppContext.apis.contextMenu when the app is
+  // disabled. But explicit removal keeps the component self-contained.
+
+  if (ctx === null) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        AppContext not available
+      </Typography>
+    )
+  }
 
   return (
     <Box>
