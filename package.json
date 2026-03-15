@@ -24,6 +24,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@cytoscape-web/api-types": "^0.1.0-alpha.4",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@types/react": "^18.3.5",
@@ -36,8 +37,6 @@
     "typescript": "^5.6.2",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0",
-    "@cytoscape-web/api-types": "^0.1.0-alpha.4"
-  },
-  "dependencies": {}
+    "webpack-dev-server": "^5.1.0"
+  }
 }
