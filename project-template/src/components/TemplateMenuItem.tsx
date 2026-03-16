@@ -1,48 +1,46 @@
+/**
+ * TemplateMenuItem — Minimal Apps-menu action.
+ *
+ * Demonstrates:
+ *   - Creating a network from an edge list (simplest API usage)
+ *   - MUI components in a menu item
+ *   - closeOnAction: true in TemplateApp.resources[] means the dropdown
+ *     closes automatically after the user clicks — no handleClose needed.
+ *
+ * Replace this with your own menu action.
+ */
+import Typography from '@mui/material/Typography'
+
 import { useNetworkApi } from 'cyweb/NetworkApi'
 
-interface TemplateMenuItemProps {
-  handleClose?: () => void
-}
-
-const TemplateMenuItem = ({
-  handleClose,
-}: TemplateMenuItemProps): JSX.Element => {
+const TemplateMenuItem = (): JSX.Element => {
   const networkApi = useNetworkApi()
 
-  const handleCreateNetwork = (): void => {
-    const result = networkApi.createNetworkFromEdgeList({
-      name: 'Template App Example Network',
-      description:
-        'Example network created from the project template menu item.',
+  const handleClick = (): void => {
+    networkApi.createNetworkFromEdgeList({
+      name: 'Template Network',
+      description: 'Created by the App Template menu action.',
       edgeList: [
-        ['Template A', 'Template B', 'interacts-with'],
-        ['Template B', 'Template C', 'interacts-with'],
-        ['Template C', 'Template A', 'interacts-with'],
+        ['A', 'B'],
+        ['B', 'C'],
+        ['C', 'A'],
       ],
       addToWorkspace: true,
     })
-
-    if (result.success) {
-      handleClose?.()
-    }
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleCreateNetwork}
-      style={{
-        width: '100%',
-        padding: '0.75rem 1rem',
-        border: 0,
-        background: 'transparent',
-        textAlign: 'left',
+    <Typography
+      sx={{
+        px: 2,
+        py: 1,
         cursor: 'pointer',
-        font: 'inherit',
+        '&:hover': { bgcolor: 'action.hover' },
       }}
+      onClick={handleClick}
     >
       Create example network
-    </button>
+    </Typography>
   )
 }
 

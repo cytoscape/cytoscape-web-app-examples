@@ -11,15 +11,16 @@ const deps = packageJson.peerDependencies
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// For local testing
-const CYWEB_NAME = 'cyweb'
-const LOCAL_CYWEB = 'http://localhost:5500/remoteEntry.js'
-
-// This port is used to run the development server
+// TODO: Change DEV_SERVER_PORT to an unused port.
 const DEV_SERVER_PORT = 5555
 
-export default {
-  mode: 'development',
+// Host remote URL — switches between local dev and production.
+const CYWEB_NAME = 'cyweb'
+const LOCAL_CYWEB = `${CYWEB_NAME}@http://localhost:5500/remoteEntry.js`
+const PROD_CYWEB = `${CYWEB_NAME}@https://web.cytoscape.org/remoteEntry.js`
+
+export default (env) => ({
+  mode: env?.production ? 'production' : 'development',
   devtool: false,
   target: 'web',
   optimization: {
@@ -41,11 +42,10 @@ export default {
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'createNetwork',
+      name: 'createNetwork', // TODO: Change to your unique camelCase app name.
       filename: 'remoteEntry.js',
       remotes: {
-        // Import some data providers from the host application
-        cyweb: `${CYWEB_NAME}@${LOCAL_CYWEB}`,
+        cyweb: env?.production ? PROD_CYWEB : LOCAL_CYWEB,
       },
       exposes: {
         './AppConfig': './src/index.ts',
@@ -76,4 +76,4 @@ export default {
       'Access-Control-Allow-Origin': '*', // allow access from any origin
     },
   },
-}
+})

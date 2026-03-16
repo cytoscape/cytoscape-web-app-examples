@@ -1,79 +1,134 @@
-# Cytoscape Web App Template
+# Cytoscape Web App — Starter Template
 
-This directory is the smallest starting point for a new Cytoscape Web app.
+The smallest working Cytoscape Web plugin. Copy this directory to scaffold a
+new app.
 
-For full setup instructions, App API details, and local development workflow,
-see the repository root [README.md](../README.md).
+| Field | Value |
+|---|---|
+| Federation name | `createNetwork` (change this) |
+| Dev server port | `5555` (change this) |
+| Entry point | `createNetwork@http://localhost:5555/remoteEntry.js` |
 
-## What is in this template
+---
 
-- a minimal `CyAppWithLifecycle` app config
-- one panel component
-- one menu component
-- a simple example action using the public App API
-- a minimal context menu example for the canvas
+## Quick start
 
-| Field           | Value                                                |
-| --------------- | ---------------------------------------------------- |
-| Federation name | `createNetwork`                                      |
-| Dev server port | `5555`                                               |
-| Entry point     | `createNetwork@http://localhost:5555/remoteEntry.js` |
+```bash
+# 1. Copy the template
+cp -r project-template my-app
+cd my-app
 
-## Files to edit first
+# 2. Install dependencies
+npm install
 
-When you copy this template, update these files first:
+# 3. Start the dev server (host must be running on :5500)
+npm run dev
+```
 
-1. `package.json`
-2. `webpack.config.js`
-3. `src/TemplateApp.tsx`
-4. `src/components/TemplatePanel.tsx`
-5. `src/components/TemplateMenuItem.tsx`
+Open `http://localhost:5500` → **Apps** → **App Settings** → enable your app.
 
-## Minimal structure
+---
+
+## What to change after copying
+
+### 1. `package.json`
+
+- `name` → your package name
+- `version` → your version
+
+### 2. `webpack.config.js`
+
+- `DEV_SERVER_PORT` → pick an unused port
+- `name` in `ModuleFederationPlugin` → unique camelCase string (must match
+  `id` in your app config)
+
+### 3. `src/TemplateApp.tsx`
+
+- `id` → must match the webpack federation `name`
+- `name`, `description` → human-readable labels
+- `resources` → add/remove panels and menu items
+- `mount()` / `unmount()` → optional lifecycle hooks (uncomment to use)
+
+### 4. `src/components/`
+
+- `TemplatePanel.tsx` → replace with your panel UI
+- `TemplateMenuItem.tsx` → replace with your menu action
+
+### 5. Host registration
+
+Add your app to the host's `src/assets/apps.local.json`:
+
+```json
+{ "name": "myApp", "url": "myApp@http://localhost:XXXX/remoteEntry.js" }
+```
+
+---
+
+## File structure
 
 ```text
 project-template/
 ├── src/
-│   ├── index.ts
-│   ├── TemplateApp.tsx
+│   ├── index.ts              ← re-exports app config as default
+│   ├── TemplateApp.tsx       ← app config: id, name, resources, lifecycle
 │   └── components/
-│       ├── TemplatePanel.tsx
-│       └── TemplateMenuItem.tsx
-├── webpack.config.js
+│       ├── TemplatePanel.tsx  ← right-panel component (WorkspaceApi example)
+│       └── TemplateMenuItem.tsx ← apps-menu component (NetworkApi example)
+├── webpack.config.js          ← Module Federation config (name, port, remotes)
 ├── tsconfig.json
 └── package.json
 ```
 
-## What each file does
+---
 
-- `src/index.ts` exports the app config as the default export.
-- `src/TemplateApp.tsx` defines the app id, name, version, and registered components.
-- `src/components/TemplatePanel.tsx` is a minimal panel that shows the workspace name.
-- `src/components/TemplatePanel.tsx` also includes a minimal context menu example.
-- `src/components/TemplateMenuItem.tsx` is a simple menu action example.
-- `webpack.config.js` defines the Module Federation name, port, and exposed modules.
+## What each file demonstrates
 
-## Copy and rename
+| File | Pattern |
+|---|---|
+| `TemplateApp.tsx` | Declarative `resources[]` registration (Phase 2), TODO markers for customization |
+| `TemplatePanel.tsx` | `useWorkspaceApi()` + `ApiResult<T>` pattern, MUI shared singletons |
+| `TemplateMenuItem.tsx` | `useNetworkApi().createNetworkFromEdgeList()`, `closeOnAction: true` |
+| `webpack.config.js` | `env.production` flag switches between local and production host URL |
 
-```bash
-cp -r project-template my-app
-cd my-app
+---
+
+## Adding context menus
+
+Context menus need `apis` access, so they are registered in `mount()`:
+
+```typescript
+mount(context) {
+  context.apis.contextMenu.addContextMenuItem({
+    label: 'My App: Do Something',
+    targetTypes: ['node'],
+    handler: (ctx) => {
+      const result = context.apis.element.getNode(networkId, ctx.id)
+      // ...
+    },
+  })
+},
 ```
 
-After copying, make these changes:
+Items are auto-cleaned when the app is disabled — no explicit removal needed.
 
-1. Rename the package in `package.json`.
-2. Change the Module Federation `name` and dev server port in `webpack.config.js`.
-3. Change the app `id`, `name`, and `description` in `src/TemplateApp.tsx`.
-4. Replace the placeholder panel and menu with your own UI.
+---
 
-To try the context menu example, open the template panel and click
-`Register Context Menu Item`, then right-click the canvas background.
+## Building for production
 
-The app `id` must match the Module Federation `name`.
+```bash
+npx webpack --env production
+```
 
-## Notes
+This switches the host remote from `localhost:5500` to `web.cytoscape.org` and
+enables minification.
 
-- Prefer the public App API such as `cyweb/WorkspaceApi` and `cyweb/NetworkApi`.
-- Avoid `cyweb/*Store` imports in new third-party apps.
-- Keep the template small. Use [hello-world/](../hello-world/) if you need a fuller reference.
+---
+
+## Further reading
+
+- [hello-world/](../hello-world/) — full reference app with 12 examples covering
+  all APIs
+- [guides/](../guides/) — App Developer Guide (getting started, architecture,
+  registration patterns, lifecycle, troubleshooting)
+- [@cytoscape-web/api-types](https://www.npmjs.com/package/@cytoscape-web/api-types) —
+  TypeScript types for all host APIs
