@@ -143,13 +143,15 @@ if (isOk(result)) { ... }
 
 ```typescript
 const ApiErrorCode = {
-  InvalidInput: 'INVALID_INPUT',
   NetworkNotFound: 'NETWORK_NOT_FOUND',
   NodeNotFound: 'NODE_NOT_FOUND',
   EdgeNotFound: 'EDGE_NOT_FOUND',
-  LayoutFailed: 'LAYOUT_FAILED',
-  ExportFailed: 'EXPORT_FAILED',
+  InvalidInput: 'INVALID_INPUT',
+  InvalidCx2: 'INVALID_CX2',
   OperationFailed: 'OPERATION_FAILED',
+  LayoutEngineNotFound: 'LAYOUT_ENGINE_NOT_FOUND',
+  FunctionNotAvailable: 'FUNCTION_NOT_AVAILABLE',
+  NoCurrentNetwork: 'NO_CURRENT_NETWORK',
   ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
   ResourceNotFound: 'RESOURCE_NOT_FOUND',
 } as const

@@ -164,9 +164,13 @@ This ensures no orphaned resources remain from a partially-initialized app.
 
 ## unmount() Best Practices
 
-### Always Called
+### Called for Every Mounted App
 
-`unmount()` is always called, even during page unload (`beforeunload`).
+Once `mount()` has completed successfully, `unmount()` is guaranteed to be
+called — whether the user disables the app or the page unloads (`beforeunload`).
+If `mount()` was never called (e.g., declarative-only apps) or if `mount()`
+threw an error, `unmount()` is not called.
+
 The host calls `cleanupAllForApp()` **before** calling `unmount()`, so
 by the time your `unmount()` runs, resources and context menu items are
 already removed.

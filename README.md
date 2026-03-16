@@ -238,7 +238,7 @@ Then add it to `tsconfig.json`:
 ```json
 {
   "compilerOptions": {
-    "types": ["@cytoscape-web/api-types"]
+    "typeRoots": ["./node_modules/@types", "./node_modules/@cytoscape-web"]
   }
 }
 ```

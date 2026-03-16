@@ -59,7 +59,7 @@ Open `http://localhost:5500` → **Apps** → **App Settings** → enable your a
 Add your app to the host's `src/assets/apps.local.json`:
 
 ```json
-{ "name": "myApp", "url": "myApp@http://localhost:XXXX/remoteEntry.js" }
+{ "name": "myApp", "url": "http://localhost:XXXX/remoteEntry.js" }
 ```
 
 ---

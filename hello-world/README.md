@@ -470,7 +470,7 @@ cd ../my-app
    `../../cytoscape-web/src/assets/apps.local.json`:
 
 ```json
-{ "name": "myApp", "url": "myApp@http://localhost:XXXX/remoteEntry.js" }
+{ "name": "myApp", "url": "http://localhost:XXXX/remoteEntry.js" }
 ```
 
 5. Run `npm run dev` and reload the host at `http://localhost:5500`
