@@ -84,7 +84,14 @@ hello-world/
 │       ├── VisualStyleSection.tsx  ← Example 1: VisualStyleApi
 │       ├── SelectionSection.tsx    ← Example 2: EventBus + SelectionApi
 │       ├── LayoutSection.tsx       ← Example 3: LayoutApi + EventBus (async)
-│       └── LifecycleSection.tsx    ← Example 4: App lifecycle / useSyncExternalStore
+│       ├── LifecycleSection.tsx    ← Example 4: App lifecycle / useSyncExternalStore
+│       ├── MenuSection.tsx         ← Example 5: Menu component pattern
+│       ├── ContextMenuSection.tsx  ← Example 6: Context menu items via useAppContext
+│       ├── ElementSection.tsx      ← Example 7: Node/edge CRUD via ElementApi
+│       ├── TableSection.tsx        ← Example 8: Table data read/write via TableApi
+│       ├── ViewportSection.tsx     ← Example 9: Fit viewport, node positions via ViewportApi
+│       ├── ExportSection.tsx       ← Example 10: CX2 export via ExportApi
+│       └── NetworkSection.tsx      ← Example 11: Network create/delete via NetworkApi
 ├── webpack.config.js               ← Module Federation config
 ├── tsconfig.json
 └── package.json
@@ -101,21 +108,29 @@ app's identity, components, and lifecycle.
 ```typescript
 export const HelloApp: CyAppWithLifecycle = {
   id: 'hello',          // must match the `name` in webpack.config.js
-  name: 'Hello Cy World App',
+  name: 'Hello Cytoscape World App',
   description: '…',
   version,              // imported from package.json — stays in sync automatically
   apiVersion: '1.0',
 
-  components: [
+  // Declarative resource registration (Phase 2) — panels and menu items
+  resources: [
     {
+      slot: 'right-panel',
       id: 'HelloPanel',
-      type: ComponentType.Panel,  // Panel = right sidebar; Menu = Apps menu bar
+      title: 'Hello World',
       component: lazy(() => import('./components/HelloPanel')),
+    },
+    {
+      slot: 'apps-menu',
+      id: 'NetworkSummaryMenuItem',
+      title: 'Network Summary',
+      component: lazy(() => import('./components/NetworkSummaryMenuItem')),
     },
   ],
 
-  mount(context) { … },  // called once when the app is activated
-  unmount() { … },       // called when the app is deactivated or page unloads
+  mount(context) { … },  // context menu items + event listeners
+  unmount() { … },       // only manual cleanup (event listeners)
 }
 ```
 
@@ -141,20 +156,25 @@ the app in App Settings, or when the page unloads.
 
 ```typescript
 mount(context: AppContext): void {
-  // context.apis is the same object as window.CyWebApi —
-  // use it to read host state without needing a React hook.
+  // context.apis extends window.CyWebApi with per-app resource + contextMenu.
   const result = context.apis.workspace.getCurrentNetworkId()
 
-  // Register global listeners here (not in components) when you need
-  // the listener to stay alive even while the panel is hidden.
+  // Context menu items are registered here because handlers need apis access.
+  // Items are auto-cleaned when the app is disabled — no explicit removal needed.
+  context.apis.contextMenu.addContextMenuItem({
+    label: 'Hello: Log Node Info',
+    targetTypes: ['node'],
+    handler: (ctx) => { /* use context.apis here */ },
+  })
+
+  // App-scoped event listeners — must be cleaned up in unmount().
   _handler = (e) => { /* … */ }
   window.addEventListener('network:switched', _handler)
 },
 
 unmount(): void {
-  // Always remove every listener added in mount().
-  // Skipping this leaks memory and causes stale handlers to fire
-  // after the app has been disabled.
+  // Only event listeners need manual cleanup.
+  // Resources (panels, menus) and context menu items are auto-cleaned by host.
   window.removeEventListener('network:switched', _handler)
   _handler = null
 },
@@ -356,6 +376,79 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 | Cleanup | Automatic (via `useEffect`) | Manual in `unmount()` |
 | React context required | Yes | No |
 | Typical use | UI event reactions | Background tasks, SDKs, analytics |
+
+---
+
+### Example 5 — Menu component pattern (`MenuSection.tsx`)
+
+Explains how `ComponentType.Menu` items (now via `resources` with
+`slot: 'apps-menu'`) work and the `handleClose` prop contract.
+
+---
+
+### Example 6 — Context menu items (`ContextMenuSection.tsx`)
+
+**What it shows:**
+- `useAppContext().apis.contextMenu` — the Phase 2 per-app context menu API.
+- Interactive toggle: add/remove context menu items for node, edge, and canvas.
+- `ApiResult<{ itemId }>` pattern for tracking registered items.
+- `useEffect` cleanup for removing items when the component unmounts.
+
+---
+
+### Example 7 — `ElementApi` (`ElementSection.tsx`)
+
+**What it shows:**
+- `elementApi.createNode(networkId, position, options)` — create nodes with
+  random positions and attributes.
+- `elementApi.createEdge(networkId, source, target)` — connect nodes.
+- `elementApi.deleteNodes(networkId, nodeIds)` — remove nodes (incident edges
+  are deleted automatically).
+- Each operation adds an undo entry automatically.
+
+---
+
+### Example 8 — `TableApi` (`TableSection.tsx`)
+
+**What it shows:**
+- `tableApi.getRow(networkId, 'node', elementId)` — read all attributes for
+  the first selected node.
+- `tableApi.createColumn(networkId, 'node', name, dataType, defaultValue)` —
+  add a new column to the node table.
+- Combines `selectionApi.getSelection()` to pick the target node.
+- Write operations fire `data:changed` events automatically.
+
+---
+
+### Example 9 — `ViewportApi` (`ViewportSection.tsx`)
+
+**What it shows:**
+- `viewportApi.fit(networkId)` — async fit-to-content (delegates to renderer).
+- `viewportApi.getNodePositions(networkId, nodeIds)` — read `[x, y]` positions
+  for selected nodes.
+- Positions are plain `[x, y, z?]` tuples in a `Record<IdType, number[]>`.
+
+---
+
+### Example 10 — `ExportApi` (`ExportSection.tsx`)
+
+**What it shows:**
+- `exportApi.exportToCx2(networkId)` — assemble the full CX2 document from
+  the host's stores (network, tables, visual style, view model).
+- The returned `Cx2` is a JSON-serializable array of aspect objects.
+- Display a summary (aspect count, byte size) instead of the full document.
+
+---
+
+### Example 11 — `NetworkApi` (`NetworkSection.tsx`)
+
+**What it shows:**
+- `networkApi.createNetworkFromEdgeList({ name, edgeList, addToWorkspace })` —
+  the simplest way to create a network from scratch.
+- `networkApi.deleteCurrentNetwork()` — remove the active network.
+- `workspaceApi.getWorkspaceInfo()` — read workspace metadata (name, network
+  count, current network ID).
+- Network creation fires `network:created` and `network:switched` events.
 
 ---
 
