@@ -50,11 +50,6 @@ export default (env = {}) => {
         },
         exposes: {
           './AppConfig': './src/index.ts',
-          './CreateNetworkMenu': './src/components/CreateNetworkMenu.tsx',
-          './CreateNetworkFromCx2Menu':
-            './src/components/CreateNetworkFromCx2Menu.tsx',
-          './JupyterConnectorPanel':
-            './src/components/JupyterConnectorPanel.tsx',
         },
         shared: {
           react: { singleton: true, requiredVersion: deps.react },

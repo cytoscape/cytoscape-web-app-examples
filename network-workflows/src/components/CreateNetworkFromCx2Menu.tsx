@@ -1,16 +1,15 @@
+import Typography from '@mui/material/Typography'
 import { Cx2 } from 'cyweb/ApiTypes'
 import { useNetworkApi } from 'cyweb/NetworkApi'
-
-interface CreateNetworkFromCx2MenuProps {
-  handleClose?: () => void
-}
 
 const sampleUrl =
   'https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/refs/heads/development/docs/data/sample2.cx2'
 
-const CreateNetworkFromCx2Menu = ({
-  handleClose,
-}: CreateNetworkFromCx2MenuProps): JSX.Element => {
+/**
+ * Menu item that fetches a CX2 file from a remote URL and creates a network.
+ * Registered with closeOnAction: true — the host auto-closes the menu.
+ */
+const CreateNetworkFromCx2Menu = (): JSX.Element => {
   const networkApi = useNetworkApi()
 
   const fetchCx2fromURL = async (url: string): Promise<Cx2> => {
@@ -29,25 +28,21 @@ const CreateNetworkFromCx2Menu = ({
         console.error(result.error.message)
       }
     })
-    handleClose && handleClose()
   }
 
   return (
-    <button
-      type="button"
+    <Typography
       onClick={handleClick}
-      style={{
+      sx={{
         width: '100%',
-        padding: '0.75rem 1rem',
-        border: 0,
-        background: 'transparent',
-        textAlign: 'left',
+        px: 2,
+        py: 1,
         cursor: 'pointer',
-        font: 'inherit',
+        '&:hover': { backgroundColor: 'action.hover' },
       }}
     >
       Create a network from remote CX2
-    </button>
+    </Typography>
   )
 }
 

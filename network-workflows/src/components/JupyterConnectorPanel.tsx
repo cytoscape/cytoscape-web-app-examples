@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Snackbar from '@mui/material/Snackbar'
 import { Box, Typography, Button, TextField, Grid } from '@mui/material'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 
 const JupyterType: string = 'jupyter_cx2'
 
-const JupyterConnectorPanel: React.FC = () => {
+const JupyterConnectorPanel = (): JSX.Element => {
   // Check the connection to the Jupyter Instance
   const [isLinked, setIsLinked] = useState<boolean>(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)

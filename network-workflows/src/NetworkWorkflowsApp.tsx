@@ -1,4 +1,5 @@
-import { ComponentType, CyAppWithLifecycle } from 'cyweb/ApiTypes'
+import { lazy } from 'react'
+import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 
 export const NetworkWorkflowsApp: CyAppWithLifecycle = {
   id: 'networkWorkflows',
@@ -6,18 +7,26 @@ export const NetworkWorkflowsApp: CyAppWithLifecycle = {
   description:
     'Network creation, CX2 import, and external integration examples',
   apiVersion: '1.0',
-  components: [
+  resources: [
     {
+      slot: 'apps-menu',
       id: 'CreateNetworkMenu',
-      type: ComponentType.Menu,
+      title: 'Create Example Network',
+      component: lazy(() => import('./components/CreateNetworkMenu')),
+      closeOnAction: true,
     },
     {
+      slot: 'apps-menu',
       id: 'CreateNetworkFromCx2Menu',
-      type: ComponentType.Menu,
+      title: 'Create Network from CX2',
+      component: lazy(() => import('./components/CreateNetworkFromCx2Menu')),
+      closeOnAction: true,
     },
     {
+      slot: 'right-panel',
       id: 'JupyterConnectorPanel',
-      type: ComponentType.Panel,
+      title: 'Jupyter Link',
+      component: lazy(() => import('./components/JupyterConnectorPanel')),
     },
   ],
 }

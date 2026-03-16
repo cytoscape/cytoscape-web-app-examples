@@ -1,18 +1,11 @@
+import Typography from '@mui/material/Typography'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 
-interface CreateNetworkMenuProps {
-  handleClose?: () => void
-}
-
 /**
- * Add a menu item to create a small network with a view
- *
- * @param handleClose
- * @returns
+ * Menu item that creates a small example network.
+ * Registered with closeOnAction: true — the host auto-closes the menu.
  */
-const CreateNetworkMenu = ({
-  handleClose,
-}: CreateNetworkMenuProps): JSX.Element => {
+const CreateNetworkMenu = (): JSX.Element => {
   const networkApi = useNetworkApi()
 
   const handleClick = (): void => {
@@ -29,28 +22,22 @@ const CreateNetworkMenu = ({
 
     if (!result.success) {
       console.error(result.error.message)
-      return
     }
-
-    handleClose && handleClose()
   }
 
   return (
-    <button
-      type="button"
+    <Typography
       onClick={handleClick}
-      style={{
+      sx={{
         width: '100%',
-        padding: '0.75rem 1rem',
-        border: 0,
-        background: 'transparent',
-        textAlign: 'left',
+        px: 2,
+        py: 1,
         cursor: 'pointer',
-        font: 'inherit',
+        '&:hover': { backgroundColor: 'action.hover' },
       }}
     >
       Create an example network
-    </button>
+    </Typography>
   )
 }
 
