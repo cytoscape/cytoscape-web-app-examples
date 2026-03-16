@@ -183,7 +183,7 @@ This object tells the host what your app is called and which UI parts it adds.
 
 ```typescript
 import { lazy } from 'react'
-import { ComponentType, CyAppWithLifecycle } from '@cytoscape-web/api-types'
+import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 import packageJson from '../package.json'
 
 const { version } = packageJson
@@ -194,23 +194,32 @@ export const MyApp: CyAppWithLifecycle = {
   description: 'Short description of your app',
   version,
   apiVersion: '1.0',
-  components: [
+
+  // Declarative resource registration — panels and menu items
+  resources: [
     {
+      slot: 'right-panel',
       id: 'MyPanel',
-      type: ComponentType.Panel,
+      title: 'My Panel',
       component: lazy(() => import('./components/MyPanel')),
     },
     {
+      slot: 'apps-menu',
       id: 'MyMenuItem',
-      type: ComponentType.Menu,
+      title: 'My Action',
       component: lazy(() => import('./components/MyMenuItem')),
+      closeOnAction: true,
     },
   ],
+
+  // Optional: register context menus and event listeners in mount()
+  // mount(context) { context.apis.contextMenu.addContextMenuItem({ ... }) },
+  // unmount() { /* clean up event listeners only */ },
 }
 ```
 
-If you need app-level setup or cleanup, add optional `mount()` and `unmount()`
-callbacks.
+Panels and menu items are registered declaratively via `resources`. Context
+menus need `apis` access, so they are registered in `mount()`.
 
 ---
 
@@ -297,27 +306,35 @@ can listen with `window.addEventListener(...)`.
 
 ![App UI Screenshot](docs/images/app-overview-ui.png)
 
-### Menu items
+### Menu items (`slot: 'apps-menu'`)
 
 Use menu items for clear actions such as importing data, creating a network, or
-opening another tool.
+opening another tool. Set `closeOnAction: true` to auto-close the dropdown.
 
-Menu components receive `handleClose`, which should usually be called after the
-action succeeds.
-
-### Context menu actions
+### Context menu actions (in `mount()`)
 
 Use context menu actions when the action depends on what the user right-clicked.
-Examples include node-specific, edge-specific, or canvas-specific actions.
+Register via `context.apis.contextMenu.addContextMenuItem()` — items are
+auto-cleaned when the app is disabled.
 
-Keep these actions short and focused.
-
-### Panel components
+### Panel components (`slot: 'right-panel'`)
 
 Use panels for richer UI, status displays, forms, and multi-step workflows.
 
 Panels are a good place to show data from `WorkspaceApi`, `TableApi`, and
 `SelectionApi`.
+
+---
+
+## Developer Guides
+
+See [guides/](guides/) for in-depth documentation:
+
+- [Getting Started](guides/getting-started.md) — scaffold and run a new app
+- [Architecture Overview](guides/architecture-overview.md) — Module Federation, API layers
+- [Registration Patterns](guides/registration-patterns.md) — panels, menus, context menus
+- [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md) — mount/unmount, auto-cleanup
+- [Troubleshooting](guides/troubleshooting.md) — common issues and FAQ
 
 ---
 

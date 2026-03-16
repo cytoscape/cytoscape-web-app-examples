@@ -37,30 +37,41 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 
 ## 3. Plugin Architecture
 
-### CyApp Config Pattern
+### CyApp Config Pattern (Phase 2)
 
-Every plugin exports a `CyApp` object that declares its identity and components:
+Every plugin exports a `CyAppWithLifecycle` object that declares its identity, resources, and lifecycle:
 
 ```typescript
 // src/<AppName>.tsx
-import { ComponentType, CyApp } from '@cytoscape-web/types'
-import packageJson from '../package.json' // requires resolveJsonModule: true in tsconfig
-const { version } = packageJson // destructure after default import (avoids webpack warning)
+import { lazy } from 'react'
+import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+import packageJson from '../package.json'
+const { version } = packageJson
 
-export const MyApp: CyApp = {
-  id: 'myApp', // unique, matches Module Federation name
+export const MyApp: CyAppWithLifecycle = {
+  id: 'myApp', // must match Module Federation name in webpack.config.js
   name: 'My App',
   description: '...',
-  version, // import from package.json to stay in sync automatically
-  components: [
-    { id: 'MyMenuItem', type: ComponentType.Menu },
-    { id: 'MyPanel', type: ComponentType.Panel },
+  version,
+  apiVersion: '1.0',
+
+  // Declarative resource registration — panels and menu items
+  resources: [
+    { slot: 'right-panel', id: 'MyPanel', title: 'My Panel',
+      component: lazy(() => import('./components/MyPanel')) },
+    { slot: 'apps-menu', id: 'MyMenu', title: 'My Action',
+      component: lazy(() => import('./components/MyMenu')), closeOnAction: true },
   ],
+
+  // Optional: context menus, event listeners, etc.
+  mount(context) { /* context.apis has all APIs */ },
+  unmount() { /* clean up event listeners only */ },
 }
 ```
 
-- `ComponentType.Menu` → rendered under the "App" menu bar
-- `ComponentType.Panel` → rendered in the right-side App Panel area
+- `slot: 'right-panel'` → rendered in the right-side App Panel
+- `slot: 'apps-menu'` → rendered under the Apps dropdown
+- Context menus → registered in `mount()` via `context.apis.contextMenu`
 
 ### Entry Point Pattern
 
@@ -69,23 +80,10 @@ export const MyApp: CyApp = {
 export { default } from './MyApp'
 ```
 
-### remotes.d.ts
+### Type Declarations
 
-Each app declares type-safe access to host modules. Update this file when new host modules are added:
-
-```typescript
-// src/remotes.d.ts
-declare module 'cyweb/WorkspaceStore'
-declare module 'cyweb/NetworkStore'
-declare module 'cyweb/TableStore'
-declare module 'cyweb/ViewModelStore'
-declare module 'cyweb/VisualStyleStore'
-declare module 'cyweb/LayoutStore'
-declare module 'cyweb/NetworkSummaryStore'
-declare module 'cyweb/CreateNetwork'
-declare module 'cyweb/CreateNetworkFromCx2'
-// Add new cyweb/* modules here as the host API evolves
-```
+Install `@cytoscape-web/api-types` for full type support — no `remotes.d.ts` needed for
+API hooks. The package provides ambient module declarations for all `cyweb/*` remotes.
 
 ### webpack.config.js Pattern
 
@@ -103,8 +101,7 @@ new ModuleFederationPlugin({
   filename: 'remoteEntry.js',
   remotes: { cyweb: cywebUrl }, // cywebUrl switches by env.production
   exposes: {
-    './MyApp': './src/MyApp',
-    './MyMenuItem': './src/components/MyMenuItem.tsx',
+    './AppConfig': './src/index.ts',  // only one expose needed
   },
   shared: {
     react: { singleton: true, requiredVersion: deps.react },
@@ -121,42 +118,43 @@ new ModuleFederationPlugin({
 
 ## 4. API Usage Patterns
 
-### Importing Host Stores (Available Now)
-
-```typescript
-import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
-import { useNetworkStore } from 'cyweb/NetworkStore'
-import { useTableStore } from 'cyweb/TableStore'
-import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
-// etc. — see network-workflows/src/remotes.d.ts for a fuller example
-```
-
-### Importing App APIs (Phase 1 — `new-app-api` branch)
-
-The host exposes high-level App APIs. **Read `cytoscape-web/src/app-api/CLAUDE.md`** before using these.
+### Importing App APIs
 
 ```typescript
 import { useNetworkApi } from 'cyweb/NetworkApi'
 import { useElementApi } from 'cyweb/ElementApi'
-import { useSelectionApi } from 'cyweb/SelectionApi'
-// See cytoscape-web/webpack.config.js for the full list of exposed modules
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useAppContext } from 'cyweb/AppIdContext'
 ```
 
-All API functions return `ApiResult<T>`, a discriminated union:
+All API functions return `ApiResult<T>`:
 
 ```typescript
-const result = await networkApi.getNetworkSummary(networkId)
+const result = workspaceApi.getCurrentNetworkId()
 if (result.success) {
-  console.log(result.data) // typed T
+  console.log(result.data.networkId)
 } else {
-  console.error(result.error) // ApiError
+  console.error(result.error.message)
 }
 ```
 
-### Component Props
+### Per-App Context (Phase 2)
 
-- **Panel components** receive `{ message: string }` prop
-- **Menu components** receive `{ handleClose: () => void }` prop (to close the menu after action)
+Inside plugin components, use `useAppContext()` for per-app APIs:
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+const ctx = useAppContext()
+// ctx.apis.resource — register panels/menus at runtime
+// ctx.apis.contextMenu — per-app context menu (auto-cleaned)
+```
+
+### Host Store Imports (Legacy)
+
+Direct store imports (`cyweb/NetworkStore`, etc.) still work but are deprecated.
+New apps should use `cyweb/*Api` hooks instead.
 
 ---
 
@@ -217,19 +215,15 @@ Shared config files at repo root apply to all apps:
 
 | Purpose                          | Path                                                     |
 | -------------------------------- | -------------------------------------------------------- |
-| App config pattern               | `hello-world/src/HelloApp.tsx`                           |
-| Panel component pattern          | `hello-world/src/components/HelloPanel.tsx`              |
-| Menu component pattern           | `network-workflows/src/components/CreateNetworkMenu.tsx` |
-| MF config pattern                | `hello-world/webpack.config.js`                          |
-| Type declarations for host MF    | `network-workflows/src/remotes.d.ts`                     |
-| Template for new apps            | `project-template/`                                      |
-| Root workspace scripts           | `package.json`                                           |
-| Host API types (source of truth) | `../cytoscape-web/src/app-api/types/index.ts`            |
-| Host API architecture            | `../cytoscape-web/src/app-api/CLAUDE.md`                 |
-| Host webpack exposes             | `../cytoscape-web/webpack.config.js`                     |
-| Agent lessons                    | `.serena/memories/lessons.md`                            |
-| Design docs (cross-cutting)      | `design/specifications/README.md`                        |
-| Design docs (per-app)            | `design/apps/<app-name>/README.md`                       |
+| App config (resources + lifecycle) | `hello-world/src/HelloApp.tsx`                          |
+| Panel component (12 API examples) | `hello-world/src/components/HelloPanel.tsx`              |
+| Menu component (closeOnAction)    | `project-template/src/components/TemplateMenuItem.tsx`   |
+| MF config (env.production switch) | `project-template/webpack.config.js`                    |
+| Template for new apps             | `project-template/`                                     |
+| App Developer Guide               | `guides/`                                               |
+| Host API types (source of truth)  | `../cytoscape-web/src/app-api/types/index.ts`           |
+| Host API architecture             | `../cytoscape-web/src/app-api/CLAUDE.md`                |
+| Host webpack exposes              | `../cytoscape-web/webpack.config.js`                    |
 
 ---
 
@@ -237,13 +231,12 @@ Shared config files at repo root apply to all apps:
 
 1. Copy `project-template/` and rename it
 2. Update `package.json`: `name`, `version`
-3. Update `webpack.config.js`:
-   - Change `DEV_SERVER_PORT` to an unused port
-   - Change `name` in `ModuleFederationPlugin` to a unique camelCase string
-   - Update `exposes` to list your app config and components
-4. Rename/replace files in `src/` (keep the `index.ts` → `AppConfig` → component structure)
-5. Update `remotes.d.ts` to declare any `cyweb/*` modules you need
-6. Register your app in the host's `src/assets/apps.local.json` for local dev testing
+3. Update `webpack.config.js`: `DEV_SERVER_PORT`, `name` in `ModuleFederationPlugin`
+4. Update `src/TemplateApp.tsx`: `id` (must match MF name), `name`, `resources`
+5. Replace panel/menu components in `src/components/`
+6. Register your app in the host's `src/assets/apps.local.json`
+
+See `guides/getting-started.md` for the full walkthrough.
 
 ---
 
@@ -251,6 +244,7 @@ Shared config files at repo root apply to all apps:
 
 Current active branch: `new-app-api`
 
-This branch develops the new App API (Phase 1a–1g). Examples on this branch will be updated to demonstrate usage of the new `cyweb/XxxApi` hooks as they are implemented in the host.
+Phase 0–2 of the App API are complete (types, 10 domain APIs, Event Bus, App
+Resource Registration). Phase 3 focuses on documentation and examples.
 
 See the parent workspace `CLAUDE.md` at `../CLAUDE.md` for the full phase roadmap.
