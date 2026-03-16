@@ -141,21 +141,20 @@ if (isOk(result)) { ... }
 
 ### Error Codes
 
+Common error codes (subset):
+
 ```typescript
 const ApiErrorCode = {
-  NetworkNotFound: 'NETWORK_NOT_FOUND',
-  NodeNotFound: 'NODE_NOT_FOUND',
-  EdgeNotFound: 'EDGE_NOT_FOUND',
-  InvalidInput: 'INVALID_INPUT',
-  InvalidCx2: 'INVALID_CX2',
-  OperationFailed: 'OPERATION_FAILED',
-  LayoutEngineNotFound: 'LAYOUT_ENGINE_NOT_FOUND',
-  FunctionNotAvailable: 'FUNCTION_NOT_AVAILABLE',
-  NoCurrentNetwork: 'NO_CURRENT_NETWORK',
-  ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
-  ResourceNotFound: 'RESOURCE_NOT_FOUND',
+  NetworkNotFound: 'NETWORK_NOT_FOUND',    // no network with that ID
+  InvalidInput: 'INVALID_INPUT',           // bad argument (empty label, etc.)
+  OperationFailed: 'OPERATION_FAILED',     // unexpected internal error
+  NoCurrentNetwork: 'NO_CURRENT_NETWORK',  // no network is loaded
+  // ... 7 more codes
 } as const
 ```
+
+For the complete list (11 codes), see the
+[App API Reference](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md#error-codes).
 
 ---
 
