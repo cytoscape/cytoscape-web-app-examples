@@ -59,12 +59,13 @@ npm run dev:local
 3. Enable one of the example apps
 4. Open the **Apps** menu or the right-side **App Panel**
 
-> **Publishing to the public Cytoscape Web site:**
-> The production instance of Cytoscape Web loads apps from a curated allowlist
-> (`apps.json`) maintained by the core team. There are plans for a dynamic app
-> store in the future, but for now app registration is manual. If you would like
-> to publish your app, please
-> [contact the Cytoscape team](https://cytoscape.org/contact.html).
+### Publishing to the public Cytoscape Web site
+
+The production instance of Cytoscape Web loads apps from a curated allowlist
+(`apps.json`) maintained by the core team. There are plans for a dynamic loading mechanism and the public App
+store in the future, but for now public app registration is manual. If you would like
+to publish your app, please
+[contact the Cytoscape team](https://groups.google.com/g/cytoscape-app-dev).
 
 ---
 
@@ -135,7 +136,9 @@ export const MyApp: CyAppWithLifecycle = {
       },
     })
   },
-  unmount() { /* clean up event listeners only — context menus are auto-cleaned */ },
+  unmount() {
+    /* clean up event listeners only — context menus are auto-cleaned */
+  },
 }
 ```
 
@@ -145,29 +148,29 @@ export const MyApp: CyAppWithLifecycle = {
 
 ### Developer Guides
 
-| Guide | Topics |
-|-------|--------|
-| [Getting Started](guides/getting-started.md) | Scaffold, configure, register, run |
-| [Architecture Overview](guides/architecture-overview.md) | Module Federation, type system, API layers |
+| Guide                                                    | Topics                                      |
+| -------------------------------------------------------- | ------------------------------------------- |
+| [Getting Started](guides/getting-started.md)             | Scaffold, configure, register, run          |
+| [Architecture Overview](guides/architecture-overview.md) | Module Federation, type system, API layers  |
 | [Registration Patterns](guides/registration-patterns.md) | Panels, menus, context menus, upsert, batch |
-| [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md) | mount/unmount, auto-cleanup, re-enable |
-| [Troubleshooting](guides/troubleshooting.md) | Build errors, runtime errors, FAQ |
+| [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md)   | mount/unmount, auto-cleanup, re-enable      |
+| [Troubleshooting](guides/troubleshooting.md)             | Build errors, runtime errors, FAQ           |
 
 ### API Reference
 
-| Resource | Description |
-|----------|-------------|
-| [**App API Reference**](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md) | Complete reference for all domain APIs, ResourceApi, Event Bus, error codes, and lifecycle |
-| [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types) ([README](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/README.md)) | TypeScript types package — install for IDE support |
-| [CHANGELOG](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/CHANGELOG.md) | Version history for the types package |
+| Resource                                                                                                                                                                                  | Description                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [**App API Reference**](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md)                                                                          | Complete reference for all domain APIs, ResourceApi, Event Bus, error codes, and lifecycle |
+| [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types) ([README](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/README.md)) | TypeScript types package — install for IDE support                                         |
+| [CHANGELOG](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/CHANGELOG.md)                                                                                  | Version history for the types package                                                      |
 
 ### Specifications (Advanced)
 
-| Spec | Scope |
-|------|-------|
-| [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md) | Full 2000-line spec for all 10 domain APIs |
-| [Resource Registration Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-resource-registration-specification.md) | Slot model, lifecycle, cleanup, error boundaries |
-| [Registration Minimal App Example](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/examples/app-resource-registration-minimal-app.md) | End-to-end code walkthrough of all registration paths |
+| Spec                                                                                                                                                                                       | Scope                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md)                                 | Full 2000-line spec for all 10 domain APIs            |
+| [Resource Registration Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-resource-registration-specification.md) | Slot model, lifecycle, cleanup, error boundaries      |
+| [Registration Minimal App Example](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/examples/app-resource-registration-minimal-app.md)            | End-to-end code walkthrough of all registration paths |
 
 ---
 
@@ -175,33 +178,33 @@ export const MyApp: CyAppWithLifecycle = {
 
 All API methods return `ApiResult<T>`. Always check `result.success` before reading `result.data`.
 
-| API | Import | Purpose |
-|-----|--------|---------|
-| **WorkspaceApi** | `cyweb/WorkspaceApi` | Current network ID, workspace info, switch network |
-| **ElementApi** | `cyweb/ElementApi` | Create/delete nodes and edges, graph traversal queries |
-| **NetworkApi** | `cyweb/NetworkApi` | Create/delete networks, import CX2 |
-| **SelectionApi** | `cyweb/SelectionApi` | Read and mutate the current selection |
-| **ViewportApi** | `cyweb/ViewportApi` | Pan, zoom, fit, read/write node positions |
-| **TableApi** | `cyweb/TableApi` | Read and write node/edge attribute tables |
-| **VisualStyleApi** | `cyweb/VisualStyleApi` | Set defaults, bypasses, and mappings |
-| **LayoutApi** | `cyweb/LayoutApi` | Run layout algorithms |
-| **ExportApi** | `cyweb/ExportApi` | Export network as CX2 |
-| **EventBus** | `cyweb/EventBus` | Subscribe to host events (`useCyWebEvent`) |
-| **AppIdContext** | `cyweb/AppIdContext` | Per-app context (`useAppContext`) for resource and context menu APIs |
-| **ApiTypes** | `cyweb/ApiTypes` | TypeScript types for all of the above |
+| API                | Import                 | Purpose                                                              |
+| ------------------ | ---------------------- | -------------------------------------------------------------------- |
+| **WorkspaceApi**   | `cyweb/WorkspaceApi`   | Current network ID, workspace info, switch network                   |
+| **ElementApi**     | `cyweb/ElementApi`     | Create/delete nodes and edges, graph traversal queries               |
+| **NetworkApi**     | `cyweb/NetworkApi`     | Create/delete networks, import CX2                                   |
+| **SelectionApi**   | `cyweb/SelectionApi`   | Read and mutate the current selection                                |
+| **ViewportApi**    | `cyweb/ViewportApi`    | Pan, zoom, fit, read/write node positions                            |
+| **TableApi**       | `cyweb/TableApi`       | Read and write node/edge attribute tables                            |
+| **VisualStyleApi** | `cyweb/VisualStyleApi` | Set defaults, bypasses, and mappings                                 |
+| **LayoutApi**      | `cyweb/LayoutApi`      | Run layout algorithms                                                |
+| **ExportApi**      | `cyweb/ExportApi`      | Export network as CX2                                                |
+| **EventBus**       | `cyweb/EventBus`       | Subscribe to host events (`useCyWebEvent`)                           |
+| **AppIdContext**   | `cyweb/AppIdContext`   | Per-app context (`useAppContext`) for resource and context menu APIs |
+| **ApiTypes**       | `cyweb/ApiTypes`       | TypeScript types for all of the above                                |
 
 ### Available Events
 
-| Event | Fires when |
-|-------|-----------|
-| `network:created` | A new network is added to the workspace |
-| `network:deleted` | A network is removed |
-| `network:switched` | The user navigates to a different network |
-| `selection:changed` | Node or edge selection changes |
-| `layout:started` | A layout algorithm begins |
-| `layout:completed` | A layout algorithm finishes |
-| `style:changed` | A visual style property changes |
-| `data:changed` | Node or edge attribute data changes |
+| Event               | Fires when                                |
+| ------------------- | ----------------------------------------- |
+| `network:created`   | A new network is added to the workspace   |
+| `network:deleted`   | A network is removed                      |
+| `network:switched`  | The user navigates to a different network |
+| `selection:changed` | Node or edge selection changes            |
+| `layout:started`    | A layout algorithm begins                 |
+| `layout:completed`  | A layout algorithm finishes               |
+| `style:changed`     | A visual style property changes           |
+| `data:changed`      | Node or edge attribute data changes       |
 
 ### Non-React Access
 
@@ -222,11 +225,11 @@ window.addEventListener('cywebapi:ready', () => {
 
 ## Example Apps
 
-| Example | Best for | Details |
-|---------|----------|---------|
-| [project-template/](project-template/) | Your first app — panel, menu action, and context menu | [README](project-template/README.md) |
-| [hello-world/](hello-world/) | Full API coverage — 12 examples covering all APIs | [README](hello-world/README.md) |
-| [network-workflows/](network-workflows/) | CX2 import, Jupyter integration, menu workflows | [README](network-workflows/README.md) |
+| Example                                  | Best for                                              | Details                               |
+| ---------------------------------------- | ----------------------------------------------------- | ------------------------------------- |
+| [project-template/](project-template/)   | Your first app — panel, menu action, and context menu | [README](project-template/README.md)  |
+| [hello-world/](hello-world/)             | Full API coverage — 12 examples covering all APIs     | [README](hello-world/README.md)       |
+| [network-workflows/](network-workflows/) | CX2 import, Jupyter integration, menu workflows       | [README](network-workflows/README.md) |
 
 Recommended reading order: project-template → hello-world → network-workflows
 
@@ -272,8 +275,8 @@ use the App API instead. See
 [Architecture Overview](guides/architecture-overview.md) for the full
 deprecation table.
 
-| Deprecated pattern | Recommended replacement |
-|--------------------|------------------------|
-| `useNetworkStore`  | `useNetworkApi`         |
-| `useTableStore`    | `useTableApi`           |
-| `useWorkspaceStore`| `useWorkspaceApi`       |
+| Deprecated pattern  | Recommended replacement |
+| ------------------- | ----------------------- |
+| `useNetworkStore`   | `useNetworkApi`         |
+| `useTableStore`     | `useTableApi`           |
+| `useWorkspaceStore` | `useWorkspaceApi`       |
