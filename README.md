@@ -59,6 +59,13 @@ npm run dev:local
 3. Enable one of the example apps
 4. Open the **Apps** menu or the right-side **App Panel**
 
+> **Publishing to the public Cytoscape Web site:**
+> The production instance of Cytoscape Web loads apps from a curated allowlist
+> (`apps.json`) maintained by the core team. There are plans for a dynamic app
+> store in the future, but for now app registration is manual. If you would like
+> to publish your app, please
+> [contact the Cytoscape team](https://cytoscape.org/contact.html).
+
 ---
 
 ## Build Your First App
@@ -270,6 +277,3 @@ deprecation table.
 | `useNetworkStore`  | `useNetworkApi`         |
 | `useTableStore`    | `useTableApi`           |
 | `useWorkspaceStore`| `useWorkspaceApi`       |
-
-> **Publishing:** The public Cytoscape Web site loads apps from a curated
-> allowlist. Contact the Cytoscape Web team when your app is ready.
