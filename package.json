@@ -24,7 +24,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@cytoscape-web/api-types": "^0.1.0-alpha.4",
+    "@cytoscape-web/api-types": "^1.0.0-beta.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@types/react": "^18.3.5",

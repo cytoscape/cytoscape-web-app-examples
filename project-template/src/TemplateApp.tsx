@@ -1,13 +1,13 @@
 /**
- * TemplateApp — Minimal Cytoscape Web plugin configuration.
+ * TemplateApp — Cytoscape Web plugin with panel, menu action, and context menu.
  *
  * Copy this file and update:
  *   1. `id`          → must match the Module Federation `name` in webpack.config.js
  *   2. `name`        → human-readable name shown in the host's App Settings
  *   3. `description` → one-line summary
  *   4. `resources`   → add/remove panels and menu items
- *   5. `mount()`     → optional: register context menus, event listeners, etc.
- *   6. `unmount()`   → optional: clean up event listeners from mount()
+ *   5. `mount()`     → register context menus, event listeners, etc.
+ *   6. `unmount()`   → clean up event listeners from mount()
  *
  * Resources (panels and menu items) are registered declaratively — the host
  * renders them automatically. Context menus need `apis` access, so they are
@@ -18,8 +18,10 @@
  */
 import { lazy } from 'react'
 
-import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 import packageJson from '../package.json'
+
+import { registerSelectNeighbors } from './contextMenus'
 
 const { version } = packageJson
 
@@ -30,8 +32,8 @@ export const TemplateApp: CyAppWithLifecycle = {
   // TODO: Change name and description.
   name: 'App Template',
   description:
-    'Boilerplate app with a minimal panel, a simple menu action, and the ' +
-    'recommended Cytoscape Web plugin shape.',
+    'Boilerplate app with a panel, a menu action, a context menu item, ' +
+    'and the recommended Cytoscape Web plugin shape.',
   version,
   apiVersion: '1.0',
 
@@ -54,27 +56,27 @@ export const TemplateApp: CyAppWithLifecycle = {
     },
   ],
 
-  // ── Optional lifecycle hooks ───────────────────────────────────────────
-  // Uncomment mount/unmount to register context menus or event listeners.
-  //
-  // mount(context) {
-  //   // context.apis has all 10 domain APIs + contextMenu + resource.
-  //   // Register context menu items here (they need apis access):
-  //   context.apis.contextMenu.addContextMenuItem({
-  //     label: 'My App: Inspect Node',
-  //     targetTypes: ['node'],
-  //     handler: (ctx) => { /* use context.apis here */ },
-  //   })
-  //
-  //   // Register app-scoped event listeners:
-  //   _handler = (e) => { /* ... */ }
-  //   window.addEventListener('network:switched', _handler)
-  // },
-  //
-  // unmount() {
-  //   // Only event listeners need manual cleanup.
-  //   // Resources and context menu items are auto-cleaned by the host.
-  //   window.removeEventListener('network:switched', _handler)
-  //   _handler = null
-  // },
+  // ── Lifecycle hooks ────────────────────────────────────────────────────
+  // mount() is called once after the app's resources are registered.
+  // Use it for context menus (handlers need api access) and event listeners.
+
+  mount(context: AppContext): void {
+    // Context menu items are registered here because their handlers need
+    // access to context.apis. The host auto-cleans all items when the app
+    // is disabled — no explicit removal in unmount() needed.
+    registerSelectNeighbors(context)
+
+    // TODO: Add more context menu registrations or event listeners here.
+    // See src/contextMenus.ts for the pattern.
+  },
+
+  unmount(): void {
+    // Only manual cleanup (e.g. event listeners) goes here.
+    // Context menu items and resources are auto-cleaned by the host.
+    //
+    // if (_handler !== null) {
+    //   window.removeEventListener('network:switched', _handler)
+    //   _handler = null
+    // }
+  },
 }

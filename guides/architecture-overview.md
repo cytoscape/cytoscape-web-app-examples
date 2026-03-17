@@ -211,7 +211,7 @@ These modules are available via the `cyweb/` prefix:
 | Module | Import Example | Description |
 |--------|---------------|-------------|
 | `cyweb/ApiTypes` | `import type { IdType } from 'cyweb/ApiTypes'` | All public type exports |
-| `cyweb/ElementApi` | `import { useElementApi } from 'cyweb/ElementApi'` | Node/edge CRUD |
+| `cyweb/ElementApi` | `import { useElementApi } from 'cyweb/ElementApi'` | Node/edge CRUD + graph traversal |
 | `cyweb/NetworkApi` | `import { useNetworkApi } from 'cyweb/NetworkApi'` | Network operations |
 | `cyweb/SelectionApi` | `import { useSelectionApi } from 'cyweb/SelectionApi'` | Selection state |
 | `cyweb/ViewportApi` | `import { useViewportApi } from 'cyweb/ViewportApi'` | Pan, zoom, fit |

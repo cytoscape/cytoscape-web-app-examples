@@ -23,7 +23,12 @@ through Webpack Module Federation. Apps can add:
 
 ## Quick Start
 
-### Recommended local workspace
+### Set up the local workspace
+
+Both the **host application** and this **examples repository** are needed side by side.
+The host runs the Cytoscape Web UI at `localhost:5500` and hot-reloads your plugin
+changes via Module Federation — edit a component, save, and see the result instantly
+in the browser without rebuilding the host.
 
 ```bash
 mkdir cytoscape-web-dev && cd cytoscape-web-dev
@@ -112,9 +117,18 @@ export const MyApp: CyAppWithLifecycle = {
     },
   ],
 
-  // Optional: register context menus and event listeners
-  // mount(context) { context.apis.contextMenu.addContextMenuItem({ ... }) },
-  // unmount() { /* clean up event listeners only */ },
+  // Context menus and event listeners — registered in mount()
+  mount(context) {
+    context.apis.contextMenu.addContextMenuItem({
+      label: 'My App: Log Node Info',
+      targetTypes: ['node'],
+      handler: (ctx) => {
+        const result = context.apis.element.getNode(ctx.networkId, ctx.id!)
+        if (result.success) console.info('Node:', result.data)
+      },
+    })
+  },
+  unmount() { /* clean up event listeners only — context menus are auto-cleaned */ },
 }
 ```
 
@@ -157,7 +171,7 @@ All API methods return `ApiResult<T>`. Always check `result.success` before read
 | API | Import | Purpose |
 |-----|--------|---------|
 | **WorkspaceApi** | `cyweb/WorkspaceApi` | Current network ID, workspace info, switch network |
-| **ElementApi** | `cyweb/ElementApi` | Create/delete nodes and edges |
+| **ElementApi** | `cyweb/ElementApi` | Create/delete nodes and edges, graph traversal queries |
 | **NetworkApi** | `cyweb/NetworkApi` | Create/delete networks, import CX2 |
 | **SelectionApi** | `cyweb/SelectionApi` | Read and mutate the current selection |
 | **ViewportApi** | `cyweb/ViewportApi` | Pan, zoom, fit, read/write node positions |
@@ -203,7 +217,7 @@ window.addEventListener('cywebapi:ready', () => {
 
 | Example | Best for | Details |
 |---------|----------|---------|
-| [project-template/](project-template/) | Your first app — smallest starting point | [README](project-template/README.md) |
+| [project-template/](project-template/) | Your first app — panel, menu action, and context menu | [README](project-template/README.md) |
 | [hello-world/](hello-world/) | Full API coverage — 12 examples covering all APIs | [README](hello-world/README.md) |
 | [network-workflows/](network-workflows/) | CX2 import, Jupyter integration, menu workflows | [README](network-workflows/README.md) |
 

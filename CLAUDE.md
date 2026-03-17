@@ -31,7 +31,7 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 | ----------------- | ------------------ | ---- | --------------------------------------------------------------------------------------- |
 | hello-world       | `hello`            | 2222 | HelloApp, HelloPanel                                                                    |
 | network-workflows | `networkWorkflows` | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
-| project-template  | `createNetwork`    | 5555 | TemplateApp, TemplatePanel                                                              |
+| project-template  | `createNetwork`    | 5555 | TemplateApp, TemplatePanel, TemplateMenuItem + context menu                             |
 
 ---
 

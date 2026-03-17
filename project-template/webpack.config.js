@@ -42,7 +42,7 @@ export default (env) => ({
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'createNetwork', // TODO: Change to your unique camelCase app name.
+      name: 'template', // TODO: Change to your unique camelCase app name.
       filename: 'remoteEntry.js',
       remotes: {
         cyweb: env?.production ? PROD_CYWEB : LOCAL_CYWEB,

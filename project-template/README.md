@@ -1,13 +1,13 @@
 # Cytoscape Web App — Starter Template
 
-The smallest working Cytoscape Web plugin. Copy this directory to scaffold a
-new app.
+A ready-to-use Cytoscape Web plugin with a panel, a menu action, and a
+context menu item. Copy this directory to scaffold a new app.
 
 | Field | Value |
 |---|---|
-| Federation name | `createNetwork` (change this) |
+| Federation name | `template` (change this) |
 | Dev server port | `5555` (change this) |
-| Entry point | `createNetwork@http://localhost:5555/remoteEntry.js` |
+| Entry point | `template@http://localhost:5555/remoteEntry.js` |
 
 ---
 
@@ -47,7 +47,8 @@ Open `http://localhost:5500` → **Apps** → **App Settings** → enable your a
 - `id` → must match the webpack federation `name`
 - `name`, `description` → human-readable labels
 - `resources` → add/remove panels and menu items
-- `mount()` / `unmount()` → optional lifecycle hooks (uncomment to use)
+- `mount()` → customize the context menu item or add more (edge, canvas)
+- `unmount()` → add cleanup for any event listeners you register
 
 ### 4. `src/components/`
 
@@ -71,6 +72,7 @@ project-template/
 ├── src/
 │   ├── index.ts              ← re-exports app config as default
 │   ├── TemplateApp.tsx       ← app config: id, name, resources, lifecycle
+│   ├── contextMenus.ts      ← context menu registration (Graph Traversal example)
 │   └── components/
 │       ├── TemplatePanel.tsx  ← right-panel component (WorkspaceApi example)
 │       └── TemplateMenuItem.tsx ← apps-menu component (NetworkApi example)
@@ -85,31 +87,22 @@ project-template/
 
 | File | Pattern |
 |---|---|
-| `TemplateApp.tsx` | Declarative `resources[]` registration (Phase 2), TODO markers for customization |
+| `TemplateApp.tsx` | Declarative `resources[]`, `mount()` delegates to `contextMenus.ts` |
+| `contextMenus.ts` | `getConnectedNodes()` + `additiveSelect()` — Graph Traversal + Selection APIs |
 | `TemplatePanel.tsx` | `useWorkspaceApi()` + `ApiResult<T>` pattern, MUI shared singletons |
 | `TemplateMenuItem.tsx` | `useNetworkApi().createNetworkFromEdgeList()`, `closeOnAction: true` |
 | `webpack.config.js` | `env.production` flag switches between local and production host URL |
 
 ---
 
-## Adding context menus
+## Context menus
 
-Context menus need `apis` access, so they are registered in `mount()`:
+Right-click a node to see **"Template: Select Neighbors"** — it uses
+`getConnectedNodes()` to find adjacent nodes, then `additiveSelect()` to
+highlight them. The registration lives in `src/contextMenus.ts`.
 
-```typescript
-mount(context) {
-  context.apis.contextMenu.addContextMenuItem({
-    label: 'My App: Do Something',
-    targetTypes: ['node'],
-    handler: (ctx) => {
-      const result = context.apis.element.getNode(networkId, ctx.id)
-      // ...
-    },
-  })
-},
-```
-
-Items are auto-cleaned when the app is disabled — no explicit removal needed.
+To add more items, create a new function in `contextMenus.ts` and call it
+from `mount()`. Items are auto-cleaned when the app is disabled.
 
 ---
 
