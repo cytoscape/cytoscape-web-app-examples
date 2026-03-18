@@ -11,6 +11,7 @@ import { MenuSection } from './MenuSection'
 import { NetworkSection } from './NetworkSection'
 import { SelectionSection } from './SelectionSection'
 import { TableSection } from './TableSection'
+import { TsvDownloadSection } from './TsvDownloadSection'
 import { ViewportSection } from './ViewportSection'
 import { VisualStyleSection } from './VisualStyleSection'
 
@@ -34,6 +35,7 @@ import { VisualStyleSection } from './VisualStyleSection'
  *   ViewportSection      — fit/positions via ViewportApi (Example 9)
  *   ExportSection        — CX2 export via ExportApi (Example 10)
  *   NetworkSection       — network create/delete via NetworkApi (Example 11)
+ *   TsvDownloadSection   — TSV table download via TableApi (Example 12)
  */
 const HelloPanel = (): JSX.Element => (
   <Box
@@ -70,6 +72,8 @@ const HelloPanel = (): JSX.Element => (
     <ExportSection />
     <Divider />
     <NetworkSection />
+    <Divider />
+    <TsvDownloadSection />
   </Box>
 )
 
