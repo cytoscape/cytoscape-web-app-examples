@@ -218,3 +218,247 @@ The Python computation step runs entirely on the local machine via Claude's Bash
 tool and has no CDP overhead. Only the data transfer back into Cytoscape (step 3)
 touches the browser, and `table.editRows()` does that in a single call regardless
 of network size.
+
+### Scenario 4 — TSV Variant (Recommended)
+
+The same Louvain workflow can be simplified using the TSV I/O API. Instead of
+CX2 export → custom CX2-to-NetworkX converter → JSON → editRows, we use
+TSV export → standard pandas → TSV import:
+
+```
+User: Run Louvain clustering on the current network and colour-code the clusters.
+
+── Step 1: Export the edge table as TSV ──────────────────────────────────────
+
+  [tool] cytoscape_get_current_network()
+         → { networkId: "net-001" }
+
+  [tool] cytoscape_export_table_tsv(
+           networkId="net-001", tableType="edge"
+         )
+         → { filePath: "/tmp/cyweb-bridge-.../table-e1f2.tsv", rowCount: 8932 }
+
+── Step 2: Run NetworkX locally (Claude's Bash tool) ─────────────────────────
+
+  [bash] python3 - <<'EOF'
+  import pandas as pd
+  import networkx as nx
+  from networkx.algorithms.community import louvain_communities
+
+  edges = pd.read_csv('/tmp/cyweb-bridge-.../table-e1f2.tsv', sep='\t')
+  G = nx.from_pandas_edgelist(edges, 'source', 'target')
+
+  communities = louvain_communities(G, seed=42)
+  result = pd.DataFrame([
+      {'id': node, 'louvain_cluster': cid}
+      for cid, members in enumerate(communities)
+      for node in members
+  ])
+  result.to_csv('/tmp/cyweb-bridge-.../louvain.tsv', sep='\t', index=False)
+  print(f'{len(communities)} communities, {len(result)} nodes')
+  EOF
+         → "7 communities, 1247 nodes"
+
+── Step 3: Import results back as TSV ────────────────────────────────────────
+
+  [tool] cytoscape_import_table_tsv(
+           networkId="net-001", tableType="node",
+           tsvText=<contents of /tmp/.../louvain.tsv>
+         )
+         → { rowCount: 1247, newColumns: ["louvain_cluster"] }
+
+── Step 4: Create a discrete mapping and fit ─────────────────────────────────
+
+  [tool] cytoscape_create_discrete_mapping(
+           networkId="net-001", vpName="nodeBackgroundColor",
+           attribute="louvain_cluster", attributeType="integer"
+         )
+
+  [tool] cytoscape_fit_network(networkId="net-001")
+```
+
+**TSV variant advantages over CX2 variant:**
+
+| Aspect               | CX2 Variant (above)                         | TSV Variant                                 |
+| -------------------- | -------------------------------------------- | ------------------------------------------- |
+| Export format         | Full CX2 JSON (284 KB)                      | Edge table TSV (~90 KB)                    |
+| Python parsing        | Custom `cx2_to_networkx()` helper needed    | `pd.read_csv()` — zero custom code         |
+| Import format         | JSON `editRows` (verbose key-value objects) | TSV `importTableFromTsv` (compact text)    |
+| Column creation       | Manual `createColumn` call required         | Auto-created by `importTableFromTsv`       |
+| CDP round-trips       | 7                                            | **5**                                       |
+| Token efficiency      | Low (CX2 is verbose JSON)                   | High (TSV is compact plain text)           |
+
+---
+
+## Scenario 5: Network Topology Analysis (Graph Traversal API)
+
+This scenario demonstrates the Graph Traversal tools added in Phase 3.6.
+Claude analyses a loaded network's topology without exporting the entire
+dataset — using lightweight in-memory queries instead.
+
+```
+User: Analyse the current network's structure — how many nodes and edges,
+      is it a DAG, and which nodes are hubs?
+
+── Step 1: Basic metrics ──────────────────────────────────────────────────
+
+  [tool] cytoscape_get_current_network()
+         → { networkId: "net-001" }
+
+  [tool] cytoscape_get_node_ids(networkId="net-001")
+         → { nodeIds: ["n-1", "n-2", ..., "n-276"] }
+
+  [tool] cytoscape_get_edge_ids(networkId="net-001")
+         → { edgeIds: ["e-1", "e-2", ..., "e-298"] }
+
+Claude: 276 nodes, 298 edges.
+
+── Step 2: DAG analysis ───────────────────────────────────────────────────
+
+  [tool] cytoscape_get_roots(networkId="net-001")
+         → { nodeIds: ["n-1"] }
+
+  [tool] cytoscape_get_leaves(networkId="net-001")
+         → { nodeIds: ["n-42", "n-58", ..., "n-271"] }   (189 leaves)
+
+Claude: 1 root, 189 leaves — tree-like structure.
+
+── Step 3: Hub detection (find highest-degree nodes) ──────────────────────
+
+  # Claude iterates over a sample of nodes to find hubs.
+  # In practice, Claude would use cytoscape_get_connected_nodes on
+  # candidate nodes identified from the graph structure.
+
+  [tool] cytoscape_get_connected_nodes(networkId="net-001", nodeId="n-1")
+         → { nodeIds: ["n-2", "n-3", "n-5", ..., "n-45"] }   (45 neighbors)
+
+  [tool] cytoscape_get_row(
+           networkId="net-001", tableType="node", elementId="n-1"
+         )
+         → { row: { name: "Hub Protein", degree: 45, ... } }
+
+Claude: "Hub Protein" (n-1) is the primary hub with 45 connections.
+        The network has a tree-like DAG structure with 1 root and 189 leaves.
+
+── Step 4: Highlight the hub ──────────────────────────────────────────────
+
+  [tool] cytoscape_set_visual_bypass(
+           networkId="net-001",
+           vpName="nodeBackgroundColor",
+           elementIds=["n-1"],
+           vpValue="#FF4444"
+         )
+
+  [tool] cytoscape_fit_network(networkId="net-001")
+```
+
+**API calls summary for this scenario:**
+
+| Step                | `window.CyWebApi` call               | Round-trips |
+| ------------------- | ------------------------------------- | ----------- |
+| Get current network | `workspace.getCurrentNetworkId()`     | 1           |
+| Get node IDs        | `element.getNodeIds(networkId)`       | 1           |
+| Get edge IDs        | `element.getEdgeIds(networkId)`       | 1           |
+| Get roots           | `element.getRoots(networkId)`         | 1           |
+| Get leaves          | `element.getLeaves(networkId)`        | 1           |
+| Get neighbors       | `element.getConnectedNodes(...)`      | 1           |
+| Get node data       | `table.getRow(...)`                   | 1           |
+| Highlight hub       | `visualStyle.setBypass(...)`          | 1           |
+| Fit view            | `viewport.fit(networkId)`             | 1           |
+| **Total**           |                                       | **9**       |
+
+> **Why graph traversal instead of export?** Exporting a 276-node network
+> to CX2, parsing it, and computing topology in Python would require
+> writing a temp file, spawning a subprocess, and parsing JSON — at least
+> 3 tool calls and significant data transfer. The graph traversal tools
+> answer the same questions with lightweight, targeted queries directly
+> against the in-memory graph.
+
+---
+
+## Scenario 6: NetworkX Statistics via TSV Round-Trip
+
+This scenario demonstrates the TSV I/O workflow for computing network
+statistics in Python and writing results back as node attributes — the
+most common pattern for integrating external analysis tools.
+
+```
+User: Compute betweenness centrality, closeness centrality, and PageRank
+      for all nodes, then colour-code by PageRank.
+
+── Step 1: Export edge table as TSV ──────────────────────────────────────
+
+  [tool] cytoscape_get_current_network()
+         → { networkId: "net-001" }
+
+  [tool] cytoscape_export_table_tsv(
+           networkId="net-001", tableType="edge"
+         )
+         → { filePath: "/tmp/cyweb-bridge-.../table-edges.tsv", rowCount: 298 }
+
+── Step 2: Compute statistics in Python ──────────────────────────────────
+
+  [bash] python3 - <<'EOF'
+  import pandas as pd
+  import networkx as nx
+
+  edges = pd.read_csv('/tmp/cyweb-bridge-.../table-edges.tsv', sep='\t')
+  G = nx.from_pandas_edgelist(edges, 'source', 'target')
+
+  bc = nx.betweenness_centrality(G)
+  cc = nx.closeness_centrality(G)
+  pr = nx.pagerank(G)
+
+  result = pd.DataFrame({
+      'id': list(G.nodes),
+      'betweenness': [bc[n] for n in G.nodes],
+      'closeness': [cc[n] for n in G.nodes],
+      'pagerank': [pr[n] for n in G.nodes],
+  })
+  result.to_csv('/tmp/cyweb-bridge-.../stats.tsv', sep='\t', index=False)
+  print(f'Computed 3 metrics for {len(result)} nodes')
+  EOF
+         → "Computed 3 metrics for 276 nodes"
+
+── Step 3: Import results ────────────────────────────────────────────────
+
+  [tool] cytoscape_import_table_tsv(
+           networkId="net-001", tableType="node",
+           tsvText=<contents of /tmp/.../stats.tsv>
+         )
+         → { rowCount: 276, newColumns: ["betweenness", "closeness", "pagerank"] }
+
+── Step 4: Visualize — continuous mapping for PageRank ───────────────────
+
+  [tool] cytoscape_create_continuous_mapping(
+           networkId="net-001",
+           vpName="nodeSize",
+           vpType="double",
+           attribute="pagerank",
+           attributeValues=[0.001, 0.05],
+           attributeType="double"
+         )
+
+  [tool] cytoscape_fit_network(networkId="net-001")
+
+Claude: Computed betweenness centrality, closeness centrality, and PageRank for
+        all 276 nodes. Results are in the "betweenness", "closeness", and
+        "pagerank" columns. Node size is now mapped to PageRank.
+```
+
+**API calls summary for this scenario:**
+
+| Step                 | `window.CyWebApi` call                   | Round-trips |
+| -------------------- | ---------------------------------------- | ----------- |
+| Get current network  | `workspace.getCurrentNetworkId()`        | 1           |
+| Export edge table    | `table.exportTableToTsv(..., 'edge')`    | 1           |
+| Import results       | `table.importTableFromTsv(..., 'node')` | 1           |
+| Create size mapping  | `visualStyle.createContinuousMapping()`  | 1           |
+| Fit view             | `viewport.fit(networkId)`                | 1           |
+| **Total**            |                                          | **5**       |
+
+> **Why TSV over CX2?** The Python code uses `pd.read_csv()` and
+> `pd.DataFrame.to_csv()` — zero custom parsers. The edge table TSV
+> already contains `source`/`target` columns, so `nx.from_pandas_edgelist`
+> builds the graph in one line. Three new columns are auto-created on
+> import without separate `createColumn` calls.

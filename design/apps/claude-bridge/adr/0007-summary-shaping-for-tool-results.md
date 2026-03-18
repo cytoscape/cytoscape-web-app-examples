@@ -76,3 +76,34 @@ data to Claude.
   `API_ERROR` (the host call succeeded but shaping failed)
 - The shaping layer is the single point of truth for what Claude sees — any
   change to tool output format is made here
+
+## Graph Traversal Tools (Phase 3.6)
+
+All 10 Graph Traversal tools (`getNodeIds`, `getEdgeIds`, `getConnectedEdges`,
+`getConnectedNodes`, `getOutgoers`, `getIncomers`, `getSuccessors`,
+`getPredecessors`, `getRoots`, `getLeaves`) use **Passthrough** shaping.
+
+Although `getNodeIds` and `getEdgeIds` can return large ID arrays for
+networks with tens of thousands of elements, the simplicity of passthrough
+outweighs the cost. Claude can choose to inspect only a subset of results
+or use these tools selectively. Introducing truncation or `countOnly`
+parameters would add complexity to the tool interface without clear benefit,
+since Claude already manages its own context window.
+
+## TSV I/O Tools (Step 3.7)
+
+| Tool                         | Shaping tier    | Output                           |
+| ---------------------------- | --------------- | -------------------------------- |
+| `cytoscape_get_table`        | **Summary**     | `{ columns: [...], rowCount }` (rows omitted — use TSV for bulk) |
+| `cytoscape_export_table_tsv` | **File**        | `{ filePath, rowCount }` — TSV written to session dir |
+| `cytoscape_import_table_tsv` | **Passthrough** | `{ rowCount, newColumns }` |
+
+`cytoscape_export_table_tsv` follows the same File-tier pattern as
+`cytoscape_export_network`: the TSV text is written to
+`<session-dir>/table-<uuid>.tsv` and Claude receives only the file path.
+This avoids injecting potentially thousands of TSV rows into the tool result.
+
+`cytoscape_get_table` returns column metadata and row count as a summary.
+For the actual data, Claude should use `export_table_tsv` and read the file.
+This distinction preserves the principle that large payloads go through the
+filesystem, not the conversation context.

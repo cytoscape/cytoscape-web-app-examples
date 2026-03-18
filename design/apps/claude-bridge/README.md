@@ -14,7 +14,7 @@ operations visible inside the application UI.
 | Federation name | `claudeBridge`                          |
 | Dev port        | 6000                                    |
 | App config file | `claude-bridge/src/ClaudeBridgeApp.tsx` |
-| Host API phase  | Phase 1 (all domains) + Event Bus       |
+| Host API phase  | Phase 1 (all domains) + Phase 2 (Resource Registration) + Phase 3.6 (Graph Traversal) + Event Bus |
 
 > **Reading guide:** This document is a design proposal. Code snippets, file
 > layouts, and configuration examples describe the _planned_ structure and are
@@ -134,7 +134,7 @@ display), and subscribes to events via `window.addEventListener`.
 claude-bridge/src/
 ├── index.ts                    Entry point — exports CyApp config
 ├── ClaudeBridgeApp.tsx         CyApp definition
-├── remotes.d.ts                cyweb/* type declarations (minimal)
+├── remotes.d.ts                cyweb/* type declarations (minimal; prefer @cytoscape-web/api-types)
 └── components/
     ├── BridgePanel.tsx         Panel root; manages event subscriptions
     └── CommandLog.tsx          Scrollable, timestamped command/event list
@@ -438,21 +438,35 @@ async function callApi(
 
 ### MCP Tool List & Result Shaping
 
-Moved to **[MCP_TOOLS.md](MCP_TOOLS.md)** — contains the full 38-tool
+Moved to **[MCP_TOOLS.md](MCP_TOOLS.md)** — contains the full tool
 catalog (with `window.CyWebApi` call signatures) and the per-tool result
 shaping policy.
 
+### Data Transfer Formats
+
+The bridge supports three formats for moving data between Claude and the browser:
+
+| Format | Best for | Token efficiency |
+|--------|----------|-----------------|
+| **JSON objects** (edge list, editRows) | Small data: single rows, short lists | Medium |
+| **TSV** (exportTableToTsv / importTableFromTsv) | Bulk table data: 100+ rows, pandas/R workflows | **High** (~10x more compact than JSON) |
+| **CX2** (exportToCx2) | Complete network export including all aspects | Low (verbose, but lossless) |
+
+**Recommendation:** For analysis workflows that transfer table data between Python
+and the browser, **use TSV** — it maps 1:1 to `pandas.DataFrame` with zero custom
+parsers, and auto-creates columns on import. See Scenarios 4 (TSV variant) and 6.
+
 ### Temp File Lifecycle
 
-`cytoscape_export_network` (File-shaped) writes CX2 data to the local
-filesystem so that Claude can read it with its own Bash tool. The following
-rules govern temp file management:
+File-shaped tools (`cytoscape_export_network`, `cytoscape_export_table_tsv`)
+write data to the local filesystem so that Claude can read it with its own
+Bash tool. The following rules govern temp file management:
 
 | Concern               | Policy                                                                        |
 | --------------------- | ----------------------------------------------------------------------------- |
 | **Session directory** | Each MCP server instance creates a session-scoped directory:                  |
 |                       | `$CYWEB_BRIDGE_TMPDIR/cyweb-bridge-<session-uuid>/` (default prefix: `/tmp/`) |
-| **Naming**            | UUID-based unique name within the session directory: `export-<uuid>.cx2`      |
+| **Naming**            | UUID-based unique name: `export-<uuid>.cx2` or `table-<uuid>.tsv`            |
 | **Overwrite**         | Never overwrite — each invocation produces a new file                         |
 | **Cleanup**           | MCP server registers a shutdown hook (`process.on('exit', ...)`) that removes |
 |                       | its own session directory. Startup does **not** delete other sessions' dirs.  |
@@ -595,6 +609,7 @@ document focused on architecture and contracts.
 | 2        | Highlight the current selection via visual bypass |
 | 3        | React to UI events with polling                   |
 | 4        | External analysis (NetworkX) + data-driven style  |
+| 5        | Network topology analysis (Graph Traversal API)   |
 
 ---
 

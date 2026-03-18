@@ -11,11 +11,11 @@
 ```
 Phase 0  Scaffold + Infrastructure
    │
-   ├── Phase 1a  Workspace + Network tools (5 + 3 = 8 tools)
+   ├── Phase 1a  Workspace + Network tools (6 + 3 = 9 tools)
    │     │
-   │     ├── Phase 1b  Element + Selection tools (6 + 5 = 11 tools)
+   │     ├── Phase 1b  Element + Selection + Graph Traversal (7 + 5 + 10 = 22 tools)
    │     │     │
-   │     │     └── Phase 1c  Table tools (6 tools)
+   │     │     └── Phase 1c  Table tools (12 tools, incl. TSV I/O)
    │     │           │
    │     │           └── Phase 1d  Visual Style tools (7 tools)
    │     │                 │
@@ -72,7 +72,7 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 
 ---
 
-## Phase 1a — Workspace + Network Tools (8 tools)
+## Phase 1a — Workspace + Network Tools (9 tools)
 
 **Goal:** First real API tools. Claude can inspect and create networks.
 
@@ -83,12 +83,16 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 | `cytoscape_get_network_summary`       |                           |
 | `cytoscape_get_current_network`       |                           |
 | `cytoscape_switch_network`            |                           |
+| `cytoscape_set_workspace_name`        |                           |
 | `cytoscape_create_network_from_edges` | `tools/networkTools.ts`   |
 | `cytoscape_create_network_from_cx2`   |                           |
 | `cytoscape_delete_network`            |                           |
 
 **Summary shaping required for:** `create_network_from_edges`, `create_network_from_cx2`
 (return `{ networkId, nodeCount, edgeCount }`, omit `cyNetwork`).
+
+**ADR enforcement:** Both `create_network_*` tools pin `addToWorkspace: true`
+([ADR-0006](adr/0006-explicit-call-policy.md)).
 
 ### Tests
 
@@ -97,9 +101,10 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 
 ---
 
-## Phase 1b — Element + Selection Tools (11 tools)
+## Phase 1b — Element + Selection + Graph Traversal (22 tools)
 
-**Goal:** Claude can read/create/delete nodes and edges, and manage selection.
+**Goal:** Claude can read/create/delete nodes and edges, manage selection,
+and query network topology.
 
 | Tool                              | File                      |
 | --------------------------------- | ------------------------- |
@@ -109,6 +114,17 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 | `cytoscape_create_edge`           |                           |
 | `cytoscape_delete_nodes`          |                           |
 | `cytoscape_delete_edges`          |                           |
+| `cytoscape_move_edge`             |                           |
+| `cytoscape_get_node_ids`          |                           |
+| `cytoscape_get_edge_ids`          |                           |
+| `cytoscape_get_connected_edges`   |                           |
+| `cytoscape_get_connected_nodes`   |                           |
+| `cytoscape_get_outgoers`          |                           |
+| `cytoscape_get_incomers`          |                           |
+| `cytoscape_get_successors`        |                           |
+| `cytoscape_get_predecessors`      |                           |
+| `cytoscape_get_roots`             |                           |
+| `cytoscape_get_leaves`            |                           |
 | `cytoscape_get_selection`         | `tools/selectionTools.ts` |
 | `cytoscape_select`                |                           |
 | `cytoscape_add_to_selection`      |                           |
@@ -116,6 +132,7 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 | `cytoscape_toggle_selection`      |                           |
 
 **Summary shaping required for:** `create_node` → `{ nodeId }`, `create_edge` → `{ edgeId }`.
+All graph traversal tools use passthrough shaping.
 
 ### Tests
 
@@ -124,25 +141,32 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 
 ---
 
-## Phase 1c — Table Tools (6 tools)
+## Phase 1c — Table Tools (12 tools)
 
-**Goal:** Claude can read/write data attributes on nodes and edges.
+**Goal:** Claude can read/write data attributes on nodes and edges, and
+transfer bulk data via TSV for integration with pandas/R.
 
-| Tool                      | File                  |
-| ------------------------- | --------------------- |
-| `cytoscape_get_value`     | `tools/tableTools.ts` |
-| `cytoscape_get_row`       |                       |
-| `cytoscape_create_column` |                       |
-| `cytoscape_set_value`     |                       |
-| `cytoscape_set_values`    |                       |
-| `cytoscape_edit_rows`     |                       |
-
-All passthrough shaping.
+| Tool                         | File                  | Shaping     |
+| ---------------------------- | --------------------- | ----------- |
+| `cytoscape_get_value`        | `tools/tableTools.ts` | Passthrough |
+| `cytoscape_get_row`          |                       | Passthrough |
+| `cytoscape_create_column`    |                       | Passthrough |
+| `cytoscape_set_value`        |                       | Passthrough |
+| `cytoscape_set_values`       |                       | Passthrough |
+| `cytoscape_edit_rows`        |                       | Passthrough |
+| `cytoscape_delete_column`    |                       | Passthrough |
+| `cytoscape_rename_column`    |                       | Passthrough |
+| `cytoscape_apply_value`      |                       | Passthrough |
+| `cytoscape_get_table`        |                       | Summary     |
+| `cytoscape_export_table_tsv` |                       | **File**    |
+| `cytoscape_import_table_tsv` |                       | Passthrough |
 
 ### Tests
 
 - Unit tests for read/write operations
+- Unit tests for TSV round-trip: export → edit externally → import
 - Manual E2E: Create column, set values, verify with `get_row`
+- Manual E2E: Export node TSV, modify in editor, import back
 
 ---
 
@@ -240,7 +264,7 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 
 | Task                                                                                              | Details                         |
 | ------------------------------------------------------------------------------------------------- | ------------------------------- |
-| Run all 4 scenarios ([SCENARIOS.md](SCENARIOS.md)) end-to-end                                     | Scenarios 1–4                   |
+| Run all 5 scenarios ([SCENARIOS.md](SCENARIOS.md)) end-to-end                                     | Scenarios 1–5                   |
 | Verify post-implementation checklist items ([README.md](README.md#post-implementation-checklist)) | 3 checklist items               |
 | Claude Code config documentation                                                                  | `.claude/settings.json` example |
 | README for the app (`claude-bridge/README.md`)                                                    | Setup, usage, dev instructions  |
@@ -251,15 +275,15 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 
 ## Tool Count Summary
 
-| Phase | Domain                     | Tools | Cumulative |
-| ----- | -------------------------- | ----- | ---------- |
-| 0     | Infrastructure             | 0     | 0          |
-| 1a    | Workspace + Network        | 8     | 8          |
-| 1b    | Element + Selection        | 11    | 19         |
-| 1c    | Table                      | 6     | 25         |
-| 1d    | Visual Style               | 7     | 32         |
-| 1e    | Layout + Viewport + Export | 6     | 38         |
-| 2     | Event Forwarding           | 1     | 39         |
+| Phase | Domain                                    | Tools | Cumulative |
+| ----- | ----------------------------------------- | ----- | ---------- |
+| 0     | Infrastructure                            | 0     | 0          |
+| 1a    | Workspace + Network                       | 9     | 9          |
+| 1b    | Element + Selection + Graph Traversal     | 22    | 31         |
+| 1c    | Table                                     | 9     | 40         |
+| 1d    | Visual Style                              | 7     | 47         |
+| 1e    | Layout + Viewport + Export                | 6     | 53         |
+| 2     | Event Forwarding                          | 1     | 54         |
 
 ---
 
@@ -268,8 +292,8 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 | Document                     | What it covers                                       |
 | ---------------------------- | ---------------------------------------------------- |
 | [README.md](README.md)       | Architecture, dispatcher, security model, file map   |
-| [MCP_TOOLS.md](MCP_TOOLS.md) | 38-tool catalog, CyWebApi signatures, shaping policy |
-| [SCENARIOS.md](SCENARIOS.md) | 4 end-to-end interaction scenarios                   |
+| [MCP_TOOLS.md](MCP_TOOLS.md) | 54-tool catalog, CyWebApi signatures, shaping policy |
+| [SCENARIOS.md](SCENARIOS.md) | 5 end-to-end interaction scenarios                   |
 | [adr/](adr/)                 | 7 architecture decision records                      |
 | Host `src/app-api/CLAUDE.md` | App API two-layer pattern, error handling            |
 | Host `webpack.config.js`     | Module Federation exposes list                       |
