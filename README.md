@@ -65,7 +65,7 @@ The production instance of Cytoscape Web loads apps from a curated allowlist
 (`apps.json`) maintained by the core team. There are plans for a dynamic loading mechanism and the public App
 store in the future, but for now public app registration is manual. If you would like
 to publish your app, please
-[contact the Cytoscape team](https://groups.google.com/g/cytoscape-app-dev).
+[contact the Cytoscape team](https://github.com/cytoscape/cytoscape-web/issues).
 
 ---
 
@@ -80,10 +80,12 @@ cp -r project-template my-app && cd my-app
 1. **`package.json`** — change `name` and `version`
 2. **`webpack.config.js`** — change `name` and `DEV_SERVER_PORT`
 3. **`src/TemplateApp.tsx`** — change `id` (must match MF name), `name`, `resources`
-4. **Host registry** — add entry in `cytoscape-web/src/assets/apps.local.json`:
+4. **Host registry** — add an entry for your app in `cytoscape-web/src/assets/apps.local.json`:
    ```json
    { "name": "myApp", "url": "http://localhost:6000/remoteEntry.js" }
    ```
+   > To test the template before copying, add:
+   > `{ "name": "template", "url": "http://localhost:5555/remoteEntry.js" }`
 5. **Verify** — `npm run dev`, then confirm in browser
 
 See [project-template/README.md](project-template/README.md) for details.
@@ -225,13 +227,14 @@ window.addEventListener('cywebapi:ready', () => {
 
 ## Example Apps
 
-| Example                                  | Best for                                              | Details                               |
-| ---------------------------------------- | ----------------------------------------------------- | ------------------------------------- |
-| [project-template/](project-template/)   | Your first app — panel, menu action, and context menu | [README](project-template/README.md)  |
-| [hello-world/](hello-world/)             | Full API coverage — 12 examples covering all APIs     | [README](hello-world/README.md)       |
-| [network-workflows/](network-workflows/) | CX2 import, Jupyter integration, menu workflows       | [README](network-workflows/README.md) |
+| Example                                      | Best for                                              | Details                                   |
+| -------------------------------------------- | ----------------------------------------------------- | ----------------------------------------- |
+| [project-template/](project-template/)       | Your first app — panel, menu action, and context menu | [README](project-template/README.md)      |
+| [hello-world/](hello-world/)                 | Full API coverage — 12 examples covering all APIs     | [README](hello-world/README.md)           |
+| [network-statistics/](network-statistics/)   | **Non-React** — graph traversal, event-driven logging | [README](network-statistics/README.md)    |
+| [network-workflows/](network-workflows/)     | CX2 import, Jupyter integration, menu workflows       | [README](network-workflows/README.md)     |
 
-Recommended reading order: project-template → hello-world → network-workflows
+Recommended reading order: project-template → hello-world → network-statistics → network-workflows
 
 ---
 
@@ -260,6 +263,7 @@ Add to `tsconfig.json`:
 ```bash
 npm run dev                     # run all example apps
 npm run dev:hello-world         # run one app
+npm run dev:network-statistics
 npm run dev:network-workflows
 npm run dev:project-template
 npm run build                   # build all apps

@@ -287,6 +287,24 @@ produce the same result as the first time.
 
 ---
 
+## Non-React Apps
+
+Apps do **not** need React components. You can build a fully functional app
+using only `mount()` and `unmount()` — no `resources` array, no panels, no
+menus. This pattern is ideal for headless analytics, browser extensions, or
+LLM agent bridges.
+
+See [network-statistics/](../network-statistics/) for a complete example that:
+
+- Listens for `network:switched` and `selection:changed` events
+- Computes network topology statistics via the Graph Traversal API
+- Outputs results to the browser console
+
+The same lifecycle rules apply: store event handler references at module level
+and remove them in `unmount()`.
+
+---
+
 ## Next Steps
 
 - [Getting Started](./getting-started.md) — Scaffold and run a new app

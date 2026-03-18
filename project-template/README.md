@@ -63,6 +63,13 @@ Add your app to the host's `src/assets/apps.local.json`:
 { "name": "myApp", "url": "http://localhost:XXXX/remoteEntry.js" }
 ```
 
+> **Note:** The template itself is not pre-registered in `apps.local.json`.
+> To test it before copying, add the following entry:
+>
+> ```json
+> { "name": "template", "url": "http://localhost:5555/remoteEntry.js" }
+> ```
+
 ---
 
 ## File structure

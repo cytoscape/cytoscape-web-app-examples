@@ -27,11 +27,12 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 
 ### App Registry
 
-| App               | Federation Name    | Port | Components                                                                              |
-| ----------------- | ------------------ | ---- | --------------------------------------------------------------------------------------- |
-| hello-world       | `hello`            | 2222 | HelloApp, HelloPanel                                                                    |
-| network-workflows | `networkWorkflows` | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
-| project-template  | `createNetwork`    | 5555 | TemplateApp, TemplatePanel, TemplateMenuItem + context menu                             |
+| App                | Federation Name      | Port | Components                                                                              |
+| ------------------ | -------------------- | ---- | --------------------------------------------------------------------------------------- |
+| hello-world        | `hello`              | 2222 | HelloApp, HelloPanel                                                                    |
+| network-statistics | `networkStatistics`  | 3333 | NetworkStatisticsApp (non-React — no UI components)                                     |
+| network-workflows  | `networkWorkflows`   | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
+| project-template   | `template`           | 5555 | TemplateApp, TemplatePanel, TemplateMenuItem + context menu                             |
 
 ---
 
