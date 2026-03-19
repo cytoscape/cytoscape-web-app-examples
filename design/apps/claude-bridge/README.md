@@ -627,7 +627,7 @@ cd cytoscape-web && npm run dev          # localhost:5500
 
 # Step 3 — start the MF Plugin dev server (panel UI only)
 cd cytoscape-web-app-examples
-npm run dev:claude-bridge                # localhost:6000
+npm run dev:claude-bridge                # localhost:6100
 
 # Step 4 — start Claude Code (MCP auto-starts the MCP server subprocess)
 claude                                   # cytoscape_* tools are now available
@@ -718,7 +718,7 @@ if it cannot connect to the CDP endpoint.
 claude-bridge/
 ├── package.json                  MF Plugin package
 │                                 peerDeps: react, react-dom, @mui/material
-├── webpack.config.js             Module Federation (port 6000, name: claudeBridge)
+├── webpack.config.js             Module Federation (port 6100, name: claudeBridge)
 ├── tsconfig.json
 ├── mcp-server/
 │   ├── package.json              deps: @modelcontextprotocol/sdk, playwright

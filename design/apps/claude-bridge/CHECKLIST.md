@@ -10,7 +10,7 @@
 ### MF Plugin
 
 - [ ] Create `claude-bridge/` directory from `project-template/`
-- [ ] Set port 6000, federation name `claudeBridge` in `webpack.config.js`
+- [ ] Set port 6100, federation name `claudeBridge` in `webpack.config.js`
 - [ ] Create `src/ClaudeBridgeApp.tsx` with `CyAppWithLifecycle` config
 - [ ] Create `src/index.ts` entry point (re-export default)
 - [ ] Create placeholder `src/components/BridgePanel.tsx` ("Not connected")
@@ -35,7 +35,7 @@
 
 ### Verification
 
-- [ ] `npm run dev:claude-bridge` starts on port 6000
+- [ ] `npm run dev:claude-bridge` starts on port 6100
 - [ ] `node mcp-server/dist/server.js` connects to CDP and waits for `cywebapi:ready`
 - [ ] Panel loads in host and shows "Not connected"
 

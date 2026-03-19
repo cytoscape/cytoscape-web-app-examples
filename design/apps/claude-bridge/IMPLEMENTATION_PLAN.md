@@ -42,7 +42,7 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 | Task                                                    | Files                                                |
 | ------------------------------------------------------- | ---------------------------------------------------- |
 | Create `claude-bridge/` from `project-template/`        | `package.json`, `webpack.config.js`, `tsconfig.json` |
-| Set port 6000, federation name `claudeBridge`           | `webpack.config.js`                                  |
+| Set port 6100, federation name `claudeBridge`           | `webpack.config.js`                                  |
 | Minimal `ClaudeBridgeApp.tsx` with CyApp config         | `src/ClaudeBridgeApp.tsx`, `src/index.ts`            |
 | Placeholder `BridgePanel.tsx` (renders "Not connected") | `src/components/BridgePanel.tsx`                     |
 | Declare `cyweb/*` remotes                               | `src/remotes.d.ts`                                   |
@@ -66,7 +66,7 @@ Phases 2 and 3 can proceed in parallel once Phase 0 is complete.
 
 ### Verification
 
-- `npm run dev:claude-bridge` starts on port 6000
+- `npm run dev:claude-bridge` starts on port 6100
 - `node mcp-server/dist/server.js` connects to CDP and waits for `cywebapi:ready`
 - Panel loads in host and shows "Not connected"
 
