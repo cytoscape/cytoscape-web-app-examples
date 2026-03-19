@@ -264,7 +264,7 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 
 | Task                                                                                              | Details                         |
 | ------------------------------------------------------------------------------------------------- | ------------------------------- |
-| Run all 5 scenarios ([SCENARIOS.md](SCENARIOS.md)) end-to-end                                     | Scenarios 1–5                   |
+| Run all 6 scenarios ([SCENARIOS.md](SCENARIOS.md)) end-to-end                                     | Scenarios 1–6                   |
 | Verify post-implementation checklist items ([README.md](README.md#post-implementation-checklist)) | 3 checklist items               |
 | Claude Code config documentation                                                                  | `.claude/settings.json` example |
 | README for the app (`claude-bridge/README.md`)                                                    | Setup, usage, dev instructions  |
@@ -280,10 +280,10 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 | 0     | Infrastructure                            | 0     | 0          |
 | 1a    | Workspace + Network                       | 9     | 9          |
 | 1b    | Element + Selection + Graph Traversal     | 22    | 31         |
-| 1c    | Table                                     | 9     | 40         |
-| 1d    | Visual Style                              | 7     | 47         |
-| 1e    | Layout + Viewport + Export                | 6     | 53         |
-| 2     | Event Forwarding                          | 1     | 54         |
+| 1c    | Table (incl. TSV I/O)                     | 12    | 43         |
+| 1d    | Visual Style                              | 7     | 50         |
+| 1e    | Layout + Viewport + Export                | 6     | 56         |
+| 2     | Event Forwarding                          | 1     | 57         |
 
 ---
 
@@ -292,8 +292,8 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 | Document                     | What it covers                                       |
 | ---------------------------- | ---------------------------------------------------- |
 | [README.md](README.md)       | Architecture, dispatcher, security model, file map   |
-| [MCP_TOOLS.md](MCP_TOOLS.md) | 54-tool catalog, CyWebApi signatures, shaping policy |
-| [SCENARIOS.md](SCENARIOS.md) | 5 end-to-end interaction scenarios                   |
+| [MCP_TOOLS.md](MCP_TOOLS.md) | 57-tool catalog, CyWebApi signatures, shaping policy |
+| [SCENARIOS.md](SCENARIOS.md) | 6 end-to-end interaction scenarios                   |
 | [adr/](adr/)                 | 7 architecture decision records                      |
 | Host `src/app-api/CLAUDE.md` | App API two-layer pattern, error handling            |
 | Host `webpack.config.js`     | Module Federation exposes list                       |
