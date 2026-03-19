@@ -35,7 +35,8 @@ export const visualStyleToolDefs: Tool[] = [
     name: 'cytoscape_create_discrete_mapping',
     description:
       'Map categorical attribute values to a visual property. ' +
-      'Example: cluster ID → node color. Preferred over bypass for data-driven styling.',
+      'Example: cluster ID → node color. Preferred over bypass for data-driven styling. ' +
+      'Pass `mapping` to assign specific values (e.g. {"0":"#e63946","1":"#457b9d"}).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -46,6 +47,12 @@ export const visualStyleToolDefs: Tool[] = [
           type: 'string',
           enum: ['string', 'long', 'integer', 'double', 'boolean'],
           description: 'Data type of the attribute',
+        },
+        mapping: {
+          type: 'object',
+          description:
+            'Optional value→VP mapping entries (e.g. {"0":"#e63946","1":"#457b9d"}). ' +
+            'Keys are attribute values (as strings), values are visual property values.',
         },
       },
       required: ['networkId', 'vpName', 'attribute', 'attributeType'],
@@ -181,6 +188,7 @@ export async function handleVisualStyleTool(
         params.vpName,
         params.attribute,
         params.attributeType,
+        params.mapping,
       ])
 
     case 'cytoscape_create_continuous_mapping':
