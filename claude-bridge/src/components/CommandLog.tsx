@@ -6,16 +6,11 @@
  */
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import type { LogEntry } from '../logStore'
+
+export type { LogEntry }
 
 const MAX_PAYLOAD_CHARS = 10_240 // 10 KB truncation rule
-
-export interface LogEntry {
-  id: number
-  timestamp: Date
-  type: 'command' | 'result' | 'error'
-  method: string
-  payload: unknown
-}
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {
