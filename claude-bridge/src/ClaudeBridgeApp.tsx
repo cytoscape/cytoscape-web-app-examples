@@ -9,7 +9,7 @@
  */
 import { lazy } from 'react'
 import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json' with { type: 'json' }
+import packageJson from '../package.json'
 
 const { version } = packageJson
 
