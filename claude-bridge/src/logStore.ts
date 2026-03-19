@@ -20,7 +20,12 @@ let connected = false
 let idCounter = 0
 const listeners = new Set<Listener>()
 
+// Cached snapshot — useSyncExternalStore requires the same reference
+// when state hasn't changed, otherwise it triggers infinite re-renders.
+let cachedSnapshot = { entries, connected }
+
 function notify(): void {
+  cachedSnapshot = { entries, connected }
   listeners.forEach((fn) => fn())
 }
 
@@ -59,5 +64,5 @@ export function subscribe(fn: Listener): () => void {
 }
 
 export function getSnapshot(): { entries: LogEntry[]; connected: boolean } {
-  return { entries, connected }
+  return cachedSnapshot
 }
