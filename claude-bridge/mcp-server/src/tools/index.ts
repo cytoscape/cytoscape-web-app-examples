@@ -35,9 +35,10 @@ import {
   handleVisualStyleTool,
   visualStyleToolDefs,
 } from './visualStyleTools.js'
-// Phase 1e: import { layoutToolDefs, handleLayoutTool } from './layoutTools.js'
-// Phase 1e: import { viewportToolDefs, handleViewportTool } from './viewportTools.js'
-// Phase 1e: import { exportToolDefs, handleExportTool } from './exportTools.js'
+// Phase 1e
+import { handleLayoutTool, layoutToolDefs } from './layoutTools.js'
+import { handleViewportTool, viewportToolDefs } from './viewportTools.js'
+import { exportToolDefs, handleExportTool } from './exportTools.js'
 // Phase 2:  import { eventToolDefs, handleEventTool } from './eventTools.js'
 
 /** All registered tool definitions. */
@@ -48,6 +49,9 @@ export const allToolDefs: Tool[] = [
   ...selectionToolDefs,
   ...tableToolDefs,
   ...visualStyleToolDefs,
+  ...layoutToolDefs,
+  ...viewportToolDefs,
+  ...exportToolDefs,
 ]
 
 /** Tool name → handler domain mapping. */
@@ -57,6 +61,9 @@ const elementToolNames = new Set(elementToolDefs.map((t) => t.name))
 const selectionToolNames = new Set(selectionToolDefs.map((t) => t.name))
 const tableToolNames = new Set(tableToolDefs.map((t) => t.name))
 const visualStyleToolNames = new Set(visualStyleToolDefs.map((t) => t.name))
+const layoutToolNames = new Set(layoutToolDefs.map((t) => t.name))
+const viewportToolNames = new Set(viewportToolDefs.map((t) => t.name))
+const exportToolNames = new Set(exportToolDefs.map((t) => t.name))
 
 /** Route a tool call to the appropriate domain handler. */
 export async function handleTool(
@@ -81,6 +88,15 @@ export async function handleTool(
   }
   if (visualStyleToolNames.has(toolName)) {
     return handleVisualStyleTool(page, toolName, params)
+  }
+  if (layoutToolNames.has(toolName)) {
+    return handleLayoutTool(page, toolName, params)
+  }
+  if (viewportToolNames.has(toolName)) {
+    return handleViewportTool(page, toolName, params)
+  }
+  if (exportToolNames.has(toolName)) {
+    return handleExportTool(page, toolName, params)
   }
 
   return {
