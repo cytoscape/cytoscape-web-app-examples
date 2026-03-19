@@ -16,6 +16,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { chromium, type Page } from 'playwright'
+import { allToolDefs, handleTool } from './tools/index.js'
 
 // ── CDP Connection ──────────────────────────────────────────────────────────
 
@@ -87,23 +88,24 @@ const server = new Server(
   },
 )
 
-// Tool registry — populated by Phase 1a–1e implementations
-// For now, a placeholder echo tool for verification
+// ── Tool registry ───────────────────────────────────────────────────────────
+
+const pingTool = {
+  name: 'cytoscape_ping',
+  description:
+    'Verify the bridge connection. Returns { connected, apiDomains }.',
+  inputSchema: { type: 'object' as const, properties: {} },
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'cytoscape_ping',
-      description:
-        'Verify the bridge connection. Returns { connected: true, apiDomains: [...] } if CyWebApi is reachable.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {},
-      },
-    },
-  ],
+  tools: [pingTool, ...allToolDefs],
 }))
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name: toolName } = request.params
+  const params = (request.params.arguments ?? {}) as Record<string, unknown>
+
+  // Connection guard
   if (!page) {
     return {
       content: [
@@ -111,54 +113,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           type: 'text',
           text: JSON.stringify({
             success: false,
-            error: {
-              code: 'TRANSPORT_ERROR',
-              message: 'Not connected to browser',
-            },
+            error: { code: 'TRANSPORT_ERROR', message: 'Not connected to browser' },
           }),
         },
       ],
     }
   }
 
-  if (request.params.name === 'cytoscape_ping') {
+  // Built-in ping tool
+  if (toolName === 'cytoscape_ping') {
     try {
       const result = await page.evaluate(() => {
         const api = (window as any).CyWebApi
         if (!api) return { connected: false, apiDomains: [] }
-        return {
-          connected: true,
-          apiDomains: Object.keys(api),
-        }
+        return { connected: true, apiDomains: Object.keys(api) }
       })
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result) }],
-      }
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] }
     } catch (e) {
       return {
         content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              connected: false,
-              error: String(e),
-            }),
-          },
+          { type: 'text', text: JSON.stringify({ connected: false, error: String(e) }) },
         ],
       }
     }
   }
 
+  // Route to domain handlers
+  const result = await handleTool(page, toolName, params)
+
+  // Convert BridgeResult to MCP text content
+  if (result.success) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result.data ?? {}) }],
+    }
+  }
   return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify({
-          success: false,
-          error: { code: 'METHOD_NOT_FOUND', message: `Unknown tool: ${request.params.name}` },
-        }),
-      },
-    ],
+    content: [{ type: 'text', text: JSON.stringify({ error: result.error }) }],
+    isError: true,
   }
 })
 

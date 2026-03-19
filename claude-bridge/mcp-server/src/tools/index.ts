@@ -1,17 +1,57 @@
 /**
- * Tool registry — populated incrementally in Phases 1a–1e.
- *
- * Each phase adds a domain-specific tool module (workspaceTools, networkTools,
- * elementTools, etc.) that exports tool definitions and handlers.
+ * Tool registry — exports all tool definitions and a unified handler.
  */
+import type { Tool } from '@modelcontextprotocol/sdk/types.js'
+import type { Page } from 'playwright'
+import type { BridgeResult } from '../types.js'
 
-// Phase 1a: export { workspaceTools } from './workspaceTools.js'
-// Phase 1a: export { networkTools } from './networkTools.js'
-// Phase 1b: export { elementTools } from './elementTools.js'
-// Phase 1b: export { selectionTools } from './selectionTools.js'
-// Phase 1c: export { tableTools } from './tableTools.js'
-// Phase 1d: export { visualStyleTools } from './visualStyleTools.js'
-// Phase 1e: export { layoutTools } from './layoutTools.js'
-// Phase 1e: export { viewportTools } from './viewportTools.js'
-// Phase 1e: export { exportTools } from './exportTools.js'
-// Phase 2:  export { eventTools } from './eventTools.js'
+// Phase 1a
+import {
+  handleWorkspaceTool,
+  workspaceToolDefs,
+} from './workspaceTools.js'
+import {
+  handleNetworkTool,
+  networkToolDefs,
+} from './networkTools.js'
+
+// Phase 1b: import { elementToolDefs, handleElementTool } from './elementTools.js'
+// Phase 1b: import { selectionToolDefs, handleSelectionTool } from './selectionTools.js'
+// Phase 1c: import { tableToolDefs, handleTableTool } from './tableTools.js'
+// Phase 1d: import { visualStyleToolDefs, handleVisualStyleTool } from './visualStyleTools.js'
+// Phase 1e: import { layoutToolDefs, handleLayoutTool } from './layoutTools.js'
+// Phase 1e: import { viewportToolDefs, handleViewportTool } from './viewportTools.js'
+// Phase 1e: import { exportToolDefs, handleExportTool } from './exportTools.js'
+// Phase 2:  import { eventToolDefs, handleEventTool } from './eventTools.js'
+
+/** All registered tool definitions. */
+export const allToolDefs: Tool[] = [
+  ...workspaceToolDefs,
+  ...networkToolDefs,
+]
+
+/** Tool name → handler domain mapping. */
+const workspaceToolNames = new Set(workspaceToolDefs.map((t) => t.name))
+const networkToolNames = new Set(networkToolDefs.map((t) => t.name))
+
+/** Route a tool call to the appropriate domain handler. */
+export async function handleTool(
+  page: Page,
+  toolName: string,
+  params: Record<string, unknown>,
+): Promise<BridgeResult<unknown>> {
+  if (workspaceToolNames.has(toolName)) {
+    return handleWorkspaceTool(page, toolName, params)
+  }
+  if (networkToolNames.has(toolName)) {
+    return handleNetworkTool(page, toolName, params)
+  }
+
+  return {
+    success: false,
+    error: {
+      code: 'METHOD_NOT_FOUND',
+      message: `Unknown tool: ${toolName}`,
+    },
+  }
+}
