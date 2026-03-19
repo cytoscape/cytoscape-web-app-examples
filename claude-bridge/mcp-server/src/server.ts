@@ -26,8 +26,36 @@ const CDP_URL = process.argv.includes('--cdp-url')
 
 let page: Page | null = null
 
+/**
+ * Resolve the WebSocket debugger URL from the CDP HTTP endpoint.
+ * When connecting from WSL2 to Windows Chrome, the /json/version endpoint
+ * returns ws://localhost:... but we need ws://<windows-ip>:...
+ * This function fetches the WS URL and replaces the host if needed.
+ */
+async function resolveWsUrl(cdpUrl: string): Promise<string> {
+  const url = new URL(cdpUrl)
+  const res = await fetch(`${cdpUrl}/json/version`)
+  const json = (await res.json()) as { webSocketDebuggerUrl?: string }
+  const wsUrl = json.webSocketDebuggerUrl
+  if (!wsUrl) throw new Error('No webSocketDebuggerUrl in /json/version response')
+  // Replace host in WS URL with the host from the user-provided CDP URL
+  // This handles the WSL2 case where Chrome reports ws://localhost but we
+  // need ws://172.x.x.x
+  const wsUrlObj = new URL(wsUrl)
+  wsUrlObj.hostname = url.hostname
+  wsUrlObj.port = url.port
+  return wsUrlObj.toString()
+}
+
 async function connectAndWait(): Promise<Page> {
-  const browser = await chromium.connectOverCDP(CDP_URL)
+  let wsEndpoint: string | undefined
+  try {
+    wsEndpoint = await resolveWsUrl(CDP_URL)
+    process.stderr.write(`[claude-bridge] WebSocket URL: ${wsEndpoint}\n`)
+  } catch {
+    // Fall back to letting Playwright resolve it
+  }
+  const browser = await chromium.connectOverCDP(wsEndpoint ?? CDP_URL)
   const contexts = browser.contexts()
   if (contexts.length === 0) {
     throw new Error('No browser contexts found. Is Cytoscape Web open?')

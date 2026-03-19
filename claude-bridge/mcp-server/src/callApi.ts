@@ -27,7 +27,7 @@ export async function callApi(
 
   try {
     return await page.evaluate(
-      async ({ id, method, args }) => {
+      async ({ id, method, args }: { id: number; method: string; args: unknown[] }) => {
         const [domain, fn] = method.split('.')
         const api = (window as any).CyWebApi
 
