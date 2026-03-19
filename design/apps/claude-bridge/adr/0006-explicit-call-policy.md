@@ -23,13 +23,20 @@ MCP tools do not rely on host API default behaviours for important visual
 side-effects. The bridge overrides specific parameters at the dispatcher
 level to enforce explicitness:
 
-| Tool                     | Override                | Effect                            |
-| ------------------------ | ----------------------- | --------------------------------- |
-| `cytoscape_apply_layout` | `fitAfterLayout: false` | Viewport fitting must be explicit |
+| Tool                                  | Override                | Effect                                                           |
+| ------------------------------------- | ----------------------- | ---------------------------------------------------------------- |
+| `cytoscape_apply_layout`             | `fitAfterLayout: false` | Viewport fitting must be explicit via `cytoscape_fit_network`    |
+| `cytoscape_create_network_from_edges` | `addToWorkspace: true`  | Created networks always appear in the workspace panel            |
+| `cytoscape_create_network_from_cx2`   | `addToWorkspace: true`  | Same — host default is `false`, but bridge users expect visibility |
 
 Viewport fitting is performed exclusively via `cytoscape_fit_network`. This
 override is applied unconditionally — even if Claude explicitly passes
 `fitAfterLayout: true`, the dispatcher forces it to `false`.
+
+Network creation tools pin `addToWorkspace: true` because the host default
+(`false`) was designed for internal programmatic use. When Claude creates a
+network via the bridge, the user expects it to appear in the workspace
+immediately.
 
 ## Rationale
 
