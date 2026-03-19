@@ -39,7 +39,8 @@ import {
 import { handleLayoutTool, layoutToolDefs } from './layoutTools.js'
 import { handleViewportTool, viewportToolDefs } from './viewportTools.js'
 import { exportToolDefs, handleExportTool } from './exportTools.js'
-// Phase 2:  import { eventToolDefs, handleEventTool } from './eventTools.js'
+// Phase 2
+import { eventToolDefs, handleEventTool } from './eventTools.js'
 
 /** All registered tool definitions. */
 export const allToolDefs: Tool[] = [
@@ -52,6 +53,7 @@ export const allToolDefs: Tool[] = [
   ...layoutToolDefs,
   ...viewportToolDefs,
   ...exportToolDefs,
+  ...eventToolDefs,
 ]
 
 /** Tool name → handler domain mapping. */
@@ -64,6 +66,7 @@ const visualStyleToolNames = new Set(visualStyleToolDefs.map((t) => t.name))
 const layoutToolNames = new Set(layoutToolDefs.map((t) => t.name))
 const viewportToolNames = new Set(viewportToolDefs.map((t) => t.name))
 const exportToolNames = new Set(exportToolDefs.map((t) => t.name))
+const eventToolNames = new Set(eventToolDefs.map((t) => t.name))
 
 /** Route a tool call to the appropriate domain handler. */
 export async function handleTool(
@@ -97,6 +100,9 @@ export async function handleTool(
   }
   if (exportToolNames.has(toolName)) {
     return handleExportTool(page, toolName, params)
+  }
+  if (eventToolNames.has(toolName)) {
+    return handleEventTool(page, toolName, params)
   }
 
   return {
