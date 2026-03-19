@@ -25,7 +25,11 @@ import {
   selectionToolDefs,
 } from './selectionTools.js'
 
-// Phase 1c: import { tableToolDefs, handleTableTool } from './tableTools.js'
+// Phase 1c
+import {
+  handleTableTool,
+  tableToolDefs,
+} from './tableTools.js'
 // Phase 1d: import { visualStyleToolDefs, handleVisualStyleTool } from './visualStyleTools.js'
 // Phase 1e: import { layoutToolDefs, handleLayoutTool } from './layoutTools.js'
 // Phase 1e: import { viewportToolDefs, handleViewportTool } from './viewportTools.js'
@@ -38,6 +42,7 @@ export const allToolDefs: Tool[] = [
   ...networkToolDefs,
   ...elementToolDefs,
   ...selectionToolDefs,
+  ...tableToolDefs,
 ]
 
 /** Tool name → handler domain mapping. */
@@ -45,6 +50,7 @@ const workspaceToolNames = new Set(workspaceToolDefs.map((t) => t.name))
 const networkToolNames = new Set(networkToolDefs.map((t) => t.name))
 const elementToolNames = new Set(elementToolDefs.map((t) => t.name))
 const selectionToolNames = new Set(selectionToolDefs.map((t) => t.name))
+const tableToolNames = new Set(tableToolDefs.map((t) => t.name))
 
 /** Route a tool call to the appropriate domain handler. */
 export async function handleTool(
@@ -63,6 +69,9 @@ export async function handleTool(
   }
   if (selectionToolNames.has(toolName)) {
     return handleSelectionTool(page, toolName, params)
+  }
+  if (tableToolNames.has(toolName)) {
+    return handleTableTool(page, toolName, params)
   }
 
   return {
