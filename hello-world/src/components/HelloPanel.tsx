@@ -1,96 +1,81 @@
-// Dynamic import from the host app
-import { useWorkspaceStore } from 'cyweb/WorkspaceStore'
-import { useVisualStyleStore } from 'cyweb/VisualStyleStore'
-import { Box, Typography, Button, Divider, Grid } from '@mui/material'
-import {
-  WorkspaceStore,
-  Workspace,
-  VisualStyleStore,
-  IdType,
-  VisualPropertyName,
-  VisualPropertyValueType,
-} from '@cytoscape-web/types'
+import Box from '@mui/material/Box'
+import Divider from '@mui/material/Divider'
 
-interface HelloPanelProps {
-  message: string
-}
+import { ContextMenuSection } from './ContextMenuSection'
+import { ElementSection } from './ElementSection'
+import { ExportSection } from './ExportSection'
+import { HelloHeader } from './HelloHeader'
+import { LayoutSection } from './LayoutSection'
+import { LifecycleSection } from './LifecycleSection'
+import { MenuSection } from './MenuSection'
+import { NetworkSection } from './NetworkSection'
+import { SelectionSection } from './SelectionSection'
+import { TableSection } from './TableSection'
+import { TsvDownloadSection } from './TsvDownloadSection'
+import { ViewportSection } from './ViewportSection'
+import { VisualStyleSection } from './VisualStyleSection'
 
-// Generate a random color in RGB format
-const randomColor = (): string => {
-  const r = Math.floor(Math.random() * 256)
-  const g = Math.floor(Math.random() * 256)
-  const b = Math.floor(Math.random() * 256)
-  return `rgb(${r},${g},${b})`
-}
-
-const HelloPanel = ({ message }: HelloPanelProps): JSX.Element => {
-  // Import the workspace data from the host app
-  const workspace: Workspace = useWorkspaceStore(
-    (state: WorkspaceStore) => state.workspace,
-  )
-
-  // Import a function from the host
-  const setDefault: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    vpValue: VisualPropertyValueType,
-  ) => void = useVisualStyleStore((state: VisualStyleStore) => state.setDefault)
-
-  const handleButtonClick = () => {
-    const newNodeColor = randomColor()
-    const newEdgeColor = randomColor()
-    setDefault(
-      workspace.currentNetworkId,
-      VisualPropertyName.NodeBackgroundColor,
-      newNodeColor,
-    )
-    setDefault(
-      workspace.currentNetworkId,
-      VisualPropertyName.EdgeLineColor,
-      newEdgeColor,
-    )
-  }
-
-  return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '1em',
-      }}
-    >
-      <Box sx={{ marginBottom: '1em' }}>
-        <Typography variant="h3">Hello, from App!</Typography>
-        <Typography variant="subtitle1">Sample panel style App</Typography>
-      </Box>
-      <Divider />
-      <Box sx={{ padding: '1em', width: '100%' }}>
-        <Grid container spacing={1} alignItems="center" justifyContent="center">
-          <Grid item xs={9}>
-            <Typography variant="h5">Example 1: Update Visual Style</Typography>
-            <Typography variant="body1">
-              Click the button to randomly change the default color of nodes and
-              edges
-            </Typography>
-          </Grid>
-          <Grid item xs={3}>
-            <Button
-              size="medium"
-              color="primary"
-              variant="contained"
-              onClick={handleButtonClick}
-            >
-              Update Style
-            </Button>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
-  )
-}
+/**
+ * HelloPanel — root panel component for the Hello World app.
+ *
+ * Acts as a thin layout shell: it composes seven self-contained section
+ * components separated by Dividers. Each section owns its own state,
+ * API hooks, and error handling — no props are passed between them.
+ *
+ * Sections:
+ *   HelloHeader          — app title and serving URL (Example 0)
+ *   VisualStyleSection   — random color via VisualStyleApi (Example 1)
+ *   SelectionSection     — selection tracking via EventBus (Example 2)
+ *   LayoutSection        — layout execution via LayoutApi (Example 3)
+ *   LifecycleSection     — mount/unmount lifecycle via useSyncExternalStore (Example 4)
+ *   MenuSection          — dropdown menu component pattern (Example 5)
+ *   ContextMenuSection   — context menu items for node/edge/canvas (Example 6)
+ *   ElementSection       — node/edge CRUD via ElementApi (Example 7)
+ *   TableSection         — table data read/write via TableApi (Example 8)
+ *   ViewportSection      — fit/positions via ViewportApi (Example 9)
+ *   ExportSection        — CX2 export via ExportApi (Example 10)
+ *   NetworkSection       — network create/delete via NetworkApi (Example 11)
+ *   TsvDownloadSection   — TSV table download via TableApi (Example 12)
+ */
+const HelloPanel = (): JSX.Element => (
+  <Box
+    sx={{
+      width: '100%',
+      height: '100%',
+      minHeight: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1em',
+      gap: 2,
+      overflowY: 'auto',
+    }}
+  >
+    <HelloHeader />
+    <Divider />
+    <VisualStyleSection />
+    <Divider />
+    <SelectionSection />
+    <Divider />
+    <LayoutSection />
+    <Divider />
+    <LifecycleSection />
+    <Divider />
+    <MenuSection />
+    <Divider />
+    <ContextMenuSection />
+    <Divider />
+    <ElementSection />
+    <Divider />
+    <TableSection />
+    <Divider />
+    <ViewportSection />
+    <Divider />
+    <ExportSection />
+    <Divider />
+    <NetworkSection />
+    <Divider />
+    <TsvDownloadSection />
+  </Box>
+)
 
 export default HelloPanel

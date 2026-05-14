@@ -1,11 +1,47 @@
+/**
+ * TemplatePanel — Minimal right-panel component.
+ *
+ * Demonstrates:
+ *   - Reading workspace info via useWorkspaceApi()
+ *   - ApiResult<T> pattern (check .success before .data)
+ *   - MUI components (shared singletons from host)
+ *
+ * Replace this with your own panel UI.
+ */
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+
 const TemplatePanel = (): JSX.Element => {
-  // Import stores and tasks here...
-  // const workspace = useWorkspaceStore((state: any) => state.workspace)
+  const workspaceApi = useWorkspaceApi()
+  const result = workspaceApi.getWorkspaceInfo()
+  const workspaceName =
+    result.success && result.data.name !== ''
+      ? result.data.name
+      : 'Untitled Workspace'
 
   return (
-    <div style={{ padding: '3em' }}>
-      <h4>Add your components here...</h4>
-    </div>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        p: 3,
+      }}
+    >
+      <Typography variant="h5">App Template</Typography>
+      <Typography color="text.secondary">
+        Start building your panel here.
+      </Typography>
+      <Box>
+        <Typography variant="overline" color="text.secondary">
+          Workspace
+        </Typography>
+        <Typography variant="body1">{workspaceName}</Typography>
+      </Box>
+    </Box>
   )
 }
 

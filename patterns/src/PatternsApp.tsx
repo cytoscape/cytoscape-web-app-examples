@@ -1,8 +1,9 @@
-import { ComponentType, CyApp } from '@cytoscape-web/types'
+import { ComponentType, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 
-export const PatternsApp: CyApp = {
+export const PatternsApp: CyAppWithLifecycle = {
   id: 'app-patterns',
   name: 'App Implementation Patterns',
+  apiVersion: '1.0',
   components: [
     {
       id: 'Panel',

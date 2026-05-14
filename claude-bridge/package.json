@@ -1,0 +1,12 @@
+{
+  "name": "@cytoscape-web/claude-bridge",
+  "description": "Claude Code ↔ Cytoscape Web bridge via CDP + MCP",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.js --env production=true",
+    "build-dev": "webpack --config webpack.config.js --env production=false",
+    "dev": "webpack serve --open /remoteEntry.js --mode development"
+  }
+}

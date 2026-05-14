@@ -4,28 +4,33 @@
   "private": true,
   "workspaces": [
     "hello-world",
-    "simple-menu",
-    "simple-panel",
-    "project-template"
+    "network-statistics",
+    "network-workflows",
+    "project-template",
+    "claude-bridge"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "concurrently \"npm:dev:*\"",
     "dev:hello-world": "npm run dev -w hello-world",
-    "dev:simple-menu": "npm run dev -w simple-menu",
-    "dev:simple-panel": "npm run dev -w simple-panel",
+    "dev:network-statistics": "npm run dev -w network-statistics",
+    "dev:network-workflows": "npm run dev -w network-workflows",
     "dev:project-template": "npm run dev -w project-template",
+    "dev:claude-bridge": "npm run dev -w claude-bridge",
+    "clean": "rm -rf hello-world/dist network-statistics/dist network-workflows/dist project-template/dist claude-bridge/dist",
+    "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && npm run copy-dist",
-    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r simple-menu/dist docs/simple-menu && cp -r simple-panel/dist docs/simple-panel"
+    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r network-statistics/dist docs/network-statistics && cp -r network-workflows/dist docs/network-workflows && cp -r project-template/dist docs/project-template && cp -r claude-bridge/dist docs/claude-bridge"
   },
   "peerDependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
     "@mui/material": "^5.16.7",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@cytoscape-web/api-types": "^1.0.0-beta.2",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "clean-webpack-plugin": "^4.0.0",
@@ -37,10 +42,5 @@
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.1.0"
-  },
-  "dependencies": {
-    "@cytoscape-web/types": "1.1.15",
-    "cytoscape": "^3.30.2",
-    "d3-scale": "^4.0.2"
   }
 }
