@@ -3,61 +3,385 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Example Apps for Cytoscape Web</title>
+    <title>Cytoscape Web App Examples</title>
     <style>
+      :root {
+        --bg: #f5f6f8;
+        --card: #ffffff;
+        --text: #1f2328;
+        --muted: #57606a;
+        --accent: #0b62a4;
+        --accent-soft: #e6f0fa;
+        --border: #d0d7de;
+        --code-bg: #f0f3f6;
+      }
+      * { box-sizing: border-box; }
       body {
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+          Arial, sans-serif;
         line-height: 1.6;
         margin: 0;
         padding: 0;
-        background-color: #f4f4f4;
+        background-color: var(--bg);
+        color: var(--text);
       }
       .container {
-        max-width: 70vh;
-        margin: 20px auto;
-        padding: 20px;
-        background: #fff;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
       }
-      h1,
-      h2,
-      h3 {
-        color: #333;
+      header {
+        background: linear-gradient(135deg, #0b62a4 0%, #1a8cd8 100%);
+        color: #fff;
+        padding: 48px 24px;
+        margin-bottom: 32px;
+      }
+      header .container { padding-top: 0; padding-bottom: 0; }
+      header h1 { margin: 0 0 8px; font-size: 2.2em; }
+      header p { margin: 0; opacity: 0.92; font-size: 1.05em; }
+      .badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        margin-top: 12px;
+      }
+      h2 {
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        margin-top: 40px;
+      }
+      h3 { color: var(--text); margin-top: 24px; }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      code, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      code {
+        background: var(--code-bg);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
       }
       pre {
-        background: #f4f4f4;
-        padding: 10px;
-        border: 1px solid #ddd;
+        background: var(--code-bg);
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
         overflow-x: auto;
+        font-size: 0.88em;
+      }
+      pre code { background: transparent; padding: 0; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+      }
+      .card h3 { margin-top: 0; }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.88em;
+        color: var(--muted);
+        margin: 6px 0 10px;
+      }
+      .meta span {
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 2px 10px;
+        border-radius: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+        font-size: 0.93em;
+      }
+      th, td {
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      th { background: var(--code-bg); }
+      .button-row { margin-top: 12px; }
+      .button {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.9em;
+        margin-right: 8px;
+      }
+      .button.secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      .button:hover { text-decoration: none; opacity: 0.9; }
+      footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.88em;
+        padding: 24px;
+        border-top: 1px solid var(--border);
+        margin-top: 48px;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>Example Apps for the Cytoscape Web</h1>
+    <header>
+      <div class="container">
+        <h1>Cytoscape Web App Examples</h1>
+        <p>
+          Reference implementations for building plugin apps with the new
+          Cytoscape Web App API.
+        </p>
+        <span class="badge">App API 1.0 (beta) &middot; May 2026</span>
+      </div>
+    </header>
 
+    <div class="container">
       <h2>Introduction</h2>
       <p>
-        Cytoscape Web has a built-in <em>App</em> hosting mechanism. This
-        repository is the reference implementations for using basic functions in
-        the Apps.
+        <a href="https://web.cytoscape.org">Cytoscape Web</a> hosts third-party
+        apps via <strong>Webpack Module Federation</strong>. Apps add panels,
+        menu items, and context menu actions to the host without recompiling
+        it. This repository provides four reference apps that cover the
+        full <code>cyweb/*</code> API surface, plus a starter template you can
+        copy.
       </p>
 
-      <a
-        href="https://github.com/cytoscape/cytoscape-web-app-examples"
-        class="github-link"
-      >
-        <i class="fab fa-github"></i>
-        View on GitHub
-      </a>
+      <div class="button-row">
+        <a
+          class="button"
+          href="https://github.com/cytoscape/cytoscape-web-app-examples"
+        >View on GitHub</a>
+        <a
+          class="button secondary"
+          href="https://github.com/cytoscape/cytoscape-web-app-examples#readme"
+        >Getting Started</a>
+        <a
+          class="button secondary"
+          href="https://www.npmjs.com/package/@cytoscape-web/api-types"
+        >@cytoscape-web/api-types</a>
+      </div>
 
       <h2>Quick Start</h2>
-      <p>To run all of the apps locally, type:</p>
-      <pre><code>npm run dev</code></pre>
+      <p>
+        Clone both the host and the examples side by side, then run them in two
+        terminals:
+      </p>
+      <pre><code>mkdir cytoscape-web-dev &amp;&amp; cd cytoscape-web-dev
+git clone https://github.com/cytoscape/cytoscape-web.git
+git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
+
+# Terminal 1 — example apps (ports 2222 / 3333 / 5555 / 7000)
+cd cytoscape-web-app-examples &amp;&amp; npm install &amp;&amp; npm run dev
+
+# Terminal 2 — host (port 5500)
+cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre>
+      <p>
+        Open <code>http://localhost:5500</code>, then
+        <strong>Apps &rarr; App Settings</strong> to enable any example.
+      </p>
 
       <h2>Example Apps</h2>
-      <h3>hello-world</h3>
-      <h3>network-workflows</h3>
+
+      <div class="card">
+        <h3>project-template</h3>
+        <div class="meta">
+          <span>Federation: template</span>
+          <span>Port: 5555</span>
+          <span>Start here</span>
+        </div>
+        <p>
+          The minimal starter app — one panel, one menu action, and one context
+          menu item. Copy this directory to scaffold your own app.
+        </p>
+        <div class="button-row">
+          <a
+            class="button secondary"
+            href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/project-template"
+          >Source</a>
+          <a class="button secondary" href="project-template/remoteEntry.js"
+            >remoteEntry.js</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>hello-world</h3>
+        <div class="meta">
+          <span>Federation: hello</span>
+          <span>Port: 2222</span>
+          <span>Full API tour</span>
+        </div>
+        <p>
+          12 self-contained examples covering every domain API
+          (<code>WorkspaceApi</code>, <code>ElementApi</code>,
+          <code>NetworkApi</code>, <code>SelectionApi</code>,
+          <code>ViewportApi</code>, <code>TableApi</code>,
+          <code>VisualStyleApi</code>, <code>LayoutApi</code>,
+          <code>ExportApi</code>), plus the EventBus, lifecycle, and per-app
+          context menu patterns.
+        </p>
+        <div class="button-row">
+          <a
+            class="button secondary"
+            href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/hello-world"
+          >Source</a>
+          <a class="button secondary" href="hello-world/remoteEntry.js"
+            >remoteEntry.js</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>network-statistics</h3>
+        <div class="meta">
+          <span>Federation: networkStatistics</span>
+          <span>Port: 3333</span>
+          <span>Non-React</span>
+        </div>
+        <p>
+          A pure TypeScript app — no React, no UI — that logs topology
+          statistics to the console on <code>network:switched</code> and
+          <code>selection:changed</code> events. Useful as a template for
+          browser extensions, Jupyter bridges, headless analytics, and
+          LLM agent integrations that talk to <code>window.CyWebApi</code>.
+        </p>
+        <div class="button-row">
+          <a
+            class="button secondary"
+            href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/network-statistics"
+          >Source</a>
+          <a class="button secondary" href="network-statistics/remoteEntry.js"
+            >remoteEntry.js</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>network-workflows</h3>
+        <div class="meta">
+          <span>Federation: networkWorkflows</span>
+          <span>Port: 7000</span>
+          <span>Real-world workflows</span>
+        </div>
+        <p>
+          Higher-level workflows: create a sample network from a menu item,
+          import a network from a remote CX2 file, and receive CX2 payloads
+          from Jupyter Lab via <code>postMessage</code>.
+        </p>
+        <div class="button-row">
+          <a
+            class="button secondary"
+            href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/network-workflows"
+          >Source</a>
+          <a class="button secondary" href="network-workflows/remoteEntry.js"
+            >remoteEntry.js</a>
+        </div>
+      </div>
+
+      <h2>App API Overview</h2>
+      <p>
+        Every API method returns a discriminated union
+        <code>ApiResult&lt;T&gt;</code> — always check <code>result.success</code>
+        before reading <code>result.data</code>. Plugins import host modules
+        with the <code>cyweb/</code> prefix.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Import</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>cyweb/WorkspaceApi</code></td><td>Current network ID, workspace info, switch network</td></tr>
+          <tr><td><code>cyweb/ElementApi</code></td><td>Create / delete nodes and edges, graph traversal</td></tr>
+          <tr><td><code>cyweb/NetworkApi</code></td><td>Create / delete networks, import CX2</td></tr>
+          <tr><td><code>cyweb/SelectionApi</code></td><td>Read and mutate the current selection</td></tr>
+          <tr><td><code>cyweb/ViewportApi</code></td><td>Pan, zoom, fit, read/write node positions</td></tr>
+          <tr><td><code>cyweb/TableApi</code></td><td>Read and write node/edge attribute tables</td></tr>
+          <tr><td><code>cyweb/VisualStyleApi</code></td><td>Set defaults, bypasses, and mappings</td></tr>
+          <tr><td><code>cyweb/LayoutApi</code></td><td>Run layout algorithms</td></tr>
+          <tr><td><code>cyweb/ExportApi</code></td><td>Export the network as CX2</td></tr>
+          <tr><td><code>cyweb/EventBus</code></td><td>Subscribe to host events via <code>useCyWebEvent</code></td></tr>
+          <tr><td><code>cyweb/AppIdContext</code></td><td>Per-app resource &amp; context menu APIs</td></tr>
+          <tr><td><code>cyweb/ApiTypes</code></td><td>TypeScript types for all of the above</td></tr>
+        </tbody>
+      </table>
+
+      <h3>EventBus Events</h3>
+      <table>
+        <thead><tr><th>Event</th><th>Fires when</th></tr></thead>
+        <tbody>
+          <tr><td><code>network:created</code></td><td>A new network is added to the workspace</td></tr>
+          <tr><td><code>network:deleted</code></td><td>A network is removed</td></tr>
+          <tr><td><code>network:switched</code></td><td>The user navigates to a different network</td></tr>
+          <tr><td><code>selection:changed</code></td><td>Node or edge selection changes</td></tr>
+          <tr><td><code>layout:started</code></td><td>A layout algorithm begins</td></tr>
+          <tr><td><code>layout:completed</code></td><td>A layout algorithm finishes</td></tr>
+          <tr><td><code>style:changed</code></td><td>A visual style property changes</td></tr>
+          <tr><td><code>data:changed</code></td><td>Node or edge attribute data changes</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Documentation</h2>
+      <ul>
+        <li>
+          <a
+            href="https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md"
+          >App API Reference</a>
+          &mdash; complete reference for all domain APIs, ResourceApi, EventBus,
+          error codes, and lifecycle
+        </li>
+        <li>
+          <a
+            href="https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md"
+          >App API Specification</a>
+          &mdash; full design document for the 10 domain APIs
+        </li>
+        <li>
+          <a
+            href="https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-resource-registration-specification.md"
+          >Resource Registration Specification</a>
+          &mdash; slot model, lifecycle, cleanup, error boundaries
+        </li>
+        <li>
+          <a
+            href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/guides"
+          >Developer Guides</a>
+          &mdash; getting started, architecture, registration patterns,
+          lifecycle, troubleshooting
+        </li>
+        <li>
+          <a
+            href="https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/CHANGELOG.md"
+          ><code>@cytoscape-web/api-types</code> CHANGELOG</a>
+          &mdash; version history for the types package
+        </li>
+      </ul>
+
+      <h2>Sample Data</h2>
+      <p>
+        Sample networks used by the examples are available under
+        <a href="data/"><code>data/</code></a>.
+      </p>
     </div>
+
+    <footer>
+      <div>
+        Built with
+        <a href="https://github.com/cytoscape/cytoscape-web">Cytoscape Web</a>
+        &middot;
+        Released under the
+        <a
+          href="https://github.com/cytoscape/cytoscape-web-app-examples/blob/main/LICENSE"
+        >MIT License</a>
+      </div>
+    </footer>
   </body>
 </html>
