@@ -26,7 +26,7 @@ automatically when your app loads — no `mount()` needed.
 
 ```typescript
 import { lazy } from 'react'
-import type { CyAppWithLifecycle } from '@cytoscape-web/api-types'
+import type { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 
 export const MyApp: CyAppWithLifecycle = {
   id: 'myApp',

@@ -10,14 +10,27 @@ Common issues and solutions for Cytoscape Web app developers.
 
 **Cause:** Missing Module Federation type declarations.
 
-**Fix:** Install the type package:
+**Fix:** Install the type package and reference its declarations file from
+your `tsconfig.json`:
 
 ```bash
 npm install --save-dev @cytoscape-web/api-types
 ```
 
-This provides `cyweb/*` module declarations in `dist/mf-declarations.d.ts`.
-Ensure your `tsconfig.json` includes `node_modules/@cytoscape-web/api-types`.
+```jsonc
+{
+  "files": ["./node_modules/@cytoscape-web/api-types/index.d.ts"],
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types"]
+  }
+}
+```
+
+The package ships its declarations as a single root `index.d.ts` that
+declares the `cyweb/*` ambient modules. It must be loaded via `files`
+(or a triple-slash directive) — `typeRoots` will not pick it up. See
+any of the example apps' `tsconfig.json` for a working reference.
 
 ### "Shared module is not available for eager consumption"
 
@@ -40,15 +53,19 @@ Or use the pattern from `project-template` where `src/index.ts` does
 ### Host dev server shows "Container missing" or blank panel
 
 **Cause:** The `name` in your webpack `ModuleFederationPlugin` does not
-match the `name` in `apps.local.json`.
+match the `id` in `apps.local.json`.
 
 **Fix:** Ensure all three match:
 
 ```
 webpack.config.js:  name: 'myApp'
-apps.local.json:    { "name": "myApp", "url": "..." }
+apps.local.json:    { "id": "myApp", "name": "My App", "url": "..." }
 MyApp.ts:           id: 'myApp'
 ```
+
+> The `id` field in `apps.local.json` is the unique identifier (it
+> matches the webpack federation `name`). The `name` field is the
+> display label shown in App Settings — it does not need to match.
 
 ---
 

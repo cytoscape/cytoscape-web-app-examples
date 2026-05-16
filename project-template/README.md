@@ -57,17 +57,33 @@ Open `http://localhost:5500` → **Apps** → **App Settings** → enable your a
 
 ### 5. Host registration
 
-Add your app to the host's `src/assets/apps.local.json`:
+Add your app to the host's `src/assets/apps.local.json` (a JSON array):
 
 ```json
-{ "name": "myApp", "url": "http://localhost:XXXX/remoteEntry.js" }
+{
+  "id": "myApp",
+  "name": "My App (display name)",
+  "url": "http://localhost:XXXX/remoteEntry.js",
+  "author": "Your Name",
+  "description": "Short description",
+  "version": "0.1.0"
+}
 ```
 
+> The `id` field is the unique identifier and must match the `id` in
+> your `CyApp` object and the webpack `ModuleFederationPlugin` `name`.
+> The `name` field is the display label shown in App Settings.
+
 > **Note:** The template itself is not pre-registered in `apps.local.json`.
-> To test it before copying, add the following entry:
+> To test it before copying, add:
 >
 > ```json
-> { "name": "template", "url": "http://localhost:5555/remoteEntry.js" }
+> {
+>   "id": "template",
+>   "name": "App Template",
+>   "url": "http://localhost:5555/remoteEntry.js",
+>   "version": "0.1.0"
+> }
 > ```
 
 ---
@@ -77,13 +93,13 @@ Add your app to the host's `src/assets/apps.local.json`:
 ```text
 project-template/
 ├── src/
-│   ├── index.ts              ← re-exports app config as default
-│   ├── TemplateApp.tsx       ← app config: id, name, resources, lifecycle
-│   ├── contextMenus.ts      ← context menu registration (Graph Traversal example)
+│   ├── index.ts                  ← re-exports app config as default
+│   ├── TemplateApp.tsx           ← app config: id, name, resources, lifecycle
+│   ├── contextMenus.ts           ← context menu registration (Graph Traversal example)
 │   └── components/
-│       ├── TemplatePanel.tsx  ← right-panel component (WorkspaceApi example)
-│       └── TemplateMenuItem.tsx ← apps-menu component (NetworkApi example)
-├── webpack.config.js          ← Module Federation config (name, port, remotes)
+│       ├── TemplatePanel.tsx     ← right-panel component (WorkspaceApi example)
+│       └── TemplateMenuItem.tsx  ← apps-menu component (NetworkApi example)
+├── webpack.config.js             ← Module Federation config (name, port, remotes)
 ├── tsconfig.json
 └── package.json
 ```
@@ -126,7 +142,7 @@ enables minification.
 
 ## Further reading
 
-- [hello-world/](../hello-world/) — full reference app with 12 examples covering
+- [hello-world/](../hello-world/) — full reference app with 13 examples covering
   all APIs
 - [guides/](../guides/) — App Developer Guide (getting started, architecture,
   registration patterns, lifecycle, troubleshooting)

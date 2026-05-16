@@ -2,19 +2,21 @@
  * Example 5: Dropdown Menu Component (NetworkSummaryMenuItem)
  *
  * Shows how to contribute a menu item to the host's "Apps" dropdown menu —
- * the second extension point alongside panels (ComponentType.Panel).
+ * the second extension point alongside right-panel resources.
  *
  * Key patterns demonstrated:
  *
  *   Registration (HelloApp.tsx):
- *   - Add a ComponentMetadata entry with `type: ComponentType.Menu` in the
- *     `components` array. The host renders it inside the "Apps" menu bar.
+ *   - Add a `ResourceDeclaration` entry with `slot: 'apps-menu'` in the
+ *     `resources` array. The host renders it inside the "Apps" menu bar.
  *   - Use `lazy(() => import('./components/NetworkSummaryMenuItem'))` to
  *     code-split so the component is loaded on demand.
+ *   - Set `closeOnAction: true` to have the host auto-close the dropdown
+ *     after the user clicks the menu item.
  *
  *   Menu component contract:
- *   - The host passes `handleClose` as a prop. Calling it dismisses the
- *     OverlayPanel that wraps the dropdown.
+ *   - The host passes `handleClose` as a prop (`MenuItemHostProps`).
+ *     Calling it dismisses the OverlayPanel that wraps the dropdown.
  *   - IMPORTANT: because plugin menu components render *inside* the
  *     OverlayPanel, calling handleClose unmounts the component and all
  *     its children (including dialogs). If the menu item opens a dialog,
@@ -48,7 +50,8 @@ export const MenuSection = (): JSX.Element => (
     </Typography>
     <Typography variant="body2" color="text.secondary" paragraph>
       Menu components are declared in <code>HelloApp.tsx</code> with{' '}
-      <code>ComponentType.Menu</code>. The host provides a{' '}
+      <code>slot: &apos;apps-menu&apos;</code> in the{' '}
+      <code>resources</code> array. The host provides a{' '}
       <code>handleClose</code> prop to dismiss the dropdown. Because plugin
       menus render inside the host&apos;s OverlayPanel, opening a dialog
       requires deferring <code>handleClose</code> until the dialog is dismissed

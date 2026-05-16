@@ -41,11 +41,18 @@ to discover plugins:
 
 ```json
 [
-  { "name": "myApp", "url": "http://localhost:3333/remoteEntry.js" }
+  {
+    "id": "myApp",
+    "name": "My App (display name)",
+    "url": "http://localhost:3333/remoteEntry.js",
+    "version": "0.1.0"
+  }
 ]
 ```
 
-The `name` must match your app's `id` (in `CyApp`) and webpack `name`.
+The `id` field is the unique identifier and must match your app's `id`
+(in `CyApp`) and the webpack `ModuleFederationPlugin` `name`. The
+`name` field is the human-readable label shown in App Settings.
 
 ---
 
@@ -135,7 +142,7 @@ if (result.success) {
 }
 
 // Or use helper functions
-import { isOk, isFail } from '@cytoscape-web/api-types'
+import { isOk, isFail } from 'cyweb/ApiTypes'
 if (isOk(result)) { ... }
 ```
 

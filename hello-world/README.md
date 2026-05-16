@@ -30,7 +30,9 @@ without rebuilding the host application.
 │    cyweb/SelectionApi       │──────►│    cyweb/WorkspaceApi    │
 │    cyweb/LayoutApi          │       │    cyweb/VisualStyleApi  │
 │    cyweb/EventBus           │       │    cyweb/EventBus  …     │
-│    … (9 API namespaces)     │       │                          │
+│    … (9 use*Api hooks +     │       │                          │
+│       AppIdContext, EventBus,│       │                          │
+│       ApiTypes)              │       │                          │
 └─────────────────────────────┘       └──────────────────────────┘
 ```
 
@@ -54,16 +56,19 @@ plugin does not bundle its own copy, which keeps the download small.
 ## Running locally
 
 ```bash
-# Terminal 1 — start the host
+# Terminal 1 — start the host with the local app registry
 cd ../../cytoscape-web
 npm install
-npm run dev          # → http://localhost:5500
+npm run dev:local    # → http://localhost:5500 (loads apps.local.json)
 
 # Terminal 2 — start this plugin
 cd hello-world
 npm install
 npm run dev          # → http://localhost:2222
 ```
+
+> Use `npm run dev:local` (not `npm run dev`) so the host loads
+> `src/assets/apps.local.json` and discovers your locally running plugin.
 
 Open `http://localhost:5500`, click **Apps** in the toolbar, then **App
 Settings** to enable the Hello World app. The panel appears on the right side.
@@ -75,24 +80,26 @@ Settings** to enable the Hello World app. The panel appears on the right side.
 ```
 hello-world/
 ├── src/
-│   ├── index.ts                    ← webpack entry; re-exports HelloApp as default
-│   ├── HelloApp.tsx                ← app config + lifecycle (mount / unmount)
-│   ├── lifecycleState.ts           ← external store bridging lifecycle ↔ React
+│   ├── index.ts                       ← webpack entry; re-exports HelloApp as default
+│   ├── HelloApp.tsx                   ← app config + lifecycle (mount / unmount)
+│   ├── lifecycleState.ts              ← external store bridging lifecycle ↔ React
 │   └── components/
-│       ├── HelloPanel.tsx          ← root panel layout (composes examples below)
-│       ├── HelloHeader.tsx         ← Example 0: MUI + webpack public path
-│       ├── VisualStyleSection.tsx  ← Example 1: VisualStyleApi
-│       ├── SelectionSection.tsx    ← Example 2: EventBus + SelectionApi
-│       ├── LayoutSection.tsx       ← Example 3: LayoutApi + EventBus (async)
-│       ├── LifecycleSection.tsx    ← Example 4: App lifecycle / useSyncExternalStore
-│       ├── MenuSection.tsx         ← Example 5: Menu component pattern
-│       ├── ContextMenuSection.tsx  ← Example 6: Context menu items via useAppContext
-│       ├── ElementSection.tsx      ← Example 7: Node/edge CRUD via ElementApi
-│       ├── TableSection.tsx        ← Example 8: Table data read/write via TableApi
-│       ├── ViewportSection.tsx     ← Example 9: Fit viewport, node positions via ViewportApi
-│       ├── ExportSection.tsx       ← Example 10: CX2 export via ExportApi
-│       └── NetworkSection.tsx      ← Example 11: Network create/delete via NetworkApi
-├── webpack.config.js               ← Module Federation config
+│       ├── HelloPanel.tsx             ← root panel layout (composes examples below)
+│       ├── HelloHeader.tsx            ← Example 0: MUI + webpack public path
+│       ├── VisualStyleSection.tsx     ← Example 1: VisualStyleApi
+│       ├── SelectionSection.tsx       ← Example 2: EventBus + SelectionApi
+│       ├── LayoutSection.tsx          ← Example 3: LayoutApi + EventBus (async)
+│       ├── LifecycleSection.tsx       ← Example 4: App lifecycle / useSyncExternalStore
+│       ├── MenuSection.tsx            ← Example 5: Menu component pattern
+│       ├── ContextMenuSection.tsx     ← Example 6: Context menu items via useAppContext
+│       ├── ElementSection.tsx         ← Example 7: Node/edge CRUD via ElementApi
+│       ├── TableSection.tsx           ← Example 8: Table data read/write via TableApi
+│       ├── ViewportSection.tsx        ← Example 9: Fit viewport, node positions via ViewportApi
+│       ├── ExportSection.tsx          ← Example 10: CX2 export via ExportApi
+│       ├── NetworkSection.tsx         ← Example 11: Network create/delete via NetworkApi
+│       ├── TsvDownloadSection.tsx     ← Example 12: TSV table download via TableApi
+│       └── NetworkSummaryMenuItem.tsx ← apps-menu item registered in HelloApp.tsx
+├── webpack.config.js                  ← Module Federation config
 ├── tsconfig.json
 └── package.json
 ```
@@ -452,6 +459,30 @@ Explains how `ComponentType.Menu` items (now via `resources` with
 
 ---
 
+### Example 12 — TSV table download (`TsvDownloadSection.tsx`)
+
+**What it shows:**
+- `tableApi.exportTableToTsv(networkId, 'node' | 'edge')` — serialise the
+  current node or edge attribute table as a tab-separated string.
+- The browser-native `Blob` + `URL.createObjectURL` + `<a download>` pattern
+  triggers a save-file dialog without any server round-trip.
+- Edge-table TSV always contains the `source` and `target` columns.
+
+```typescript
+const result = tableApi.exportTableToTsv(networkId, 'node')
+if (result.success) {
+  const blob = new Blob([result.data.tsv], { type: 'text/tab-separated-values' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'node-table.tsv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+```
+
+---
+
 ## Creating your own app
 
 Use `project-template/` as the starting point:
@@ -466,12 +497,23 @@ cd ../my-app
    and `name` in `ModuleFederationPlugin` (unique camelCase string, no spaces)
 3. **`src/`** — rename and replace the template files; keep `index.ts` as the
    entry point re-exporting your app config as `default`
-4. **Host registry** — add an entry in
+4. **Host registry** — add an entry to the JSON array in
    `../../cytoscape-web/src/assets/apps.local.json`:
 
 ```json
-{ "name": "myApp", "url": "http://localhost:XXXX/remoteEntry.js" }
+{
+  "id": "myApp",
+  "name": "My App (display name)",
+  "url": "http://localhost:XXXX/remoteEntry.js",
+  "author": "Your Name",
+  "description": "Short description",
+  "version": "0.1.0"
+}
 ```
+
+> The `id` field is the unique identifier and must match your app's `id`
+> and the webpack `name`. The `name` field is the human-readable label
+> shown in App Settings.
 
 5. Run `npm run dev` and reload the host at `http://localhost:5500`
 
@@ -493,6 +535,7 @@ Import any of these in your React components using the `cyweb/` prefix:
 | `cyweb/TableApi` | Read and write node/edge attribute tables |
 | `cyweb/ExportApi` | Export the network as CX2 or image |
 | `cyweb/EventBus` | Subscribe to host events (`useCyWebEvent`) |
+| `cyweb/AppIdContext` | Per-app context (`useAppContext`) for resource and context menu APIs |
 | `cyweb/ApiTypes` | TypeScript types for all of the above |
 
 All API functions return `ApiResult<T>` — check `result.success` before using

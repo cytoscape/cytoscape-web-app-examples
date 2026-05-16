@@ -1,6 +1,6 @@
-# Developing Apps for _[Cytoscape Web](https://web.cytoscape.org/)_
+# Developing Apps for _[Cytoscape Web](https://github.com/cytoscape/cytoscape-web/)_
 
-- API version 1.0 beta: March 2026
+- For Cytoscape Web App API version 1.0 beta: May 2026
 
 > Reference implementations and documentation for Cytoscape Web app development
 
@@ -82,10 +82,20 @@ cp -r project-template my-app && cd my-app
 3. **`src/TemplateApp.tsx`** — change `id` (must match MF name), `name`, `resources`
 4. **Host registry** — add an entry for your app in `cytoscape-web/src/assets/apps.local.json`:
    ```json
-   { "name": "myApp", "url": "http://localhost:6000/remoteEntry.js" }
+   {
+     "id": "myApp",
+     "name": "My App (display name)",
+     "url": "http://localhost:6000/remoteEntry.js",
+     "version": "0.1.0"
+   }
    ```
+   > `id` is the unique identifier (must match webpack `name` and your
+   > `CyApp.id`); `name` is the human-readable label shown in App Settings.
+   >
    > To test the template before copying, add:
-   > `{ "name": "template", "url": "http://localhost:5555/remoteEntry.js" }`
+   > ```json
+   > { "id": "template", "name": "App Template", "url": "http://localhost:5555/remoteEntry.js", "version": "0.1.0" }
+   > ```
 5. **Verify** — `npm run dev`, then confirm in browser
 
 See [project-template/README.md](project-template/README.md) for details.
@@ -162,17 +172,17 @@ export const MyApp: CyAppWithLifecycle = {
 
 | Resource                                                                                                                                                                                  | Description                                                                                |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [**App API Reference**](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md)                                                                          | Complete reference for all domain APIs, ResourceApi, Event Bus, error codes, and lifecycle |
-| [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types) ([README](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/README.md)) | TypeScript types package — install for IDE support                                         |
-| [CHANGELOG](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/packages/api-types/CHANGELOG.md)                                                                                  | Version history for the types package                                                      |
+| [**App API Reference**](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/Api.md)                                                                          | Complete reference for all domain APIs, ResourceApi, Event Bus, error codes, and lifecycle |
+| [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types) ([README](https://github.com/cytoscape/cytoscape-web/blob/development/packages/api-types/README.md)) | TypeScript types package — install for IDE support                                         |
+| [CHANGELOG](https://github.com/cytoscape/cytoscape-web/blob/development/packages/api-types/CHANGELOG.md)                                                                                  | Version history for the types package                                                      |
 
 ### Specifications (Advanced)
 
 | Spec                                                                                                                                                                                       | Scope                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md)                                 | Full 2000-line spec for all 10 domain APIs            |
-| [Resource Registration Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-resource-registration-specification.md) | Slot model, lifecycle, cleanup, error boundaries      |
-| [Registration Minimal App Example](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/examples/app-resource-registration-minimal-app.md)            | End-to-end code walkthrough of all registration paths |
+| [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/app-api-specification.md)                                 | Full 2000-line spec for all 10 domain APIs            |
+| [Resource Registration Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/app-resource-registration-specification.md) | Slot model, lifecycle, cleanup, error boundaries      |
+| [Registration Minimal App Example](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/examples/app-resource-registration-minimal-app.md)            | End-to-end code walkthrough of all registration paths |
 
 ---
 
@@ -227,12 +237,12 @@ window.addEventListener('cywebapi:ready', () => {
 
 ## Example Apps
 
-| Example                                      | Best for                                              | Details                                   |
-| -------------------------------------------- | ----------------------------------------------------- | ----------------------------------------- |
-| [project-template/](project-template/)       | Your first app — panel, menu action, and context menu | [README](project-template/README.md)      |
-| [hello-world/](hello-world/)                 | Full API coverage — 12 examples covering all APIs     | [README](hello-world/README.md)           |
-| [network-statistics/](network-statistics/)   | **Non-React** — graph traversal, event-driven logging | [README](network-statistics/README.md)    |
-| [network-workflows/](network-workflows/)     | CX2 import, Jupyter integration, menu workflows       | [README](network-workflows/README.md)     |
+| Example                                    | Best for                                              | Details                                |
+| ------------------------------------------ | ----------------------------------------------------- | -------------------------------------- |
+| [project-template/](project-template/)     | Your first app — panel, menu action, and context menu | [README](project-template/README.md)   |
+| [hello-world/](hello-world/)               | Full API coverage — 13 examples covering all APIs     | [README](hello-world/README.md)        |
+| [network-statistics/](network-statistics/) | **Non-React** — graph traversal, event-driven logging | [README](network-statistics/README.md) |
+| [network-workflows/](network-workflows/)   | CX2 import, Jupyter integration, menu workflows       | [README](network-workflows/README.md)  |
 
 Recommended reading order: project-template → hello-world → network-statistics → network-workflows
 
@@ -246,28 +256,37 @@ Install the types package for IDE support:
 npm install --save-dev @cytoscape-web/api-types
 ```
 
-Add to `tsconfig.json`:
+Reference the package's bundled declarations from your `tsconfig.json` so
+TypeScript resolves the `cyweb/*` ambient modules:
 
 ```json
 {
+  "files": ["./node_modules/@cytoscape-web/api-types/index.d.ts"],
+  "include": ["src/**/*"],
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types", "./node_modules/@cytoscape-web"]
+    "typeRoots": ["./node_modules/@types"]
   }
 }
 ```
+
+> The package ships its declarations as a single root `index.d.ts`, so it
+> must be loaded via `files` (or a triple-slash directive) rather than
+> `typeRoots`. See any of the example apps' `tsconfig.json` for a working
+> reference.
 
 ---
 
 ## Development Commands
 
 ```bash
-npm run dev                     # run all example apps
+npm run dev                     # run all workspaces concurrently
 npm run dev:hello-world         # run one app
 npm run dev:network-statistics
 npm run dev:network-workflows
 npm run dev:project-template
-npm run build                   # build all apps
-npm run deploy                  # build and copy to docs/
+npm run dev:claude-bridge       # MCP bridge (optional, internal tool)
+npm run build                   # build all workspaces
+npm run deploy                  # build and copy each workspace's dist/ into docs/
 ```
 
 ---
@@ -275,9 +294,10 @@ npm run deploy                  # build and copy to docs/
 ## Deprecated APIs
 
 Older examples used direct store imports. They still work, but new apps should
-use the App API instead. See
-[Architecture Overview](guides/architecture-overview.md) for the full
-deprecation table.
+use the App API hooks instead — they return `ApiResult<T>` and provide a
+stable, documented contract. See
+[Architecture Overview &rarr; Host Exposes Reference](guides/architecture-overview.md#host-exposes-reference)
+for the full list of legacy `cyweb/*Store` exposes.
 
 | Deprecated pattern  | Recommended replacement |
 | ------------------- | ----------------------- |

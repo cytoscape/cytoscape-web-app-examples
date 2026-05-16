@@ -85,7 +85,7 @@ import type {
   CyAppWithLifecycle,
   AppContext,
   ResourceDeclaration,
-} from '@cytoscape-web/api-types'
+} from 'cyweb/ApiTypes'
 
 const version = '0.1.0'
 
@@ -169,7 +169,7 @@ export default MainPanel
 ### Menu Item Component (`src/components/MyMenuItem.tsx`)
 
 ```tsx
-import type { MenuItemHostProps } from '@cytoscape-web/api-types'
+import type { MenuItemHostProps } from 'cyweb/ApiTypes'
 
 const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
   const handleClick = () => {
@@ -193,30 +193,50 @@ export default MyMenuItem
 ## 5. Register with the Host
 
 Add your app to the host's plugin registry. For local development,
-edit `src/assets/apps.local.json` in the `cytoscape-web` repo:
+edit `src/assets/apps.local.json` in the `cytoscape-web` repo (a JSON array):
 
 ```json
 [
-  { "name": "hello", "url": "http://localhost:2222/remoteEntry.js" },
-  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js" },
-  { "name": "createNetwork", "url": "http://localhost:5555/remoteEntry.js" },
-  { "name": "myApp", "url": "http://localhost:3333/remoteEntry.js" }
+  {
+    "id": "hello",
+    "name": "Hello Cytoscape World App",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "version": "1.0.0"
+  },
+  {
+    "id": "networkWorkflows",
+    "name": "Network Workflow Examples",
+    "url": "http://localhost:7000/remoteEntry.js",
+    "version": "1.0.0"
+  },
+  {
+    "id": "myApp",
+    "name": "My App",
+    "url": "http://localhost:3333/remoteEntry.js",
+    "version": "0.1.0"
+  }
 ]
 ```
 
-> The `name` field must match your app's `id` and webpack `name`.
+> The `id` field is the unique identifier and must match your app's `id`
+> (in `CyApp`) and the webpack `ModuleFederationPlugin` `name`. The
+> `name` field is the human-readable label shown in App Settings.
+> Optional fields: `author`, `description`, `tags`, `license`, `repository`.
 
 ---
 
 ## 6. Run Both Dev Servers
 
 ```bash
-# Terminal 1 — Host (port 5500)
-cd cytoscape-web && npm run dev
+# Terminal 1 — Host (port 5500) with the local app registry
+cd cytoscape-web && npm run dev:local
 
 # Terminal 2 — Your app (port 3333)
 cd my-app && npm run dev
 ```
+
+> Use `npm run dev:local` so the host reads `apps.local.json` instead of
+> the production `apps.json` registry.
 
 Your panel should appear in the right-side panel area, and your menu item
 under the **Apps** dropdown.
