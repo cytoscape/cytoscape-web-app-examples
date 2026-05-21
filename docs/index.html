@@ -140,8 +140,8 @@
       <div class="container">
         <h1>Cytoscape Web App Examples</h1>
         <p>
-          Reference implementations for building plugin apps with the new
-          Cytoscape Web App API.
+          Live, ready-to-load reference apps for the new
+          Cytoscape Web App API &mdash; deployed and usable from any browser.
         </p>
         <span class="badge">App API 1.0 (beta) &middot; May 2026</span>
       </div>
@@ -153,43 +153,41 @@
         <a href="https://web.cytoscape.org">Cytoscape Web</a> hosts third-party
         apps via <strong>Webpack Module Federation</strong>. Apps add panels,
         menu items, and context menu actions to the host without recompiling
-        it. This repository provides four reference apps that cover the
-        full <code>cyweb/*</code> API surface, plus a starter template you can
-        copy.
+        it. This site hosts the live builds of four reference apps that cover
+        the full <code>cyweb/*</code> API surface, plus a starter template you
+        can copy when building your own app.
       </p>
 
       <div class="button-row">
         <a
           class="button"
-          href="https://github.com/cytoscape/cytoscape-web-app-examples"
-        >View on GitHub</a>
+          href="https://web.cytoscape.org"
+        >Open Cytoscape Web</a>
         <a
           class="button secondary"
-          href="https://github.com/cytoscape/cytoscape-web-app-examples#readme"
-        >Getting Started</a>
+          href="https://github.com/cytoscape/cytoscape-web-app-examples"
+        >View on GitHub</a>
         <a
           class="button secondary"
           href="https://www.npmjs.com/package/@cytoscape-web/api-types"
         >@cytoscape-web/api-types</a>
       </div>
 
-      <h2>Quick Start</h2>
+      <h2>Try the examples in Cytoscape Web</h2>
       <p>
-        Clone both the host and the examples side by side, then run them in two
-        terminals:
+        Each example below is deployed as a Module Federation remote on this
+        site. To load any of them into the live host at
+        <a href="https://web.cytoscape.org">web.cytoscape.org</a>, open
+        <strong>Apps &rarr; App Settings</strong> and add the app's
+        <code>remoteEntry.js</code> URL:
       </p>
-      <pre><code>mkdir cytoscape-web-dev &amp;&amp; cd cytoscape-web-dev
-git clone https://github.com/cytoscape/cytoscape-web.git
-git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
-
-# Terminal 1 — example apps (ports 2222 / 3333 / 5555 / 7000)
-cd cytoscape-web-app-examples &amp;&amp; npm install &amp;&amp; npm run dev
-
-# Terminal 2 — host (port 5500)
-cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre>
+      <pre><code>https://cytoscape.org/cytoscape-web-app-examples/&lt;APP_ID&gt;/remoteEntry.js</code></pre>
       <p>
-        Open <code>http://localhost:5500</code>, then
-        <strong>Apps &rarr; App Settings</strong> to enable any example.
+        where <code>&lt;APP_ID&gt;</code> is one of
+        <code>hello-world</code>, <code>network-statistics</code>,
+        <code>network-workflows</code>, or <code>project-template</code>.
+        Once added, the app shows up in the App Panel or the Apps menu &mdash;
+        no install, no rebuild of the host.
       </p>
 
       <h2>Example Apps</h2>
@@ -198,12 +196,16 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
         <h3>project-template</h3>
         <div class="meta">
           <span>Federation: template</span>
-          <span>Port: 5555</span>
           <span>Start here</span>
         </div>
         <p>
-          The minimal starter app — one panel, one menu action, and one context
-          menu item. Copy this directory to scaffold your own app.
+          The minimal starter app &mdash; one panel, one menu action, and one
+          context menu item. Fork the repository and copy this directory to
+          scaffold your own app.
+        </p>
+        <p>
+          <strong>App URL:</strong>
+          <code>https://cytoscape.org/cytoscape-web-app-examples/project-template/remoteEntry.js</code>
         </p>
         <div class="button-row">
           <a
@@ -211,7 +213,7 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
             href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/project-template"
           >Source</a>
           <a class="button secondary" href="project-template/remoteEntry.js"
-            >remoteEntry.js</a>
+            >Open remoteEntry.js</a>
         </div>
       </div>
 
@@ -219,7 +221,6 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
         <h3>hello-world</h3>
         <div class="meta">
           <span>Federation: hello</span>
-          <span>Port: 2222</span>
           <span>Full API tour</span>
         </div>
         <p>
@@ -231,13 +232,17 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
           <code>ExportApi</code>), plus the EventBus, lifecycle, and per-app
           context menu patterns.
         </p>
+        <p>
+          <strong>App URL:</strong>
+          <code>https://cytoscape.org/cytoscape-web-app-examples/hello-world/remoteEntry.js</code>
+        </p>
         <div class="button-row">
           <a
             class="button secondary"
             href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/hello-world"
           >Source</a>
           <a class="button secondary" href="hello-world/remoteEntry.js"
-            >remoteEntry.js</a>
+            >Open remoteEntry.js</a>
         </div>
       </div>
 
@@ -245,15 +250,19 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
         <h3>network-statistics</h3>
         <div class="meta">
           <span>Federation: networkStatistics</span>
-          <span>Port: 3333</span>
           <span>Non-React</span>
         </div>
         <p>
-          A pure TypeScript app — no React, no UI — that logs topology
-          statistics to the console on <code>network:switched</code> and
-          <code>selection:changed</code> events. Useful as a template for
-          browser extensions, Jupyter bridges, headless analytics, and
-          LLM agent integrations that talk to <code>window.CyWebApi</code>.
+          A pure TypeScript app &mdash; no React, no UI &mdash; that logs
+          topology statistics to the console on
+          <code>network:switched</code> and <code>selection:changed</code>
+          events. Useful as a template for browser extensions, Jupyter
+          bridges, headless analytics, and LLM agent integrations that talk to
+          <code>window.CyWebApi</code>.
+        </p>
+        <p>
+          <strong>App URL:</strong>
+          <code>https://cytoscape.org/cytoscape-web-app-examples/network-statistics/remoteEntry.js</code>
         </p>
         <div class="button-row">
           <a
@@ -261,7 +270,7 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
             href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/network-statistics"
           >Source</a>
           <a class="button secondary" href="network-statistics/remoteEntry.js"
-            >remoteEntry.js</a>
+            >Open remoteEntry.js</a>
         </div>
       </div>
 
@@ -269,7 +278,6 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
         <h3>network-workflows</h3>
         <div class="meta">
           <span>Federation: networkWorkflows</span>
-          <span>Port: 7000</span>
           <span>Real-world workflows</span>
         </div>
         <p>
@@ -277,13 +285,17 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
           import a network from a remote CX2 file, and receive CX2 payloads
           from Jupyter Lab via <code>postMessage</code>.
         </p>
+        <p>
+          <strong>App URL:</strong>
+          <code>https://cytoscape.org/cytoscape-web-app-examples/network-workflows/remoteEntry.js</code>
+        </p>
         <div class="button-row">
           <a
             class="button secondary"
             href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/network-workflows"
           >Source</a>
           <a class="button secondary" href="network-workflows/remoteEntry.js"
-            >remoteEntry.js</a>
+            >Open remoteEntry.js</a>
         </div>
       </div>
 
@@ -329,6 +341,30 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
         </tbody>
       </table>
 
+      <h2>Build Your Own App</h2>
+      <p>
+        To build a new app, fork
+        <a href="https://github.com/cytoscape/cytoscape-web-app-examples">the
+        repository</a> and start from <code>project-template/</code>. The
+        README walks through running the host and the example apps locally,
+        registering your local <code>remoteEntry.js</code> with Cytoscape Web
+        via <code>apps.local.json</code>, and publishing your finished app.
+      </p>
+      <div class="button-row">
+        <a
+          class="button"
+          href="https://github.com/cytoscape/cytoscape-web-app-examples#readme"
+        >Developer README</a>
+        <a
+          class="button secondary"
+          href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/guides"
+        >Developer Guides</a>
+        <a
+          class="button secondary"
+          href="https://github.com/cytoscape/cytoscape-web-app-examples/tree/main/project-template"
+        >project-template Source</a>
+      </div>
+
       <h2>Documentation</h2>
       <ul>
         <li>
@@ -364,12 +400,6 @@ cd cytoscape-web &amp;&amp; npm install &amp;&amp; npm run dev:local</code></pre
           &mdash; version history for the types package
         </li>
       </ul>
-
-      <h2>Sample Data</h2>
-      <p>
-        Sample networks used by the examples are available under
-        <a href="data/"><code>data/</code></a>.
-      </p>
     </div>
 
     <footer>
