@@ -82,12 +82,28 @@ otherwise be discovered mid-flight and change the shape of everything after.
 
 ---
 
-## Phase 2: Host repository
+## Phase 2: Host repository ⏳ **code complete (8/1/2026); descriptor contract confirmed on localhost — deploy + CI green outstanding**
 
 _Design: §6.3, §8 (release gate), §11.2, §11 step 11a_
 
 **Everything here is in `cytoscape-web/`.** This phase ends with the descriptor
 live in production — not merely merged.
+
+> **Two decisions taken during implementation:**
+>
+> - **The descriptor publish is a function, not inline.** `hostDescriptor.ts`
+>   exports `publishHostDescriptor(target, base, href)` and `bootstrap.tsx`
+>   calls it with `window`. §6.3 showed `Object.defineProperty` inline, which
+>   cannot be unit-tested: importing `bootstrap.tsx` runs the whole boot. Taking
+>   `target` makes the immutability contract — the part a remote depends on and
+>   the part nothing else would notice breaking — assertable against a plain
+>   object. Same reasoning that made `buildHostRemoteEntryUrl` a pure helper.
+> - **The contract spec can target a deployed host.** `CYWEB_HOST_URL=<url>`
+>   overrides Playwright's `baseURL` and suppresses the `webServer` block, so
+>   one spec file covers CI, production and Netlify branch previews. Phase 2's
+>   exit criterion needs a production run before Phase 3's
+>   `preflight-host.mjs` exists, and waiting out a local production build to
+>   check a remote URL is pure cost.
 
 ### Pre-read files
 
@@ -102,62 +118,74 @@ live in production — not merely merged.
 
 ### Deliverables — host descriptor
 
-- [ ] Create `cytoscape-web/src/app-api/federation/hostDescriptor.ts`:
+- [x] Create `cytoscape-web/src/app-api/federation/hostDescriptor.ts`:
   - `APP_API_VERSION` constant
   - `CyWebHostDescriptor` interface — `readonly name: 'cyweb'` (literal, not
     `string`), `readonly remoteEntry: string`, `readonly apiVersion: string`
   - `declare global { interface Window { readonly __CYWEB_HOST__?: CyWebHostDescriptor } }`
   - `buildHostRemoteEntryUrl(base, href, filename)` — **pure helper**, exported
-- [ ] Modify `cytoscape-web/src/boot/bootstrap.tsx` — publish
+  - `publishHostDescriptor(target, base, href)` — see the decision note above
+- [x] Modify `cytoscape-web/src/boot/bootstrap.tsx` — publish
       `window.__CYWEB_HOST__` **synchronously** in the boot chunk via
       `Object.defineProperty(… { writable: false, configurable: false })` with an
       `Object.freeze`d value, calling `buildHostRemoteEntryUrl()`
   - Must **not** go on `window.CyWebApi` (async import, gated behind
     `cywebapi:ready`)
-- [ ] Create `cytoscape-web/src/app-api/federation/hostDescriptor.test.ts`
+  - Landed as a one-line `publishHostDescriptor(window, import.meta.env.BASE_URL,
+    window.location.href)` at boot-chunk top level; verified present in the
+    built `dist/assets/bootstrap-*.js` with `writable:!1,configurable:!1`
+- [x] Create `cytoscape-web/src/app-api/federation/hostDescriptor.test.ts`
       (§11 step 11a):
   - `buildHostRemoteEntryUrl('/', 'https://h/y/z', 'remoteEntry.js')` → `https://h/remoteEntry.js`
   - `buildHostRemoteEntryUrl('/cytoscape/', 'https://h/y/z', 'remoteEntry.js')` → `https://h/cytoscape/remoteEntry.js`
   - Descriptor is frozen and the property is non-writable/non-configurable
+  - 7 tests, all passing
 
 ### Deliverables — host dependencies and CI
 
-- [ ] Add `@module-federation/runtime` (`2.5.1`) to `cytoscape-web/package.json`
+- [x] Add `@module-federation/runtime` (`2.5.1`) to `cytoscape-web/package.json`
       `devDependencies` — `ExternalComponent.tsx` imports it by name while it is
-      only transitive today
-- [ ] Add `npm run verify:federation` to the CI **build job, immediately after
-      `npm run build`** (a separate job has no `dist/`)
+      only transitive today. The tree already resolved 2.5.1, so the lockfile
+      moved by one line
+- [x] Add `npm run verify:federation` to the CI **build job, immediately after
+      `npm run build`** (a separate job has no `dist/`) — passes locally, 36/36
 
 ### Deliverables — E2E fixture (remote → host direction)
 
-- [ ] Create `cytoscape-web/test/fixtures/remote-app/cywebHostSentinel.ts` —
+- [x] Create `cytoscape-web/test/fixtures/remote-app/cywebHostSentinel.ts` —
       same sentinel **string** the examples will use (§6.4)
-- [ ] Create `cytoscape-web/test/fixtures/remote-app/mfRuntimePlugin.ts` —
+- [x] Create `cytoscape-web/test/fixtures/remote-app/mfRuntimePlugin.ts` —
       mirrors §6.4: local structural type (generic `beforeInit`), writes **both**
       `userOptions.remotes` and `options.remotes`, validates `name` + URL,
       throws on sentinel
-- [ ] Create `cytoscape-web/test/fixtures/remote-app/cyweb.d.ts` — fixture-local
+- [x] Create `cytoscape-web/test/fixtures/remote-app/cyweb.d.ts` — fixture-local
       minimal declaration. **Match the real API**: `WorkspaceInfo.workspaceId`
       (not `id`), and `ApiResult` is a discriminated union, not
       `success: boolean` + optional `data`
-- [ ] Modify `cytoscape-web/test/fixtures/remote-app/vite.config.ts`:
+- [x] Modify `cytoscape-web/test/fixtures/remote-app/vite.config.ts`:
   - `remotes: { cyweb: { type: 'module', name: 'cyweb', entry: <sentinel>, entryGlobalName: 'cyweb', shareScope: 'default' } }`
   - **`runtimePlugins: [<absolute, normalized path to the resolver>]`** — copying
     the resolver without registering it leaves it inert and the test "passes"
     while exercising nothing
-- [ ] Modify `cytoscape-web/test/fixtures/remote-app/AppConfig.tsx` — call
+  - Confirmed in the built output: `remoteEntry.js` contains the sentinel, the
+    pinned error string, and `cywebHostResolver(void 0)` inside the
+    runtime-plugin array
+- [x] Modify `cytoscape-web/test/fixtures/remote-app/AppConfig.tsx` — call
       `useWorkspaceApi().getWorkspaceInfo()` at **runtime** (not `import type`)
       and render `workspaceId` into the DOM
-- [ ] Extend `cytoscape-web/test/playwright/remote-app-load.spec.ts` — assert the
-      rendered `workspaceId` **value**, not merely that an element exists
+- [x] Extend `cytoscape-web/test/playwright/remote-app-load.spec.ts` — assert the
+      rendered `workspaceId` **value**, not merely that an element exists.
+      Asserted against the id in the page URL (the host redirects `/` to
+      `/<workspaceId>/networks`), so an empty or `undefined` render fails
 
 ### Deliverables — preflight (host-side)
 
-- [ ] Add a Playwright check for the full **§8 descriptor contract**:
+- [x] Add a Playwright check for the full **§8 descriptor contract**:
       `name === 'cyweb'`; `remoteEntry` absolute `http(s)`; non-empty
       `apiVersion`; `Object.isFrozen()` + property descriptor; JS MIME type;
       `await import(url)` yields `init`/`get` as functions
-- [ ] Use `page.waitForFunction(fn, undefined, { timeout })` — **options is the
+  - `cytoscape-web/test/playwright/host-descriptor.spec.ts`
+- [x] Use `page.waitForFunction(fn, undefined, { timeout })` — **options is the
       third parameter**; `index.tsx` dynamically imports `bootstrap`, so the
       descriptor is not present at `load`
 
@@ -167,13 +195,47 @@ live in production — not merely merged.
 
 ### Verification (Phase 2)
 
-- [ ] `npm run lint` passes (host)
-- [ ] `npm run test:unit` passes (host), including the new `hostDescriptor` tests
-- [ ] `npm run build` + `npm run verify:federation` pass (host)
+- [x] `npm run lint` passes (host)
+- [x] `npm run test:unit` passes (host), including the new `hostDescriptor`
+      tests — 246 files, 3029 tests
+- [x] `npm run build` + `npm run verify:federation` pass (host)
 - [ ] `npx playwright test remote-app-load --project=chromium` passes — the
       remote→host direction is now covered
+  - **Not run locally.** This dev machine (WSL2) lacks the Chromium system
+    libraries (`libnspr4`, `libnss3`, …) and installing them needs `sudo
+    apt-get`. CI runs the suite in the `mcr.microsoft.com/playwright` image
+    where they are present, so **CI owns this check** — Phase 2 is not done
+    until that run is green
+  - **The manual descriptor check below does not substitute for this.**
+    Publishing a well-formed descriptor and a remote *reading* it are separate
+    claims; §6.4's own failure mode is a resolver that writes the wrong remotes
+    array and silently no-ops, which a correct descriptor does nothing to
+    catch. This is the only check that fails when that happens — the fixture
+    compiles in an unloadable sentinel, so a resolver that never ran cannot
+    load at all
+- [ ] `npx playwright test host-descriptor --project=chromium` passes (same
+      caveat as above)
+  - **The assertions themselves are confirmed.** Run by hand on 8/1/2026
+    against `http://localhost:5500`, pasting the equivalent snippet into the
+    browser console: **10/10 passed** — `name` `'cyweb'`, `remoteEntry`
+    `http://localhost:5500/remoteEntry.js`, `apiVersion` `'1.0'`,
+    `Object.isFrozen` true, property non-writable and non-configurable,
+    `remoteEntry` 200 with `text/javascript`, and the module namespace exports
+    `init` and `get` as functions. What is still owed here is the *automated*
+    run, not the contract
+  - Complements the build-output check: the production bundle
+    (`dist/assets/bootstrap-*.js`) was grepped and carries
+    `Object.freeze({…}),writable:!1,configurable:!1`, so both the served page
+    and the shipped chunk are accounted for
 - [ ] **The full §8 descriptor contract passes against `web.cytoscape.org`**,
-      deployed, not merely merged
+      deployed, not merely merged —
+      `CYWEB_HOST_URL=https://web.cytoscape.org npx playwright test host-descriptor --project=chromium`
+  - The manual run above was **localhost**, so it says nothing about this. A
+    deployed host differs in exactly the places this contract probes:
+    `urlBaseName`, and the CDN's MIME type for `remoteEntry.js`
+  - Cheap intermediate: every branch auto-deploys, so the same check can run
+    against `https://<branch>--incredible-meringue-aa83b1.netlify.app` before
+    anything reaches `master`
 
 ---
 

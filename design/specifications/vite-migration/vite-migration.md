@@ -1,6 +1,7 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Phase 1 complete; Phases 2–8 not yet implemented**
+> **Status: Phase 1 complete; Phase 2 code complete (deploy + CI green
+> outstanding); Phases 3–8 not yet implemented**
 >
 > **Scope:** the five workspace apps in this repository. `patterns/` was
 > **deleted in Phase 1** (§7.5). The host repo (`cytoscape-web`)
@@ -18,6 +19,22 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 15 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — Recorded the first
+  execution of the §8 descriptor contract: **10/10 on `localhost:5500`**, run
+  by hand in the browser console. Wrote that console form into §8 as a third
+  sanctioned way to execute the contract (no Playwright install needed, which
+  is what made it usable here), with an explicit note that it covers the
+  host → descriptor half only.
+- Rev. 14 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 2 code
+  landed in `cytoscape-web`.** Two shape changes fell out of building it:
+  §6.3's inline `Object.defineProperty` became
+  `publishHostDescriptor(target, base, href)`, because the inline form makes
+  the immutability contract untestable (importing `bootstrap.tsx` runs the
+  whole boot); and the host's descriptor-contract spec takes a
+  `CYWEB_HOST_URL` override so one file covers CI, production and branch
+  previews — Phase 2's exit criterion needs a production run before Phase 3's
+  `preflight-host.mjs` exists. Also recorded the first real measurement of the
+  §8 SSR artifacts, from the fixture's own build.
 - Rev. 13 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 1 executed.**
   Recorded the four Phase 1 decisions as settled rather than open (canonical
   URL, built set = the five workspaces, published set = **four apps**,
@@ -825,31 +842,13 @@ declare global {
 }
 ```
 
-Published **synchronously** in the boot chunk
-(`cytoscape-web/src/boot/bootstrap.tsx`):
-
-```ts
-// A remote's Module Federation runtime needs the host's remoteEntry.js URL to
-// resolve its `cyweb/*` imports, and only the host knows it (BASE_URL comes
-// from config.json's urlBaseName). Assigned synchronously — a remote's
-// beforeInit hook is sync and must never lose a race with this.
-Object.defineProperty(window, '__CYWEB_HOST__', {
-  value: Object.freeze({
-    name: FEDERATION_NAME,
-    // Pure helper, not an inline expression: §11 step 11a tests the based-URL
-    // case against this exact function. A test that re-derives the expression
-    // tests only itself.
-    remoteEntry: buildHostRemoteEntryUrl(
-      import.meta.env.BASE_URL,
-      window.location.href,
-      FEDERATION_FILENAME,
-    ),
-    apiVersion: APP_API_VERSION,
-  }) satisfies CyWebHostDescriptor,
-  writable: false,
-  configurable: false,
-})
-```
+Both the URL construction and the installation live in `hostDescriptor.ts` as
+functions, and `bootstrap.tsx` is one call. Rev. 13 showed the
+`Object.defineProperty` inline in `bootstrap.tsx`; that version of the
+immutability contract is **not unit-testable**, because importing
+`bootstrap.tsx` runs the entire boot. Taking a `target` parameter fixes that at
+no cost — it is the same reasoning that made the URL construction a pure helper
+in the first place:
 
 ```ts
 // cytoscape-web/src/app-api/federation/hostDescriptor.ts
@@ -858,6 +857,37 @@ export const buildHostRemoteEntryUrl = (
   href: string,
   filename: string,
 ): string => new URL(`${base}${filename}`, href).href
+
+/**
+ * Installs the descriptor on `target` as a frozen, non-writable,
+ * non-configurable property. Takes `target` rather than reaching for `window`
+ * so the immutability contract — the part a remote depends on, and the part
+ * nothing else would notice breaking — is assertable from a unit test.
+ * bootstrap.tsx passes the real `window`; the test passes a plain object.
+ */
+export const publishHostDescriptor = (
+  target: object,
+  base: string,
+  href: string,
+): void => {
+  Object.defineProperty(target, '__CYWEB_HOST__', {
+    value: Object.freeze({
+      name: FEDERATION_NAME,
+      remoteEntry: buildHostRemoteEntryUrl(base, href, FEDERATION_FILENAME),
+      apiVersion: APP_API_VERSION,
+    }) satisfies CyWebHostDescriptor,
+    writable: false,
+    configurable: false,
+  })
+}
+```
+
+Called **synchronously** at boot-chunk top level
+(`cytoscape-web/src/boot/bootstrap.tsx`) — a remote's `beforeInit` hook is sync
+and must never lose a race with this:
+
+```ts
+publishHostDescriptor(window, import.meta.env.BASE_URL, window.location.href)
 ```
 
 `FEDERATION_NAME` / `FEDERATION_FILENAME` come from the existing
@@ -1533,6 +1563,13 @@ Workflow changes:
    `assets/module-runner-*.js` (52.8 kB). None of it runs in a browser (it is
    guarded by `typeof window === 'undefined'`), but all of it is published.
 
+   **Reconfirmed in Phase 2** on the host's own E2E fixture, the moment a
+   `remotes` block was added to it: `remoteEntry.ssr.js` 1.56 kB,
+   `assets/ssrEntryLoader-*` 11.62 kB, `assets/module-runner-*` 52.78 kB, plus
+   `assets/virtual_mf-exposes-ssr…` 0.78 kB. So this is a property of declaring
+   *any* remote, not of the probe's particular shape — Decision B applies to
+   every migrated app.
+
 **Two decisions for Phase 4, both from measured output:**
 
 **Decision A — absolute build-machine paths inside the browser
@@ -1859,6 +1896,55 @@ anyone can do by deciding it. Pick one:
    If a headless browser in the deploy workflow is unwanted, keep a string match
    but label it for what it is — **rollback detection only**, not proof the
    contract holds.
+
+   **A console paste is a legitimate third way to execute it** — same
+   assertions, no Playwright install, which matters on a machine that lacks the
+   Chromium system libraries. Open the target host and run:
+
+   ```js
+   await (async () => {
+     const d = window.__CYWEB_HOST__
+     const prop = Object.getOwnPropertyDescriptor(window, '__CYWEB_HOST__')
+     const checks = []
+     const ok = (label, pass, detail = '') => checks.push({ label, pass, detail })
+
+     ok('name === "cyweb"', d?.name === 'cyweb', String(d?.name))
+     let entry
+     try { entry = new URL(d.remoteEntry) } catch {}
+     ok('remoteEntry is absolute http(s)',
+        !!entry && ['http:', 'https:'].includes(entry.protocol), d?.remoteEntry)
+     ok('apiVersion non-empty string',
+        typeof d?.apiVersion === 'string' && d.apiVersion !== '', d?.apiVersion)
+     ok('Object.isFrozen(descriptor)', Object.isFrozen(d))
+     ok('property not writable', prop?.writable === false)
+     ok('property not configurable', prop?.configurable === false)
+
+     if (entry) {
+       const res = await fetch(entry.href)
+       ok('remoteEntry 200', res.status === 200, String(res.status))
+       ok('JS MIME type',
+          /javascript|ecmascript/i.test(res.headers.get('content-type') ?? ''),
+          res.headers.get('content-type'))
+       const ns = await import(entry.href)
+       ok('exports init()', typeof ns.init === 'function')
+       ok('exports get()', typeof ns.get === 'function')
+     }
+
+     console.table(checks)
+     console.log(checks.every((c) => c.pass) ? '✅ PASSED' : '❌ FAILED')
+   })()
+   ```
+
+   Ten checks, and **all ten matter**. Do not stop at the 200: an SPA returns
+   `index.html` for any unknown path, so the `init`/`get` assertion is the one
+   that distinguishes a real container from a HTML page served with a
+   misleading status.
+
+   **What it does not cover.** This is the host → descriptor half only. A
+   well-formed descriptor says nothing about whether a *remote* reads it — that
+   is §6.4's resolver, whose own failure mode (writing the wrong remotes array,
+   a silent no-op) is invisible from here. The fixture E2E is the only check
+   that fails on it.
 
 **(1) is adopted, with (3) as cheap insurance** that also catches a future host
 rollback. Written out across the phases so the three places that mention it
@@ -2371,7 +2457,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | Phase | Scope                                                                                                              | Exit criterion                                             |
 | ----- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | 1 ✅  | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | **Done 8/1/2026.** Built = 5 workspaces, published = 4 (`claude-bridge` excluded), URL confirmed, `patterns/` deleted, api-types at `1.0.0-beta.3`; `npm ci` clean and all five Webpack builds pass |
-| 2     | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | Remote→host E2E green, §11 step 11a passes, **and** the full §8 descriptor contract passes against `web.cytoscape.org` — deployed, not merely merged |
+| 2 ⏳  | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | Remote→host E2E green, §11 step 11a passes, **and** the full §8 descriptor contract passes against `web.cytoscape.org` — deployed, not merely merged |
 | 3     | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | `npm install` clean; all five apps still build with Webpack; CI green; `npm run deploy` still produces the same `docs/` |
 | 4     | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | Template loads in the host, installs standalone, §5.7/§5.8 settled with numbers, **and the deployed pilot passes step 14 on the production host** |
 | 5     | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | Shared React + Emotion verified across the boundary         |
