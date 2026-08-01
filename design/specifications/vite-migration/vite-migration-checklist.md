@@ -3,9 +3,15 @@
 > Track progress across all eight phases. Mark `[x]` when complete. Run the
 > per-phase verification before starting the next phase.
 >
-> **Phases are strictly ordered.** Phase 2 must be *deployed to production*
-> before Phase 4 publishes anything, and nothing Webpack-breaking happens
-> outside the app that is currently migrating.
+> **Phases are strictly ordered**, and nothing Webpack-breaking happens outside
+> the app that is currently migrating.
+>
+> The original rule — *Phase 2 must be deployed to production before Phase 4
+> publishes anything* — was **waived on 8/1/2026** (that deployment is not
+> available in the team's workflow). The hazard it guarded against is
+> unchanged, so its enforcement now rests entirely on **Phase 3's Pages
+> preflight**. See "Release gate — where it went" at the end of Phase 2 before
+> Phase 4 publishes.
 
 _Design: [vite-migration.md](vite-migration.md) — full rationale, measurements, and the reasoning behind every decision below. Section references (§) point into it._
 
@@ -82,12 +88,27 @@ otherwise be discovered mid-flight and change the shape of everything after.
 
 ---
 
-## Phase 2: Host repository ⏳ **code complete (8/1/2026); descriptor contract confirmed on localhost — deploy + CI green outstanding**
+## Phase 2: Host repository ✅ **COMPLETE (declared 8/1/2026)**
 
 _Design: §6.3, §8 (release gate), §11.2, §11 step 11a_
 
-**Everything here is in `cytoscape-web/`.** This phase ends with the descriptor
-live in production — not merely merged.
+**Everything here is in `cytoscape-web/`.** As written, this phase ended with
+the descriptor live in production. **It was closed without that**, deliberately
+— read the two notes below before treating it as unconditionally done.
+
+> **Production deploy: waived.** Deploying to `web.cytoscape.org` is not
+> available in the team's current workflow, so Phase 2 is declared complete on
+> the code and its local verification, and the deployed-host contract check is
+> deferred to a dev deployment. **This moves the release gate** — see the
+> "Release gate — where it went" section at the end of this phase, which Phase 4
+> depends on.
+>
+> **CI: green.** Run [30720488880](https://github.com/cytoscape/cytoscape-web/actions/runs/30720488880)
+> on PR [#655](https://github.com/cytoscape/cytoscape-web/pull/655) — all six
+> jobs passed, including `Verify Module Federation build output` (36/36) and
+> the E2E on all three browsers. `remote-app-load` in particular exercises the
+> remote → host direction, which is the direction this whole phase exists to
+> enable, and it had never run before this.
 
 > **Two decisions taken during implementation:**
 >
@@ -191,21 +212,30 @@ live in production — not merely merged.
 
 ### Deliverables — deployment
 
-- [ ] Deploy the host to production (`web.cytoscape.org`)
+- [x] ~~Deploy the host to production (`web.cytoscape.org`)~~ — **waived
+      8/1/2026: not available in the team's current workflow.** See the release
+      gate note below; this is the one waiver in Phase 2 and it changes where a
+      later phase's safety comes from
 
 ### Verification (Phase 2)
 
 - [x] `npm run lint` passes (host)
 - [x] `npm run test:unit` passes (host), including the new `hostDescriptor`
       tests — 246 files, 3029 tests
-- [x] `npm run build` + `npm run verify:federation` pass (host)
-- [ ] `npx playwright test remote-app-load --project=chromium` passes — the
+- [x] `npm run build` + `npm run verify:federation` pass (host) — locally and
+      in CI, where it is now a named `Build` step: 36/36
+- [x] `npx playwright test remote-app-load --project=chromium` passes — the
       remote→host direction is now covered
-  - **Not run locally.** This dev machine (WSL2) lacks the Chromium system
-    libraries (`libnspr4`, `libnss3`, …) and installing them needs `sudo
-    apt-get`. CI runs the suite in the `mcr.microsoft.com/playwright` image
-    where they are present, so **CI owns this check** — Phase 2 is not done
-    until that run is green
+  - **Not runnable on this dev machine** (WSL2, no `libnspr4`/`libnss3`; the
+    fix needs `sudo apt-get`). CI runs the suite in the
+    `mcr.microsoft.com/playwright` image, so **CI owns it** — green on run
+    30720488880, chromium/firefox/webkit
+  - **This is the check that matters most in Phase 2.** The fixture compiles in
+    an unloadable sentinel, so it passing means the runtime plugin actually
+    read `window.__CYWEB_HOST__`, rewrote the `cyweb` entry, resolved
+    `cyweb/WorkspaceApi`, and returned a `workspaceId` matching the one in the
+    page URL. §6.4's failure mode — writing the wrong remotes array and
+    silently no-opping — did not occur
   - **The manual descriptor check below does not substitute for this.**
     Publishing a well-formed descriptor and a remote *reading* it are separate
     claims; §6.4's own failure mode is a resolver that writes the wrong remotes
@@ -213,8 +243,11 @@ live in production — not merely merged.
     catch. This is the only check that fails when that happens — the fixture
     compiles in an unloadable sentinel, so a resolver that never ran cannot
     load at all
-- [ ] `npx playwright test host-descriptor --project=chromium` passes (same
-      caveat as above)
+- [x] `npx playwright test host-descriptor --project=chromium` passes (same
+      caveat as above) — green on run 30720488880
+  - CI's dot reporter prints no per-test names, so "it ran" was confirmed by
+    counting: `playwright test --list --project=chromium` yields exactly 52
+    tests including this one, and CI reported `Running 52 tests` → `52 passed`
   - **The assertions themselves are confirmed.** Run by hand on 8/1/2026
     against `http://localhost:5500`, pasting the equivalent snippet into the
     browser console: **10/10 passed** — `name` `'cyweb'`, `remoteEntry`
@@ -227,15 +260,48 @@ live in production — not merely merged.
     (`dist/assets/bootstrap-*.js`) was grepped and carries
     `Object.freeze({…}),writable:!1,configurable:!1`, so both the served page
     and the shipped chunk are accounted for
-- [ ] **The full §8 descriptor contract passes against `web.cytoscape.org`**,
-      deployed, not merely merged —
-      `CYWEB_HOST_URL=https://web.cytoscape.org npx playwright test host-descriptor --project=chromium`
-  - The manual run above was **localhost**, so it says nothing about this. A
-    deployed host differs in exactly the places this contract probes:
-    `urlBaseName`, and the CDN's MIME type for `remoteEntry.js`
-  - Cheap intermediate: every branch auto-deploys, so the same check can run
-    against `https://<branch>--incredible-meringue-aa83b1.netlify.app` before
-    anything reaches `master`
+- [x] ~~**The full §8 descriptor contract passes against `web.cytoscape.org`**,
+      deployed, not merely merged~~ — **waived with the deploy, 8/1/2026.**
+      Deferred to a dev deployment, whenever the branch reaches one:
+
+      ```
+      CYWEB_HOST_URL=https://development--incredible-meringue-aa83b1.netlify.app \
+        npx playwright test host-descriptor --project=chromium
+      ```
+
+      or the §8 console snippet, which needs no Playwright install. Every branch
+      auto-deploys, so `https://<branch>--incredible-meringue-aa83b1.netlify.app`
+      works too — the point is to run it against **something served over HTTPS
+      from a CDN**, since that is where this contract differs from localhost:
+      `urlBaseName` and the MIME type on `remoteEntry.js`
+  - The manual run recorded above was localhost, and says nothing about either
+
+### Release gate — where it went (read before Phase 4)
+
+Deploying the descriptor to production was a **structural** guard, not
+paperwork: §5.5 makes a migrated app ship a sentinel rather than a localhost
+fallback, so an app published against a descriptor-less host **cannot load at
+all**. Waiving it does not remove that hazard; it moves the whole burden of
+preventing it onto **one** mechanism:
+
+> **Phase 3's `scripts/preflight-host.mjs`, wired into `deploy-pages.yml`, is
+> now the only thing standing between a published app and a host that cannot
+> load it.** It was specified as cheap insurance on top of the Phase 2 gate
+> (§8, option 3, "with (3) as cheap insurance"). With the Phase 2 gate waived
+> it is promoted to *the* gate, and the two things that follow are not
+> optional:
+>
+> 1. **It must run against the host the apps will actually name.** That is
+>    whatever `apps.json` points `cyweb` at — production today. Pointing the
+>    preflight at a dev deployment while the apps are published for production
+>    would pass while proving nothing.
+> 2. **It must fail the deploy, not warn.** "Hold the deploy" is unenforceable
+>    here: `deploy-pages.yml` publishes on push to `main` with no human step.
+
+Phase 4 must not publish its pilot to Pages until that preflight exists and is
+red-on-missing-descriptor. Verify it by pointing it at a host known **not** to
+have the descriptor and confirming a non-zero exit — a gate never seen to fail
+is not known to work.
 
 ---
 
@@ -315,6 +381,12 @@ Webpack at the end of this phase.
   - `bundler: 'vite'` → the §8 exclusive publish classes, unknown files fatal
 - [ ] Create `scripts/preflight-host.mjs` — `npm run preflight:host <url>`,
       running the full §8 descriptor contract
+  - **This is now the only release gate**, not the "cheap insurance" §8
+    originally called it: Phase 2's production-deploy criterion was waived
+    (8/1/2026). Three properties are therefore mandatory, not nice-to-have —
+    it targets the host `apps.json` names, it exits non-zero rather than
+    warning, and **it has been observed going red** against a host with no
+    descriptor. See "Release gate — where it went" at the end of Phase 2
 
 ### Deliverables — per-app scripts (against the **existing** tsconfigs)
 
@@ -333,7 +405,9 @@ Webpack at the end of this phase.
 - [ ] Point `deploy-pages.yml` at `npm run copy-dist` instead of its hardcoded
       `rm -rf` / `cp -r` lines
 - [ ] Add `npx playwright install --with-deps chromium` + the production-host
-      preflight step to `deploy-pages.yml`
+      preflight step to `deploy-pages.yml` — the step must **fail the job**; the
+      workflow publishes on push to `main` with no human step, so a warning
+      publishes anyway
 - [ ] `node-version: '22'` → `'24'` in the workflow
 - [ ] Add `"engines": { "node": ">=24.0.0" }` to the root `package.json`
 - [ ] Add `.nvmrc` with `24`

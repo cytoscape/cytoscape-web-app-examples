@@ -1,7 +1,9 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Phase 1 complete; Phase 2 code complete (deploy + CI green
-> outstanding); Phases 3–8 not yet implemented**
+> **Status: Phases 1–2 complete; Phases 3–8 not yet implemented.** Phase 2 was
+> closed with its production-deploy gate **waived** (unavailable in the team's
+> current workflow), which makes Phase 3's Pages preflight the only remaining
+> release gate — see §8.
 >
 > **Scope:** the five workspace apps in this repository. `patterns/` was
 > **deleted in Phase 1** (§7.5). The host repo (`cytoscape-web`)
@@ -19,6 +21,17 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 16 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 2 declared
+  complete with its production-deploy gate waived**, that deployment not being
+  available in the team's current workflow. Recorded the consequence rather
+  than only the decision: §8's option (1) is gone, so the Pages preflight is no
+  longer "cheap insurance" but the **only** thing preventing an app being
+  published against a host that cannot load it — with the three properties it
+  must now have, and the §13 risk row rewritten from "structural, not
+  procedural" to what is actually true. CI is green on PR #655 (run
+  30720488880): `verify:federation` 36/36 and the E2E on all three browsers,
+  so `remote-app-load` — the only check of the remote → host direction — has
+  now actually run.
 - Rev. 15 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — Recorded the first
   execution of the §8 descriptor contract: **10/10 on `localhost:5500`**, run
   by hand in the browser console. Wrote that console form into §8 as a third
@@ -1946,16 +1959,42 @@ anyone can do by deciding it. Pick one:
    a silent no-op) is invisible from here. The fixture E2E is the only check
    that fails on it.
 
-**(1) is adopted, with (3) as cheap insurance** that also catches a future host
+**(1) was adopted, with (3) as cheap insurance** that also catches a future host
 rollback. Written out across the phases so the three places that mention it
 agree:
 
 | Phase | Gate obligation |
 | ----- | --------------- |
-| 2     | **Exit criterion:** on `web.cytoscape.org`, `window.__CYWEB_HOST__` evaluates, and its `remoteEntry` URL can be `import()`ed with `init`/`get` present (§11 step 11). Not "the code is merged" — deployed and checked. |
-| 3     | Pages workflow gains the production-host preflight; it fails the deploy if the descriptor is absent. |
+| 2     | ~~**Exit criterion:** on `web.cytoscape.org`, `window.__CYWEB_HOST__` evaluates, and its `remoteEntry` URL can be `import()`ed with `init`/`get` present (§11 step 11). Not "the code is merged" — deployed and checked.~~ **Waived 8/1/2026** — see below. |
+| 3     | Pages workflow gains the production-host preflight; it fails the deploy if the descriptor is absent. **Now the only gate.** |
 | 4     | Run §11 step 14 immediately after the pilot's first Pages publish. |
 | 8     | Re-run the smoke across every published app. |
+
+### The Phase 2 gate was waived — (3) is now load-bearing
+
+**Decision, 8/1/2026:** deploying the host to production is not available in the
+team's current workflow, so Phase 2 was closed on its code and local
+verification, with the deployed-descriptor check deferred to a dev deployment.
+
+This does not make the hazard go away. §5.5 ships a **sentinel**, not a
+localhost fallback, so an app published against a descriptor-less host cannot
+load at all — that is the whole reason (1) existed. What changes is that the
+belt is gone and only the braces remain, so option (3) has to actually hold:
+
+- **The preflight must target the host the published apps will name** — that is
+  whatever `apps.json` sets as the `cyweb` URL, production today. Pointing it at
+  a dev deployment while publishing production-facing apps passes while proving
+  nothing. If those two ever diverge, the preflight follows `apps.json`.
+- **It must fail the deploy, not warn.** `deploy-pages.yml` publishes on push to
+  `main` with no human step; a warning is a log line nobody reads.
+- **It must be seen failing before it is trusted.** Point it at a host known not
+  to publish the descriptor and confirm a non-zero exit. A gate that has never
+  gone red is not known to work — and this one now has nothing behind it.
+
+Option (2) — a GitHub Environment with required reviewers on the `deploy` job —
+becomes worth reconsidering here, since it is the only remaining option that
+does not depend on the preflight being correct. Not adopted, but it is the
+obvious fallback if Phase 3 finds the preflight hard to make reliable.
 
 ## 9. Dev workflow
 
@@ -2457,7 +2496,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | Phase | Scope                                                                                                              | Exit criterion                                             |
 | ----- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | 1 ✅  | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | **Done 8/1/2026.** Built = 5 workspaces, published = 4 (`claude-bridge` excluded), URL confirmed, `patterns/` deleted, api-types at `1.0.0-beta.3`; `npm ci` clean and all five Webpack builds pass |
-| 2 ⏳  | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | Remote→host E2E green, §11 step 11a passes, **and** the full §8 descriptor contract passes against `web.cytoscape.org` — deployed, not merely merged |
+| 2 ✅  | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | **Declared complete 8/1/2026.** §11 step 11a passes; the §8 contract passes on localhost (10/10, by hand). The production-deploy criterion was **waived** — unavailable in the team's workflow — which promotes Phase 3's preflight to the only release gate (§8). Remote→host E2E is **carried, not waived**: the host commit is local-only, so CI has not run it yet |
 | 3     | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | `npm install` clean; all five apps still build with Webpack; CI green; `npm run deploy` still produces the same `docs/` |
 | 4     | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | Template loads in the host, installs standalone, §5.7/§5.8 settled with numbers, **and the deployed pilot passes step 14 on the production host** |
 | 5     | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | Shared React + Emotion verified across the boundary         |
@@ -2505,7 +2544,7 @@ Notes on the ordering:
 | A deployed third-party app still expects the old `var` contract                                           | Per the host's *remote-app-loading-modernization* doc, **no third-party apps are deployed yet** — this is the window to change it |
 | Production output becomes minified where it was not (§3)                                                  | Accept deliberately; note it in the migration PR. `build.minify: false` is available per-app if debugging needs it |
 | `@module-federation/vite` version skew between host and examples                                          | Pin `1.16.8`; pin `@module-federation/runtime` to `2.5.1` — §6.4 depends on that version's `formatOptions` behavior |
-| **A Vite-built app is published before the production host publishes `__CYWEB_HOST__`** — it ships a sentinel, not a fallback, so it simply cannot load | Structural, not procedural: production deployment of the descriptor is a **Phase 2 exit criterion**, and Phase 3 adds a Pages preflight that fails the deploy without it (§8). "Hold the deploy" alone is unenforceable — the workflow publishes on push to `main` |
+| **A Vite-built app is published before the production host publishes `__CYWEB_HOST__`** — it ships a sentinel, not a fallback, so it simply cannot load | **Weakened 8/1/2026.** The Phase 2 exit criterion (descriptor deployed to production) was waived — not available in the team's workflow — so the *only* remaining mitigation is Phase 3's Pages preflight, which must target the host `apps.json` names and must fail the deploy rather than warn (§8). "Hold the deploy" alone is unenforceable; the workflow publishes on push to `main`. **Verify the preflight goes red against a descriptor-less host before Phase 4 publishes anything** |
 | **§5.8:** MUI/Emotion silently duplicated because subpath imports miss the share key | Root-barrel imports with the **exact** `@mui/material` key (§5.8) — the trailing-slash key was measured and rejected: the host only provides subpaths it imports, and 9 of the apps' 20 are not among them. Lint bans `@mui/material/`; the §11.0 build gate asserts on payload, since React works either way and nothing else catches it |
 | Absolute build-machine paths (username, directory layout) published inside the browser `remoteEntry.js` | §8 Decision A: accept, or strip in a post-build step. **Excluding the SSR files does not fix this** — the strings live in the browser entry |
 | ~64 kB of unreachable SSR JavaScript published per app                                                     | §8 Decision B: exclude from what `deploy` copies, after verifying the browser entry still loads                            |
