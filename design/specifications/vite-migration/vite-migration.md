@@ -1,9 +1,9 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Design proposal / not yet implemented**
+> **Status: Phase 1 complete; Phases 2–8 not yet implemented**
 >
-> **Scope:** the five workspace apps in this repository. `patterns/` is not
-> migrated — §7.5 recommends deleting it. The host repo (`cytoscape-web`)
+> **Scope:** the five workspace apps in this repository. `patterns/` was
+> **deleted in Phase 1** (§7.5). The host repo (`cytoscape-web`)
 > already builds with Vite and already expects the artifacts this plan
 > produces, but it is **not untouched**: it gains the published host descriptor
 > and its pure URL helper (§6.3, §11.2), a direct `@module-federation/runtime`
@@ -18,6 +18,11 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 13 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 1 executed.**
+  Recorded the four Phase 1 decisions as settled rather than open (canonical
+  URL, built set = the five workspaces, published set = **four apps**,
+  `claude-bridge` excluded; `patterns/` deleted), deleted `patterns/`, and
+  bumped `@cytoscape-web/api-types` to `1.0.0-beta.3` with the lockfile.
 - Rev. 12 (7/30/2026): Keiichiro ONO and Claude (Opus 5) — Final review
   response. Gave the smoke runner an app-selection predicate (running it over
   every `published` app mid-migration would fail on the still-Webpack ones by
@@ -177,7 +182,8 @@ at the same time.
 
 ## 3. Current state inventory
 
-Six federated packages, six near-identical `webpack.config.js` files:
+Five federated packages, five near-identical `webpack.config.js` files (a sixth,
+`patterns/`, was deleted in Phase 1 — §7.5):
 
 | Package              | Federation name     | Port | Exposes                              | Built? | Published? |
 | -------------------- | ------------------- | ---- | ------------------------------------ | ------ | ---------- |
@@ -186,11 +192,10 @@ Six federated packages, six near-identical `webpack.config.js` files:
 | `network-workflows`  | `networkWorkflows`  | 7000 | `./AppConfig`                        | yes    | yes        |
 | `project-template`   | `template`          | 5555 | `./AppConfig`                        | yes    | yes        |
 | `claude-bridge`      | `claudeBridge`      | 6100 | `./AppConfig`                        | yes    | **no**     |
-| `patterns`           | `createNetwork`     | 5555 | `./PatternApp`, `./TemplatePanel`    | **no** | **no**     |
 
 "Built" = in `workspaces`, so `npm run build` reaches it. "Published" = copied
 into `docs/` by the Pages workflow. The two sets differ and the plan must keep
-them distinct (§8).
+them distinct — Phase 1 settled both; see §8.
 
 Shared root toolchain (`package.json` `devDependencies`): `webpack`,
 `webpack-cli`, `webpack-dev-server`, `ts-loader`, `clean-webpack-plugin`,
@@ -203,17 +208,17 @@ Shared root toolchain (`package.json` `devDependencies`): `webpack`,
 
 These are latent today and must not be carried across verbatim:
 
-- **`patterns/` is not merely an orphan — it does not work.** It is absent from
+- **`patterns/` was not merely an orphan — it did not work.** It was absent from
   `workspaces` (never built, dependencies never installed); its port (5555)
-  collides with `project-template`; it exposes `./PatternApp` pointing at
-  `./src/PatternApp`, which **does not exist** (the file is `PatternsApp.tsx`);
-  and its app id is `app-patterns` while its federation name is `createNetwork`,
-  which the host's `loadRemoteApp` id check rejects outright. It also still uses
-  the legacy `components:` field rather than `resources:`. This is dead code,
-  not a migration candidate — see §7.5.
+  collided with `project-template`; it exposed `./PatternApp` pointing at
+  `./src/PatternApp`, which **did not exist** (the file was `PatternsApp.tsx`);
+  and its app id was `app-patterns` while its federation name was
+  `createNetwork`, which the host's `loadRemoteApp` id check rejects outright.
+  It also still used the legacy `components:` field rather than `resources:`.
+  Dead code, not a migration candidate — **deleted in Phase 1**, see §7.5.
   (Rev. 2 also claimed its `remotes` string was doubly `cyweb@`-prefixed. That
-  was wrong: `patterns` defines `LOCAL_CYWEB` **without** the prefix, unlike its
-  siblings, so `` `${CYWEB_NAME}@${LOCAL_CYWEB}` `` is correct. The remaining
+  was wrong: `patterns` defined `LOCAL_CYWEB` **without** the prefix, unlike its
+  siblings, so `` `${CYWEB_NAME}@${LOCAL_CYWEB}` `` was correct. The remaining
   defects carry the conclusion on their own.)
 - **`hello-world` reads `__webpack_public_path__` at module scope.** A
   Webpack-injected global with no Vite equivalent; under Vite this is a
@@ -221,7 +226,7 @@ These are latent today and must not be carried across verbatim:
 - **`network-workflows` hardcodes `mode: 'development'`,** ignoring its own
   `isProduction` flag — its "production" build is a development build.
 - **Four of the five workspace apps set `optimization.minimize: false`** (all
-  but `hello-world`; five of six counting `patterns`), so the deployed Pages
+  but `hello-world`), so the deployed Pages
   artifacts are unminified. Vite minifies by default; this is a behavioral
   change to accept deliberately, not to discover.
 - **`hello-world` imports `terser-webpack-plugin`** which is not declared in any
@@ -641,8 +646,8 @@ import Box from '@mui/material/Box'
 ```
 
 **90 such imports across 22 files** in the five apps today, against exactly
-**one** root-barrel import (`network-workflows`'s Jupyter panel; a second lives
-in `patterns/`, which §7.5 deletes). The plugin resolves share keys through `matchesSharedSource`:
+**one** root-barrel import (`network-workflows`'s Jupyter panel; a second lived
+in the now-deleted `patterns/`). The plugin resolves share keys through `matchesSharedSource`:
 
 ```js
 function matchesSharedSource(source, key) {
@@ -1157,12 +1162,14 @@ MUI through it today. Dropping it after §5.6 stops reading it would leave MUI
 undeclared everywhere. Move `@mui/material`, `react`, and `react-dom` into the
 per-app dependency sets (§7.3) *before* touching the root block.
 
-**`@cytoscape-web/api-types` is a live mismatch, not a hypothetical one.** The
-root declares `^1.0.0-beta.2` and the host publishes `1.0.0-beta.3` — and while
-that range *would* admit `beta.3`, `package-lock.json` resolves
-`api-types-1.0.0-beta.2.tgz`. The repo is therefore compiling against
-one-version-old declarations right now. Bump and **update the lockfile**; a
-range change alone would not have moved it.
+**`@cytoscape-web/api-types` was a live mismatch, not a hypothetical one.** The
+root declared `^1.0.0-beta.2` and the host publishes `1.0.0-beta.3` — and while
+that range *would* admit `beta.3`, `package-lock.json` resolved
+`api-types-1.0.0-beta.2.tgz`. The repo was therefore compiling against
+one-version-old declarations. **Fixed in Phase 1:** the range is
+`^1.0.0-beta.3` and the lockfile was regenerated and committed; a range change
+alone would not have moved it. All five Webpack builds still pass against the
+new declarations.
 
 Scripts: `dev`, `build`, `clean`, `deploy`, `copy-dist` keep their shape. Add a
 repo-wide `typecheck` (`npm run typecheck --workspaces`) to replace the type
@@ -1414,20 +1421,21 @@ precisely the thing worth checking here. (It would *not* hide errors in app code
 that misuses the API — that check is unaffected either way. The loss is narrower
 than it is often described, but it is a real loss in this repo.)
 
-### 7.5 `patterns/` — delete it
+### 7.5 `patterns/` — deleted
 
-Rev. 1 recommended adopting `patterns/`. The defect list in §3 changes that
-conclusion: it exposes a module path that does not exist, its app id does not
-match its federation name (so the host would reject it on load), it uses the
-pre-`resources` API shape, and its port collides with `project-template`.
-Nothing about it currently works, and nobody builds it — "migrating" it means
+Rev. 1 recommended adopting `patterns/`. The defect list in §3 changed that
+conclusion: it exposed a module path that did not exist, its app id did not
+match its federation name (so the host would reject it on load), it used the
+pre-`resources` API shape, and its port collided with `project-template`.
+Nothing about it worked, and nobody built it — "migrating" it would have meant
 writing a new app under an old directory name.
 
-**Recommendation: delete `patterns/` in Phase 1**, before any migration work
-depends on knowing what it is. If its content is wanted, it should return as a
+**Decision (Phase 1, 8/1/2026): deleted.** Taken before any migration work
+depended on knowing what it is. If its content is wanted, it should return as a
 new example built from the migrated `project-template`, on its own schedule.
-Deciding this early matters: it is the difference between five apps to migrate
-and six.
+Deciding this early mattered: it is the difference between five apps to migrate
+and six. The directory and its untracked `dist/` are gone; the git history
+retains it.
 
 ### 7.6 Webpack-specific runtime code in app sources
 
@@ -1719,10 +1727,31 @@ then has nothing left to reconcile.
 
 **"Built" and "published" are different sets — keep them explicit.** The
 workflow copies four apps; `claude-bridge` is in `workspaces` (so `npm run
-build` builds it) but is *not* copied to `docs/`, while the root `copy-dist`
-script *does* copy it. The workflow and the script therefore already disagree.
-Decide the intended sets in Phase 1 and encode them in the manifest in Phase 3,
-rather than carrying a two-way inconsistency across the migration.
+build` builds it) but was *not* copied to `docs/`, while the root `copy-dist`
+script *did* copy it. The workflow and the script therefore disagreed.
+
+**Decision (Phase 1, 8/1/2026):**
+
+- **Built set = all five workspaces** — `hello-world`, `network-statistics`,
+  `network-workflows`, `project-template`, `claude-bridge`. Unchanged.
+- **Published set = four apps.** `claude-bridge` is `published: false`: it is a
+  developer tool that talks to a local MCP bridge server, so a Pages copy could
+  not function for a visitor. This matches `deploy-pages.yml` and the four
+  directories actually tracked under `docs/` — it is the **`copy-dist` script
+  that was wrong**, and the manifest rewrite (Phase 3) is what corrects it. Do
+  not "fix" `copy-dist` by hand in the meantime; Phase 3's exit criterion is
+  that `npm run deploy` produces the same `docs/` the workflow does, and
+  dropping `claude-bridge` there is part of that rewrite.
+- **Canonical published URL** confirmed as
+  `https://cytoscape.org/cytoscape-web-app-examples/` (above). No change needed:
+  the host's `apps.json`, this repo's `README.md` and `docs/index.html` already
+  agree on it.
+
+Note the published set is **not** the same as the host's registry:
+`src/assets/apps.json` lists only three apps (`hello`, `networkWorkflows`,
+`networkStatistics`). `project-template` is published to Pages as the
+copy-paste starting point but deliberately not offered as an installable app.
+That is a third set, and it stays out of the manifest.
 
 **There is no PR CI in this repository at all** — `deploy-pages.yml` runs only
 on push to `main`, so nothing checks a pull request. Adding a PR workflow is
@@ -2341,7 +2370,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 
 | Phase | Scope                                                                                                              | Exit criterion                                             |
 | ----- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| 1     | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | No open "which app / which URL" questions; `npm ci` clean   |
+| 1 ✅  | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | **Done 8/1/2026.** Built = 5 workspaces, published = 4 (`claude-bridge` excluded), URL confirmed, `patterns/` deleted, api-types at `1.0.0-beta.3`; `npm ci` clean and all five Webpack builds pass |
 | 2     | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | Remote→host E2E green, §11 step 11a passes, **and** the full §8 descriptor contract passes against `web.cytoscape.org` — deployed, not merely merged |
 | 3     | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | `npm install` clean; all five apps still build with Webpack; CI green; `npm run deploy` still produces the same `docs/` |
 | 4     | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | Template loads in the host, installs standalone, §5.7/§5.8 settled with numbers, **and the deployed pilot passes step 14 on the production host** |
@@ -2352,10 +2381,10 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 
 Notes on the ordering:
 
-- **Phase 1 before anything** because `patterns/` determines whether this is a
+- **Phase 1 before anything** because `patterns/` determined whether this is a
   five- or six-app migration, and the canonical URL determines what the
-  published artifacts must say. Both are cheap to decide and expensive to
-  discover mid-flight.
+  published artifacts must say. Both were cheap to decide and expensive to
+  discover mid-flight. Settled: five apps, `https://cytoscape.org/cytoscape-web-app-examples/`.
 - **Phase 2 (host) before any app.** §5.5 now ships a sentinel rather than a
   localhost fallback in production builds, so a migrated app **requires** the
   descriptor — the ordering is a hard dependency, not just a convenience. The

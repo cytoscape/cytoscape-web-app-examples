@@ -21,7 +21,7 @@ by 5 and 6.
 
 ---
 
-## Phase 1: Decide, then act on the decisions
+## Phase 1: Decide, then act on the decisions ✅ **COMPLETE (8/1/2026)**
 
 _Design: §7.1, §7.5, §8_
 
@@ -40,29 +40,45 @@ otherwise be discovered mid-flight and change the shape of everything after.
 
 ### Deliverables — decisions (write them down)
 
-- [ ] **Canonical published URL** confirmed as
+- [x] **Canonical published URL** confirmed as
       `https://cytoscape.org/cytoscape-web-app-examples/` (host `apps.json` and
-      this repo's `README.md` both use it)
-- [ ] **Built set** decided — which apps are npm workspaces
-- [ ] **Published set** decided — which apps are copied into `docs/`.
-      Today the workflow copies 4 and `copy-dist` copies 5; pick one answer
-- [ ] **`patterns/` decision** recorded (§7.5 recommends delete)
+      this repo's `README.md` both use it) — `docs/index.html` agrees too; no
+      change needed anywhere
+- [x] **Built set** decided — **all five workspaces**: `hello-world`,
+      `network-statistics`, `network-workflows`, `project-template`,
+      `claude-bridge`. Unchanged from today
+- [x] **Published set** decided — **four apps**; `claude-bridge` is
+      `published: false`. It is a developer tool that talks to a local MCP
+      bridge server, so a Pages copy cannot function for a visitor. This matches
+      `deploy-pages.yml` and the four directories tracked under `docs/`; the
+      root `copy-dist` script (which copies five) is the one that is wrong, and
+      **Phase 3's manifest rewrite is what corrects it** — do not hand-edit it
+      here
+- [x] **`patterns/` decision** recorded — **delete** (§7.5)
+
+> **Not the same as the host registry.** `cytoscape-web/src/assets/apps.json`
+> lists only three apps (`hello`, `networkWorkflows`, `networkStatistics`).
+> `project-template` is published to Pages as the copy-paste starting point but
+> is deliberately not an installable app. That third set stays out of the
+> manifest.
 
 ### Deliverables — actions
 
-- [ ] Delete `patterns/` (or, if kept, file a separate issue — do **not** carry
-      it into Phase 3 unresolved)
-- [ ] Bump `@cytoscape-web/api-types` to the host's published version
-      (`1.0.0-beta.3`) **in `package.json`**
-- [ ] Run `npm install` and **commit the updated `package-lock.json`** — the
+- [x] Delete `patterns/` — directory and its untracked `dist/` removed; git
+      history retains it. Only stale reference left was
+      `.serena/memories/project_overview.md`, updated
+- [x] Bump `@cytoscape-web/api-types` to the host's published version
+      (`1.0.0-beta.3`) **in `package.json`** — range now `^1.0.0-beta.3`
+- [x] Run `npm install` and **commit the updated `package-lock.json`** — the
       lockfile currently pins `beta.2`; a range change alone does not move it
 
 ### Verification (Phase 1)
 
-- [ ] `npm ci` completes cleanly
-- [ ] `node -e "console.log(require('./package-lock.json').packages['node_modules/@cytoscape-web/api-types'].version)"` prints the host's version
-- [ ] `npm run build` still succeeds for every remaining app (Webpack)
-- [ ] No open "which app / which URL" question remains
+- [x] `npm ci` completes cleanly
+- [x] `node -e "console.log(require('./package-lock.json').packages['node_modules/@cytoscape-web/api-types'].version)"` prints the host's version → `1.0.0-beta.3`
+- [x] `npm run build` still succeeds for every remaining app (Webpack) — all
+      five, no errors
+- [x] No open "which app / which URL" question remains
 
 ---
 
@@ -197,6 +213,10 @@ Webpack at the end of this phase.
       `publishPath`, `federationName`, `port`, `bundler`, `published`,
       `exposes`, `smokeObservable`, `configuredShared`
   - All five entries start at `"bundler": "webpack"`
+  - **`published`, per Phase 1's decision:** `true` for `hello-world`,
+    `network-statistics`, `network-workflows`, `project-template`; **`false`
+    for `claude-bridge`** (so it needs no `smokeObservable`). This is where
+    `copy-dist` stops copying five apps
   - `workspaceDir`, `publishPath` and `federationName` are **three different
     strings** (`hello-world` / `hello-world` / `hello`)
   - `configuredShared` holds **full records**, not a name list;
@@ -263,8 +283,10 @@ Webpack at the end of this phase.
 - [ ] `node scripts/manifest.mjs --validate` passes
 - [ ] **All five apps still build with Webpack** (`npm run build`)
 - [ ] `npm run typecheck --workspaces` passes against the existing tsconfigs
-- [ ] `npm run deploy` produces the **same** `docs/` output as before the rewrite
-      (diff it)
+- [ ] `npm run deploy` produces the **same** `docs/` output the **workflow**
+      produced before the rewrite (diff it). Not the same as today's
+      `copy-dist`: that script nests (`docs/hello-world/dist/`, §8) and copies
+      `claude-bridge`, which Phase 1 decided is `published: false`
 - [ ] `npm run preflight:host https://web.cytoscape.org` passes
 - [ ] PR CI green
 
