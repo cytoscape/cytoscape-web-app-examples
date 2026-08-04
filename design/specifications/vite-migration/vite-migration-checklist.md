@@ -481,7 +481,51 @@ Webpack at the end of this phase.
 
 ---
 
-## Phase 4: `project-template` pilot
+## Phase 4: `project-template` pilot ✅ **COMPLETE (8/4/2026)**, except the Pages publish
+
+> **Decisions settled here, both from real output:**
+>
+> - **§8 Decision A — accept the absolute build-machine paths.** 10 literals,
+>   all in `remoteEntry.js`. Pages builds run in GitHub Actions, so the
+>   published string is `/home/runner/work/<repo>/<repo>/…` — a fixed runner
+>   account and an already-public repo name. Publishing from a **workstation**
+>   is the case to avoid; the workflow is safe.
+> - **§8 Decision B — do not publish the SSR files.** 34,164 B per app of
+>   Node-only code. `copy-dist` excludes them and §11 step 9 then passed
+>   against the published set, which is what this decision required.
+>
+> **§5.7 A vs B is settled at 8.7×**: 800,753 B of browser JS with fallbacks
+> against 92,325 B with `import: false` — MUI's fallback alone is 674 kB, far
+> above the ~210 kB the plan estimated from a two-package fixture.
+>
+> **The release gate is now armed, and that blocks Pages — accepted 8/4/2026.**
+> `project-template` is the first `published && vite` entry, so
+> `manifest.mjs --needs-preflight` exits 0 and `deploy-pages.yml` will run the
+> preflight against production. Production has no descriptor, so the deploy
+> **fails** — including for the three apps still on Webpack, which would
+> otherwise publish fine.
+>
+> Accepted rather than worked around. Publishing the pilot today would put an
+> app on the CDN that cannot load in the production host by construction, since
+> it carries a sentinel instead of a fallback. Stopping the deploy is the gate
+> doing its job, not an obstacle to route around. Nothing changes until this
+> branch reaches `main`; it clears when the host ships the descriptor.
+>
+> The alternative — setting `published: false` on the pilot to disarm the gate —
+> was considered and rejected: it would keep the other three publishing at the
+> cost of making the gate's first real firing something to be suppressed.
+
+> **Two things the plan did not anticipate:**
+>
+> - **Option A and the `noSharedPayload` gate are mutually exclusive.** Building
+>   with fallbacks fails the gate immediately, because fallbacks *are* bundled
+>   `/node_modules/react/`. Choosing A would mean deleting the only defence
+>   against §5.8 as well; the two decisions are not independent.
+> - **An unused subpath import does not bundle MUI.** A gate test that merely
+>   writes `import Box from '@mui/material/Box'` passes. It has to RENDER the
+>   component — then the gate fires, on
+>   `@mui/utils/esm/composeClasses/composeClasses.js`, which is exactly the
+>   namespace-prefix case `BANNED_PREFIXES` exists for.
 
 _Design: §5.1–§5.8, §6.4, §7.2–§7.6, §11_
 
@@ -505,23 +549,23 @@ pattern is replicated four times.
 
 **New files**
 
-- [ ] `src/cywebHostSentinel.ts` — `export const CYWEB_HOST_REQUIRED = 'cyweb:__CYWEB_HOST_REQUIRED__'`
-- [ ] `src/mfRuntimePlugin.ts` (§6.4):
+- [x] `src/cywebHostSentinel.ts` — `export const CYWEB_HOST_REQUIRED = 'cyweb:__CYWEB_HOST_REQUIRED__'`
+- [x] `src/mfRuntimePlugin.ts` (§6.4):
   - Local structural type, **generic** `beforeInit: <T extends BeforeInitArgs>(args: T) => T`
     (a non-generic signature drops `origin`/`shareInfo` → TS2322)
   - **No** import from `@module-federation/runtime` — its types reach `webpack`
   - `readHostEntry()` validates `name === 'cyweb'`, non-empty, absolute `http(s)`
   - Writes **both** `userOptions.remotes` and `options.remotes`
   - Throws on the sentinel with the pinned "missing or invalid" message
-- [ ] `test/mfRuntimePlugin.test.ts` — **outside `src/`**, against a **real
+- [x] `test/mfRuntimePlugin.test.ts` — **outside `src/`**, against a **real
       `ModuleFederation` instance**:
   - First init (populated `userOptions.remotes`, empty `options.remotes`)
   - Re-init (populated `options.remotes`)
   - Descriptor absent, dev build → entry untouched
   - Malformed descriptor, production build → parameterized: absent, `name`
     missing, `name` wrong, empty URL, relative URL, non-HTTP scheme
-- [ ] `index.html` — the §5.3 remote-only stub
-- [ ] `vite.config.ts` (§5.5) containing:
+- [x] `index.html` — the §5.3 remote-only stub
+- [x] `vite.config.ts` (§5.5) containing:
   - `normalizePath(fileURLToPath(...))` for the runtime-plugin path
   - `CONFIGURED_RUNTIME_PLUGINS` constant; federation receives a **spread copy**
   - `CYWEB_REMOTE` constant with `type: 'module'` and the
@@ -533,56 +577,65 @@ pattern is replicated four times.
   - `noSharedPayload()` plugin **after** `federation()`, `apply: 'build'`,
     `enforce: 'post'`, **namespace prefixes** (`/node_modules/@mui/` etc.)
   - `base` **not set**; `build.target: 'esnext'`; `server` port/strictPort/origin/headers
-- [ ] `tsconfig.node.json` — `vite.config.ts`, `types: ["node"]`, `skipLibCheck: true`
-- [ ] `tsconfig.test.json` — `test/**/*`, `skipLibCheck: true`
+- [x] `tsconfig.node.json` — `vite.config.ts`, `types: ["node"]`, `skipLibCheck: true`
+- [x] `tsconfig.test.json` — `test/**/*`, `skipLibCheck: true`
 
 **Modified files**
 
-- [ ] `tsconfig.json` — `moduleResolution: "bundler"`, `isolatedModules`,
+- [x] `tsconfig.json` — `moduleResolution: "bundler"`, `isolatedModules`,
       `noEmit`, `lib: ["ESNext","DOM","DOM.Iterable"]`, `types: ["@cytoscape-web/api-types"]`,
       **`typeRoots` deleted**, `skipLibCheck` **false**
-- [ ] `package.json` — self-contained `dependencies` / `peerDependencies` /
+- [x] `package.json` — self-contained `dependencies` / `peerDependencies` /
       `devDependencies` with **concrete versions**, `engines`, and scripts:
       `build`, `dev`, `typecheck` (all three configs), `test`
-- [ ] All `@mui/material/X` imports → root barrel `import { X } from '@mui/material'` (§5.8)
-- [ ] **Delete** `webpack.config.js`
+- [x] All `@mui/material/X` imports → root barrel `import { X } from '@mui/material'` (§5.8)
+- [x] **Delete** `webpack.config.js`
 
 **Manifest**
 
-- [ ] Flip this app's `bundler` to `'vite'` — **in the same commit** as its
+- [x] Flip this app's `bundler` to `'vite'` — **in the same commit** as its
       `peerDependencies` and `vite.config.ts`
 
 ### Deliverables — pilot-only
 
-- [ ] Add a `template` entry to `cytoscape-web/src/assets/apps.local.json`
+- [x] Add a `template` entry to `cytoscape-web/src/assets/apps.local.json`
       (id `template`, port 5555) — it does not exist today
-- [ ] Add the gate's own fixtures: positive (root barrel) and **three** negative
+- [x] Add the gate's own fixtures: positive (root barrel) and **three** negative
       (`@mui/material/Box`, `@mui/icons-material/Home`, **`@mui/utils`**)
-- [ ] Record the §5.7 A-vs-B measurement (transferred bytes, both ways)
-- [ ] Record the §5.8 measurement and confirm the root-barrel result
-- [ ] Make the §8 SSR decisions from the pilot's **real** output:
+- [x] Record the §5.7 A-vs-B measurement (transferred bytes, both ways)
+- [x] Record the §5.8 measurement and confirm the root-barrel result
+- [x] Make the §8 SSR decisions from the pilot's **real** output:
       Decision A (absolute build-machine paths in `remoteEntry.js`) and
       Decision B (publish the SSR files or not) — they are **independent**
-- [ ] Record the pilot's actual emitted file set and encode it as the publish set
+- [x] Record the pilot's actual emitted file set and encode it as the publish set
 
 ### Verification (Phase 4)
 
-- [ ] §11 step 1 — `npm run typecheck` passes (all three configs)
-- [ ] §11 step 2 — `npm run build` emits `dist/remoteEntry.js`
-- [ ] §11 step 3 — `npm run verify:federation` passes
-- [ ] §11 step 4 — `npm run dev` serves on 5555; `curl -I` → 200 with
+- [x] §11 step 1 — `npm run typecheck` passes (all three configs)
+- [x] §11 step 2 — `npm run build` emits `dist/remoteEntry.js`
+- [x] §11 step 3 — `npm run verify:federation` passes
+- [x] §11 step 4 — `npm run dev` serves on 5555; `curl -I` → 200 with
       `Access-Control-Allow-Origin: *`
-- [ ] §11 step 5 — loads in the host from `apps.local.json`, mounts, panel renders
-- [ ] §11 step 6 — MUI styles correct, no duplicate-Emotion warning
-- [ ] §11 step 9 — a **production** build (carrying the sentinel) loads in a
+- [x] §11 step 5 — loads in the host from `apps.local.json`, mounts, panel renders
+- [x] §11 step 6 — MUI styles correct, no duplicate-Emotion warning
+- [x] §11 step 9 — a **production** build (carrying the sentinel) loads in a
       running host; the descriptor was used
-- [ ] §11 step 10 — descriptor absent → the pinned error, **not** a localhost attempt
-- [ ] §11 step 12 — **clean copy** outside the monorepo (excluding
+- [x] §11 step 10 — descriptor absent → the pinned error, **not** a localhost
+      attempt. Covered by the unit suite's 8 parameterised cases (absent, name
+      missing, name wrong, empty, relative, `file:`, `data:`, non-string), which
+      is what §11.2 prescribes: the descriptor is non-configurable by design, so
+      it cannot be removed from a live host page to test this
+- [x] §11 step 12 — **clean copy** outside the monorepo (excluding
       `node_modules/`, `dist/`) → `npm install && npm run typecheck && npm test && npm run build`
-- [ ] §11 step 13 (build half) — no React / ReactDOM / MUI / Emotion module in
+- [x] §11 step 13 (build half) — no React / ReactDOM / MUI / Emotion module in
       `dist/`; before/after transferred bytes recorded
-- [ ] `npm test` passes — all four runtime-plugin cases
-- [ ] Publish to Pages and run §11 step 14 against the production host
+- [x] `npm test` passes — all four runtime-plugin cases
+- [ ] ~~Publish to Pages and run §11 step 14 against the production host~~ —
+      **deferred with the Phase 2 waiver.** Production has no descriptor, so a
+      published Vite app could not load there, and the deploy preflight — now
+      armed, because this app is the first `published && vite` entry — would
+      correctly refuse the deploy. This is the gate working, not a blocker to
+      route around. It unblocks when the host ships
 
 ---
 

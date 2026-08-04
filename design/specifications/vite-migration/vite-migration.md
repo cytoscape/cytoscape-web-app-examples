@@ -1,6 +1,8 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Phases 1–3 complete; Phases 4–8 not yet implemented.** Phase 2 was
+> **Status: Phases 1–4 complete; Phases 5–8 not yet implemented.** The pilot
+> (`project-template`) is migrated, loads in a running host from a production
+> artifact carrying only the sentinel, and installs standalone. Phase 2 was
 > closed with its production-deploy gate **waived** (unavailable in the team's
 > current workflow), which makes Phase 3's Pages preflight the only remaining
 > release gate — see §8. That preflight is now built and **self-activating**:
@@ -22,6 +24,15 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 19 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 4 pilot
+  migrated.** The two open §8 decisions are settled from real output (accept
+  the absolute paths; do not publish the SSR files), and §5.7's A-vs-B question
+  is answered with numbers that are far larger than the estimate: **800,753 vs
+  92,325 browser bytes**, an 8.7× difference, because MUI's fallback alone is
+  674 kB. Two things were also learned that the plan did not anticipate — the
+  `noSharedPayload` gate and Option A are mutually exclusive by construction,
+  and an *unused* subpath import does not bundle MUI, so a gate test must
+  actually render the component.
 - Rev. 18 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — Closed the last
   Phase 3 gap. The §8 preflight — which the Phase 2 waiver promoted from
   "cheap insurance" to the only release gate — was exercised against
@@ -677,6 +688,26 @@ forward-compatibility, not validation**: as shown above, nothing compares it at
 runtime today. If version skew must actually be rejected, that needs a separate
 explicit check — a candidate for the §6.6 API-version work, not something this
 field delivers for free.
+
+#### Measured in Phase 4 on the real pilot
+
+`project-template`, sharing all five packages, built both ways:
+
+| | Browser JS | of which fallback chunks |
+| --- | --- | --- |
+| **A** — fallbacks kept | **800,753 B** | 715,226 B (MUI alone 674,087) |
+| **B** — `import: false` (shipped) | **92,325 B** | 11,266 B |
+
+**708 kB, or 8.7×.** The §5.7 estimate of ~210 kB came from a fixture sharing
+two packages; an app that also shares MUI and Emotion pays far more, and pays
+it on every load. B is settled.
+
+**A and the payload gate cannot coexist.** Building with fallbacks enabled
+fails §5.5's `noSharedPayload` immediately — `/node_modules/react/` is bundled
+into the Emotion fallback chunk — because that is precisely what Option A
+means. Choosing A would require deleting the gate as well, which removes the
+only defence against §5.8's silent MUI duplication at the same time. The two
+decisions are not independent, and this plan had treated them as if they were.
 
 **Phase 4 confirms the choice with numbers**, not opinion: build the pilot both
 ways, record transferred bytes for an app load in each, and confirm the
@@ -1602,6 +1633,31 @@ Workflow changes:
    every migrated app.
 
 **Two decisions for Phase 4, both from measured output:**
+
+**Decision A — SETTLED 8/4/2026: accept.** Measured on the pilot: **10 such
+literals, all in `remoteEntry.js`** and none in any other browser chunk. The
+deciding fact is *who builds the published artifact*. Pages builds run in
+GitHub Actions, where the path is
+`/home/runner/work/cytoscape-web-app-examples/cytoscape-web-app-examples/…` —
+a fixed runner account and a repository name that is already public. Nothing
+private is disclosed. A local `npm run deploy` would embed a developer's home
+directory instead, so **publishing from a workstation is the case to avoid**;
+the workflow is the normal path and it is safe. Stripping the literals was
+rejected as a post-build rewrite of the plugin's own strings — a standing
+breakage risk on every plugin upgrade, for no gain on the path that actually
+publishes.
+
+**Decision B — SETTLED 8/4/2026: do not publish.** Measured on the pilot:
+`remoteEntry.ssr.js` (793 B), `assets/ssrEntryLoader-*` (4,978 B),
+`assets/module-runner-*` (28,018 B) and `assets/virtual_mf-exposes-ssr*`
+(375 B) — **34,164 B per app** of Node-only code that cannot execute in a
+browser. `copy-dist` excludes them, and §11 step 9 was then run against the
+published set: the app loads and mounts with them absent, which is the check
+this decision required. `mf-manifest.json` and `mf-stats.json` are excluded on
+the same reasoning — nothing fetches them at runtime, and they describe the
+build machine.
+
+Original framing, kept for the reasoning:
 
 **Decision A — absolute build-machine paths inside the browser
 `remoteEntry.js`.** The probe's `remoteEntry.js` contains strings like
@@ -2620,7 +2676,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | 1 ✅  | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | **Done 8/1/2026.** Built = 5 workspaces, published = 4 (`claude-bridge` excluded), URL confirmed, `patterns/` deleted, api-types at `1.0.0-beta.3`; `npm ci` clean and all five Webpack builds pass |
 | 2 ✅  | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | **Declared complete 8/1/2026.** §11 step 11a passes; the §8 contract passes on localhost (10/10, by hand). The production-deploy criterion was **waived** — unavailable in the team's workflow — which promotes Phase 3's preflight to the only release gate (§8). Remote→host E2E is **carried, not waived**: the host commit is local-only, so CI has not run it yet |
 | 3 ✅  | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | **Done 8/1/2026.** `npm ci` clean; all five still build with Webpack; `typecheck` passes for all five; `copy-dist` reproduces the workflow's `docs/` (the nesting bug and the stray `claude-bridge` both gone). PR CI is written but has not run — it triggers on PRs to `main` |
-| 4     | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | Template loads in the host, installs standalone, §5.7/§5.8 settled with numbers, **and the deployed pilot passes step 14 on the production host** |
+| 4 ✅  | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | **Done 8/4/2026** except the Pages step. Loads in a running host from a production build carrying only the sentinel (§11 step 9 — the end-to-end proof of §6); panel renders with the host's MUI theme; installs and builds standalone outside the monorepo; §5.7 settled at 8.7×; §8 A and B settled from real output. **Step 14 on the production host is deferred with the Phase 2 waiver** — production has no descriptor, so the deploy preflight would (correctly) refuse |
 | 5     | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | Shared React + Emotion verified across the boundary         |
 | 6     | `network-statistics` (non-React shape, §7.3), `network-workflows` (fix the hardcoded `mode`), `claude-bridge`; CI list now covers all five | All load; all five apps mandatory in CI                     |
 | 7     | **Remove the Webpack toolchain.** Delete `webpack*`, `ts-loader`, `clean-webpack-plugin` and the old scripts; reconcile the root `peerDependencies` (§7.1); documentation (§10) | No Webpack references in **live sources, configs, scripts or user-facing docs**. This spec and the other design/history documents keep theirs — they explain why the migration happened |

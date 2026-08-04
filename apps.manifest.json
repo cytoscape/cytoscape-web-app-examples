@@ -107,9 +107,18 @@
       "publishPath": "project-template",
       "federationName": "template",
       "port": 5555,
-      "bundler": "webpack",
+      "bundler": "vite",
       "published": true,
       "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='template-panel']"
+      },
       "configuredShared": {
         "react": {
           "singleton": true,
