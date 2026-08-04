@@ -22,6 +22,12 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 18 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — Closed the last
+  Phase 3 gap. The §8 preflight — which the Phase 2 waiver promoted from
+  "cheap insurance" to the only release gate — was exercised against
+  production (red), a control host (red, via `--selftest`) and a correct host
+  (green, 10/10). Recorded because red-only and green-only both look like
+  proof and are not. Also: this repository's first PR CI ran green (PR #2).
 - Rev. 17 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 3
   implemented**, and a probe build of the §5.5 canonical config settled four
   things this plan had been assuming. §11.0's verifier is now written against
@@ -2092,6 +2098,20 @@ The "seen it go red" requirement is implemented as
 will never publish a descriptor and **fails if the contract passes**. The deploy
 workflow runs it alongside the real check, so the gate re-proves it can reject
 on every deploy that needs it.
+
+**Exercised in all three directions on 8/1/2026**, which is the evidence the
+waiver made necessary:
+
+| Target | Expected | Result |
+| ------ | -------- | ------ |
+| `https://web.cytoscape.org` — the host published apps actually name | reject | **red**: `window.__CYWEB_HOST__ … not present after 30000ms` |
+| `--selftest` — a control host that will never publish a descriptor | detect the rejection | **green** |
+| `http://localhost:5500` — a correct host | accept | **green, 10/10** |
+
+Red on two hosts and green on a third is the part that matters. A gate that is
+merely red has not been shown to accept anything, and one that is merely green
+has not been shown to reject anything; either alone would read as proof and be
+worth nothing.
 
 Option (2) — a GitHub Environment with required reviewers on the `deploy` job —
 becomes worth reconsidering here, since it is the only remaining option that

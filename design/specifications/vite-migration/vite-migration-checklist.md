@@ -404,7 +404,10 @@ Webpack at the end of this phase.
     (8/1/2026). Three properties are therefore mandatory, not nice-to-have —
     it targets the host `apps.json` names, it exits non-zero rather than
     warning, and **it has been observed going red** against a host with no
-    descriptor. See "Release gate — where it went" at the end of Phase 2
+    descriptor. See "Release gate — where it went" at the end of Phase 2.
+    **All three were verified on 8/1/2026** — see the Phase 3 verification
+    section: red against production, red against a control host, green
+    against a correct one
 
 ### Deliverables — per-app scripts (against the **existing** tsconfigs)
 
@@ -450,16 +453,31 @@ Webpack at the end of this phase.
     splitting. Rebuilding twice is byte-identical, so the output is stable. The
     regenerated files were **reverted**: Phase 3 is scaffolding, and the Pages
     workflow regenerates `docs/` on push to `main` anyway
-- [ ] ~~`npm run preflight:host https://web.cytoscape.org` passes~~ —
-      **cannot pass, and must not gate anything yet.** Production serves
-      `runtime.<hash>.js` / `vendors.<hash>.js`: a **pre-Vite Webpack build** of
-      the host, with no descriptor. That is the whole reason the deploy gate is
-      conditional (see the decision note at the top of this phase). Verify
-      instead with `npm run preflight:host -- --selftest`, which asserts the
-      gate **rejects** a descriptor-less host — both need a Chromium install
-      this dev machine lacks, so CI owns them
-- [ ] PR CI green — the new `.github/workflows/ci.yml` has never run; it
-      triggers on PRs to `main`
+- [x] ~~`npm run preflight:host https://web.cytoscape.org` passes~~ — **it must
+      FAIL today, and it does.** Production serves `runtime.<hash>.js` /
+      `vendors.<hash>.js`: a **pre-Vite Webpack build** of the host, with no
+      descriptor. That is the whole reason the deploy gate is conditional (see
+      the decision note at the top of this phase)
+- [x] **The gate was exercised in all three directions** (8/1/2026, manually,
+      after installing the Chromium system libraries). This is what the Phase 2
+      waiver made mandatory: with the production-deploy gate gone, a preflight
+      nobody had seen reject anything would have been the whole safety net.
+  - `preflight:host https://web.cytoscape.org` → **red**, on
+    `window.__CYWEB_HOST__ is published — not present after 30000ms`. The gate
+    rejects the host the published apps actually name
+  - `preflight:host -- --selftest` → **green**, i.e. it confirmed the contract
+    fails against a control host that will never publish a descriptor
+  - `preflight:host http://localhost:5500` → **green, 10/10**: name, absolute
+    `remoteEntry`, `apiVersion` `1.0`, frozen, non-writable, non-configurable,
+    200, `text/javascript`, and `init`/`get` both functions
+  - Red on two different hosts and green on a correct one — so it is neither
+    stuck-red nor stuck-green, which either alone would have looked like proof
+- [x] PR CI green — [PR #2](https://github.com/cytoscape/cytoscape-web-app-examples/pull/2),
+      run 30870210196. First PR CI this repository has ever had. All five jobs
+      passed, and the `Build & verify` log shows the point of the phase in one
+      place: five Webpack builds succeed, then the verifier reads `bundler` and
+      skips all five. Phase 4 turns one of those skips into a real check by
+      flipping a single manifest field, with no workflow edit
 
 ---
 
