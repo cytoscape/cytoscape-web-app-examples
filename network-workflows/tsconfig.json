@@ -1,26 +1,37 @@
 {
-  "include": [
-    "src/**/*"
+  "//": [
+    "App sources only. Split from the build-tooling and test configs because",
+    "this is the ONE that can afford skipLibCheck: false — which is what keeps",
+    "the @cytoscape-web/api-types declarations actually checked.",
+    "",
+    "src/ must never import Module Federation runtime types: those reach",
+    "@module-federation/sdk, whose ModuleFederationPlugin.d.ts does",
+    "`import webpack from \"webpack\"`, a package this app does not depend on.",
+    "src/mfRuntimePlugin.ts declares a local structural type instead.",
+    "",
+    "`typeRoots` is deliberately absent: it pointed at ./node_modules/@types,",
+    "a directory that does not exist here, and setting it suppresses the",
+    "default lookup that actually finds the types."
   ],
-  "files": [
-    "../node_modules/@cytoscape-web/api-types/index.d.ts"
-  ],
+  "include": ["src/**/*"],
   "compilerOptions": {
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "jsx": "react-jsx",
-    "allowSyntheticDefaultImports": true,
-    "outDir": "./dist/",
-    "noImplicitAny": true,
-    "module": "ESNext",
     "target": "ESNext",
-    "allowJs": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "sourceMap": true,
-    "strictNullChecks": true,
     "resolveJsonModule": true,
-    "baseUrl": "."
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": false,
+
+    "types": ["@cytoscape-web/api-types"]
   }
 }

@@ -70,9 +70,13 @@
       "publishPath": "network-statistics",
       "federationName": "networkStatistics",
       "port": 3333,
-      "bundler": "webpack",
+      "bundler": "vite",
       "published": true,
       "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "console",
+        "pattern": "\\[NetworkStatistics\\] Mounted"
+      },
       "configuredShared": {}
     },
     {
@@ -80,9 +84,18 @@
       "publishPath": "network-workflows",
       "federationName": "networkWorkflows",
       "port": 7000,
-      "bundler": "webpack",
+      "bundler": "vite",
       "published": true,
       "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='jupyter-connector-panel']"
+      },
       "configuredShared": {
         "react": {
           "singleton": true,
@@ -161,7 +174,7 @@
       "publishPath": "claude-bridge",
       "federationName": "claudeBridge",
       "port": 6100,
-      "bundler": "webpack",
+      "bundler": "vite",
       "published": false,
       "exposes": ["./AppConfig"],
       "configuredShared": {

@@ -1,4 +1,4 @@
-import Typography from '@mui/material/Typography'
+import { Typography } from '@mui/material'
 import { Cx2 } from 'cyweb/ApiTypes'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 

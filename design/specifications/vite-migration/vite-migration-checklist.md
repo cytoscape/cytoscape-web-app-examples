@@ -703,40 +703,56 @@ _Design: §7.6, §11 steps 6–7, 13_
 
 ---
 
-## Phase 6: Remaining apps
+## Phase 6: Remaining apps ✅ **COMPLETE (8/4/2026)**
+
+> **All five apps are now `bundler: 'vite'`.** `npm run verify:federation` and
+> `npm run check:imports` print no `skipped` lines at all — every app is in
+> scope for every check, which is what the `bundler` field was for.
+>
+> Check counts differ by shape, and that is the verifier working:
+> `hello-world` 27 (two exposes), `network-workflows` / `project-template` /
+> `claude-bridge` 26, **`network-statistics` 16** — it shares nothing, so the
+> per-package share assertions have nothing to assert.
 
 _Design: §3 (defects), §7.3, §11 step 8_
 
 ### Deliverables — `network-statistics`
 
-- [ ] Apply the per-app block, **non-React shape**: no `react()` plugin, no MUI
+- [x] Apply the per-app block, **non-React shape**: no `react()` plugin, no MUI
       or Emotion peers, `configuredShared` is `{}`
-- [ ] Keep `@types/react` in `devDependencies` — the published api-types
+- [x] Keep `@types/react` in `devDependencies` — the published api-types
       declarations reference React types. Do not "clean this up"
-- [ ] `smokeObservable` is `kind: "console"` — this app renders nothing
+- [x] `smokeObservable` is `kind: "console"` — this app renders nothing
 
 ### Deliverables — `network-workflows`
 
-- [ ] Apply the per-app block
-- [ ] Fix the pre-existing defect: `mode: 'development'` was hardcoded, ignoring
+- [x] Apply the per-app block
+- [x] Fix the pre-existing defect: `mode: 'development'` was hardcoded, ignoring
       `isProduction` — the Vite config has no such branch, but confirm the
       production build is actually a production build
-- [ ] Leave `JupyterConnectorPanel`'s `http://localhost:8888/lab` default alone —
+- [x] Leave `JupyterConnectorPanel`'s `http://localhost:8888/lab` default alone —
       it is legitimate, and the verifier must not ban `localhost` blanket-wise
 
 ### Deliverables — `claude-bridge`
 
-- [ ] Apply the per-app block
-- [ ] `claude-bridge/mcp-server/` is **out of scope** — plain `tsc`, never
+- [x] Apply the per-app block
+- [x] `claude-bridge/mcp-server/` is **out of scope** — plain `tsc`, never
       bundled
 
 ### Verification (Phase 6)
 
-- [ ] All Phase 4 verification steps, for each app
-- [ ] §11 step 8 — `network-statistics` still logs statistics on network switch,
-      and builds with no `react()` plugin
-- [ ] All five manifest entries now have `bundler: 'vite'`
-- [ ] CI: all four jobs now cover all five apps
+- [x] All Phase 4 verification steps, for each app — typecheck (3 configs each),
+      build, verifier, `check:imports`, 12 unit tests **per app**
+- [x] §11 step 8 — `network-statistics` still logs statistics on network switch,
+      and builds with no `react()` plugin. Verified in a running host against a
+      **production artifact carrying only the sentinel**: it appeared in the
+      catalog, mounted, and emitted exactly its manifest `smokeObservable`
+      pattern — `[NetworkStatistics] Mounted — listening for network:switched
+      and selection:changed events.` — with no page errors. `kind: "console"`
+      earns its place here: this app renders nothing, so a DOM selector would
+      have had nothing to find
+- [x] All five manifest entries now have `bundler: 'vite'`
+- [ ] CI: all four jobs now cover all five apps — pending the next push
 
 ---
 

@@ -1,13 +1,50 @@
 {
   "name": "@cytoscape-web/claude-bridge",
-  "description": "Claude Code ↔ Cytoscape Web bridge via CDP + MCP",
+  "description": "Claude Code \u2194 Cytoscape Web bridge via CDP + MCP",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "webpack --config webpack.config.js --env production=true",
-    "build-dev": "webpack --config webpack.config.js --env production=false",
-    "dev": "webpack serve --open /remoteEntry.js --mode development",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "build": "vite build",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "//mcp-server": [
+    "claude-bridge/mcp-server/ is a SEPARATE Node package built with plain tsc.",
+    "It never goes through the bundler and is out of scope for this config \u2014",
+    "tsconfig.json's `include: [\"src/**/*\"]` already excludes it."
+  ],
+  "//peerDependencies": [
+    "Provided by the HOST as Module Federation singletons \u2014 the share block",
+    "uses `import: false`, so no fallback copy is bundled. The ranges must",
+    "match configuredShared in ../apps.manifest.json."
+  ],
+  "peerDependencies": {
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@mui/material": "^5.18.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@module-federation/runtime": "2.5.1",
+    "@module-federation/vite": "1.16.8",
+    "@mui/material": "^5.18.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "^5.6.2",
+    "vite": "8.0.13",
+    "vitest": "^4.1.8"
   }
 }
