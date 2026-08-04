@@ -10,12 +10,7 @@
  *   - All operations require a networkId from `workspaceApi.getCurrentNetworkId()`.
  *   - Undo integration is automatic — each create/delete adds an undo entry.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useElementApi } from 'cyweb/ElementApi'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'

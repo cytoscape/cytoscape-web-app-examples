@@ -12,17 +12,19 @@
  *     and display it in a formatted layout.
  *   - Handle the "no network open" case gracefully with an error message.
  */
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableRow from '@mui/material/TableRow'
-import Typography from '@mui/material/Typography'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  Typography,
+} from '@mui/material'
 import { useState } from 'react'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 

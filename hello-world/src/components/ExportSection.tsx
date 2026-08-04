@@ -8,11 +8,7 @@
  *   - The result can be serialized to JSON for download or API submission.
  *   - This example displays a summary of the exported CX2 aspects.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useExportApi } from 'cyweb/ExportApi'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'

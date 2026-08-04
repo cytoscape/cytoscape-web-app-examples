@@ -639,7 +639,25 @@ pattern is replicated four times.
 
 ---
 
-## Phase 5: `hello-world`
+## Phase 5: `hello-world` ✅ **COMPLETE (8/4/2026)**
+
+> **The per-app block transferred unchanged.** `src/cywebHostSentinel.ts`,
+> `src/mfRuntimePlugin.ts`, `test/mfRuntimePlugin.test.ts`, `index.html` and
+> both extra tsconfigs were copied verbatim from the pilot; only the federation
+> name, the port and the second expose differ. That is the point of Phase 4
+> having been one app.
+>
+> **§7.6 verified at runtime, which is the only place it could be.**
+> `__webpack_public_path__` was replaced by `import.meta.url`, and the header
+> now renders `http://localhost:2222/assets/HelloPanel-<hash>.js` — a URL that
+> was then fetched and returned 200. Worth doing precisely because `typecheck`
+> and `build` both pass on the broken version: the hand-written
+> `declare const` keeps TypeScript quiet, and the failure is a `ReferenceError`
+> the first time the panel is opened.
+>
+> **75 subpath imports rewritten**, not the 79 first counted — `check:imports`
+> counts every matching specifier including the ones in `HelloHeader.tsx` that
+> the §7.6 rewrite removed outright.
 
 _Design: §7.6, §11 steps 6–7, 13_
 
@@ -653,25 +671,35 @@ _Design: §7.6, §11 steps 6–7, 13_
 
 ### Deliverables
 
-- [ ] Apply the **Phase 4 per-app migration block**, with two exposes
+- [x] Apply the **Phase 4 per-app migration block**, with two exposes
       (`./AppConfig`, `./NetworkSummaryMenuItem`)
-- [ ] Fix `HelloHeader.tsx` (§7.6): remove `__webpack_public_path__`. Show
+- [x] Fix `HelloHeader.tsx` (§7.6): remove `__webpack_public_path__`. Show
       `import.meta.url` as the current chunk URL and **drop the
       `remoteEntry.js` concatenation** — appending to a chunk path yields
       `…/assets/remoteEntry.js`, a 404
-- [ ] Update the surrounding prose comments that describe Webpack behaviour
-- [ ] Grep this app for `__webpack_`, `require.context`, `require.ensure`, and
+- [x] Update the surrounding prose comments that describe Webpack behaviour
+- [x] Grep this app for `__webpack_`, `require.context`, `require.ensure`, and
       DefinePlugin-style `process.env.NODE_ENV`
-- [ ] Update `hello-world/README.md` — build/dev commands, "Node.js 18+" → 24
+- [x] Update `hello-world/README.md` — build/dev commands, "Node.js 18+" → 24
 
 ### Verification (Phase 5)
 
-- [ ] All Phase 4 verification steps, for this app
-- [ ] §11 step 7 — `./NetworkSummaryMenuItem` renders **inside the host's React
-      tree** and its hooks work (single shared React across the boundary)
-- [ ] §11 step 13 (runtime half) — the singletons in use are the host's; a
-      remote MUI component picks up the host's theme (shared Emotion cache)
-- [ ] `HelloHeader` renders a URL that actually resolves
+- [x] All Phase 4 verification steps, for this app — typecheck (3 configs),
+      build, `verify:federation` **27 checks** (one more than the pilot: the
+      second expose), `check:imports`, 12 unit tests, and a production artifact
+      carrying only the sentinel loading in a running host
+- [x] §11 step 7 — `./NetworkSummaryMenuItem` renders **inside the host's React
+      tree** and its hooks work (single shared React across the boundary).
+      Two nodes match "Network Summary" in the Apps menu: the host's own
+      `<li class="p-menuitem">` wrapper and the REMOTE's
+      `<li class="MuiMenuItem-root">`. The second is the proof — a MUI
+      component from the remote, mounted in the host's tree. Clicking it opened
+      its dialog, so its `useState` ran
+- [x] §11 step 13 (runtime half) — the singletons in use are the host's; a
+      remote MUI component picks up the host's theme (shared Emotion cache).
+      `display: flex`, `padding: 16px` computed from the app's `sx`, and no
+      "invalid hook call" anywhere in the session
+- [x] `HelloHeader` renders a URL that actually resolves — fetched, 200
 
 ---
 

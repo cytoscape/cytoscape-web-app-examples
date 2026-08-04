@@ -105,10 +105,7 @@ export const HelloApp: CyAppWithLifecycle = {
       label: 'Hello: Log Node Info',
       targetTypes: ['node'],
       handler: (ctx) => {
-        const nodeResult = context.apis.element.getNode(
-          ctx.networkId,
-          ctx.id!,
-        )
+        const nodeResult = context.apis.element.getNode(ctx.networkId, ctx.id!)
         if (nodeResult.success) {
           console.info('[HelloApp] Node info:', nodeResult.data)
         }
@@ -127,9 +124,7 @@ export const HelloApp: CyAppWithLifecycle = {
       })
     }
     window.addEventListener('network:switched', _networkHandler)
-    console.info(
-      'HelloApp mounted: context menu + event listener registered.',
-    )
+    console.info('HelloApp mounted: context menu + event listener registered.')
   },
 
   /**

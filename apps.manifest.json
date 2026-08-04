@@ -25,9 +25,18 @@
       "publishPath": "hello-world",
       "federationName": "hello",
       "port": 2222,
-      "bundler": "webpack",
+      "bundler": "vite",
       "published": true,
       "exposes": ["./AppConfig", "./NetworkSummaryMenuItem"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='hello-panel']"
+      },
       "configuredShared": {
         "react": {
           "singleton": true,

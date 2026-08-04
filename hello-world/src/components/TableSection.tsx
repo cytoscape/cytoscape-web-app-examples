@@ -9,12 +9,7 @@
  *   - `tableApi.createColumn()` adds a new column with a data type and default.
  *   - Write operations fire `data:changed` events automatically.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useTableApi } from 'cyweb/TableApi'
 import { useSelectionApi } from 'cyweb/SelectionApi'
