@@ -62,7 +62,7 @@ useful as a starting point for:
 network-statistics/
 ├── package.json
 ├── tsconfig.json
-├── webpack.config.js
+├── vite.config.ts
 └── src/
     ├── index.ts                   ← barrel export (default = CyAppWithLifecycle)
     ├── NetworkStatisticsApp.ts    ← app definition with mount/unmount

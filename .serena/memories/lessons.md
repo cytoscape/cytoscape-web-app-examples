@@ -4,11 +4,13 @@ Shared lessons learned across agent sessions. Update this file after corrections
 
 ## Module Federation
 
-- **Shared singletons are mandatory:** If `react`, `react-dom`, or `@mui/material` are missing from the `shared` section in `webpack.config.js`, the plugin will load its own copy and break React context (hooks won't work).
+- **Shared singletons are mandatory:** all FIVE of `react`, `react-dom`, `@mui/material`, `@emotion/react` and `@emotion/styled` must be in the `shared` block of `vite.config.ts`, with `import: false`. Miss React and hooks break outright; miss Emotion and MUI silently gets a second cache (duplicated styles, host theme ignored).
+- **Import MUI from the root barrel, never a subpath.** Share keys match exactly and MUI subpaths are not in the plugin's known-subpath list, so `@mui/material/Box` bundles MUI into the app instead of resolving the host's. React works either way, which is why this hides. `npm run check:imports` enforces it.
+- **`type: 'module'` on the `cyweb` remote is required** and fails silently when missing — the plugin default (`'var'`) resolves no exports against the host's ESM entry.
 - **`remotes.d.ts` must stay in sync:** Any `cyweb/XxxModule` import used in source code must have a `declare module 'cyweb/XxxModule'` entry in `remotes.d.ts`, or TypeScript will error at build time.
 - **Templates need their own `remotes.d.ts`:** The `project-template` app does not inherit remote module declarations automatically. If you add `cyweb/*` imports to the template, create or update `project-template/src/remotes.d.ts` in the same change.
 - **Port conflicts:** Each plugin must use a unique dev server port. Current assignments: hello-world=2222, simple-menu=3333, simple-panel=4001, project-template=5555. Check before assigning a new port.
-- **`publicPath: 'auto'`** must be set in webpack output to enable dynamic URL resolution for the remote entry.
+- **Leave `base` unset** in `vite.config.ts`: the MF plugin then resolves `publicPath: 'auto'`, so chunks resolve relative to `remoteEntry.js` wherever it is deployed.
 
 ## Host API Integration
 

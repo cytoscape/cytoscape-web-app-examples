@@ -36,15 +36,19 @@ Open `http://localhost:5500` → **Apps** → **App Settings** → enable your a
 - `name` → your package name
 - `version` → your version
 
-### 2. `webpack.config.js`
+### 2. `vite.config.ts`
 
 - `DEV_SERVER_PORT` → pick an unused port
-- `name` in `ModuleFederationPlugin` → unique camelCase string (must match
+- `name` in `federation()` → unique camelCase string (must match
   `id` in your app config)
+
+Leave the rest of the `federation()` block alone — `type: 'module'`,
+`runtimePlugins`, the sentinel entry and the five `import: false` shares each
+fail in a way that is hard to read. The comments in the file say which.
 
 ### 3. `src/TemplateApp.tsx`
 
-- `id` → must match the webpack federation `name`
+- `id` → must match the federation `name` in `vite.config.ts`
 - `name`, `description` → human-readable labels
 - `resources` → add/remove panels and menu items
 - `mount()` → customize the context menu item or add more (edge, canvas)
@@ -71,7 +75,7 @@ Add your app to the host's `src/assets/apps.local.json` (a JSON array):
 ```
 
 > The `id` field is the unique identifier and must match the `id` in
-> your `CyApp` object and the webpack `ModuleFederationPlugin` `name`.
+> your `CyApp` object and the federation `name` in `vite.config.ts`.
 > The `name` field is the display label shown in App Settings.
 
 > **Note:** The template itself is not pre-registered in `apps.local.json`.
@@ -99,8 +103,14 @@ project-template/
 │   └── components/
 │       ├── TemplatePanel.tsx     ← right-panel component (WorkspaceApi example)
 │       └── TemplateMenuItem.tsx  ← apps-menu component (NetworkApi example)
-├── webpack.config.js             ← Module Federation config (name, port, remotes)
-├── tsconfig.json
+├── vite.config.ts                ← Module Federation config (name, port, shares)
+├── index.html                    ← remote-only stub (Vite needs an HTML entry)
+├── src/cywebHostSentinel.ts      ← entry a production build ships when no host is known
+├── src/mfRuntimePlugin.ts        ← resolves the host URL at runtime
+├── test/mfRuntimePlugin.test.ts  ← covers both remote arrays + every rejection
+├── tsconfig.json                 ← app sources (skipLibCheck: false)
+├── tsconfig.node.json            ← vite.config.ts
+├── tsconfig.test.json            ← test/
 └── package.json
 ```
 
@@ -114,7 +124,8 @@ project-template/
 | `contextMenus.ts` | `getConnectedNodes()` + `additiveSelect()` — Graph Traversal + Selection APIs |
 | `TemplatePanel.tsx` | `useWorkspaceApi()` + `ApiResult<T>` pattern, MUI shared singletons |
 | `TemplateMenuItem.tsx` | `useNetworkApi().createNetworkFromEdgeList()`, `closeOnAction: true` |
-| `webpack.config.js` | `env.production` flag switches between local and production host URL |
+| `vite.config.ts` | The federation block: exact share keys, `import: false`, the `noSharedPayload` gate |
+| `src/mfRuntimePlugin.ts` | Runtime host resolution — one build works against any deployment |
 
 ---
 
@@ -132,11 +143,19 @@ from `mount()`. Items are auto-cleaned when the app is disabled.
 ## Building for production
 
 ```bash
-npx webpack --env production
+npm run build
 ```
 
-This switches the host remote from `localhost:5500` to `web.cytoscape.org` and
-enables minification.
+There is no production/development flag any more. The build ships a **sentinel**
+instead of a host URL, and the running host supplies its own address at load
+time via `window.__CYWEB_HOST__` — so the same artifact works against
+production, a staging host, or a colleague's `localhost:5500`.
+
+Verify the output before publishing:
+
+```bash
+npm run verify:federation   # from the repo root
+```
 
 ---
 

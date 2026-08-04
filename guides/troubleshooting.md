@@ -19,17 +19,18 @@ npm install --save-dev @cytoscape-web/api-types
 
 ```jsonc
 {
-  "files": ["./node_modules/@cytoscape-web/api-types/index.d.ts"],
   "include": ["src/**/*"],
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types"]
+    "moduleResolution": "bundler",
+    "types": ["@cytoscape-web/api-types"]
   }
 }
 ```
 
-The package ships its declarations as a single root `index.d.ts` that
-declares the `cyweb/*` ambient modules. It must be loaded via `files`
-(or a triple-slash directive) — `typeRoots` will not pick it up. See
+Listing the package in `types` is what pulls in its ambient `cyweb/*`
+declarations. Do **not** set `typeRoots`: the examples used to point it at
+`./node_modules/@types`, a directory that does not exist in a workspace, and
+setting it suppresses the default lookup that would have found the types. See
 any of the example apps' `tsconfig.json` for a working reference.
 
 ### "Shared module is not available for eager consumption"
@@ -48,24 +49,73 @@ export default MyApp
 ```
 
 Or use the pattern from `project-template` where `src/index.ts` does
-`export default MyApp` and webpack handles the async boundary.
+`export default MyApp` and the bundler handles the async boundary.
 
 ### Host dev server shows "Container missing" or blank panel
 
-**Cause:** The `name` in your webpack `ModuleFederationPlugin` does not
-match the `id` in `apps.local.json`.
+**Cause:** The `name` in your `federation()` block does not match the `id` in
+`apps.local.json`.
 
 **Fix:** Ensure all three match:
 
 ```
-webpack.config.js:  name: 'myApp'
+vite.config.ts:     federation({ name: 'myApp' })
 apps.local.json:    { "id": "myApp", "name": "My App", "url": "..." }
 MyApp.ts:           id: 'myApp'
 ```
 
 > The `id` field in `apps.local.json` is the unique identifier (it
-> matches the webpack federation `name`). The `name` field is the
+> matches the federation `name`). The `name` field is the
 > display label shown in App Settings — it does not need to match.
+
+### The app "loads" but nothing happens, and there is no error
+
+**Cause:** the `cyweb` remote is missing `type: 'module'`.
+
+The host is a Vite build and emits an **ESM** `remoteEntry.js`. The plugin's
+default remote type is `'var'` — a Webpack-style global — and against an ESM
+entry that resolves **no exports at all**. The runtime finds no `init`/`get`,
+the remote never registers, and nothing throws. This is the least legible
+failure in the whole setup, which is why the build verifier checks for it.
+
+**Fix:** use the object form, not the string shorthand:
+
+```typescript
+remotes: {
+  cyweb: {
+    type: 'module',          // ← without this it silently does nothing
+    name: 'cyweb',
+    entryGlobalName: 'cyweb',
+    shareScope: 'default',
+    entry: /* … */,
+  },
+}
+```
+
+`npm run verify:federation` asserts this against the built output.
+
+### "This app must be loaded by Cytoscape Web: window.__CYWEB_HOST__ is missing or invalid"
+
+**Cause:** your production build is running against a host that does not
+publish the host descriptor, or is not running inside a Cytoscape Web host at
+all.
+
+A production build deliberately compiles in a sentinel instead of a host URL,
+so `src/mfRuntimePlugin.ts` throws this named error rather than silently
+attempting to reach `localhost:5500` — which, on a deployed app, would mean the
+**end user's own machine**.
+
+**Check, in order:**
+
+1. Is the app being opened inside a running Cytoscape Web page? A production
+   `remoteEntry.js` cannot be loaded standalone.
+2. Does that host publish the descriptor? In the browser console:
+   `window.__CYWEB_HOST__` should be a frozen object with `name: 'cyweb'` and
+   an absolute `remoteEntry` URL. A host predating this feature has no such
+   global and cannot load Vite-built apps.
+3. Is `runtimePlugins: [mfRuntimePlugin]` still in your `federation()` block?
+   Copying `src/mfRuntimePlugin.ts` without registering it leaves it inert, and
+   the symptom is identical.
 
 ---
 
@@ -165,7 +215,17 @@ const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
 
 ### How to switch between local and production host
 
-Your webpack config can read an environment variable:
+**You do not.** This used to require a build flag and two hardcoded URLs; it
+no longer does.
+
+`vite dev` compiles in `http://localhost:5500/remoteEntry.js` as a developer
+convenience, and `vite build` compiles in a sentinel that the host's published
+descriptor replaces at runtime. The same production artifact therefore works
+against production, a staging host, or a colleague's machine — switching hosts
+means loading the app from a different host, not rebuilding it.
+
+<details>
+<summary>The old, removed approach</summary>
 
 ```javascript
 const LOCAL_CYWEB = 'cyweb@http://localhost:5500/remoteEntry.js'
@@ -175,6 +235,11 @@ remotes: {
   cyweb: isProduction ? PROD_CYWEB : LOCAL_CYWEB,
 },
 ```
+
+It bound each artifact to one host deployment: the published build could only
+ever be loaded by `web.cytoscape.org`.
+
+</details>
 
 ### How to debug API results
 
@@ -191,12 +256,17 @@ if (!result.success) {
 
 ### Hot reload not working for plugin changes
 
-Module Federation remotes are loaded once at startup. After changing
-your plugin code:
+**Expected.** HMR does not cross the federation boundary — that is a separate
+plugin feature (`dev.remoteHmr`) which is off by default. Module Federation
+remotes are loaded once, when the host page starts.
 
-1. The plugin dev server rebuilds automatically (HMR)
-2. **Refresh the host page** in the browser — the host re-fetches
-   `remoteEntry.js` on page load
+After changing your plugin code:
+
+1. Your dev server rebuilds the changed module immediately
+2. **Refresh the host page** — the host re-fetches `remoteEntry.js` on load
+
+You never rebuild or restart the *host* for an app change, which is the part
+that matters; only the page reload.
 
 ---
 
@@ -211,8 +281,12 @@ normally:
 import { Button, Typography } from '@mui/material'
 ```
 
-Do NOT add `@mui/material` to your `dependencies` — it should only be
-in `devDependencies` and `shared` in webpack config.
+Import from the **root barrel** as shown — never `@mui/material/Button`. A
+subpath import misses the share key and bundles MUI into your app.
+
+`@mui/material` belongs in `devDependencies` and `peerDependencies`, never
+`dependencies`, and it must appear in the `shared` block of your
+`vite.config.ts` with `import: false`.
 
 ### Can I use other UI libraries (e.g. Chakra UI)?
 

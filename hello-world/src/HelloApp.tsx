@@ -5,8 +5,9 @@ import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 // This keeps the app version in sync with the npm package automatically —
 // no need to update it in two places. Requires `resolveJsonModule: true`
 // in tsconfig.json (already enabled in this project).
-// Note: use default import + destructure (not named import) to avoid a
-// webpack warning about named exports from default-exporting JSON modules.
+// Note: default import + destructure, not a named import. Named imports from
+// JSON are not portable across bundlers — Vite's `resolveJsonModule` handling
+// treats the module as a default export.
 import packageJson from '../package.json'
 
 import { getLifecycleSnapshot, setLifecycleState } from './lifecycleState'
@@ -28,7 +29,7 @@ let _networkHandler: ((e: Event) => void) | null = null
 
 export const HelloApp: CyAppWithLifecycle = {
   // Unique identifier for this app within the Cytoscape Web ecosystem.
-  // Must match the `name` field in webpack.config.js ModuleFederationPlugin
+  // Must match the federation `name` in vite.config.ts
   // so the host can locate this app's remoteEntry.js at runtime.
   id: 'hello',
 

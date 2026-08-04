@@ -23,6 +23,9 @@ export const DOCS_ROOT = resolve(REPO_ROOT, 'docs')
 const MANIFEST_PATH = resolve(REPO_ROOT, 'apps.manifest.json')
 const ROOT_PACKAGE_PATH = resolve(REPO_ROOT, 'package.json')
 
+// 'webpack' is retained although no app uses it: `bundler` is what Phase 8's
+// release check asserts on ("every published app is 'vite'"), and an enum that
+// cannot express the wrong answer cannot catch it.
 const BUNDLERS = ['webpack', 'vite']
 
 // docs/ is not only a publish target: these are tracked static assets that live
@@ -347,13 +350,16 @@ export const viteApps = () =>
 /**
  * True when at least one PUBLISHED app is built with Vite.
  *
- * This is what makes the deploy-time host preflight self-activating. A Webpack
- * app compiles the host URL in and does not read window.__CYWEB_HOST__ at all,
- * so a descriptor-less host cannot break it — running the preflight then would
- * block deploys over a hazard that does not exist. A Vite app ships a sentinel
- * instead of a fallback and simply cannot load without the descriptor, so from
- * the first such app onward the preflight is mandatory. Phase 4 turns it on by
- * flipping one `bundler` field; nobody has to remember to.
+ * This is what made the deploy-time host preflight self-activating during the
+ * migration: a Webpack app compiled the host URL in and never read
+ * window.__CYWEB_HOST__, so a descriptor-less host could not break it, and
+ * gating on it would have blocked deploys over a hazard that did not exist.
+ *
+ * Every app is on Vite now, so in practice this is true whenever anything is
+ * published. It is kept as a predicate rather than hardcoded because that is
+ * the actual condition — a Vite app ships a sentinel instead of a fallback and
+ * cannot load without the descriptor — and because `bundler` is what Phase 8
+ * asserts on.
  */
 export const needsHostPreflight = () =>
   loadManifest().apps.some((a) => a.published && a.bundler === 'vite')

@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Reference implementation and template repository for Cytoscape Web plugin apps built with Webpack Module Federation. Plugins extend the host app (`cytoscape-web`) with custom menu items and panel components.
+Reference implementation and template repository for Cytoscape Web plugin apps built with Module Federation (Vite). Plugins extend the host app (`cytoscape-web`) with custom menu items and panel components.
 
 ## Tech Stack
 
 - **Language:** TypeScript 5.6, React 18.3 (JSX transform — no `import React` needed)
-- **Build:** Webpack 5 + Module Federation
+- **Build:** Vite 8 + @module-federation/vite (matching the host)
 - **UI:** @mui/material (singleton, provided by host)
 - **Types:** @cytoscape-web/types (model types), @cytoscape-web/api-types (App API)
 - **Workspace:** npm workspaces (5 sub-packages)
@@ -46,5 +46,5 @@ cytoscape-web-app-examples/
 │   └── components/        # Menu and Panel React components
 ├── package.json
 ├── tsconfig.json
-└── webpack.config.js      # Module Federation config
+└── vite.config.ts         # Module Federation config
 ```

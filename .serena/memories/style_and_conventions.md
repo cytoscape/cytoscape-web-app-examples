@@ -32,7 +32,7 @@ Config: `.eslintrc.json` at repo root
 - `singleton: true` is **required** for `react`, `react-dom`, `@mui/material`
 - Each app has a unique federation `name` (camelCase) and a unique dev port
 - `remotes.d.ts` must declare every `cyweb/*` module used in source
-- `publicPath: 'auto'` in webpack output
+- `base` left unset in vite.config.ts, so the MF plugin resolves `publicPath: 'auto'`
 
 ## API Patterns
 

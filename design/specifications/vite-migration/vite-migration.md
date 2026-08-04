@@ -1,8 +1,9 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Phases 1–6 complete; Phases 7–8 not yet implemented.** All five
-> apps build with Vite; nothing in the repository builds with Webpack any more,
-> though the toolchain is still installed until Phase 7. The pilot
+> **Status: Phases 1–7 complete; Phase 8 outstanding.** All five apps build with
+> Vite and the Webpack toolchain is gone from the tree. Phase 8 (the production
+> smoke) is blocked behind the Phase 2 waiver — the deploy preflight is armed
+> and correctly refuses to publish against a host with no descriptor. The pilot
 > (`project-template`) is migrated, loads in a running host from a production
 > artifact carrying only the sentinel, and installs standalone. Phase 2 was
 > closed with its production-deploy gate **waived** (unavailable in the team's
@@ -26,6 +27,18 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 22 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 7 done; the
+  Webpack toolchain is gone.** Two things worth recording. First, the "no
+  webpack references" exit criterion cannot be applied literally: 44 of the 53
+  remaining mentions explain *why* a decision exists (`type: 'module'` vs the
+  default Webpack-style global, `skipLibCheck` vs the MF SDK's
+  `import webpack`, what `__webpack_public_path__` used to do), and deleting
+  them would delete the reasoning. The criterion is "nothing that instructs or
+  mis-describes" — applied that way, the grep caught two stale instructions in
+  `HelloApp.tsx` and `TemplateApp.tsx`. Second, regenerating `docs/` took it
+  from 5.8 MB to 1.1 MB, `network-workflows` alone from 4.6 MB to 148 KB,
+  which is §5.7's `import: false` decision showing up in the published
+  artifact rather than a measurement.
 - Rev. 21 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 6 done; the
   repository no longer builds anything with Webpack.** The non-React shape
   worked as §7.3 described: `network-statistics` declares `configuredShared: {}`
@@ -2697,7 +2710,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | 4 ✅  | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | **Done 8/4/2026** except the Pages step. Loads in a running host from a production build carrying only the sentinel (§11 step 9 — the end-to-end proof of §6); panel renders with the host's MUI theme; installs and builds standalone outside the monorepo; §5.7 settled at 8.7×; §8 A and B settled from real output. **Step 14 on the production host is deferred with the Phase 2 waiver** — production has no descriptor, so the deploy preflight would (correctly) refuse |
 | 5 ✅  | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | **Done 8/4/2026.** Shared React + Emotion verified across the boundary: the remote's MUI `MenuItem` renders in the host's own tree and its hooks run, the panel computes `sx` against the host theme, no invalid-hook-call. §7.6's replacement verified at runtime — the header's chunk URL was fetched and returned 200 |
 | 6 ✅  | `network-statistics` (non-React shape, §7.3), `network-workflows` (fix the hardcoded `mode`), `claude-bridge`; CI list now covers all five | **Done 8/4/2026.** All five are `bundler: 'vite'`, so the verifier and `check:imports` print no `skipped` lines at all. `network-statistics` verified in a running host from a sentinel-only production build, emitting its console `smokeObservable`. `network-workflows`' hardcoded `mode: 'development'` is gone with its config — its production build is now genuinely minified |
-| 7     | **Remove the Webpack toolchain.** Delete `webpack*`, `ts-loader`, `clean-webpack-plugin` and the old scripts; reconcile the root `peerDependencies` (§7.1); documentation (§10) | No Webpack references in **live sources, configs, scripts or user-facing docs**. This spec and the other design/history documents keep theirs — they explain why the migration happened |
+| 7 ✅  | **Remove the Webpack toolchain.** Delete `webpack*`, `ts-loader`, `clean-webpack-plugin` and the old scripts; reconcile the root `peerDependencies` (§7.1); documentation (§10) | **Done 8/4/2026.** `npm install` clean with no `webpack*` in the tree; all five apps build, typecheck, test and verify. No mention that *instructs* editing a webpack config or describes the repo as building with Webpack survives — explanatory mentions do, and deliberately (see below). `docs/` regenerated: 5.8 MB → 1.1 MB |
 | 8     | Production smoke test (§11 step 14); shared-package checks (§11 step 13)                                            | **First** assert every `published: true` app has `bundler === 'vite'` — after Phase 7 the two sets coincide, and a mismatch means an app was published unmigrated. **Then** every published app loads in the production host and produces its manifest `smokeObservable`; host singletons used |
 
 Notes on the ordering:

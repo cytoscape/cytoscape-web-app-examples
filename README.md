@@ -13,7 +13,7 @@ This repository is for third-party developers who want to build apps for
 [Cytoscape Web](https://web.cytoscape.org).
 
 You do not need to change the host source code. Your app is loaded by the host
-through Webpack Module Federation. Apps can add:
+through Module Federation (Vite). Apps can add:
 
 - panel components in the right-side **App Panel**
 - menu items in the **Apps** dropdown
@@ -26,9 +26,13 @@ through Webpack Module Federation. Apps can add:
 ### Set up the local workspace
 
 Both the **host application** and this **examples repository** are needed side by side.
-The host runs the Cytoscape Web UI at `localhost:5500` and hot-reloads your plugin
-changes via Module Federation — edit a component, save, and see the result instantly
-in the browser without rebuilding the host.
+The host runs the Cytoscape Web UI at `localhost:5500` and loads your app from
+your own dev server, so you never rebuild the host to work on your app.
+
+> **Editing your app does not hot-reload inside the host.** Vite's HMR does not
+> cross the federation boundary — that is a separate feature (`dev.remoteHmr`),
+> off by default. Your dev server rebuilds the changed module immediately, but
+> you reload the host page to pick it up.
 
 ```bash
 mkdir cytoscape-web-dev && cd cytoscape-web-dev
@@ -78,7 +82,7 @@ cp -r project-template my-app && cd my-app
 ```
 
 1. **`package.json`** — change `name` and `version`
-2. **`webpack.config.js`** — change `name` and `DEV_SERVER_PORT`
+2. **`vite.config.ts`** — change `name` in `federation()` and `DEV_SERVER_PORT`
 3. **`src/TemplateApp.tsx`** — change `id` (must match MF name), `name`, `resources`
 4. **Host registry** — add an entry for your app in `cytoscape-web/src/assets/apps.local.json`:
    ```json
@@ -89,7 +93,7 @@ cp -r project-template my-app && cd my-app
      "version": "0.1.0"
    }
    ```
-   > `id` is the unique identifier (must match webpack `name` and your
+   > `id` is the unique identifier (must match the federation `name` and your
    > `CyApp.id`); `name` is the human-readable label shown in App Settings.
    >
    > To test the template before copying, add:
@@ -261,18 +265,19 @@ TypeScript resolves the `cyweb/*` ambient modules:
 
 ```json
 {
-  "files": ["./node_modules/@cytoscape-web/api-types/index.d.ts"],
   "include": ["src/**/*"],
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types"]
+    "moduleResolution": "bundler",
+    "types": ["@cytoscape-web/api-types"]
   }
 }
 ```
 
-> The package ships its declarations as a single root `index.d.ts`, so it
-> must be loaded via `files` (or a triple-slash directive) rather than
-> `typeRoots`. See any of the example apps' `tsconfig.json` for a working
-> reference.
+> Listing the package in `types` is what pulls in its ambient `cyweb/*`
+> declarations. Do **not** set `typeRoots`: the example apps used to point it
+> at `./node_modules/@types`, a directory that does not exist in a workspace,
+> and setting it suppresses the default lookup that actually finds the types.
+> See any of the example apps' `tsconfig.json` for a working reference.
 
 ---
 

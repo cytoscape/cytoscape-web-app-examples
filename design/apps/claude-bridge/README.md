@@ -718,7 +718,7 @@ if it cannot connect to the CDP endpoint.
 claude-bridge/
 ├── package.json                  MF Plugin package
 │                                 peerDeps: react, react-dom, @mui/material
-├── webpack.config.js             Module Federation (port 6100, name: claudeBridge)
+├── vite.config.ts                Module Federation (port 6100, name: claudeBridge)
 ├── tsconfig.json
 ├── mcp-server/
 │   ├── package.json              deps: @modelcontextprotocol/sdk, playwright

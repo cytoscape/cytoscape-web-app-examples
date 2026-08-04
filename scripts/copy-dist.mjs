@@ -85,14 +85,14 @@ const listFilesRecursive = (dir, prefix = '') => {
 
 /**
  * Decides, per file, whether it is published — and refuses anything the table
- * does not name. Webpack apps are exempt: their output is `main.js`, `152.js`,
- * `src_components_*.js` and friends, none of which are classes above. The
- * policy for them is unchanged from today, and Phase 7 deletes this branch
- * along with the toolchain.
+ * does not name.
+ *
+ * There used to be an exemption here for Webpack apps, whose output (`main.js`,
+ * `152.js`, `src_components_*.js`) matched none of the classes above. Every app
+ * builds with Vite now, so the allowlist applies to all of them and an
+ * unclassified file is always a failure.
  */
 const selectFiles = (app, files) => {
-  if (app.bundler === 'webpack') return { keep: files, skipped: [] }
-
   const keep = []
   const skipped = []
   const unmatched = []

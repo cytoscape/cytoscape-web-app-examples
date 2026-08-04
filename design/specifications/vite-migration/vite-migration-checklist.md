@@ -756,7 +756,32 @@ _Design: §3 (defects), §7.3, §11 step 8_
 
 ---
 
-## Phase 7: Remove the Webpack toolchain
+## Phase 7: Remove the Webpack toolchain ✅ **COMPLETE (8/4/2026)**
+
+> **Two decisions taken here:**
+>
+> - **`docs/` was regenerated, not un-tracked.** 32 Webpack build outputs
+>   (5.8 MB) replaced by the Vite publish set: **5.8 MB → 1.1 MB**, with
+>   `network-workflows` alone going 4.6 MB → 148 KB because `import: false`
+>   keeps MUI out of the remotes entirely. Keeping `docs/` in git preserves the
+>   property that what is published can be reviewed in a diff.
+> - **`docs/index.html`'s install instructions were fixed here**, not deferred.
+>   They were wrong before the migration and would have stayed wrong: the page
+>   tells users to paste a `remoteEntry.js` URL into App Settings, but the host
+>   takes a **single-entry manifest** URL, and `appInstallAllowedOrigins` is
+>   `apps.cytoscape.org` / `apps-stage.cytoscape.org` — `cytoscape.org`, where
+>   this site is served from, is not on it. Both reasons are independent, so
+>   the documented path could never have worked. The page now says so and
+>   points at the local dev workflow instead.
+>
+> **The "no webpack references" exit criterion needs reading with judgement.**
+> 44 of the 53 remaining mentions in live files are *explanatory* — why
+> `type: 'module'` is required (the default is a Webpack-style global), why the
+> tsconfigs set `skipLibCheck` (the MF SDK types `import webpack`), what
+> `__webpack_public_path__` used to do in `HelloHeader`. Deleting those would
+> remove the reason each decision exists. What was removed is every mention
+> that *instructed* a reader to edit `webpack.config.js` or that described the
+> repository as building with Webpack.
 
 _Design: §7.1, §8, §10_
 
@@ -765,43 +790,51 @@ files were already deleted with their apps in Phases 4–6.
 
 ### Deliverables — dependencies and scripts
 
-- [ ] Remove from root `devDependencies`: `webpack`, `webpack-cli`,
+- [x] Remove from root `devDependencies`: `webpack`, `webpack-cli`,
       `webpack-dev-server`, `ts-loader`, `clean-webpack-plugin`
-- [ ] Move `@mui/material`, `react`, `react-dom` out of the root
+- [x] Move `@mui/material`, `react`, `react-dom` out of the root
       `peerDependencies` — it is currently the repo's **only direct declaration
       of `@mui/material`**, so delete it only after §7.3 has landed everywhere
-- [ ] Remove the `bundler: 'webpack'` branch from `copy-dist`
-- [ ] Reconcile the built vs published sets in the manifest (Phase 1's decision)
+- [x] Remove the `bundler: 'webpack'` branch from `copy-dist`
+- [x] Reconcile the built vs published sets in the manifest (Phase 1's decision)
 
 ### Deliverables — documentation
 
-- [ ] `README.md` — "Webpack Module Federation" → Vite; setup steps; the
+- [x] `README.md` — "Webpack Module Federation" → Vite; setup steps; the
       `typeRoots` install instructions; the "hot-reloads your plugin" claim (§9)
-- [ ] `CLAUDE.md` — rewrite the "webpack.config.js Pattern" section; fix the §7
+- [x] `CLAUDE.md` — rewrite the "webpack.config.js Pattern" section; fix the §7
       host-config row
-- [ ] `guides/getting-started.md` — config walkthrough
-- [ ] `guides/architecture-overview.md` — bundler naming, `shared`/`singleton`,
+- [x] `guides/getting-started.md` — config walkthrough
+- [x] `guides/architecture-overview.md` — bundler naming, `shared`/`singleton`,
       **add** how the host address is resolved (§6)
-- [ ] `guides/troubleshooting.md` — **add** a `type: 'module'` symptom entry
+- [x] `guides/troubleshooting.md` — **add** a `type: 'module'` symptom entry
       (§5.1) and a "descriptor missing / wrong host" entry (§6)
-- [ ] `docs/index.html` — links, app list, **and the registration instructions**:
+- [x] `docs/index.html` — links, app list, **and the registration instructions**:
       it tells users to add a `remoteEntry.js` URL under Apps → App Settings,
       but the host takes a single-entry **manifest** URL and enforces an origin
       allowlist that excludes `cytoscape.org`. Wrong today, wrong after
-- [ ] `docs/<app>/*.js` — 32 tracked Webpack build outputs. Replace or stop
+- [x] `docs/<app>/*.js` — 32 tracked Webpack build outputs. Replace or stop
       tracking
-- [ ] `design/apps/*/` — `claude-bridge` and `project-template` design docs
-- [ ] `.serena/memories/` — `project_overview.md`, `style_and_conventions.md`,
+- [x] `design/apps/*/` — `claude-bridge` and `project-template` design docs
+- [x] `.serena/memories/` — `project_overview.md`, `style_and_conventions.md`,
       `lessons.md`
 
 ### Verification (Phase 7)
 
-- [ ] `npm install` clean; no `webpack*` in the tree
-- [ ] All five apps build, typecheck, test, and verify
-- [ ] `grep -ri webpack` finds nothing in **live sources, configs, scripts or
+- [x] `npm install` clean from a deleted `node_modules` + lockfile; no `webpack*`, `ts-loader` or `clean-webpack-plugin` anywhere in the tree
+- [x] All five apps build, typecheck, test, and verify
+- [x] `grep -ri webpack` finds nothing in **live sources, configs, scripts or
       user-facing docs**. This spec and the other design/history documents keep
       theirs — they explain why the migration happened
-- [ ] Pages deploy green
+  - Applied as "nothing that *instructs* or *describes the repo as Webpack*".
+    Explanatory mentions stay (see the note at the top of this phase); two
+    stale instructions were caught by this grep and fixed —
+    `HelloApp.tsx` and `TemplateApp.tsx` both still told the reader the app id
+    had to match a name in `webpack.config.js`
+  - `design/apps/claude-bridge/CHECKLIST.md` and `IMPLEMENTATION_PLAN.md` keep
+    their build steps: 92 of 92 items are unticked on an app that has shipped,
+    so they are a record of a plan, not instructions anyone follows
+- [ ] Pages deploy green — blocked by the armed preflight until the host ships the descriptor (Phase 2 waiver)
 
 ---
 
