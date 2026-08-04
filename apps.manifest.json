@@ -1,0 +1,178 @@
+{
+  "$comment": [
+    "Single machine-readable inventory of the apps in this repository. Read by",
+    "scripts/manifest.mjs, which every other consumer imports: copy-dist,",
+    "verify-federation-build, check-imports and the CI workflows. Before this",
+    "existed the same facts were spread across `workspaces`, deploy-pages.yml,",
+    "copy-dist, apps.local.json and each app's bundler config -- and two of them",
+    "already disagreed about which apps get published.",
+    "",
+    "`bundler` gates every check that presumes the migrated shape. An app's flip",
+    "to 'vite', its peerDependencies and its vite.config.ts all land in ONE",
+    "commit; nothing else needs editing to bring it into scope.",
+    "",
+    "`configuredShared` records the POST-migration share block (what the app's",
+    "vite.config.ts will declare), not what its webpack.config.js declares today.",
+    "It is inert while bundler is 'webpack'. network-statistics is {} on purpose:",
+    "it uses neither React nor MUI, and its current webpack config sharing them is",
+    "one of the defects this migration fixes.",
+    "",
+    "See design/specifications/vite-migration/vite-migration.md section 8."
+  ],
+  "apps": [
+    {
+      "workspaceDir": "hello-world",
+      "publishPath": "hello-world",
+      "federationName": "hello",
+      "port": 2222,
+      "bundler": "webpack",
+      "published": true,
+      "exposes": ["./AppConfig", "./NetworkSummaryMenuItem"],
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "network-statistics",
+      "publishPath": "network-statistics",
+      "federationName": "networkStatistics",
+      "port": 3333,
+      "bundler": "webpack",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "configuredShared": {}
+    },
+    {
+      "workspaceDir": "network-workflows",
+      "publishPath": "network-workflows",
+      "federationName": "networkWorkflows",
+      "port": 7000,
+      "bundler": "webpack",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "project-template",
+      "publishPath": "project-template",
+      "federationName": "template",
+      "port": 5555,
+      "bundler": "webpack",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "claude-bridge",
+      "publishPath": "claude-bridge",
+      "federationName": "claudeBridge",
+      "port": 6100,
+      "bundler": "webpack",
+      "published": false,
+      "exposes": ["./AppConfig"],
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    }
+  ]
+}

@@ -4,7 +4,8 @@ This guide walks you through creating a Cytoscape Web app from scratch.
 By the end, you will have a running plugin with a panel, a menu item, and
 a context menu action — all loaded into the host via Module Federation.
 
-> **Prerequisites:** Node.js 18+, npm 9+, familiarity with React and TypeScript.
+> **Prerequisites:** Node.js 24+ (see `.nvmrc`), npm 10+, familiarity with
+> React and TypeScript.
 
 ---
 

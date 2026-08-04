@@ -1,9 +1,10 @@
 # App Examples — Webpack → Vite Migration Plan
 
-> **Status: Phases 1–2 complete; Phases 3–8 not yet implemented.** Phase 2 was
+> **Status: Phases 1–3 complete; Phases 4–8 not yet implemented.** Phase 2 was
 > closed with its production-deploy gate **waived** (unavailable in the team's
 > current workflow), which makes Phase 3's Pages preflight the only remaining
-> release gate — see §8.
+> release gate — see §8. That preflight is now built and **self-activating**:
+> it arms itself when the first `published` app flips to Vite, which is Phase 4.
 >
 > **Scope:** the five workspace apps in this repository. `patterns/` was
 > **deleted in Phase 1** (§7.5). The host repo (`cytoscape-web`)
@@ -21,6 +22,17 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 17 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 3
+  implemented**, and a probe build of the §5.5 canonical config settled four
+  things this plan had been assuming. §11.0's verifier is now written against
+  the **real** `mf-manifest.json` (recorded below) rather than an inferred one;
+  `react/jsx-runtime` is confirmed derived **only when JSX is present**, which
+  is what `DERIVED_SHARED_ALLOWLIST` exists for; §5.8's root-barrel decision is
+  confirmed to bundle no MUI under the canonical config; and **§8 Decision A
+  reproduced in this repo**, which in turn showed that a post-hoc text scan
+  cannot stand in for the `generateBundle` payload gate — it is false in both
+  directions. Two Phase 3 checks were also narrowed to the case where they
+  mean anything (see §8).
 - Rev. 16 (8/1/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 2 declared
   complete with its production-deploy gate waived**, that deployment not being
   available in the team's current workflow. Recorded the consequence rather
@@ -1724,6 +1736,78 @@ Details that are easy to get wrong and expensive to discover:
   the Vite-only jobs by flipping one field in the commit that migrates it,
   rather than by someone remembering to edit a workflow.
 
+#### Measured: what `mf-manifest.json` actually contains
+
+Built with the §5.5 canonical config on `@module-federation/vite` 1.16.8. §11.0's
+verifier asserts against this, so it is recorded rather than inferred:
+
+```jsonc
+{
+  "id": "probe", "name": "probe",                 // container name
+  "metaData": {
+    "remoteEntry": { "name": "remoteEntry.js", "path": "", "type": "module" },
+    "globalName": "probe", "publicPath": "auto", "pluginVersion": "0.2.5"
+  },
+  "exposes": [{ "name": "AppConfig", "path": "./AppConfig" }],
+  "shared":  [{ "name": "react", "version": "18.3.1", "singleton": true,
+                "requiredVersion": "^18.3.1",
+                "assets": { "js": {"async":[],"sync":[]}, "css": {…} } }],
+  "remotes": [{ "federationContainerName": "cyweb:__CYWEB_HOST_REQUIRED__",
+                "moduleName": "", "alias": "cyweb", "entry": "*" }],
+  // from manifest.additionalData — top level, not under metaData
+  "configuredShared": {…}, "configuredRemote": {…}, "configuredRuntimePlugins": […]
+}
+```
+
+Four things follow, three of which contradict a reasonable guess:
+
+- **`remotes[]` carries no `type`, and `federationContainerName` holds the
+  *entry string*, not a container name.** So the native manifest cannot answer
+  "is the `cyweb` remote `type: 'module'`?" — which is the single most important
+  question §11.0 asks. `configuredRemote` is not belt-and-braces; it is the only
+  source. Match on `remotes[].alias` if you need the native record.
+- **`exposes[].path` is the `./Name` key**; `exposes[].name` drops the `./`.
+- **`shared[].assets` is empty on a correct `import: false` build.** That is a
+  real, cheap assertion that the fallbacks were not emitted (§5.7).
+- **Effective shared gains `react/jsx-runtime` the moment JSX enters the module
+  graph, and not before.** Measured both ways on the same probe: no JSX → five
+  keys, exactly the configured set; one `.tsx` → six. This is precisely why the
+  effective list cannot be compared for equality against the configured one, and
+  why `DERIVED_SHARED_ALLOWLIST` is a named constant rather than a shrug.
+
+#### Measured: the payload gate cannot be moved out of `generateBundle`
+
+Rev. 6 moved payload verification into `generateBundle` (§5.5's
+`noSharedPayload`). Phase 3 tried to *also* assert it post-hoc, from the built
+files, and that is **not implementable** — it is wrong in both directions:
+
+- **False positives.** The probe's `remoteEntry.js` contains six literal
+  `/home/<user>/…/node_modules/@emotion/react/dist/emotion-react.cjs.js`
+  strings — the SSR loader's resolved specifiers, embedded as dead string
+  literals. §8 Decision A, reproduced here independently. A scan for
+  `/node_modules/@mui/` flags a **correct** build.
+- **False negatives.** Module paths do not survive minification, so a genuinely
+  bundled MUI — the §5.8 subpath-import defect this is meant to catch — leaves
+  no such string at all.
+
+`generateBundle` inspects `chunk.modules` keys before minification, which is the
+only place the question is answerable. The verifier asserts `shared[].assets`
+emptiness instead, and says in its own comments that this is *not* the §5.8
+gate.
+
+#### Measured: §5.8 holds under the canonical config
+
+The probe imports `import { Box, Typography } from '@mui/material'` with the
+exact `'@mui/material'` share key and `import: false`. **No `assets/*.js` chunk
+references `@mui` or `@emotion` at all.** The 60 kB chunk in the output is the
+Module Federation runtime itself, not MUI. `check:imports` run against the
+current sources finds **92** banned imports (§5.8 estimated ~90) — 79 in
+`hello-world`, 3 each in `network-workflows` and `project-template`, 7 in
+`claude-bridge`, 0 in `network-statistics`.
+
+The canonical config also **builds as written**, which removes the largest
+unknown from Phase 4.
+
 **A manifest nobody reads is a fourth place to drift.** Phase 3 must also land
 the tooling, or the schema above is decoration:
 
@@ -1990,6 +2074,24 @@ belt is gone and only the braces remain, so option (3) has to actually hold:
 - **It must be seen failing before it is trusted.** Point it at a host known not
   to publish the descriptor and confirm a non-zero exit. A gate that has never
   gone red is not known to work — and this one now has nothing behind it.
+
+**Built in Phase 3, and deliberately self-activating.** `deploy-pages.yml` asks
+`node scripts/manifest.mjs --needs-preflight` first, which exits 0 only when a
+`published` app is also on `bundler: 'vite'`. The reason is not caution about CI
+minutes: a Webpack app compiles the host URL in and never reads
+`window.__CYWEB_HOST__`, so a descriptor-less host cannot break it — and
+production **is** descriptor-less today, serving `runtime.<hash>.js` /
+`vendors.<hash>.js`, a pre-Vite Webpack build of the host. An unconditional
+fatal preflight would therefore have blocked every Pages deploy immediately,
+over a hazard none of the currently-published apps is exposed to. Phase 4 arms
+it by flipping one manifest field — the same commit that first creates the
+hazard.
+
+The "seen it go red" requirement is implemented as
+`npm run preflight:host -- --selftest`: it runs the contract against a host that
+will never publish a descriptor and **fails if the contract passes**. The deploy
+workflow runs it alongside the real check, so the gate re-proves it can reject
+on every deploy that needs it.
 
 Option (2) — a GitHub Environment with required reviewers on the `deploy` job —
 becomes worth reconsidering here, since it is the only remaining option that
@@ -2497,7 +2599,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | ----- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | 1 ✅  | **Decide, then act on the decisions.** Settle the canonical URL and the built/published sets (§8); then delete `patterns/` (§7.5) and bump `@cytoscape-web/api-types` **with a lockfile update** (§7.1) | **Done 8/1/2026.** Built = 5 workspaces, published = 4 (`claude-bridge` excluded), URL confirmed, `patterns/` deleted, api-types at `1.0.0-beta.3`; `npm ci` clean and all five Webpack builds pass |
 | 2 ✅  | **Host repo.** Typed, frozen `window.__CYWEB_HOST__` (§6.3) + regression test; extract the URL construction as a pure helper (§11.2); declare `@module-federation/runtime` directly; add `verify:federation` to the host CI's **existing build job, right after `npm run build`** (a separate job has no `dist/`); extend the E2E fixture to consume `cyweb/*` from a remote (§11.2); **deploy to production** | **Declared complete 8/1/2026.** §11 step 11a passes; the §8 contract passes on localhost (10/10, by hand). The production-deploy criterion was **waived** — unavailable in the team's workflow — which promotes Phase 3's preflight to the only release gate (§8). Remote→host E2E is **carried, not waived**: the host commit is local-only, so CI has not run it yet |
-| 3     | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | `npm install` clean; all five apps still build with Webpack; CI green; `npm run deploy` still produces the same `docs/` |
+| 3 ✅  | **Scaffolding only — nothing that touches an unmigrated app.** Add the §7.1 deps *without removing any* (incl. Vitest and `@playwright/test`); `apps.manifest.json` + `scripts/manifest.mjs` with its validations (§8); `scripts/verify-federation-build.mjs` (§11.0) with its shared-audit contract fixed; `check:imports` (inert until an app's `bundler` flips); rewrite `copy-dist` around the manifest and point `deploy-pages.yml` at it (§8); `scripts/preflight-host.mjs` + Chromium install in the workflow (§8); add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps against their **existing** tsconfigs; PR CI workflow with the fixed §8 job table; Node 24 in workflow + `engines` + `.nvmrc` | **Done 8/1/2026.** `npm ci` clean; all five still build with Webpack; `typecheck` passes for all five; `copy-dist` reproduces the workflow's `docs/` (the nesting bug and the stray `claude-bridge` both gone). PR CI is written but has not run — it triggers on PRs to `main` |
 | 4     | **`project-template` pilot.** Migrate it *including* its three tsconfigs (§7.4), root-barrel MUI imports (§5.8), self-contained deps (§7.3), `apps.local.json` entry (§9), and deleting **its** `webpack.config.js`; §11 steps 1–6 and 9–12 (11a is Phase 2's) and the **build** half of step 13 (step 6 applies: the template is a MUI app); publish to Pages and run step 14, plus the §5.7/§5.8 measurements and the §8 SSR decisions | Template loads in the host, installs standalone, §5.7/§5.8 settled with numbers, **and the deployed pilot passes step 14 on the production host** |
 | 5     | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | Shared React + Emotion verified across the boundary         |
 | 6     | `network-statistics` (non-React shape, §7.3), `network-workflows` (fix the hardcoded `mode`), `claude-bridge`; CI list now covers all five | All load; all five apps mandatory in CI                     |

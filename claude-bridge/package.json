@@ -7,6 +7,7 @@
   "scripts": {
     "build": "webpack --config webpack.config.js --env production=true",
     "build-dev": "webpack --config webpack.config.js --env production=false",
-    "dev": "webpack serve --open /remoteEntry.js --mode development"
+    "dev": "webpack serve --open /remoteEntry.js --mode development",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }

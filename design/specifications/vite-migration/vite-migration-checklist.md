@@ -305,9 +305,27 @@ is not known to work.
 
 ---
 
-## Phase 3: Scaffolding only
+## Phase 3: Scaffolding only ✅ **COMPLETE (8/1/2026)**
 
 _Design: §7.1, §8, §11.0, §12_
+
+> **Two decisions taken during implementation, both narrowing a check to the
+> case where it is meaningful:**
+>
+> - **The deploy-time host preflight is self-activating.** It runs only when a
+>   `published` app is also on `bundler: 'vite'`
+>   (`node scripts/manifest.mjs --needs-preflight`). A Webpack app compiles the
+>   host URL in and never reads `window.__CYWEB_HOST__`, so a descriptor-less
+>   host cannot break it — running the gate unconditionally would have blocked
+>   **every Pages deploy today** over a hazard that does not exist. It was going
+>   to: production (`web.cytoscape.org`) currently serves
+>   `runtime.<hash>.js` / `vendors.<hash>.js`, i.e. a **pre-Vite Webpack build**
+>   of the host, so it has no descriptor at all. Phase 4 arms the gate by
+>   flipping one manifest field.
+> - **`smokeObservable` is required on the same condition**, not on `published`
+>   alone. §11 step 14 selects on `published && vite`, no app carries a
+>   `data-testid` yet, and four selectors written now would be unexercised until
+>   Phase 8. Each app gets a real one in the commit that migrates it.
 
 **Nothing in this phase may touch an unmigrated app.** Adding `noEmit` to the
 app tsconfigs would break `ts-loader`; enabling the Vite verifier repo-wide
@@ -325,19 +343,19 @@ Webpack at the end of this phase.
 
 ### Deliverables — dependencies (add only, remove nothing)
 
-- [ ] `vite` — `8.0.13` (match host)
-- [ ] `@module-federation/vite` — `1.16.8` (match host)
-- [ ] `@module-federation/runtime` — `2.5.1` (§6.4 imports it by name)
-- [ ] `@vitejs/plugin-react` — match host (`^5.0.0`)
-- [ ] `@types/node` — pin explicitly (currently only transitive via `webpack-dev-server`)
-- [ ] `vitest` — match host (`^4.1.8`)
-- [ ] `@playwright/test` — `1.61.0` (match host)
-- [ ] **Do not remove** `webpack`, `webpack-cli`, `webpack-dev-server`,
+- [x] `vite` — `8.0.13` (match host)
+- [x] `@module-federation/vite` — `1.16.8` (match host)
+- [x] `@module-federation/runtime` — `2.5.1` (§6.4 imports it by name)
+- [x] `@vitejs/plugin-react` — match host (`^5.0.0`)
+- [x] `@types/node` — pin explicitly (currently only transitive via `webpack-dev-server`)
+- [x] `vitest` — match host (`^4.1.8`)
+- [x] `@playwright/test` — `1.61.0` (match host)
+- [x] **Do not remove** `webpack`, `webpack-cli`, `webpack-dev-server`,
       `ts-loader`, `clean-webpack-plugin` — that is Phase 7
 
 ### Deliverables — manifest and tooling
 
-- [ ] Create `apps.manifest.json` — one entry per app with `workspaceDir`,
+- [x] Create `apps.manifest.json` — one entry per app with `workspaceDir`,
       `publishPath`, `federationName`, `port`, `bundler`, `published`,
       `exposes`, `smokeObservable`, `configuredShared`
   - All five entries start at `"bundler": "webpack"`
@@ -349,7 +367,7 @@ Webpack at the end of this phase.
     strings** (`hello-world` / `hello-world` / `hello`)
   - `configuredShared` holds **full records**, not a name list;
     `network-statistics` is explicitly `{}`
-- [ ] Create `scripts/manifest.mjs` — the single loader, with validations:
+- [x] Create `scripts/manifest.mjs` — the single loader, with validations:
   - `workspaceDir` set equals the root `workspaces` set, **both directions**
   - `workspaceDir`, `publishPath`, `federationName`, `port` each unique
   - `publishPath` rejects `""`, `.`, `..`, and any `/` or `\`
@@ -359,7 +377,7 @@ Webpack at the end of this phase.
   - `smokeObservable` required when `published === true`
   - `requiredVersion` cross-checked against `peerDependencies` — **`bundler: 'vite'` entries only**
   - An app removed from the manifest is an **error**, not a cleanup trigger
-- [ ] Create `scripts/verify-federation-build.mjs` (§11.0) — run per app,
+- [x] Create `scripts/verify-federation-build.mjs` (§11.0) — run per app,
       gated on `bundler === 'vite'`:
   - `remoteEntry.js` is an ES module exporting `init` and `get`
   - Container name equals `federationName`
@@ -371,15 +389,15 @@ Webpack at the end of this phase.
   - `cyweb` remote present with `type: 'module'`
   - `cyweb` entry equals `CYWEB_HOST_REQUIRED` exactly (production build)
   - `cyweb-host-resolver` present **in the built bundle**, not only in the manifest
-- [ ] Create `scripts/check-imports.mjs` — bans `@mui/material/` subpaths and
+- [x] Create `scripts/check-imports.mjs` — bans `@mui/material/` subpaths and
       `@mui/icons-material` in `<workspaceDir>/src`. Match **import/export
       specifiers**, not raw text. Gated on `bundler === 'vite'` (inert now)
-- [ ] Rewrite `copy-dist` around the manifest — iterate `published === true`,
+- [x] Rewrite `copy-dist` around the manifest — iterate `published === true`,
       **delete then copy**, validate all entries before deleting anything, stage
       into a temp directory and swap
   - `bundler: 'webpack'` → replace-copy the whole `dist/`, no class check
   - `bundler: 'vite'` → the §8 exclusive publish classes, unknown files fatal
-- [ ] Create `scripts/preflight-host.mjs` — `npm run preflight:host <url>`,
+- [x] Create `scripts/preflight-host.mjs` — `npm run preflight:host <url>`,
       running the full §8 descriptor contract
   - **This is now the only release gate**, not the "cheap insurance" §8
     originally called it: Phase 2's production-deploy criterion was waived
@@ -390,41 +408,58 @@ Webpack at the end of this phase.
 
 ### Deliverables — per-app scripts (against the **existing** tsconfigs)
 
-- [ ] Add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps.
+- [x] Add `"typecheck": "tsc --noEmit -p tsconfig.json"` to all five apps.
       **Do not** add `noEmit` to the tsconfig files themselves — that breaks
       `ts-loader`
 
 ### Deliverables — CI and Node version
 
-- [ ] Create the PR CI workflow with the fixed §8 job table:
+- [x] Create the PR CI workflow with the fixed §8 job table:
   - `check:imports` — `bundler === 'vite'` apps
   - `typecheck` — always all five
   - `build` + verifier — build always; **verifier step gated on `bundler`**;
     both in the **same job** (`dist/` does not cross a job boundary)
   - `test` — `npm run test --workspaces --if-present`
-- [ ] Point `deploy-pages.yml` at `npm run copy-dist` instead of its hardcoded
+- [x] Point `deploy-pages.yml` at `npm run copy-dist` instead of its hardcoded
       `rm -rf` / `cp -r` lines
-- [ ] Add `npx playwright install --with-deps chromium` + the production-host
+- [x] Add `npx playwright install --with-deps chromium` + the production-host
       preflight step to `deploy-pages.yml` — the step must **fail the job**; the
       workflow publishes on push to `main` with no human step, so a warning
       publishes anyway
-- [ ] `node-version: '22'` → `'24'` in the workflow
-- [ ] Add `"engines": { "node": ">=24.0.0" }` to the root `package.json`
-- [ ] Add `.nvmrc` with `24`
-- [ ] Update `guides/getting-started.md` — "Node.js 18+" → 24
+- [x] `node-version: '22'` → `'24'` in the workflow
+- [x] Add `"engines": { "node": ">=24.0.0" }` to the root `package.json`
+- [x] Add `.nvmrc` with `24`
+- [x] Update `guides/getting-started.md` — "Node.js 18+" → 24
 
 ### Verification (Phase 3)
 
-- [ ] `npm install` clean
-- [ ] `node scripts/manifest.mjs --validate` passes
-- [ ] **All five apps still build with Webpack** (`npm run build`)
-- [ ] `npm run typecheck --workspaces` passes against the existing tsconfigs
-- [ ] `npm run deploy` produces the **same** `docs/` output the **workflow**
+- [x] `npm install` clean
+- [x] `node scripts/manifest.mjs --validate` passes
+- [x] **All five apps still build with Webpack** (`npm run build`)
+- [x] `npm run typecheck --workspaces` passes against the existing tsconfigs
+- [x] `npm run deploy` produces the **same** `docs/` output the **workflow**
       produced before the rewrite (diff it). Not the same as today's
       `copy-dist`: that script nests (`docs/hello-world/dist/`, §8) and copies
       `claude-bridge`, which Phase 1 decided is `published: false`
-- [ ] `npm run preflight:host https://web.cytoscape.org` passes
-- [ ] PR CI green
+  - **Behaviourally identical, and the two defects are gone:** no
+    `docs/<app>/dist/` nesting, no `docs/claude-bridge/`, four apps published.
+  - The run did leave a 6-file content diff, which is **not** from the rewrite:
+    `docs/<app>` was last committed 2026-05-15 and the app sources are older
+    still, so nothing in the inputs changed — webpack has simply moved to
+    5.107.1 inside its own `^5.94.0` range since, shifting module ids and chunk
+    splitting. Rebuilding twice is byte-identical, so the output is stable. The
+    regenerated files were **reverted**: Phase 3 is scaffolding, and the Pages
+    workflow regenerates `docs/` on push to `main` anyway
+- [ ] ~~`npm run preflight:host https://web.cytoscape.org` passes~~ —
+      **cannot pass, and must not gate anything yet.** Production serves
+      `runtime.<hash>.js` / `vendors.<hash>.js`: a **pre-Vite Webpack build** of
+      the host, with no descriptor. That is the whole reason the deploy gate is
+      conditional (see the decision note at the top of this phase). Verify
+      instead with `npm run preflight:host -- --selftest`, which asserts the
+      gate **rejects** a descriptor-less host — both need a Chromium install
+      this dev machine lacks, so CI owns them
+- [ ] PR CI green — the new `.github/workflows/ci.yml` has never run; it
+      triggers on PRs to `main`
 
 ---
 

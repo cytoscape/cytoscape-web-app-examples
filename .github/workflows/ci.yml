@@ -1,0 +1,104 @@
+name: CI
+
+# This repository had NO pull-request CI at all: deploy-pages.yml runs only on
+# push to main, so nothing checked a PR. That is what this file fixes.
+#
+# The job set is FIXED. What moves is `bundler` in apps.manifest.json, which
+# these jobs read: an app joins the Vite-only checks by flipping one field in
+# the commit that migrates it. Nobody edits a workflow, and nobody edits a
+# required-checks list.
+
+# BOTH long-lived branches. `development` is the default branch and where PRs
+# actually go; `main` is the Pages release branch that deploy-pages.yml
+# publishes from. Listing only one of them would leave the other unchecked.
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+# Cancel superseded runs on rapid pushes, but let every push to the long-lived
+# branches run to completion so each merged commit keeps a full CI result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/development' }}
+
+jobs:
+  manifest:
+    name: Manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Validate apps.manifest.json
+        run: npm run manifest:validate
+
+  check-imports:
+    name: Check imports
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Vite apps only. The ~90 banned MUI subpath imports are rewritten with
+      # each app's migration, so this is inert until the first `bundler` flips.
+      - run: npm run check:imports
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Always all apps. tsc --noEmit works on a Webpack app and a Vite app
+      # alike, so there is no reason to stage it — and it replaces the type
+      # safety ts-loader was providing once that goes away.
+      - run: npm run typecheck
+
+  build:
+    name: Build & verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # SAME JOB as the build, deliberately: the verifier reads each app's
+      # dist/, and dist/ does not survive a job boundary. A separate verify job
+      # would silently verify nothing. The verifier itself skips Webpack apps —
+      # asserting an ESM remoteEntry.js against a `var` library fails by
+      # construction, which is the regression check working as designed.
+      - run: npm run verify:federation
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # --if-present: an app joins the test scope by gaining a `test` script in
+      # its migration commit. No workflow edit, nothing to forget.
+      - run: npm run test

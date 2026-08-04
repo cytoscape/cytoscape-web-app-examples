@@ -45,7 +45,7 @@ plugin does not bundle its own copy, which keeps the download small.
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 24+ (see `.nvmrc` at the repo root)
 - The Cytoscape Web host app running at `localhost:5500`
   (see the [host repo](../../cytoscape-web/))
 - Your plugin registered in the host's `src/assets/apps.local.json`
