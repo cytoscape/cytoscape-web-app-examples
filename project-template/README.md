@@ -157,6 +157,29 @@ Verify the output before publishing:
 npm run verify:federation   # from the repo root
 ```
 
+## Submitting to the App Store
+
+The same `npm run build` also writes **`<appId>-<version>.zip`** next to
+`package.json` — for this template, `template-1.0.0.zip`. Upload that file on
+the App Store submission page; nothing else to prepare.
+
+The zip holds the browser publish set, not the whole of `dist/`. Three things
+are excluded on purpose:
+
+| Excluded | Why |
+| --- | --- |
+| `mf-manifest.json` | embeds absolute build-machine paths — your home directory and username |
+| `mf-stats.json` | build metadata; nothing fetches it at runtime |
+| `remoteEntry.ssr.js`, `ssrEntryLoader-*`, `module-runner-*` | ~34 kB of Node-only code, unreachable in a browser |
+
+It is exactly what this repository publishes to GitHub Pages, so the store
+serves what the examples site serves.
+
+The file list is an **allowlist**: if a future plugin version emits a file class
+`vite.config.ts` does not name, the build fails rather than uploading it. If you
+hit that, classify the new file in `APP_STORE_PUBLISH_CLASSES` — the failure is
+deliberate.
+
 ---
 
 ## Further reading

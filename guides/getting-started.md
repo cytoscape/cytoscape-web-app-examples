@@ -254,6 +254,20 @@ edit `src/assets/apps.local.json` in the `cytoscape-web` repo (a JSON array):
 
 ---
 
+## 5b. Package for the App Store
+
+`npm run build` writes **`<appId>-<version>.zip`** next to your `package.json`
+— e.g. `myApp-0.1.0.zip`. That is the file the App Store submission page takes;
+no separate packaging step.
+
+It contains the browser publish set rather than all of `dist/`, so the build
+machine's absolute paths (`mf-manifest.json`), build metadata (`mf-stats.json`)
+and the Node-only SSR artifacts stay out of a public upload. The list is an
+allowlist in `vite.config.ts`, and an unrecognised file fails the build instead
+of being shipped.
+
+---
+
 ## 6. Run Both Dev Servers
 
 ```bash

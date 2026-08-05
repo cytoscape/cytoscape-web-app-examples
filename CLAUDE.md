@@ -134,6 +134,12 @@ federation({
 `npm run verify:federation` asserts all four against the built output, because
 every one of them looks correct in the config when it is wrong.
 
+The config also carries two build-time gates, both deliberately fatal:
+`noSharedPayload` (a shared package's implementation must not end up in the
+remote's own chunks) and `zipForAppStore`, which writes
+`<appId>-<version>.zip` for App Store submission from an allowlist — a file
+class the list does not name fails the build rather than being uploaded.
+
 ---
 
 ## 4. API Usage Patterns
@@ -260,11 +266,16 @@ See `guides/getting-started.md` for the full walkthrough.
 
 ---
 
-## 9. Branch Context
+## 9. Project Status
 
-Current active branch: `new-app-api`
+**App API 1.0 is merged into the host's `development`.** It is no longer behind
+a feature branch — the `cyweb/*Api` hooks, the event bus and app resource
+registration are all on `development`, and `@cytoscape-web/api-types` publishes
+their declarations to npm.
 
-Phase 0–2 of the App API are complete (types, 10 domain APIs, Event Bus, App
-Resource Registration). Phase 3 focuses on documentation and examples.
+**All five apps build with Vite** (repository release `1.1.0`; the apps
+themselves are independently versioned). The Webpack toolchain is gone; see
+`design/specifications/vite-migration/` for the plan, the measurements and the
+decisions that changed under measurement.
 
 See the parent workspace `CLAUDE.md` at `../CLAUDE.md` for the full phase roadmap.

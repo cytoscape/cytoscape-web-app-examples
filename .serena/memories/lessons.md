@@ -14,7 +14,7 @@ Shared lessons learned across agent sessions. Update this file after corrections
 
 ## Host API Integration
 
-- **App API is on `new-app-api` branch only:** The `cyweb/XxxApi` hooks (ElementApi, NetworkApi, etc.) are not available on the main `development` branch of the host. Both repos must be on `new-app-api`.
+- **App API is on the host's `development` branch.** The `cyweb/XxxApi` hooks (ElementApi, NetworkApi, etc.) were once confined to a `new-app-api` feature branch; that is no longer true and both repos track `development`.
 - **`ApiResult<T>` pattern:** All host App API functions return `ApiResult<T>`. Always check `result.success` before accessing `result.data`. Never assume success.
 - **Store access pattern:** Host stores are consumed via Zustand selector hooks: `const value = useXxxStore((state: any) => state.field)`. The `any` cast is intentional — plugin types for state are not always available.
 
