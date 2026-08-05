@@ -27,6 +27,15 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 24 (8/5/2026): Keiichiro ONO and Claude (Opus 5) — Named
+  `https://dev1.ndexbio.org/cytoscape` as the staging target throughout,
+  replacing the Netlify branch previews (which no longer exist; Netlify is not
+  used at all, and the host repo's references were removed in `7ef88b1`).
+  Measured what dev1 actually is: Apache 2.4.37 serving a Vite + MF build of
+  the host, **from `/cytoscape/`**, with no descriptor yet. The subpath is the
+  point — it is the only reachable environment that exercises §6.3's
+  based-`urlBaseName` branch, which production at `/` cannot, so three of
+  Phase 8's four outstanding gaps close there rather than in production.
 - Rev. 23 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 8 rehearsed
   in full against local production builds**, host and publish set on separate
   origins so CORS and cross-origin module loading are exercised rather than
@@ -888,9 +897,9 @@ Consequences:
 
 - **An app artifact is bound to one host deployment.** The GitHub Pages builds
   are production builds, so only `web.cytoscape.org` can load them. They cannot
-  be exercised against a Netlify branch preview
-  (`<branch>--incredible-meringue-aa83b1.netlify.app`), a self-hosted instance,
-  or a colleague's local host.
+  be exercised against the staging deployment
+  (`https://dev1.ndexbio.org/cytoscape`), a self-hosted instance, or a
+  colleague's local host.
 - **Two builds per app that differ by one string** (`build` / `build-dev`).
 - **Third-party developers inherit the problem.** A published app has to be
   rebuilt and redeployed to work against any host but the one it was compiled
@@ -2209,6 +2218,21 @@ Red on two hosts and green on a third is the part that matters. A gate that is
 merely red has not been shown to accept anything, and one that is merely green
 has not been shown to reject anything; either alone would read as proof and be
 worth nothing.
+
+**Staging: `https://dev1.ndexbio.org/cytoscape`.** Measured 8/5/2026: Apache
+2.4.37, already serving a Vite + Module Federation build of the host
+(`assets/mf-entry-bootstrap-*`, an ESM `remoteEntry.js` exporting `init`/`get`
+as `application/javascript`), but **no descriptor yet** — the preflight is red
+there today.
+
+That makes it the right place to close this gate before production, and for one
+assertion it is the *only* place: dev1 is served from **`/cytoscape/`**, so a
+descriptor there must read
+`https://dev1.ndexbio.org/cytoscape/remoteEntry.js`. §6.3 builds that from
+`import.meta.env.BASE_URL`, and a bug that drops or doubles the base is
+invisible at production's `/` and fatal on a subpath. Until dev1 runs the
+descriptor, `buildHostRemoteEntryUrl`'s based branch is covered only by its
+unit test.
 
 Option (2) — a GitHub Environment with required reviewers on the `deploy` job —
 becomes worth reconsidering here, since it is the only remaining option that

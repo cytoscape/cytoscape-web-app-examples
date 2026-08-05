@@ -3,9 +3,12 @@
 > Track progress across all eight phases. Mark `[x]` when complete. Run the
 > per-phase verification before starting the next phase.
 >
-> **Status (8/4/2026): Phases 1–7 complete. Phase 8 is rehearsed in full
-> locally and waits on one thing — the host publishing `window.__CYWEB_HOST__`
-> from `web.cytoscape.org`.** Everything downstream of that is verified: five
+> **Status (8/5/2026): Phases 1–7 complete. Phase 8 is rehearsed in full
+> locally and waits on one thing — a deployed host publishing
+> `window.__CYWEB_HOST__`. The next step is
+> `https://dev1.ndexbio.org/cytoscape`, not production: it already runs a Vite
+> build of the host, and being served from a subpath it is the only environment
+> that can exercise the based-`urlBaseName` branch.** Everything downstream of that is verified: five
 > apps on Vite, the Webpack toolchain gone, CI green on every push, and all
 > four published apps loading through the real host loader from a separate
 > origin. See Phase 8 for exactly what a deployed run would add.
@@ -269,18 +272,21 @@ the descriptor live in production. **It was closed without that**, deliberately
     and the shipped chunk are accounted for
 - [x] ~~**The full §8 descriptor contract passes against `web.cytoscape.org`**,
       deployed, not merely merged~~ — **waived with the deploy, 8/1/2026.**
-      Deferred to a dev deployment, whenever the branch reaches one:
+      Deferred to the staging deployment, `https://dev1.ndexbio.org/cytoscape`:
 
       ```
-      CYWEB_HOST_URL=https://development--incredible-meringue-aa83b1.netlify.app \
-        npx playwright test host-descriptor --project=chromium
+      npm run preflight:host -- https://dev1.ndexbio.org/cytoscape
       ```
 
-      or the §8 console snippet, which needs no Playwright install. Every branch
-      auto-deploys, so `https://<branch>--incredible-meringue-aa83b1.netlify.app`
-      works too — the point is to run it against **something served over HTTPS
-      from a CDN**, since that is where this contract differs from localhost:
-      `urlBaseName` and the MIME type on `remoteEntry.js`
+      (or the §8 console snippet, which needs no Playwright install). It is
+      **red today** — dev1 already runs a Vite + MF build of the host but
+      predates the descriptor — so a green result is the signal.
+
+      The point is to run it against something served over **HTTPS by a real
+      web server**, since that is where this contract differs from localhost:
+      the MIME type on `remoteEntry.js`, and above all `urlBaseName`. dev1 is
+      served from `/cytoscape/`, which makes it the **only** target that
+      exercises the based-deployment branch — production is at `/` and cannot.
   - The manual run recorded above was localhost, and says nothing about either
 
 ### Release gate — where it went (read before Phase 4)
@@ -863,11 +869,26 @@ _Design: §11 steps 13–14_
 > install form takes a single-entry manifest from an allowlisted origin, which
 > rules out the UI path). **20 checks across 4 apps, all green.**
 >
-> The Netlify branch preview was tried first and is **not available**:
-> `<branch>--incredible-meringue-aa83b1.netlify.app` 404s for every branch and
-> so does the site root, while `web.cytoscape.org` answers 200. The host repo's
-> `README.md` and `AGENTS.md` still document that URL — a separate, unrelated
-> staleness worth fixing there.
+> The Netlify branch preview was tried first and does not exist — every branch
+> and the site root 404. Netlify is no longer used at all; the host repo's
+> references to it were removed in `cytoscape-web` commit `7ef88b1`.
+>
+> **The staging environment is `https://dev1.ndexbio.org/cytoscape`**, and it is
+> a *better* verification target than production for what remains. Measured
+> 8/5/2026:
+>
+> | | |
+> | --- | --- |
+> | Server | Apache/2.4.37 (Rocky Linux) — SPA fallback from its own config, not `_redirects` |
+> | Build | **already Vite + Module Federation** (`assets/mf-entry-bootstrap-*`, `remoteEntry.js` exporting `init`/`get`, `application/javascript`) |
+> | `urlBaseName` | **`/cytoscape/`** — a subpath, unlike production's `/` |
+> | Host descriptor | **not published yet** — `preflight:host` red: "not present after 30000ms — this host predates the descriptor" |
+>
+> So dev1 currently runs the host's Vite migration *without* Phase 2's
+> descriptor change. Deploying `vite-app-migration` there closes three of the
+> four gaps below — and the second one **only** dev1 can close, because
+> production is served at `/` and cannot exercise the based-deployment branch at
+> all.
 
 ### Deliverables
 
@@ -926,15 +947,30 @@ decision showing up at the scale of the whole publish set.
 Everything specific to the real deployment, and worth being precise about since
 this is the part still owed:
 
-1. **That `web.cytoscape.org` publishes the descriptor at all** — the one thing
-   the whole migration now waits on
+1. **That a deployed host publishes the descriptor at all** — the one thing the
+   whole migration waits on. **Closable on dev1** before production.
 2. **A non-`/` `urlBaseName`** — production uses `/`, so
    `buildHostRemoteEntryUrl`'s based-deployment branch is still covered only by
-   its unit test
-3. **The CDN's own MIME types and cache headers** — `http-server` is not
-   GitHub Pages
+   its unit test. **Only dev1 can close this**: it serves from `/cytoscape/`,
+   so a descriptor there must read
+   `https://dev1.ndexbio.org/cytoscape/remoteEntry.js`. A bug that drops or
+   doubles the base is invisible at `/` and fatal here.
+3. **A real server's MIME types and cache headers** — `http-server` is not
+   Apache. **Closable on dev1** (Apache 2.4.37, same family as production's
+   2.4.62).
 4. **The SHA-256 identity checks**, which are meaningless when the "CDN" is the
-   build directory
+   build directory.
+
+### Order to close them
+
+1. Deploy `cytoscape-web`'s `vite-app-migration` to dev1 (manual).
+2. `npm run preflight:host -- https://dev1.ndexbio.org/cytoscape` — it is red
+   today, so a **green** result is the signal. Read `remoteEntry` in the output
+   and confirm it carries the `/cytoscape/` segment exactly once.
+3. Point the app-examples smoke at it by publishing the apps somewhere dev1 can
+   reach, or by re-running the local rehearsal with `HOST` set to dev1 — the
+   apps do not care which host they meet, which is the entire point of §6.
+4. Only then production, where the remaining risk is the descriptor itself.
 
 ---
 
