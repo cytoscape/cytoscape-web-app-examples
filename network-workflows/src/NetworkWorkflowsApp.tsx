@@ -1,11 +1,16 @@
 import { lazy } from 'react'
 import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 
+import packageJson from '../package.json'
+
+const { version } = packageJson
+
 export const NetworkWorkflowsApp: CyAppWithLifecycle = {
   id: 'networkWorkflows',
   name: 'Network Workflow Examples',
   description:
     'Network creation, CX2 import, and external integration examples',
+  version,
   apiVersion: '1.0',
   resources: [
     {
