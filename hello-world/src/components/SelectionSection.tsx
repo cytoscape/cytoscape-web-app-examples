@@ -16,11 +16,7 @@
  *   - `selectionApi.exclusiveSelect(networkId, [], [])` clears the selection
  *     by selecting an empty set, replacing all current selections atomically.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Chip, Typography } from '@mui/material'
 import { useCallback, useState } from 'react'
 import { useCyWebEvent } from 'cyweb/EventBus'
 import { useSelectionApi } from 'cyweb/SelectionApi'

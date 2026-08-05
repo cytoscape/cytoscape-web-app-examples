@@ -18,11 +18,7 @@
  *   - Reset `layoutStatus` to `'idle'` on error so the button becomes
  *     re-enabled and the user can retry.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Typography } from '@mui/material'
 import { useCallback, useState } from 'react'
 import { useCyWebEvent } from 'cyweb/EventBus'
 import { useLayoutApi } from 'cyweb/LayoutApi'

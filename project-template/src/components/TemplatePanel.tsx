@@ -8,8 +8,11 @@
  *
  * Replace this with your own panel UI.
  */
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+// Root-barrel import, NOT '@mui/material/Box'. The share key is the exact
+// string '@mui/material', and the federation plugin matches share keys
+// exactly — a subpath import misses it and bundles MUI into this remote
+// instead of taking the host's instance, giving you a second Emotion cache.
+import { Box, Typography } from '@mui/material'
 
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 
@@ -23,6 +26,10 @@ const TemplatePanel = (): JSX.Element => {
 
   return (
     <Box
+      // The production smoke test asserts this app rendered inside the real
+      // host, and this is what it looks for — see `smokeObservable` in
+      // ../../apps.manifest.json. Keep the two in step.
+      data-testid="template-panel"
       sx={{
         height: '100%',
         display: 'flex',

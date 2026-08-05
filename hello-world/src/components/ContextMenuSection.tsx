@@ -21,13 +21,15 @@
  * (via cleanupAllForApp). Explicit cleanup in useEffect is redundant
  * but harmless and makes intent clear.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Grid,
+  Stack,
+  Typography,
+} from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import { useAppContext } from 'cyweb/AppIdContext'
 import type { ContextMenuHandlerContext } from 'cyweb/ApiTypes'
@@ -177,11 +179,7 @@ export const ContextMenuSection = (): JSX.Element => {
               Remove Items
             </Button>
           ) : (
-            <Button
-              size="small"
-              variant="contained"
-              onClick={handleRegister}
-            >
+            <Button size="small" variant="contained" onClick={handleRegister}>
               Register Items
             </Button>
           )}
@@ -189,9 +187,21 @@ export const ContextMenuSection = (): JSX.Element => {
       </Grid>
       {registered && (
         <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" label="Node: Hello: Inspect Node" color="primary" />
-          <Chip size="small" label="Edge: Hello: Inspect Edge" color="secondary" />
-          <Chip size="small" label="Canvas: Hello: Canvas Action" color="default" />
+          <Chip
+            size="small"
+            label="Node: Hello: Inspect Node"
+            color="primary"
+          />
+          <Chip
+            size="small"
+            label="Edge: Hello: Inspect Edge"
+            color="secondary"
+          />
+          <Chip
+            size="small"
+            label="Canvas: Hello: Canvas Action"
+            color="default"
+          />
         </Stack>
       )}
       {lastAction !== null && (

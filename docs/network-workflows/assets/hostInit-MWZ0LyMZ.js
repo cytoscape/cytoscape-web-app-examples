@@ -1,0 +1,1 @@
+import{n as e,t}from"./_virtual_mf___mfe_internal__networkWorkflows__H_A_I__hostAutoInit__H_A_I__-uU3t6-hN.js";export{t as hostInitPromise,e as initHost};

@@ -4,9 +4,52 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
-    "build": "webpack --config webpack.config.js --env production=true",
-    "build-dev": "webpack --config webpack.config.js --env production=false",
-    "dev": "webpack serve --open /remoteEntry.js --mode development"
+    "build": "vite build",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "//dependencies": [
+    "Everything this app needs is declared HERE, not inherited from the",
+    "monorepo root. Copying this directory out is the documented way to start",
+    "an app, and the previous package.json had scripts and nothing else — so a",
+    "copy did not install. React, MUI, TypeScript and the API types all",
+    "resolved by hoisting, which works in exactly one place."
+  ],
+  "//peerDependencies": [
+    "react, react-dom, @mui/material and both Emotion packages are provided by",
+    "the HOST as Module Federation singletons — the share block uses",
+    "`import: false`, so no fallback copy is bundled. They are peers rather",
+    "than dependencies to say that. The version ranges must match",
+    "configuredShared in ../apps.manifest.json; scripts/manifest.mjs",
+    "cross-checks them, because nothing else would notice them diverging."
+  ],
+  "peerDependencies": {
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@mui/material": "^5.18.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@module-federation/runtime": "2.5.1",
+    "@module-federation/vite": "1.16.8",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@mui/material": "^5.18.0",
+    "typescript": "^5.6.2",
+    "vite": "8.0.13",
+    "vitest": "^4.1.8"
   }
 }

@@ -29,13 +29,13 @@ events combine into a single user-facing feature.
 ```
 network-workflows/
 ├── src/
-│   ├── index.ts                          ← webpack entry; re-exports the app config
+│   ├── index.ts                          ← exposed as ./AppConfig; re-exports the app config
 │   ├── NetworkWorkflowsApp.tsx           ← app config + resource declarations
 │   └── components/
 │       ├── CreateNetworkMenu.tsx         ← apps-menu: build a sample network
 │       ├── CreateNetworkFromCx2Menu.tsx  ← apps-menu: import remote CX2
 │       └── JupyterConnectorPanel.tsx     ← right-panel: receive CX2 via postMessage
-├── webpack.config.js                     ← Module Federation config
+├── vite.config.ts                        ← Module Federation config
 ├── tsconfig.json
 └── package.json
 ```

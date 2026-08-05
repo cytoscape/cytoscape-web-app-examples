@@ -4,7 +4,8 @@ This guide walks you through creating a Cytoscape Web app from scratch.
 By the end, you will have a running plugin with a panel, a menu item, and
 a context menu action — all loaded into the host via Module Federation.
 
-> **Prerequisites:** Node.js 18+, npm 9+, familiarity with React and TypeScript.
+> **Prerequisites:** Node.js 24+ (see `.nvmrc`), npm 10+, familiarity with
+> React and TypeScript.
 
 ---
 
@@ -39,19 +40,34 @@ npm install --save-dev @cytoscape-web/api-types
 
 ## 2. Configure Module Federation
 
-Edit `webpack.config.js`:
+Edit `vite.config.ts`. If you copied `project-template`, most of this is
+already correct — change the port and the federation `name`:
 
-```js
-new ModuleFederationPlugin({
+```typescript
+federation({
   // Unique name — must match the `id` field in your CyApp object
-  // and the `name` field in apps.json / apps.local.json.
+  // and the `id` field in apps.json / apps.local.json.
   name: 'myApp',
 
   filename: 'remoteEntry.js',
+  dts: false,
+
+  // Rewrites the `cyweb` entry below with the URL the running host publishes.
+  // Without this line the resolver file is inert — see step 2b.
+  runtimePlugins: [mfRuntimePlugin],
 
   remotes: {
-    // Points to the host's remoteEntry.js
-    cyweb: 'cyweb@http://localhost:5500/remoteEntry.js',
+    cyweb: {
+      // REQUIRED. The host emits an ESM remoteEntry.js; the plugin's default
+      // ('var') resolves no exports against it and fails silently.
+      type: 'module',
+      name: 'cyweb',
+      entryGlobalName: 'cyweb',
+      shareScope: 'default',
+      entry: command === 'serve'
+        ? 'http://localhost:5500/remoteEntry.js'
+        : CYWEB_HOST_REQUIRED,
+    },
   },
 
   exposes: {
@@ -60,18 +76,31 @@ new ModuleFederationPlugin({
   },
 
   shared: {
-    // Singletons provided by the host — do NOT bundle your own copies
-    react: { singleton: true, requiredVersion: deps.react },
-    'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-    '@mui/material': {
-      singleton: true,
-      requiredVersion: deps['@mui/material'],
-    },
+    // Singletons provided by the host — `import: false` means you bundle no
+    // copy at all. Keys are EXACT: import from '@mui/material', never
+    // '@mui/material/Box', or MUI ends up inside your app.
+    react: { singleton: true, import: false, requiredVersion: '^18.3.1' },
+    'react-dom': { singleton: true, import: false, requiredVersion: '^18.3.1' },
+    '@mui/material': { singleton: true, import: false, requiredVersion: '^5.18.0' },
+    '@emotion/react': { singleton: true, import: false, requiredVersion: '^11.10.4' },
+    '@emotion/styled': { singleton: true, import: false, requiredVersion: '^11.10.4' },
   },
-}),
+})
 ```
 
-Choose a unique dev server port (e.g. 3333) in the `devServer` section.
+Choose a unique dev server port (e.g. 3333) in the `server` section.
+
+### 2b. Why the host URL is not written here
+
+Your production build ships a **sentinel** rather than a host URL. The host
+publishes its own `remoteEntry.js` address on `window.__CYWEB_HOST__` when it
+boots, and `src/mfRuntimePlugin.ts` substitutes it before any remote resolves.
+
+The point is that **one build of your app works against every deployment** —
+production, a staging host, or a colleague's `localhost:5500` — instead of
+being compiled against one of them. Copy `src/mfRuntimePlugin.ts` and
+`src/cywebHostSentinel.ts` from the template unchanged, and keep the
+`runtimePlugins` line above.
 
 ---
 
@@ -90,7 +119,7 @@ import type {
 const version = '0.1.0'
 
 export const MyApp: CyAppWithLifecycle = {
-  // Must match the `name` in webpack ModuleFederationPlugin
+  // Must match the federation `name` in vite.config.ts
   id: 'myApp',
   name: 'My App',
   description: 'A sample Cytoscape Web plugin.',
@@ -219,7 +248,7 @@ edit `src/assets/apps.local.json` in the `cytoscape-web` repo (a JSON array):
 ```
 
 > The `id` field is the unique identifier and must match your app's `id`
-> (in `CyApp`) and the webpack `ModuleFederationPlugin` `name`. The
+> (in `CyApp`) and the federation `name` in `vite.config.ts`. The
 > `name` field is the human-readable label shown in App Settings.
 > Optional fields: `author`, `description`, `tags`, `license`, `repository`.
 

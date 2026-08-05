@@ -4,8 +4,7 @@
  * Each entry shows: timestamp, direction (← command / → result / ✕ error),
  * method name, and a truncated payload preview.
  */
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+import { Box, Typography } from '@mui/material'
 import type { LogEntry } from '../logStore'
 
 export type { LogEntry }
@@ -31,7 +30,8 @@ function safeStringify(value: unknown): string {
           if (seen.has(val)) return '[Circular]'
           seen.add(val)
           // Skip DOM elements
-          if (val instanceof Element || val instanceof Node) return `[${val.constructor.name}]`
+          if (val instanceof Element || val instanceof Node)
+            return `[${val.constructor.name}]`
         }
         if (typeof val === 'function') return '[Function]'
         return val
@@ -45,7 +45,10 @@ function safeStringify(value: unknown): string {
 
 function truncate(text: string): string {
   if (text.length <= MAX_PAYLOAD_CHARS) return text
-  return text.slice(0, MAX_PAYLOAD_CHARS) + `\n… (truncated, ${text.length} chars total)`
+  return (
+    text.slice(0, MAX_PAYLOAD_CHARS) +
+    `\n… (truncated, ${text.length} chars total)`
+  )
 }
 
 function typeIcon(type: LogEntry['type']): string {
@@ -75,16 +78,24 @@ interface CommandLogProps {
   filter: 'all' | 'commands' | 'errors'
 }
 
-export const CommandLog = ({ entries, filter }: CommandLogProps): JSX.Element => {
+export const CommandLog = ({
+  entries,
+  filter,
+}: CommandLogProps): JSX.Element => {
   const filtered = entries.filter((e) => {
-    if (filter === 'commands') return e.type === 'command' || e.type === 'result'
+    if (filter === 'commands')
+      return e.type === 'command' || e.type === 'result'
     if (filter === 'errors') return e.type === 'error'
     return true
   })
 
   if (filtered.length === 0) {
     return (
-      <Typography variant="body2" color="text.disabled" sx={{ p: 2, textAlign: 'center' }}>
+      <Typography
+        variant="body2"
+        color="text.disabled"
+        sx={{ p: 2, textAlign: 'center' }}
+      >
         No log entries yet.
       </Typography>
     )
@@ -122,7 +133,11 @@ export const CommandLog = ({ entries, filter }: CommandLogProps): JSX.Element =>
             </Typography>
             <Typography
               component="span"
-              sx={{ color: typeColor(entry.type), fontWeight: 'bold', minWidth: 16 }}
+              sx={{
+                color: typeColor(entry.type),
+                fontWeight: 'bold',
+                minWidth: 16,
+              }}
             >
               {typeIcon(entry.type)}
             </Typography>

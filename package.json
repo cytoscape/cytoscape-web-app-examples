@@ -2,6 +2,9 @@
   "name": "cytoscape-web-app-examples",
   "version": "1.0.7",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "workspaces": [
     "hello-world",
     "network-statistics",
@@ -20,27 +23,44 @@
     "clean": "rm -rf hello-world/dist network-statistics/dist network-workflows/dist project-template/dist claude-bridge/dist",
     "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && npm run copy-dist",
-    "copy-dist": "cp -r hello-world/dist docs/hello-world && cp -r network-statistics/dist docs/network-statistics && cp -r network-workflows/dist docs/network-workflows && cp -r project-template/dist docs/project-template && cp -r claude-bridge/dist docs/claude-bridge"
+    "copy-dist": "node scripts/copy-dist.mjs",
+    "manifest:validate": "node scripts/manifest.mjs --validate",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "verify:federation": "node scripts/verify-federation-build.mjs",
+    "check:imports": "node scripts/check-imports.mjs",
+    "preflight:host": "node scripts/preflight-host.mjs"
   },
-  "peerDependencies": {
-    "@mui/material": "^5.16.7",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
+  "//peerDependencies": [
+    "Removed. This block used to be the repository's ONLY direct declaration of",
+    "@mui/material, react and react-dom — every app resolved them by hoisting.",
+    "Each app now declares its own peerDependencies (the packages the host",
+    "provides as Module Federation singletons), so there is nothing left for a",
+    "root block to supply. scripts/manifest.mjs cross-checks each app's ranges",
+    "against configuredShared in apps.manifest.json."
+  ],
+  "//devDependencies": [
+    "The build tooling here is only what the ROOT scripts need: Playwright for",
+    "the host preflight, and the shared TypeScript. Each app declares its own",
+    "vite, @module-federation/*, React and MUI, so a copied-out app installs on",
+    "its own — which is the documented way to start a new app."
+  ],
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.2",
+    "@cytoscape-web/api-types": "^1.0.0-beta.3",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
+    "@module-federation/runtime": "2.5.1",
+    "@module-federation/vite": "1.16.8",
+    "@playwright/test": "1.61.0",
+    "@types/node": "^24.0.0",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "clean-webpack-plugin": "^4.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^8.2.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
-    "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "vite": "8.0.13",
+    "vitest": "^4.1.8"
   }
 }

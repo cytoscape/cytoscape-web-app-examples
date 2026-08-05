@@ -1,43 +1,41 @@
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+import { Box, Typography } from '@mui/material'
+
 import packageJson from '../../package.json'
 
 /**
- * Example 0: MUI components + Module Federation public path
+ * Example 0: MUI components + finding your own code at runtime
  *
  * Demonstrates two basics of plugin development:
  *   1. Using MUI Typography/Box for consistent UI styling — MUI is a shared
  *      singleton provided by the host, so plugins do not bundle their own copy.
- *   2. Reading __webpack_public_path__ to discover the plugin's own serving URL
- *      at runtime. Webpack injects this global for every Module Federation
- *      remote container; it reflects the base URL of remoteEntry.js
- *      (e.g. http://localhost:2222/ in dev, https://cdn.example.com/ in prod).
+ *      Note the ROOT-BARREL import above: `@mui/material/Box` would miss the
+ *      share key and bundle MUI into this app instead.
+ *   2. Reading `import.meta.url` to discover where this module was served from.
+ *
+ * On (2), what changed and why it is not a like-for-like swap: this example
+ * used to read `__webpack_public_path__`, a global Webpack injected into every
+ * remote container that pointed at the container ROOT, so appending
+ * 'remoteEntry.js' to it resolved. There is no ESM equivalent.
+ * `import.meta.url` is the URL of THIS CHUNK, which in a production build sits
+ * under `assets/` — appending to it would produce `…/assets/remoteEntry.js`,
+ * a 404. Anything that reconstructs the entry URL by string-appending to a
+ * chunk path is guessing, so this shows the chunk URL for what it is and drops
+ * the link.
  */
 
-// __webpack_public_path__ is a Webpack-injected global — declare it for TypeScript.
-declare const __webpack_public_path__: string
+// The URL this module was loaded from. Captured at module evaluation; it does
+// not change afterwards.
+const moduleUrl = import.meta.url
 
-// Capture at module load time; the value does not change after initialization.
-const moduleServerUrl = __webpack_public_path__
-
-// Version number of this app extracted from package.json at
-// build time — also injected by Webpack's DefinePlugin.
-// This is just an example of how to share the version number with the UI.
+// Version of this app, read from package.json at build time — the bundler
+// inlines the JSON import, so nothing is fetched at runtime.
 const { version } = packageJson
 
 export const HelloHeader = (): JSX.Element => (
   <Box>
     <Typography variant="h2">Hello Cytoscape!</Typography>
     <Typography variant="caption" color="text.secondary">
-      This app is served from:{' '}
-      <a
-        href={`${moduleServerUrl}remoteEntry.js`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {moduleServerUrl}
-      </a>{' '}
-      (v{version})
+      This component was served from <code>{moduleUrl}</code> (v{version})
     </Typography>
   </Box>
 )

@@ -32,9 +32,7 @@
  *   Both listen to the same underlying DOM CustomEvent. The choice depends
  *   on whether you need component-scoped or app-scoped lifetime.
  */
-import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
-import Typography from '@mui/material/Typography'
+import { Box, Chip, Typography } from '@mui/material'
 import { useSyncExternalStore } from 'react'
 
 import {

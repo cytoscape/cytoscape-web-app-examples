@@ -1,6 +1,12 @@
 import { useState } from 'react'
-import Snackbar from '@mui/material/Snackbar'
-import { Box, Typography, Button, TextField, Grid } from '@mui/material'
+import {
+  Box,
+  Button,
+  Grid,
+  Snackbar,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 
 const JupyterType: string = 'jupyter_cx2'
@@ -77,6 +83,10 @@ const JupyterConnectorPanel = (): JSX.Element => {
   return (
     <>
       <Box
+        // The production smoke test asserts this app rendered inside the real
+        // host, and this is what it looks for — see `smokeObservable` in
+        // ../../apps.manifest.json. Keep the two in step.
+        data-testid="jupyter-connector-panel"
         sx={{
           width: '100%',
           height: '100%',
@@ -135,38 +145,38 @@ const JupyterConnectorPanel = (): JSX.Element => {
               onChange={(e) => setUrl(e.target.value)}
             />
           </Grid>
-        <Grid item xs={12}>
-          <Grid
-            container
-            spacing={1}
-            paddingTop={'1em'}
-            justifyContent="flex-end"
-            alignItems="end"
-          >
-            <Grid item>
-              <Button
-                size="medium"
-                color="primary"
-                variant="contained"
-                onClick={handleOpen}
-                disabled={isLinked}
-              >
-                {isLinked ? 'Connected' : 'Open Jupyter Lab'}
-              </Button>
-            </Grid>
-            <Grid item>
-              <Button
-                size="medium"
-                color="secondary"
-                variant="contained"
-                onClick={handleFocus}
-                disabled={!isLinked}
-              >
-                Focus to Jupyter Lab window
-              </Button>
+          <Grid item xs={12}>
+            <Grid
+              container
+              spacing={1}
+              paddingTop={'1em'}
+              justifyContent="flex-end"
+              alignItems="end"
+            >
+              <Grid item>
+                <Button
+                  size="medium"
+                  color="primary"
+                  variant="contained"
+                  onClick={handleOpen}
+                  disabled={isLinked}
+                >
+                  {isLinked ? 'Connected' : 'Open Jupyter Lab'}
+                </Button>
+              </Grid>
+              <Grid item>
+                <Button
+                  size="medium"
+                  color="secondary"
+                  variant="contained"
+                  onClick={handleFocus}
+                  disabled={!isLinked}
+                >
+                  Focus to Jupyter Lab window
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
         </Grid>
       </Box>
       <Snackbar

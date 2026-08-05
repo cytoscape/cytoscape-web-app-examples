@@ -296,4 +296,4 @@ Requires temp file lifecycle implementation (session directory, size guard, clea
 | [SCENARIOS.md](SCENARIOS.md) | 6 end-to-end interaction scenarios                   |
 | [adr/](adr/)                 | 7 architecture decision records                      |
 | Host `src/app-api/CLAUDE.md` | App API two-layer pattern, error handling            |
-| Host `webpack.config.js`     | Module Federation exposes list                       |
+| Host `src/app-api/federation/federationExposes.ts` | Module Federation exposes list  |

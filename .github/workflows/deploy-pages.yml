@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: 'npm'
 
       - name: Install dependencies
@@ -33,14 +33,47 @@ jobs:
       - name: Build all example apps
         run: npm run build
 
-      - name: Copy app builds into docs/
+      # ─── Release gate ──────────────────────────────────────────────────────
+      # A Vite-built app compiles in a SENTINEL rather than a localhost
+      # fallback, so it cannot load at all against a host that does not publish
+      # window.__CYWEB_HOST__. Phase 2's "deploy the descriptor to production"
+      # criterion was waived (8/1/2026), which makes this step the ONLY thing
+      # standing between a published app and a host that cannot load it.
+      #
+      # Self-activating on purpose. A Webpack app hardcodes the host URL and
+      # never reads the descriptor, so a descriptor-less host cannot break it —
+      # gating on that would block deploys over a hazard that does not exist.
+      # `--needs-preflight` exits 0 only once a PUBLISHED app is on Vite, so
+      # Phase 4 turns this on by flipping one manifest field.
+      - name: Does any published app need the host descriptor?
+        id: gate
         run: |
-          rm -rf docs/hello-world docs/network-statistics \
-                 docs/network-workflows docs/project-template
-          cp -r hello-world/dist        docs/hello-world
-          cp -r network-statistics/dist docs/network-statistics
-          cp -r network-workflows/dist  docs/network-workflows
-          cp -r project-template/dist   docs/project-template
+          if node scripts/manifest.mjs --needs-preflight; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Chromium for the host preflight
+        if: steps.gate.outputs.required == 'true'
+        run: npx playwright install --with-deps chromium
+
+      # No `continue-on-error`. This workflow publishes on push to main with no
+      # human step, so a warning here would publish anyway. If the host is not
+      # ready, the deploy must not happen.
+      - name: Preflight production host descriptor
+        if: steps.gate.outputs.required == 'true'
+        run: npm run preflight:host -- https://web.cytoscape.org
+
+      # Prove the gate can still fail. A check that has never rejected anything
+      # is not known to work, and after the Phase 2 waiver this one has nothing
+      # behind it.
+      - name: Self-test the preflight gate
+        if: steps.gate.outputs.required == 'true'
+        run: npm run preflight:host -- --selftest
+
+      - name: Copy app builds into docs/
+        run: npm run copy-dist
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

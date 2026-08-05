@@ -7,11 +7,7 @@
  *
  * See design/apps/claude-bridge/adr/0003-panel-as-pure-observer.md
  */
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
-import Typography from '@mui/material/Typography'
+import { Box, Button, Tab, Tabs, Typography } from '@mui/material'
 import { useState, useSyncExternalStore } from 'react'
 import {
   addEntry,

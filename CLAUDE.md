@@ -15,7 +15,7 @@
 
 ## 2. Repository Purpose & Relationship to Host
 
-This repo contains **reference implementations** for Cytoscape Web plugin apps built with Webpack Module Federation.
+This repo contains **reference implementations** for Cytoscape Web plugin apps built with Module Federation (Vite).
 
 **Host application:** `cytoscape-web` runs on `localhost:5500` and exposes federated modules under the `cyweb/` prefix.
 
@@ -50,7 +50,7 @@ import packageJson from '../package.json'
 const { version } = packageJson
 
 export const MyApp: CyAppWithLifecycle = {
-  id: 'myApp', // must match Module Federation name in webpack.config.js
+  id: 'myApp', // must match the Module Federation name in vite.config.ts
   name: 'My App',
   description: '...',
   version,
@@ -77,7 +77,7 @@ export const MyApp: CyAppWithLifecycle = {
 ### Entry Point Pattern
 
 ```typescript
-// src/index.ts — must be the webpack entry point
+// src/index.ts — the module named by `exposes['./AppConfig']`
 export { default } from './MyApp'
 ```
 
@@ -86,34 +86,53 @@ export { default } from './MyApp'
 Install `@cytoscape-web/api-types` for full type support — no `remotes.d.ts` needed for
 API hooks. The package provides ambient module declarations for all `cyweb/*` remotes.
 
-### webpack.config.js Pattern
+### vite.config.ts Pattern
 
-All plugin apps follow the same webpack structure. Key points:
+All plugin apps share the same federation block. Four things in it are load-bearing
+and each fails in a way that is hard to read, so do not simplify them away.
 
-- `name`: unique federation name (no spaces, camelCase)
-- `filename`: always `remoteEntry.js`
-- `remotes.cyweb`: points to host (`localhost:5500` dev, `web.cytoscape.org` prod)
-- `exposes`: registers the app config + each component
-- `shared`: React, react-dom, and @mui/material **must** be `singleton: true`
-
-```javascript
-new ModuleFederationPlugin({
-  name: 'myApp',
+```typescript
+federation({
+  name: 'myApp',              // unique, camelCase; must equal CyApp.id
   filename: 'remoteEntry.js',
-  remotes: { cyweb: cywebUrl }, // cywebUrl switches by env.production
-  exposes: {
-    './AppConfig': './src/index.ts',  // only one expose needed
-  },
-  shared: {
-    react: { singleton: true, requiredVersion: deps.react },
-    'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-    '@mui/material': {
-      singleton: true,
-      requiredVersion: deps['@mui/material'],
+  dts: false,
+  runtimePlugins: [mfRuntimePlugin],   // (3)
+  remotes: {
+    cyweb: {
+      type: 'module',         // (1) REQUIRED
+      name: 'cyweb',
+      entryGlobalName: 'cyweb',
+      shareScope: 'default',
+      entry: command === 'serve'
+        ? 'http://localhost:5500/remoteEntry.js'
+        : CYWEB_HOST_REQUIRED,          // (2)
     },
   },
+  exposes: { './AppConfig': './src/index.ts' },
+  shared: CONFIGURED_SHARED,            // (4)
+  manifest: { additionalData: … },      // embeds the audit fields the verifier reads
 })
 ```
+
+1. **`type: 'module'`** — the host is a Vite build and emits an ESM
+   `remoteEntry.js`. The plugin's default is `'var'` (a Webpack-style global),
+   which resolves **no exports** against an ESM host and fails *silently*: the
+   remote appears to load and exports nothing.
+2. **The production entry is a sentinel, not a URL.** The host publishes its own
+   entry URL on `window.__CYWEB_HOST__` at boot and `src/mfRuntimePlugin.ts`
+   swaps it in, so one build works against any deployment. Shipping
+   `localhost:5500` instead would point a deployed app at the *end user's* own
+   loopback address.
+3. **`runtimePlugins` is the load-bearing half of (2).** The resolver file on
+   its own is inert; without this line the app silently keeps its compiled-in
+   entry.
+4. **`shared` keys are exact and match the host's five singletons** — `react`,
+   `react-dom`, `@mui/material`, `@emotion/react`, `@emotion/styled` — all with
+   `import: false`. This only works because app sources import the MUI **root
+   barrel**. See §6.
+
+`npm run verify:federation` asserts all four against the built output, because
+every one of them looks correct in the config when it is wrong.
 
 ---
 
@@ -184,7 +203,7 @@ To load local plugins in the host, copy `src/assets/apps.local.json` over `src/a
 When `cytoscape-web` adds or changes exposed modules:
 
 1. Update `remotes.d.ts` in affected apps to declare new `cyweb/*` modules
-2. Update `webpack.config.js` remotes if the host URL structure changes
+2. No config change is needed for a host URL change — it is resolved at runtime (§3)
 3. Update component imports and usage to match new API signatures
 4. Run `npm run build` to verify no TypeScript errors
 
@@ -219,12 +238,12 @@ Shared config files at repo root apply to all apps:
 | App config (resources + lifecycle) | `hello-world/src/HelloApp.tsx`                          |
 | Panel component (12 API examples) | `hello-world/src/components/HelloPanel.tsx`              |
 | Menu component (closeOnAction)    | `project-template/src/components/TemplateMenuItem.tsx`   |
-| MF config (env.production switch) | `project-template/webpack.config.js`                    |
+| MF config (canonical, commented)  | `project-template/vite.config.ts`                       |
 | Template for new apps             | `project-template/`                                     |
 | App Developer Guide               | `guides/`                                               |
 | Host API types (source of truth)  | `../cytoscape-web/src/app-api/types/index.ts`           |
 | Host API architecture             | `../cytoscape-web/src/app-api/CLAUDE.md`                |
-| Host webpack exposes              | `../cytoscape-web/webpack.config.js`                    |
+| Host federation exposes           | `../cytoscape-web/src/app-api/federation/federationExposes.ts` |
 
 ---
 
@@ -232,7 +251,7 @@ Shared config files at repo root apply to all apps:
 
 1. Copy `project-template/` and rename it
 2. Update `package.json`: `name`, `version`
-3. Update `webpack.config.js`: `DEV_SERVER_PORT`, `name` in `ModuleFederationPlugin`
+3. Update `vite.config.ts`: `DEV_SERVER_PORT`, `name` in `federation()`
 4. Update `src/TemplateApp.tsx`: `id` (must match MF name), `name`, `resources`
 5. Replace panel/menu components in `src/components/`
 6. Register your app in the host's `src/assets/apps.local.json`

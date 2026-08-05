@@ -1,0 +1,1 @@
+import{n as e,t}from"./_virtual_mf___mfe_internal__hello__H_A_I__hostAutoInit__H_A_I__-7VlcnoOJ.js";export{t as hostInitPromise,e as initHost};

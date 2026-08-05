@@ -1,5 +1,4 @@
-import Box from '@mui/material/Box'
-import Divider from '@mui/material/Divider'
+import { Box, Divider } from '@mui/material'
 
 import { ContextMenuSection } from './ContextMenuSection'
 import { ElementSection } from './ElementSection'
@@ -39,6 +38,10 @@ import { VisualStyleSection } from './VisualStyleSection'
  */
 const HelloPanel = (): JSX.Element => (
   <Box
+    // The production smoke test asserts this app rendered inside the real
+    // host, and this is what it looks for — see `smokeObservable` in
+    // ../../apps.manifest.json. Keep the two in step.
+    data-testid="hello-panel"
     sx={{
       width: '100%',
       height: '100%',

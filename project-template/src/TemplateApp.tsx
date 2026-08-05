@@ -2,7 +2,7 @@
  * TemplateApp — Cytoscape Web plugin with panel, menu action, and context menu.
  *
  * Copy this file and update:
- *   1. `id`          → must match the Module Federation `name` in webpack.config.js
+ *   1. `id`          → must match the Module Federation `name` in vite.config.ts
  *   2. `name`        → human-readable name shown in the host's App Settings
  *   3. `description` → one-line summary
  *   4. `resources`   → add/remove panels and menu items

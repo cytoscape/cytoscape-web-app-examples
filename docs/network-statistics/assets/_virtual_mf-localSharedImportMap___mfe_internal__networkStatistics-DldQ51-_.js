@@ -1,0 +1,1 @@
+import"./dist-CdxoeM6o.js";var e={},t=[{entryGlobalName:`cyweb`,name:`cyweb`,type:`module`,entry:`cyweb:__CYWEB_HOST_REQUIRED__`,shareScope:`default`}];export{t as usedRemotes,e as usedShared};

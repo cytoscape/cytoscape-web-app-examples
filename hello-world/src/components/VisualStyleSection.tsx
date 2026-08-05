@@ -13,11 +13,7 @@
  *     never throw across the API boundary.
  *   - Manage component-local error state independently (no shared error bus).
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'

@@ -15,7 +15,7 @@ major integration pattern you will need.
 
 ## How Cytoscape Web plugins work
 
-Cytoscape Web uses **Webpack Module Federation** to load plugins at runtime
+Cytoscape Web uses **Module Federation** (Vite) to load plugins at runtime
 without rebuilding the host application.
 
 ```
@@ -45,7 +45,7 @@ plugin does not bundle its own copy, which keeps the download small.
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 24+ (see `.nvmrc` at the repo root)
 - The Cytoscape Web host app running at `localhost:5500`
   (see the [host repo](../../cytoscape-web/))
 - Your plugin registered in the host's `src/assets/apps.local.json`
@@ -80,12 +80,12 @@ Settings** to enable the Hello World app. The panel appears on the right side.
 ```
 hello-world/
 ├── src/
-│   ├── index.ts                       ← webpack entry; re-exports HelloApp as default
+│   ├── index.ts                       ← exposed as ./AppConfig; re-exports HelloApp as default
 │   ├── HelloApp.tsx                   ← app config + lifecycle (mount / unmount)
 │   ├── lifecycleState.ts              ← external store bridging lifecycle ↔ React
 │   └── components/
 │       ├── HelloPanel.tsx             ← root panel layout (composes examples below)
-│       ├── HelloHeader.tsx            ← Example 0: MUI + webpack public path
+│       ├── HelloHeader.tsx            ← Example 0: MUI + finding your own chunk URL
 │       ├── VisualStyleSection.tsx     ← Example 1: VisualStyleApi
 │       ├── SelectionSection.tsx       ← Example 2: EventBus + SelectionApi
 │       ├── LayoutSection.tsx          ← Example 3: LayoutApi + EventBus (async)
@@ -99,8 +99,12 @@ hello-world/
 │       ├── NetworkSection.tsx         ← Example 11: Network create/delete via NetworkApi
 │       ├── TsvDownloadSection.tsx     ← Example 12: TSV table download via TableApi
 │       └── NetworkSummaryMenuItem.tsx ← apps-menu item registered in HelloApp.tsx
-├── webpack.config.js                  ← Module Federation config
-├── tsconfig.json
+├── vite.config.ts                     ← Module Federation config
+├── index.html                         ← remote-only stub (Vite needs an HTML entry)
+├── src/cywebHostSentinel.ts           ← entry a production build ships when no host is known
+├── src/mfRuntimePlugin.ts             ← resolves the host URL at runtime
+├── test/mfRuntimePlugin.test.ts       ← covers both remote arrays + every rejection
+├── tsconfig.json / .node.json / .test.json
 └── package.json
 ```
 
@@ -114,7 +118,7 @@ app's identity, components, and lifecycle.
 
 ```typescript
 export const HelloApp: CyAppWithLifecycle = {
-  id: 'hello',          // must match the `name` in webpack.config.js
+  id: 'hello',          // must match the federation `name` in vite.config.ts
   name: 'Hello Cytoscape World App',
   description: '…',
   version,              // imported from package.json — stays in sync automatically
@@ -143,10 +147,10 @@ export const HelloApp: CyAppWithLifecycle = {
 
 ### Why `lazy()` inside the config?
 
-Normally each exposed component needs its own webpack `exposes` entry. By
+Normally each exposed component needs its own `exposes` entry. By
 calling `React.lazy()` here in the config file, we avoid that: the host
 receives the lazy component reference directly from `./AppConfig` and renders
-it without a second network round-trip. Your webpack config only needs to
+it without a second network round-trip. Your Vite config only needs to
 expose one entry:
 
 ```javascript
@@ -212,21 +216,30 @@ See `VisualStyleSection.tsx` for a complete in-panel error display example.
 
 ## Examples walkthrough
 
-### Example 0 — MUI components + webpack public path (`HelloHeader.tsx`)
+### Example 0 — MUI components + finding your own chunk URL (`HelloHeader.tsx`)
 
 **What it shows:**
-- MUI components (`Typography`, `Box`) are available as shared singletons —
-  import them normally; they are provided by the host at runtime and not
-  bundled into your app.
-- `__webpack_public_path__` is a Webpack global injected into every Module
-  Federation remote. It reflects the base URL of your `remoteEntry.js` at
-  runtime (e.g. `http://localhost:2222/` in dev, your CDN URL in production).
-  Capture it at module load time; the value does not change after that.
+- MUI components (`Typography`, `Box`) are shared singletons provided by the
+  host at runtime, so your app bundles none of MUI. **Import from the root
+  barrel**: `import { Box } from '@mui/material'`. A subpath import such as
+  `@mui/material/Box` misses the share key and bundles MUI into your app
+  instead, giving you a second Emotion cache and broken theming.
+  `npm run check:imports` enforces this.
+- `import.meta.url` tells you where the current module was served from.
 
 ```typescript
-declare const __webpack_public_path__: string
-const moduleServerUrl = __webpack_public_path__  // capture once at module load
+import { Box, Typography } from '@mui/material'
+
+const moduleUrl = import.meta.url // URL of THIS chunk
 ```
+
+> **This example changed with the Vite migration, and not like for like.** It
+> used to read `__webpack_public_path__`, a Webpack-injected global pointing at
+> the container ROOT, so `` `${publicPath}remoteEntry.js` `` resolved. There is
+> no ESM equivalent. `import.meta.url` is the URL of *this chunk*, which in a
+> production build lives under `assets/` — appending to it yields
+> `…/assets/remoteEntry.js`, a 404. Reconstructing the entry URL from a chunk
+> path is guessing, so the example shows the chunk URL for what it is.
 
 ---
 
@@ -493,8 +506,8 @@ cd ../my-app
 ```
 
 1. **`package.json`** — change `name` and `version`
-2. **`webpack.config.js`** — change `DEV_SERVER_PORT` (pick an unused port)
-   and `name` in `ModuleFederationPlugin` (unique camelCase string, no spaces)
+2. **`vite.config.ts`** — change `DEV_SERVER_PORT` (pick an unused port)
+   and `name` in `federation()` (unique camelCase string, no spaces)
 3. **`src/`** — rename and replace the template files; keep `index.ts` as the
    entry point re-exporting your app config as `default`
 4. **Host registry** — add an entry to the JSON array in
@@ -512,7 +525,7 @@ cd ../my-app
 ```
 
 > The `id` field is the unique identifier and must match your app's `id`
-> and the webpack `name`. The `name` field is the human-readable label
+> and the federation `name`. The `name` field is the human-readable label
 > shown in App Settings.
 
 5. Run `npm run dev` and reload the host at `http://localhost:5500`

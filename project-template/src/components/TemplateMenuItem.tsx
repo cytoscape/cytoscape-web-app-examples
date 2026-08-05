@@ -9,7 +9,8 @@
  *
  * Replace this with your own menu action.
  */
-import Typography from '@mui/material/Typography'
+// Root barrel — see the note in TemplatePanel.tsx.
+import { Typography } from '@mui/material'
 
 import { useNetworkApi } from 'cyweb/NetworkApi'
 

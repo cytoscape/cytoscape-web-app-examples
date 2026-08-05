@@ -33,8 +33,7 @@
  *     survives `handleClose`. Plugin menu components live inside it, so
  *     they must keep the menu mounted while their own dialogs are open.
  */
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+import { Box, Typography } from '@mui/material'
 
 export const MenuSection = (): JSX.Element => (
   <Box>
@@ -50,12 +49,12 @@ export const MenuSection = (): JSX.Element => (
     </Typography>
     <Typography variant="body2" color="text.secondary" paragraph>
       Menu components are declared in <code>HelloApp.tsx</code> with{' '}
-      <code>slot: &apos;apps-menu&apos;</code> in the{' '}
-      <code>resources</code> array. The host provides a{' '}
-      <code>handleClose</code> prop to dismiss the dropdown. Because plugin
-      menus render inside the host&apos;s OverlayPanel, opening a dialog
-      requires deferring <code>handleClose</code> until the dialog is dismissed
-      — otherwise the component unmounts and the dialog disappears.
+      <code>slot: &apos;apps-menu&apos;</code> in the <code>resources</code>{' '}
+      array. The host provides a <code>handleClose</code> prop to dismiss the
+      dropdown. Because plugin menus render inside the host&apos;s OverlayPanel,
+      opening a dialog requires deferring <code>handleClose</code> until the
+      dialog is dismissed — otherwise the component unmounts and the dialog
+      disappears.
     </Typography>
   </Box>
 )

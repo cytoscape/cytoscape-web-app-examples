@@ -1,0 +1,208 @@
+{
+  "$comment": [
+    "Single machine-readable inventory of the apps in this repository. Read by",
+    "scripts/manifest.mjs, which every other consumer imports: copy-dist,",
+    "verify-federation-build, check-imports and the CI workflows. Before this",
+    "existed the same facts were spread across `workspaces`, deploy-pages.yml,",
+    "copy-dist, apps.local.json and each app's bundler config -- and two of them",
+    "already disagreed about which apps get published.",
+    "",
+    "`bundler` gated every check that presumed the migrated shape while the",
+    "migration was in progress; an app joined those checks by flipping this one",
+    "field in its own migration commit. All five are 'vite' now. The field stays",
+    "because Phase 8's release check asserts on it.",
+    "",
+    "`configuredShared` is the share block each app's vite.config.ts declares.",
+    "network-statistics is {} on purpose: it uses neither React nor MUI, and its",
+    "old webpack config sharing them was one of the defects this migration fixed.",
+    "",
+    "See design/specifications/vite-migration/vite-migration.md section 8."
+  ],
+  "apps": [
+    {
+      "workspaceDir": "hello-world",
+      "publishPath": "hello-world",
+      "federationName": "hello",
+      "port": 2222,
+      "bundler": "vite",
+      "published": true,
+      "exposes": ["./AppConfig", "./NetworkSummaryMenuItem"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='hello-panel']"
+      },
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "network-statistics",
+      "publishPath": "network-statistics",
+      "federationName": "networkStatistics",
+      "port": 3333,
+      "bundler": "vite",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "console",
+        "pattern": "\\[NetworkStatistics\\] Mounted"
+      },
+      "configuredShared": {}
+    },
+    {
+      "workspaceDir": "network-workflows",
+      "publishPath": "network-workflows",
+      "federationName": "networkWorkflows",
+      "port": 7000,
+      "bundler": "vite",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='jupyter-connector-panel']"
+      },
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "project-template",
+      "publishPath": "project-template",
+      "federationName": "template",
+      "port": 5555,
+      "bundler": "vite",
+      "published": true,
+      "exposes": ["./AppConfig"],
+      "smokeObservable": {
+        "kind": "dom",
+        "setup": [
+          {
+            "action": "openRightPanel"
+          }
+        ],
+        "selector": "[data-testid='template-panel']"
+      },
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    },
+    {
+      "workspaceDir": "claude-bridge",
+      "publishPath": "claude-bridge",
+      "federationName": "claudeBridge",
+      "port": 6100,
+      "bundler": "vite",
+      "published": false,
+      "exposes": ["./AppConfig"],
+      "configuredShared": {
+        "react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "react-dom": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^18.3.1"
+        },
+        "@mui/material": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^5.18.0"
+        },
+        "@emotion/react": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        },
+        "@emotion/styled": {
+          "singleton": true,
+          "import": false,
+          "requiredVersion": "^11.10.4"
+        }
+      }
+    }
+  ]
+}

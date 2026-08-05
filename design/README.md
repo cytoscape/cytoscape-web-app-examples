@@ -9,11 +9,17 @@ Design and specification documents for `cytoscape-web-app-examples`.
 ```
 design/
 ├── specifications/     ← Cross-cutting specs (API contracts, shared conventions)
+│   └── vite-migration/                  ← Webpack → Vite migration
+│       ├── vite-migration.md            ← The plan: design, decisions, measurements
+│       └── vite-migration-checklist.md  ← Phase-by-phase implementation checklist
 └── apps/               ← Per-app design documents
     ├── hello-world/
     ├── network-workflows/
     └── project-template/
 ```
+
+Multi-document efforts get **a subdirectory under `specifications/`** named for
+the project, so the plan and its checklist stay together.
 
 ## Intended Audience
 

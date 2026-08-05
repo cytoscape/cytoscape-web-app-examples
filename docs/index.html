@@ -151,7 +151,7 @@
       <h2>Introduction</h2>
       <p>
         <a href="https://web.cytoscape.org">Cytoscape Web</a> hosts third-party
-        apps via <strong>Webpack Module Federation</strong>. Apps add panels,
+        apps via <strong>Module Federation</strong>. Apps add panels,
         menu items, and context menu actions to the host without recompiling
         it. This site hosts the live builds of four reference apps that cover
         the full <code>cyweb/*</code> API surface, plus a starter template you
@@ -173,21 +173,42 @@
         >@cytoscape-web/api-types</a>
       </div>
 
-      <h2>Try the examples in Cytoscape Web</h2>
+      <h2>Trying these examples</h2>
       <p>
         Each example below is deployed as a Module Federation remote on this
-        site. To load any of them into the live host at
-        <a href="https://web.cytoscape.org">web.cytoscape.org</a>, open
-        <strong>Apps &rarr; App Settings</strong> and add the app's
-        <code>remoteEntry.js</code> URL:
+        site, and the sources are the reference implementations to read and
+        copy. They are <strong>not</strong> installable into
+        <a href="https://web.cytoscape.org">web.cytoscape.org</a> directly from
+        here, for two independent reasons:
       </p>
-      <pre><code>https://cytoscape.org/cytoscape-web-app-examples/&lt;APP_ID&gt;/remoteEntry.js</code></pre>
+      <ul>
+        <li>
+          The host's install form takes a <strong>single-entry manifest</strong>
+          URL, not a <code>remoteEntry.js</code> URL.
+        </li>
+        <li>
+          App installs are restricted to an allowlist of origins
+          (<code>apps.cytoscape.org</code> and its staging counterpart), which
+          does not include <code>cytoscape.org</code> &mdash; where this site
+          is served from.
+        </li>
+      </ul>
       <p>
-        where <code>&lt;APP_ID&gt;</code> is one of
-        <code>hello-world</code>, <code>network-statistics</code>,
-        <code>network-workflows</code>, or <code>project-template</code>.
-        Once added, the app shows up in the App Panel or the Apps menu &mdash;
-        no install, no rebuild of the host.
+        <strong>To run them, use the repository.</strong> Clone it, start the
+        host and the app's dev server side by side, and the host picks the app
+        up from its local registry:
+      </p>
+      <pre><code># Terminal 1 — the host, reading apps.local.json
+cd cytoscape-web &amp;&amp; npm run dev:local
+
+# Terminal 2 — the app you want to try
+cd cytoscape-web-app-examples &amp;&amp; npm run dev:hello-world</code></pre>
+      <p>
+        Then open <a href="http://localhost:5500">localhost:5500</a> and enable
+        the app under <strong>Apps &rarr; Manage Apps&hellip;</strong>. See
+        <a
+          href="https://github.com/cytoscape/cytoscape-web-app-examples/blob/main/guides/getting-started.md"
+        >the getting-started guide</a> for the full walkthrough.
       </p>
 
       <h2>Example Apps</h2>

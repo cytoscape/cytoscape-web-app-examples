@@ -7,8 +7,8 @@ and the key architectural concepts you need to understand.
 
 ## Module Federation
 
-Cytoscape Web uses **Webpack Module Federation** to load plugins at runtime
-without rebuilding the host. The host exposes shared modules; plugins consume
+Cytoscape Web uses **Module Federation** (both sides build with Vite) to load
+plugins at runtime without rebuilding the host. The host exposes shared modules; plugins consume
 them via the `cyweb/` import prefix.
 
 ```
@@ -30,9 +30,28 @@ them via the `cyweb/` import prefix.
 
 ### Shared Singletons
 
-React, ReactDOM, and `@mui/material` are provided by the host as shared
-singletons. **Your app must NOT bundle its own copies.** Declare them in
-`shared` with `singleton: true` in your webpack config.
+Five packages are provided by the host as shared singletons: `react`,
+`react-dom`, `@mui/material`, `@emotion/react` and `@emotion/styled`. Declare
+all five in `shared` in your `vite.config.ts`, with `singleton: true` **and
+`import: false`**.
+
+`import: false` is what makes your app bundle no copy at all. Without it the
+plugin emits a local fallback for each package — and those fallbacks are
+*statically* imported by your exposed module, so they are downloaded and parsed
+on every load even when the host's instance is the one actually used. Measured
+on `project-template`: 92 kB of browser JavaScript with `import: false`,
+**800 kB without**, of which MUI alone is 674 kB.
+
+Both Emotion packages matter as much as MUI. MUI is built on Emotion, so an app
+that shares MUI but not Emotion gets a second Emotion cache — duplicated styles
+and a panel that ignores the host's theme.
+
+> **Import from the root barrel.** `import { Box } from '@mui/material'`, never
+> `import Box from '@mui/material/Box'`. Share keys are matched exactly, and
+> MUI subpaths are not in the plugin's known-subpath list, so a subpath import
+> silently bundles MUI into your app instead of resolving the host's. React
+> works either way, which is exactly why this defect hides. `npm run
+> check:imports` enforces it and the build fails if it slips through.
 
 ### App Discovery
 
@@ -51,8 +70,46 @@ to discover plugins:
 ```
 
 The `id` field is the unique identifier and must match your app's `id`
-(in `CyApp`) and the webpack `ModuleFederationPlugin` `name`. The
+(in `CyApp`) and the federation `name` in `vite.config.ts`. The
 `name` field is the human-readable label shown in App Settings.
+
+### How your app finds the host
+
+Your app imports `cyweb/*`, so its Module Federation runtime needs the host's
+`remoteEntry.js` URL. That URL is **not compiled into your build**.
+
+The host knows its own entry URL exactly — its base comes from its
+`config.json` — so it publishes it at boot:
+
+```js
+Object.defineProperty(window, '__CYWEB_HOST__', {
+  value: Object.freeze({
+    name: 'cyweb',
+    remoteEntry: 'https://<host>/remoteEntry.js',
+    apiVersion: '1.0',
+  }),
+  writable: false,
+  configurable: false,
+})
+```
+
+The property flags are part of the contract, not decoration: a plain assignment
+would freeze the *value* while leaving `window.__CYWEB_HOST__` itself writable
+and configurable, and `npm run preflight:host` checks all three. Immutability is
+promised because the federation runtime caches a remote's `Module` against the
+`remoteInfo` it was created with — a descriptor that changed after a remote had
+loaded could not reach that remote anyway, so the host says so rather than
+implying an update path that does not exist.
+
+`src/mfRuntimePlugin.ts` in your app reads that during the federation runtime's
+`beforeInit` hook and substitutes it before any remote resolves. A production
+build compiles in a **sentinel** (`cyweb:__CYWEB_HOST_REQUIRED__`) rather than
+a URL, so if the descriptor is missing the app throws a named error instead of
+quietly trying to reach a `localhost` address on the end user's machine.
+
+The consequence worth knowing: **one build of your app works against any
+Cytoscape Web deployment** — production, a staging instance, or a colleague's
+local host. You do not rebuild per target.
 
 ---
 

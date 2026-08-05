@@ -31,10 +31,10 @@ See the "Create a New App" section in the root [`README.md`](../../../README.md#
 
 - [ ] Rename the directory to your app name
 - [ ] Update `package.json` → `name`
-- [ ] Update `webpack.config.js` → `DEV_SERVER_PORT`, `name`, `exposes`
+- [ ] Update `vite.config.ts` → `DEV_SERVER_PORT`, `name` in `federation()`, `exposes`
 - [ ] Rename `TemplateApp.tsx` and update app `id`, `name`, `description`
 - [ ] Rename `TemplatePanel.tsx` and implement your component
-- [ ] Update `src/remotes.d.ts` to add any `cyweb/*` modules you need
+- [ ] (No `remotes.d.ts` needed — `@cytoscape-web/api-types` declares every `cyweb/*` module)
 - [ ] Register the app in the host's `src/assets/apps.local.json`
 - [ ] Add a design doc in `design/apps/<your-app-name>/README.md`
 - [ ] Add the app to the port registry in `design/specifications/README.md`

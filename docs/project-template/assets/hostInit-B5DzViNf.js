@@ -1,0 +1,1 @@
+import{n as e,t}from"./_virtual_mf___mfe_internal__template__H_A_I__hostAutoInit__H_A_I__-Da6WPXOY.js";export{t as hostInitPromise,e as initHost};

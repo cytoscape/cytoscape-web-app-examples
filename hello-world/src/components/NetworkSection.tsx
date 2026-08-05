@@ -10,12 +10,7 @@
  *   - Network creation fires `network:created` and optionally `network:switched`
  *     events, which other components can listen to via the Event Bus.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNetworkApi } from 'cyweb/NetworkApi'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'

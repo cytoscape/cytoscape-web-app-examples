@@ -10,12 +10,7 @@
  *     a file save dialog without a server round-trip.
  *   - Edge table TSV always includes `source` and `target` columns.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useTableApi } from 'cyweb/TableApi'
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'

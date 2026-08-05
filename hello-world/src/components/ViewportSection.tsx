@@ -9,12 +9,7 @@
  *   - `viewportApi.updateNodePositions()` bulk-moves nodes.
  *   - Position values are plain `[x, y, z?]` tuples.
  */
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
+import { Alert, Box, Button, Grid, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useViewportApi } from 'cyweb/ViewportApi'
 import { useSelectionApi } from 'cyweb/SelectionApi'
