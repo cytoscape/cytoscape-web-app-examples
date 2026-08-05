@@ -30,3 +30,8 @@ dist-ssr
 # target, so the rename cannot fail with EXDEV. Removed on exit; ignored in case
 # a run is killed mid-flight.
 .copy-dist-*
+
+# App Store submission bundles, written next to each app's package.json by the
+# zip-for-app-store build plugin. Regenerated on every build; deliberately
+# outside dist/, which copy-dist's allowlist would reject them from.
+*.zip

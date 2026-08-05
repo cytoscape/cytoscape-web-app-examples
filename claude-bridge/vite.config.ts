@@ -1,12 +1,27 @@
+import { readdirSync, readFileSync, rmSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { federation } from '@module-federation/vite'
 import react from '@vitejs/plugin-react'
+import AdmZip from 'adm-zip'
 import { defineConfig, normalizePath, type Plugin } from 'vite'
 
 import { CYWEB_HOST_REQUIRED } from './src/cywebHostSentinel'
 
+// The app's identity in
+// three places that must agree — the federation container name, `CyApp.id` in
+// src/TemplateApp.tsx, and the `id` in the host's apps.json — so it is one
+// constant rather than a literal repeated per use site.
+const APP_ID = 'claudeBridge'
+
 const DEV_SERVER_PORT = 6100
+
+// Read rather than imported: vite.config.ts is type-checked by
+// tsconfig.node.json, which does not enable resolveJsonModule.
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version: string }
 
 // Absolute path: runtimePlugins are imported from a generated virtual module,
 // where a relative specifier has no stable base to resolve against.
@@ -119,6 +134,105 @@ const noSharedPayload = (): Plugin => ({
   },
 })
 
+/**
+ * Packages the app for submission to the Cytoscape App Store.
+ *
+ * The store takes a zip upload, so `npm run build` leaves an
+ * `<appId>-<version>.zip` next to package.json ready to attach — see
+ * cytoscape/cytoscape-web#642.
+ *
+ * It contains the BROWSER publish set, not the whole of dist/. Three things in
+ * dist/ have no business on a public store and are excluded deliberately:
+ *
+ *   - `mf-manifest.json` embeds absolute build-machine paths (your home
+ *     directory and username) in `configuredRuntimePlugins`.
+ *   - `mf-stats.json` is build metadata nothing fetches at runtime.
+ *   - the SSR entry, loader and module-runner are ~34 kB of Node-only code
+ *     guarded by `typeof window === 'undefined'` — unreachable in a browser.
+ *
+ * This is the same set the repository publishes to GitHub Pages, so what the
+ * store serves matches what the examples site serves.
+ *
+ * An ALLOWLIST, and an unmatched file fails the build: a future plugin version
+ * must not be able to slip a new file class into a public upload by default.
+ *
+ * The zip is written OUTSIDE dist/ on purpose. A zip inside dist/ would be
+ * swept into the next one, and the repository's copy-dist rejects any file its
+ * own publish classes do not name.
+ */
+const APP_STORE_PUBLISH_CLASSES: Array<{
+  test: (path: string) => boolean
+  publish: boolean
+}> = [
+  // SSR first: these live under assets/ too, so an unordered table makes
+  // precedence depend on how the loop happens to be written.
+  { test: (p) => p === 'remoteEntry.ssr.js', publish: false },
+  { test: (p) => /^assets\/ssrEntryLoader-/.test(p), publish: false },
+  { test: (p) => /^assets\/module-runner-/.test(p), publish: false },
+  { test: (p) => /^assets\/virtual_mf-exposes-ssr/.test(p), publish: false },
+
+  { test: (p) => p === 'remoteEntry.js', publish: true },
+  { test: (p) => p === 'index.html', publish: true },
+  { test: (p) => p.startsWith('assets/'), publish: true },
+
+  {
+    test: (p) => p === 'mf-manifest.json' || p === 'mf-stats.json',
+    publish: false,
+  },
+  { test: (p) => p.startsWith('.vite/'), publish: false },
+]
+
+const zipForAppStore = (appId: string, version: string): Plugin => ({
+  name: 'zip-for-app-store',
+  apply: 'build',
+  // closeBundle, not generateBundle: the files have to exist on disk to be
+  // zipped, and generateBundle runs before anything is written.
+  closeBundle() {
+    const distDir = fileURLToPath(new URL('./dist', import.meta.url))
+    const zipPath = fileURLToPath(
+      new URL(`./${appId}-${version}.zip`, import.meta.url),
+    )
+
+    const walk = (dir: string, prefix = ''): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`
+        return entry.isDirectory() ? walk(join(dir, entry.name), rel) : [rel]
+      })
+
+    const zip = new AdmZip()
+    const unmatched: string[] = []
+    let included = 0
+
+    for (const file of walk(distDir)) {
+      const rule = APP_STORE_PUBLISH_CLASSES.find((r) => r.test(file))
+      if (rule === undefined) {
+        unmatched.push(file)
+      } else if (rule.publish) {
+        zip.addLocalFile(
+          join(distDir, file),
+          dirname(file) === '.' ? '' : dirname(file),
+        )
+        included += 1
+      }
+    }
+
+    if (unmatched.length > 0) {
+      this.error(
+        `[zip-for-app-store] dist/ contains files no publish class covers:\n` +
+          unmatched.map((f) => `    ${f}`).join('\n') +
+          `\n  Classify them in vite.config.ts before shipping — failing is ` +
+          `deliberate, so a new file class is never uploaded by accident.`,
+      )
+    }
+
+    rmSync(zipPath, { force: true })
+    zip.writeZip(zipPath)
+    this.info(
+      `[zip-for-app-store] ${appId}-${version}.zip — ${included} files, ready to upload`,
+    )
+  },
+})
+
 // NOTE: `base` is intentionally NOT set anywhere below. The MF plugin then
 // resolves publicPath to 'auto', so chunks resolve relative to remoteEntry.js
 // wherever it is deployed — parity with the old `output.publicPath: 'auto'`,
@@ -153,7 +267,7 @@ export default defineConfig(({ command }) => {
     plugins: [
       react(),
       federation({
-        name: 'claudeBridge',
+        name: APP_ID,
         filename: 'remoteEntry.js',
         dts: false,
         // Replaces the `cyweb` entry above with the URL the running host
@@ -181,6 +295,7 @@ export default defineConfig(({ command }) => {
       }),
       // AFTER federation() — it inspects the graph that plugin produces.
       noSharedPayload(),
+      zipForAppStore(APP_ID, APP_VERSION),
     ],
     build: {
       outDir: 'dist',

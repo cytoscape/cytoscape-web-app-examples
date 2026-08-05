@@ -134,6 +134,12 @@ federation({
 `npm run verify:federation` asserts all four against the built output, because
 every one of them looks correct in the config when it is wrong.
 
+The config also carries two build-time gates, both deliberately fatal:
+`noSharedPayload` (a shared package's implementation must not end up in the
+remote's own chunks) and `zipForAppStore`, which writes
+`<appId>-<version>.zip` for App Store submission from an allowlist — a file
+class the list does not name fails the build rather than being uploaded.
+
 ---
 
 ## 4. API Usage Patterns
