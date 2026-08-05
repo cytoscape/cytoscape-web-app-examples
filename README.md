@@ -1,6 +1,6 @@
 # Developing Apps for _[Cytoscape Web](https://github.com/cytoscape/cytoscape-web/)_
 
-- For Cytoscape Web App API version 1.0 beta: May 2026
+- Targets Cytoscape Web **App API 1.0** ([`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types))
 
 > Reference implementations and documentation for Cytoscape Web app development
 

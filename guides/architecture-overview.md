@@ -218,7 +218,7 @@ const ApiErrorCode = {
 ```
 
 For the complete list (11 codes), see the
-[App API Reference](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/Api.md#error-codes).
+[App API Reference](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/Api.md#error-codes).
 
 ---
 

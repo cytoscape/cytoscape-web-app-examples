@@ -33,7 +33,7 @@ cytoscape-web-app-examples/
 - Host (`cytoscape-web`) runs on `localhost:5500`
 - Plugins import from host via `cyweb/<ModuleName>` Module Federation remotes
 - Plugin components are registered in host's `src/assets/apps.json` (prod) or `apps.local.json` (dev)
-- Both repos must be on the same branch (`new-app-api`) for Phase 1 API features
+- App API 1.0 is merged into the host's `development`; no feature branch is required
 
 ## Each App Structure
 

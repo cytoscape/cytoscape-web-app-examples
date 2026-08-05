@@ -38,7 +38,7 @@ Config: `.eslintrc.json` at repo root
 
 - All host App API functions return `ApiResult<T>` — always check `result.success`
 - Host store selectors: `useXxxStore((state: any) => state.field)`
-- New App API (`cyweb/XxxApi`) available only on `new-app-api` branch
+- New App API (`cyweb/XxxApi`) is on the host's `development` branch
 
 ## File Naming
 

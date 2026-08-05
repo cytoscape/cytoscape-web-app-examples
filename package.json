@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web-app-examples",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "private": true,
   "engines": {
     "node": ">=24.0.0"
@@ -33,7 +33,7 @@
   },
   "//peerDependencies": [
     "Removed. This block used to be the repository's ONLY direct declaration of",
-    "@mui/material, react and react-dom — every app resolved them by hoisting.",
+    "@mui/material, react and react-dom \u2014 every app resolved them by hoisting.",
     "Each app now declares its own peerDependencies (the packages the host",
     "provides as Module Federation singletons), so there is nothing left for a",
     "root block to supply. scripts/manifest.mjs cross-checks each app's ranges",
@@ -43,7 +43,7 @@
     "The build tooling here is only what the ROOT scripts need: Playwright for",
     "the host preflight, and the shared TypeScript. Each app declares its own",
     "vite, @module-federation/*, React and MUI, so a copied-out app installs on",
-    "its own — which is the documented way to start a new app."
+    "its own \u2014 which is the documented way to start a new app."
   ],
   "devDependencies": {
     "@cytoscape-web/api-types": "^1.0.0-beta.3",
