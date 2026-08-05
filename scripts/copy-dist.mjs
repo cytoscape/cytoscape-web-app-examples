@@ -7,9 +7,9 @@
 // indefinitely. The Pages workflow only avoided this by `rm -rf`ing first, so
 // the script and the workflow disagreed; both now come through here.
 //
-// Order matters: validate EVERYTHING, stage into a temp directory, and only
-// then swap. A manifest or build error caught on the fourth app must not leave
-// docs/ half-emptied.
+// Order matters: validate EVERYTHING, stage, and only then swap. A manifest or
+// build error caught on the fourth app must not leave docs/ half-emptied — and
+// see the staging comment below for why "stage" cannot mean os.tmpdir().
 //
 // See design/specifications/vite-migration/vite-migration.md section 8.
 
@@ -22,7 +22,6 @@ import {
   rmSync,
   statSync,
 } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
 
 import { DOCS_ROOT, loadManifest, REPO_ROOT } from './manifest.mjs'
@@ -140,7 +139,15 @@ const main = () => {
   }
 
   // ---- Stage into a temp directory ------------------------------------------
-  const stagingRoot = mkdtempSync(join(tmpdir(), 'cyweb-copy-dist-'))
+  //
+  // Inside the REPOSITORY, next to docs/ — deliberately not os.tmpdir().
+  // `rename(2)` cannot cross filesystems, and /tmp is a separate mount on most
+  // Linux setups (tmpfs) and in most container images. The swap below deletes
+  // the target before renaming, so a cross-device rename would fail with EXDEV
+  // *after* docs/<publishPath> is already gone — leaving exactly the
+  // half-emptied docs/ this file's header promises cannot happen. Staging on
+  // the same filesystem as the target is what makes that promise true.
+  const stagingRoot = mkdtempSync(resolve(DOCS_ROOT, '..', '.copy-dist-'))
   try {
     for (const { app, distDir, keep } of staged) {
       const target = join(stagingRoot, app.publishPath)

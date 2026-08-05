@@ -25,3 +25,8 @@ dist-ssr
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# copy-dist stages here before swapping into docs/ — same filesystem as the
+# target, so the rename cannot fail with EXDEV. Removed on exit; ignored in case
+# a run is killed mid-flight.
+.copy-dist-*

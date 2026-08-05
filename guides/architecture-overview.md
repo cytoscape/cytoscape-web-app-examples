@@ -82,12 +82,24 @@ The host knows its own entry URL exactly — its base comes from its
 `config.json` — so it publishes it at boot:
 
 ```js
-window.__CYWEB_HOST__ = Object.freeze({
-  name: 'cyweb',
-  remoteEntry: 'https://<host>/remoteEntry.js',
-  apiVersion: '1.0',
+Object.defineProperty(window, '__CYWEB_HOST__', {
+  value: Object.freeze({
+    name: 'cyweb',
+    remoteEntry: 'https://<host>/remoteEntry.js',
+    apiVersion: '1.0',
+  }),
+  writable: false,
+  configurable: false,
 })
 ```
+
+The property flags are part of the contract, not decoration: a plain assignment
+would freeze the *value* while leaving `window.__CYWEB_HOST__` itself writable
+and configurable, and `npm run preflight:host` checks all three. Immutability is
+promised because the federation runtime caches a remote's `Module` against the
+`remoteInfo` it was created with — a descriptor that changed after a remote had
+loaded could not reach that remote anyway, so the host says so rather than
+implying an update path that does not exist.
 
 `src/mfRuntimePlugin.ts` in your app reads that during the federation runtime's
 `beforeInit` hook and substitutes it before any remote resolves. A production

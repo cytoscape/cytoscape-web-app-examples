@@ -11,8 +11,10 @@
 // designed, not a reason to loosen it — so Webpack apps are skipped entirely
 // until the commit that migrates them flips one manifest field.
 //
-// Usage:  npm run verify:federation            all Vite apps
-//         npm run verify:federation -- hello   one app, by workspaceDir
+// Usage:  npm run verify:federation                  all Vite apps
+//         npm run verify:federation -- hello-world   one app, by workspaceDir
+//                                                    (the DIRECTORY, not the
+//                                                     federation name)
 //
 // The mf-manifest.json shape below was read off a real build of the section 5.5
 // canonical config (@module-federation/vite 1.16.8), not inferred:
@@ -272,16 +274,24 @@ const main = () => {
   const only = process.argv.slice(2).filter((a) => !a.startsWith('-'))
   const { apps } = loadManifest()
 
-  const scope = apps.filter(
-    (a) =>
-      a.bundler === 'vite' &&
-      (only.length === 0 || only.includes(a.workspaceDir)),
-  )
-  const skipped = apps.filter(
-    (a) =>
-      a.bundler !== 'vite' &&
-      (only.length === 0 || only.includes(a.workspaceDir)),
-  )
+  // An argument naming no app is an ERROR, not an empty run. These are
+  // workspace DIRECTORIES (`hello-world`), not federation names (`hello`), and
+  // this file's own usage comment got that wrong — so a CI step that named a
+  // renamed or misspelled app would have reported success while verifying
+  // nothing. "No Vite apps in the manifest" is the only legitimate empty run.
+  const known = new Set(apps.map((a) => a.workspaceDir))
+  const unknown = only.filter((name) => !known.has(name))
+  if (unknown.length > 0) {
+    console.error(
+      `✗ no app named ${unknown.join(', ')} in apps.manifest.json.\n` +
+        `  Known workspace directories: ${[...known].join(', ')}`,
+    )
+    process.exit(1)
+  }
+
+  const inScope = (a) => only.length === 0 || only.includes(a.workspaceDir)
+  const scope = apps.filter((a) => a.bundler === 'vite' && inScope(a))
+  const skipped = apps.filter((a) => a.bundler !== 'vite' && inScope(a))
 
   for (const app of skipped) {
     console.log(`- ${app.workspaceDir}: skipped (bundler: ${app.bundler})`)
