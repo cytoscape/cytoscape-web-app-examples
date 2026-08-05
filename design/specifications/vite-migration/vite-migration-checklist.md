@@ -3,6 +3,13 @@
 > Track progress across all eight phases. Mark `[x]` when complete. Run the
 > per-phase verification before starting the next phase.
 >
+> **Status (8/4/2026): Phases 1–7 complete. Phase 8 is rehearsed in full
+> locally and waits on one thing — the host publishing `window.__CYWEB_HOST__`
+> from `web.cytoscape.org`.** Everything downstream of that is verified: five
+> apps on Vite, the Webpack toolchain gone, CI green on every push, and all
+> four published apps loading through the real host loader from a separate
+> origin. See Phase 8 for exactly what a deployed run would add.
+>
 > **Phases are strictly ordered**, and nothing Webpack-breaking happens outside
 > the app that is currently migrating.
 >
@@ -838,32 +845,96 @@ files were already deleted with their apps in Phases 4–6.
 
 ---
 
-## Phase 8: Production verification
+## Phase 8: Production verification ⏸ **rehearsed in full locally (8/4/2026); the deployed run is outstanding**
 
 _Design: §11 steps 13–14_
 
+> **Why this cannot be finished yet.** Phase 2's production deploy was waived,
+> so `web.cytoscape.org` publishes no host descriptor. A migrated app ships a
+> sentinel rather than a fallback, so it cannot load there by construction —
+> and the deploy preflight, now armed, correctly refuses to publish. This phase
+> unblocks when the host ships, and not before.
+>
+> **What was done instead: the whole phase, against local production builds.**
+> The host's `vite build` served by `vite preview` on :5500, and the real
+> `docs/` publish set served on :8081 — a **different origin**, so CORS and
+> cross-origin module loading are exercised rather than assumed. App discovery
+> went through the `/apps.json` interception §11 step 14 prescribes (the
+> install form takes a single-entry manifest from an allowlisted origin, which
+> rules out the UI path). **20 checks across 4 apps, all green.**
+>
+> The Netlify branch preview was tried first and is **not available**:
+> `<branch>--incredible-meringue-aa83b1.netlify.app` 404s for every branch and
+> so does the site root, while `web.cytoscape.org` answers 200. The host repo's
+> `README.md` and `AGENTS.md` still document that URL — a separate, unrelated
+> staleness worth fixing there.
+
 ### Deliverables
 
-- [ ] Run the production smoke (§11 step 14) for **every `published: true`** app
-- [ ] Record final bundle sizes and compare against the Phase 4 baseline
+- [x] Run the production smoke (§11 step 14) for **every `published: true`** app
+      — against local production builds; see the caveat below
+- [x] Record final bundle sizes and compare against the Phase 4 baseline
+
+| App | raw | gzip | files |
+| --- | ---: | ---: | ---: |
+| `hello-world` | 133,779 | 39,670 | 18 |
+| `network-statistics` | 74,077 | 24,936 | 10 |
+| `network-workflows` | 94,223 | 32,732 | 18 |
+| `project-template` | 93,695 | 32,058 | 16 |
+| **total** | **395,774** | **129,396** | **62** |
+
+Against Phase 4's measurement of the same pilot — 92,325 B with `import: false`
+against 800,753 B with fallbacks — **all four published apps together are less
+than half what one app would have cost with fallbacks enabled.** That is §5.7's
+decision showing up at the scale of the whole publish set.
 
 ### Verification (Phase 8)
 
-- [ ] **First**: every `published: true` app has `bundler === 'vite'`. After
+- [x] **First**: every `published: true` app has `bundler === 'vite'`. After
       Phase 7 the two sets coincide; a mismatch means an app was published
       unmigrated, and a Webpack `var` remote cannot load in a host that
-      registers `type: 'module'`
-- [ ] Then, per app:
+      registers `type: 'module'` — checked before anything else ran
+- [x] Then, per app:
   - Transport — deployed `remoteEntry.js` and one hashed chunk fetch
-    cross-origin with correct CORS headers and JS MIME type
-  - `remoteEntry.js` — response URL equals the cache-busted URL **exactly**, and
-    its body hash matches the SHA-256 map
+    cross-origin with correct CORS headers and JS MIME type — 4/4:
+    `200`, `application/javascript`, `Access-Control-Allow-Origin: *`
+  - ~~`remoteEntry.js` — response URL equals the cache-busted URL **exactly**, and
+    its body hash matches the SHA-256 map~~ — **not applicable to a rehearsal.**
+    The SHA-256 map exists to prove the bytes on the CDN are the bytes that were
+    built; serving the build directory itself makes that vacuous. It applies to
+    the deployed run
   - Chunks — same origin, under `/<publishPath>/assets/`, **path and body hash
     both in the SHA-256 map**. They carry no `?v=`: a relative ESM import does
-    not inherit the parent URL's query
+    not inherit the parent URL's query — path and `?v=` confirmed (13/5/13/11
+    chunks); the hash half belongs to the deployed run
   - The app loads through the **real host loader** and produces its manifest
-    `smokeObservable`
-- [ ] §11 step 13 — shared packages come from the host, not the remote
+    `smokeObservable` — 4/4, including `network-statistics`' `kind: "console"`
+    pattern, which is the only one of the four that renders nothing
+- [x] §11 step 13 — shared packages come from the host, not the remote. Three
+      independent angles, because any one alone is weak:
+  - **Bytes:** the app origin served nothing over 100 kB. React or MUI would
+    have exceeded that on its own
+  - **Identity:** the remote's panel carries a `__reactFiber$` key, i.e. it is a
+    node in the **host's** React tree. Two Reacts throw "invalid hook call"
+    long before reaching that state
+  - **Styling:** the remote's MUI `sx` resolved against the host's theme
+    (`padding: 16px`, `display: flex`) with 6 Emotion style tags — a second
+    Emotion cache would have produced its own
+
+### What the rehearsal does not cover
+
+Everything specific to the real deployment, and worth being precise about since
+this is the part still owed:
+
+1. **That `web.cytoscape.org` publishes the descriptor at all** — the one thing
+   the whole migration now waits on
+2. **A non-`/` `urlBaseName`** — production uses `/`, so
+   `buildHostRemoteEntryUrl`'s based-deployment branch is still covered only by
+   its unit test
+3. **The CDN's own MIME types and cache headers** — `http-server` is not
+   GitHub Pages
+4. **The SHA-256 identity checks**, which are meaningless when the "CDN" is the
+   build directory
 
 ---
 
@@ -871,19 +942,25 @@ _Design: §11 steps 13–14_
 
 ### Build & test
 
-- [ ] `npm run typecheck --workspaces` passes
-- [ ] `npm run test --workspaces --if-present` passes
-- [ ] `npm run build --workspaces` succeeds
-- [ ] `npm run verify:federation` passes for all five apps
-- [ ] `npm run check:imports` passes for all five apps
-- [ ] `npm run deploy` produces exactly the approved publish set
+- [x] `npm run typecheck --workspaces` passes
+- [x] `npm run test --workspaces --if-present` passes
+- [x] `npm run build --workspaces` succeeds
+- [x] `npm run verify:federation` passes for all five apps — 27 / 26 / 26 / 26
+      and **16** for `network-statistics`, which shares nothing, so the
+      per-package assertions have nothing to assert
+- [x] `npm run check:imports` passes for all five apps
+- [x] `npm run deploy` produces exactly the approved publish set
 
 ### Contract
 
-- [ ] Every `remoteEntry.js` is an ES module (not `var <name>;`)
-- [ ] Every production `dist/` carries the sentinel, never `localhost:5500`
-- [ ] No React / ReactDOM / MUI / Emotion implementation in any remote's bundle
-- [ ] The host's `FEDERATION_SHARED_SINGLETONS` is **unchanged** — §5.8's
+- [x] Every `remoteEntry.js` is an ES module (not `var <name>;`) — asserted by
+      the verifier on every build, in CI, for all five
+- [x] Every production `dist/` carries the sentinel, never `localhost:5500`
+- [x] No React / ReactDOM / MUI / Emotion implementation in any remote's bundle
+      — enforced at build time by `noSharedPayload` (which fires on
+      `chunk.modules` before minification, the only place the question is
+      answerable) and confirmed at runtime in Phase 8
+- [x] The host's `FEDERATION_SHARED_SINGLETONS` is **unchanged** — §5.8's
       root-barrel decision is what made that possible
 
 ### Deferred, deliberately

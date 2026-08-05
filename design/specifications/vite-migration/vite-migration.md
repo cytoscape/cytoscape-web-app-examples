@@ -27,6 +27,16 @@
 > - [`docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md`](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/vite-migration-federation-test-hardening.md)
 >   — the host's own Vite migration and its test net
 
+- Rev. 23 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 8 rehearsed
+  in full against local production builds**, host and publish set on separate
+  origins so CORS and cross-origin module loading are exercised rather than
+  assumed: 20 checks across the four published apps, all green, plus §11
+  step 13 from three independent angles (bytes, React fiber identity, Emotion
+  theming). Recorded the four things a *deployed* run would add that this
+  cannot, so the remaining gap is stated rather than implied. The Netlify
+  branch preview turned out not to exist — every branch and the site root
+  404 — which also means the host repo's README and AGENTS.md document a dead
+  URL.
 - Rev. 22 (8/4/2026): Keiichiro ONO and Claude (Opus 5) — **Phase 7 done; the
   Webpack toolchain is gone.** Two things worth recording. First, the "no
   webpack references" exit criterion cannot be applied literally: 44 of the 53
@@ -2711,7 +2721,7 @@ field, which those jobs read (§8). Nobody edits a required-checks list.
 | 5 ✅  | **`hello-world`.** Migrate; fix `__webpack_public_path__` (§7.6); §11 steps 6–7 and the runtime half of step 13     | **Done 8/4/2026.** Shared React + Emotion verified across the boundary: the remote's MUI `MenuItem` renders in the host's own tree and its hooks run, the panel computes `sx` against the host theme, no invalid-hook-call. §7.6's replacement verified at runtime — the header's chunk URL was fetched and returned 200 |
 | 6 ✅  | `network-statistics` (non-React shape, §7.3), `network-workflows` (fix the hardcoded `mode`), `claude-bridge`; CI list now covers all five | **Done 8/4/2026.** All five are `bundler: 'vite'`, so the verifier and `check:imports` print no `skipped` lines at all. `network-statistics` verified in a running host from a sentinel-only production build, emitting its console `smokeObservable`. `network-workflows`' hardcoded `mode: 'development'` is gone with its config — its production build is now genuinely minified |
 | 7 ✅  | **Remove the Webpack toolchain.** Delete `webpack*`, `ts-loader`, `clean-webpack-plugin` and the old scripts; reconcile the root `peerDependencies` (§7.1); documentation (§10) | **Done 8/4/2026.** `npm install` clean with no `webpack*` in the tree; all five apps build, typecheck, test and verify. No mention that *instructs* editing a webpack config or describes the repo as building with Webpack survives — explanatory mentions do, and deliberately (see below). `docs/` regenerated: 5.8 MB → 1.1 MB |
-| 8     | Production smoke test (§11 step 14); shared-package checks (§11 step 13)                                            | **First** assert every `published: true` app has `bundler === 'vite'` — after Phase 7 the two sets coincide, and a mismatch means an app was published unmigrated. **Then** every published app loads in the production host and produces its manifest `smokeObservable`; host singletons used |
+| 8 ⏸   | Production smoke test (§11 step 14); shared-package checks (§11 step 13)                                            | **Rehearsed locally 8/4/2026, deployed run outstanding.** The `bundler === 'vite'` precondition was asserted first and holds; all four published apps then loaded through the real host loader from a separate origin and produced their `smokeObservable`, with host singletons confirmed three ways. What is still owed is the deployed run itself — which cannot happen until the host publishes the descriptor (the Phase 2 waiver) |
 
 Notes on the ordering:
 
