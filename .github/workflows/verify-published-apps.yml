@@ -1,0 +1,87 @@
+# Verifies that the apps actually SERVED by GitHub Pages load inside a running
+# Cytoscape Web. See scripts/preflight-apps.mjs for the failure this exists for.
+#
+# Why this is a separate workflow, and not a step in deploy-pages.yml:
+#
+#   This repository's Pages site is configured as `build_type: legacy`
+#   (source: main:/docs), so pushing to main publishes docs/ DIRECTLY, without
+#   consulting any workflow. On 8/5/2026 deploy-pages.yml failed at its release
+#   gate, its `deploy` job was skipped — and the apps were published anyway.
+#   A check placed behind `needs: deploy` would not have run at all.
+#
+#   So this workflow deliberately depends on nothing. It observes the live site
+#   after the fact. That makes it DETECTION, not prevention: while Pages stays
+#   on the legacy build type, nothing in CI can block a publish. Switching the
+#   site to `build_type: workflow` is what would make deploy-pages.yml's gate
+#   real — and would also stop Jekyll eating `_`-prefixed chunks in the first
+#   place.
+#
+# The host defaults to dev1, the team's test deployment, because it is the only
+# reachable environment that publishes window.__CYWEB_HOST__ and serves the app
+# from a SUBPATH — production is at `/` and cannot exercise the based-BASE_URL
+# branch of the descriptor.
+
+name: Verify published apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'apps.manifest.json'
+      - 'scripts/preflight-apps.mjs'
+      - '.github/workflows/verify-published-apps.yml'
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Cytoscape Web host to load the apps into'
+        required: false
+        default: 'https://dev1.ndexbio.org/cytoscape'
+      appsBase:
+        description: 'Base URL the published apps are served from'
+        required: false
+        default: 'https://cytoscape.org/cytoscape-web-app-examples'
+
+concurrency:
+  group: verify-published-apps
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HOST_URL: ${{ inputs.host || 'https://dev1.ndexbio.org/cytoscape' }}
+      APPS_BASE: ${{ inputs.appsBase || 'https://cytoscape.org/cytoscape-web-app-examples' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Pages republishes asynchronously after the push that triggered this run,
+      # so checking immediately would read the PREVIOUS build and report a stale
+      # result — green for a publish that is actually broken, or red for one
+      # that is already fixed.
+      - name: Wait for Pages to republish
+        if: github.event_name == 'push'
+        run: sleep 90
+
+      # Prove the gate can fail before trusting the run below. Reproduces the
+      # 8/5 shape — valid JS, right MIME, 200, missing transitive chunk — with
+      # no network access.
+      - name: Self-test the gate
+        run: npm run preflight:apps -- --selftest
+
+      - name: Load every published app into the host
+        run: npm run preflight:apps -- "$HOST_URL" "$APPS_BASE"
