@@ -1,0 +1,141 @@
+# Verifies that the apps actually SERVED by GitHub Pages load inside a running
+# Cytoscape Web. See scripts/preflight-apps.mjs for the failure this exists for.
+#
+# Why this is a separate workflow, and not a step in deploy-pages.yml:
+#
+#   This repository's Pages site is configured as `build_type: legacy`
+#   (source: main:/docs), so pushing to main publishes docs/ DIRECTLY, without
+#   consulting any workflow. On 8/5/2026 deploy-pages.yml failed at its release
+#   gate, its `deploy` job was skipped — and the apps were published anyway.
+#   A check placed behind `needs: deploy` would not have run at all.
+#
+#   So this workflow deliberately depends on nothing. It observes the live site
+#   after the fact. That makes it DETECTION, not prevention: while Pages stays
+#   on the legacy build type, nothing in CI can block a publish. Switching the
+#   site to `build_type: workflow` is what would make deploy-pages.yml's gate
+#   real — and would also stop Jekyll eating `_`-prefixed chunks in the first
+#   place.
+#
+# The host defaults to dev1, the team's test deployment, because it is the only
+# reachable environment that publishes window.__CYWEB_HOST__ and serves the app
+# from a SUBPATH — production is at `/` and cannot exercise the based-BASE_URL
+# branch of the descriptor.
+
+name: Verify published apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'apps.manifest.json'
+      - 'scripts/preflight-apps.mjs'
+      - '.github/workflows/verify-published-apps.yml'
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Cytoscape Web host to load the apps into'
+        required: false
+        default: 'https://dev1.ndexbio.org/cytoscape'
+      appsBase:
+        description: 'Base URL the published apps are served from'
+        required: false
+        default: 'https://cytoscape.org/cytoscape-web-app-examples'
+
+permissions:
+  contents: read
+  pages: read
+
+concurrency:
+  group: verify-published-apps
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # MUST stay comfortably above PAGES_WAIT_SECONDS below, because that wait
+    # happens INSIDE this budget. Setting the two equal means a slow but
+    # successful Pages deployment gets the job cancelled before either preflight
+    # runs — the checks silently never happen, which is the one outcome a
+    # verification workflow must not have.
+    #
+    # Measured on a comparable run: ~35s of setup (6s job setup, 1s checkout,
+    # 1s node, 5s warm `npm ci`, 22s Chromium) and well under 2 min for both
+    # preflights. 15 minutes of headroom covers a cold npm cache and a slow
+    # network several times over.
+    timeout-minutes: 30
+    env:
+      HOST_URL: ${{ inputs.host || 'https://dev1.ndexbio.org/cytoscape' }}
+      APPS_BASE: ${{ inputs.appsBase || 'https://cytoscape.org/cytoscape-web-app-examples' }}
+      PAGES_WAIT_SECONDS: '900'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Pages republishes asynchronously after the push that triggered this run,
+      # so checking immediately reads the PREVIOUS build — green for a publish
+      # that is actually broken, or red for one already fixed.
+      #
+      # Waiting a fixed duration has the same defect, just less often: it does
+      # not establish WHICH revision is being served. This polls until Pages
+      # reports it has built THIS commit, and fails rather than proceeding to
+      # verify something other than what was pushed.
+      - name: Wait for Pages to publish this commit
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Keyed BY the sha, rather than reading /pages/builds/latest and
+          # comparing. "Latest" is a moving target: a push that lands while this
+          # waits makes the latest build a DIFFERENT commit, and a poll that
+          # waits for its own sha to be latest would then time out on a site
+          # that is perfectly healthy.
+          #
+          # Measured on this repository: for a commit that has not been
+          # deployed, this endpoint answers 200 with an EMPTY status — not 404.
+          # So an empty status is the pending signal, and treating a non-404 as
+          # terminal would fail every run that starts before Pages does.
+          deadline=$(( SECONDS + PAGES_WAIT_SECONDS ))
+          while true; do
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/pages/deployments/${GITHUB_SHA}" \
+              --jq '.status' 2>/dev/null || echo "")
+            echo "pages deployment ${GITHUB_SHA:0:8}: ${status:-<pending>}"
+
+            case "$status" in
+              succeed)
+                echo "Pages is serving this commit."
+                break
+                ;;
+              *error*|*fail*|*cancelled*|*lost*)
+                echo "::error::Pages deployment for ${GITHUB_SHA:0:8} ended as '$status'."
+                exit 1
+                ;;
+            esac
+
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::Timed out waiting for Pages to publish ${GITHUB_SHA:0:8} (last status: '${status:-<pending>}')."
+              exit 1
+            fi
+            sleep 15
+          done
+
+      # Prove the gate can fail before trusting the run below. Reproduces the
+      # 8/5 shape — valid JS, right MIME, 200, missing transitive chunk — with
+      # no network access.
+      - name: Self-test the gate
+        run: npm run preflight:apps -- --selftest
+
+      - name: Load every published app into the host
+        run: npm run preflight:apps -- "$HOST_URL" "$APPS_BASE"

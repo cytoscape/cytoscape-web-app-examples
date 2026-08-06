@@ -21,6 +21,7 @@ import {
   renameSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 
@@ -185,6 +186,24 @@ const main = () => {
   } finally {
     rmSync(stagingRoot, { recursive: true, force: true })
   }
+
+  // ---- .nojekyll ------------------------------------------------------------
+  //
+  // Without this file GitHub Pages runs the tree through Jekyll, which treats
+  // every path segment beginning with `_` as a source directory and does not
+  // copy it to the output. Vite's Module Federation plugin names five chunks
+  // per app `_virtual_mf-*`, including the shared-scope import map that
+  // remoteEntry.js imports FIRST — so Jekyll 404s exactly the file that has to
+  // load before anything else, and every published app fails to load while
+  // remoteEntry.js itself still answers 200.
+  //
+  // This bit only from the Vite migration: Webpack's chunk names
+  // (`main.js`, `152.js`, `src_components_*.js`) never began with `_`.
+  //
+  // Written here, not committed once by hand, because docs/ is a generated
+  // tree: a contributor who deletes it and re-runs this script must get a
+  // publishable result, not a silently broken one.
+  writeFileSync(join(DOCS_ROOT, '.nojekyll'), '')
 
   console.log(
     `\n✓ published ${staged.length} app(s) into ${relative(REPO_ROOT, DOCS_ROOT)}/`,

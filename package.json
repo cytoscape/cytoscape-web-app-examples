@@ -29,7 +29,8 @@
     "test": "npm run test --workspaces --if-present",
     "verify:federation": "node scripts/verify-federation-build.mjs",
     "check:imports": "node scripts/check-imports.mjs",
-    "preflight:host": "node scripts/preflight-host.mjs"
+    "preflight:host": "node scripts/preflight-host.mjs",
+    "preflight:apps": "node scripts/preflight-apps.mjs"
   },
   "//peerDependencies": [
     "Removed. This block used to be the repository's ONLY direct declaration of",
