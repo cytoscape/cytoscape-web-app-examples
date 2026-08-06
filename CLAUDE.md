@@ -213,6 +213,33 @@ When `cytoscape-web` adds or changes exposed modules:
 3. Update component imports and usage to match new API signatures
 4. Run `npm run build` to verify no TypeScript errors
 
+### Publishing
+
+`npm run deploy` builds every workspace and copies each `dist/` into
+`docs/<publishPath>`, which GitHub Pages serves.
+
+**`docs/.nojekyll` is load-bearing — do not delete it, and do not remove the
+line in `copy-dist.mjs` that writes it.** The Pages site is configured as
+`build_type: legacy`, so it runs `docs/` through Jekyll, which drops every path
+beginning with `_`. Vite's Module Federation plugin names five chunks per app
+`_virtual_mf-*`, including the shared-scope import map that `remoteEntry.js`
+imports first. Without `.nojekyll` every published app 404s on its first
+transitive import while `remoteEntry.js` still answers 200 — which is exactly
+what happened on 8/5/2026.
+
+Three checks cover three different things, and none substitutes for another:
+
+| Command | Reads | Catches |
+| --- | --- | --- |
+| `npm run verify:federation` | `dist/` | a wrong federation shape at build time |
+| `npm run preflight:host -- <hostUrl>` | the host | a host that publishes no usable descriptor |
+| `npm run preflight:apps -- <hostUrl> <appsBase>` | the **served** apps | anything the serving layer breaks |
+
+The third runs a real `import()` inside a real host page — the only way a
+missing transitive chunk is visible. `.github/workflows/verify-published-apps.yml`
+runs it after a publish; note that with legacy Pages it can only *detect*, since
+pushing to `main` publishes `docs/` without consulting any workflow.
+
 ---
 
 ## 6. Code Style

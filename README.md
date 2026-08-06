@@ -294,6 +294,25 @@ npm run build                   # build all workspaces
 npm run deploy                  # build and copy each workspace's dist/ into docs/
 ```
 
+### Verification
+
+```bash
+npm run verify:federation       # the built dist/ has the right federation shape
+npm run preflight:host -- <hostUrl>              # the host publishes a usable descriptor
+npm run preflight:apps -- <hostUrl> <appsBase>   # the PUBLISHED apps load in that host
+```
+
+The three cover different layers, and the gap between the first two is why the
+third exists. `verify:federation` reads `dist/`, `preflight:host` reads the
+host — so a fault in the **serving layer** between them is invisible to both. That is not
+hypothetical: GitHub Pages ran this repo's `docs/` through Jekyll, which drops
+`_`-prefixed paths, and silently 404'd the `_virtual_mf-*` chunk every app
+imports first while both other checks stayed green.
+
+`preflight:apps` loads each published app through a real dynamic `import()`
+inside a real host page, so transitive chunk fetches, CORS and MIME are the real
+ones. `-- --selftest` proves it can still fail.
+
 ---
 
 ## Deprecated APIs
