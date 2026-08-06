@@ -53,10 +53,21 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # MUST stay comfortably above PAGES_WAIT_SECONDS below, because that wait
+    # happens INSIDE this budget. Setting the two equal means a slow but
+    # successful Pages deployment gets the job cancelled before either preflight
+    # runs — the checks silently never happen, which is the one outcome a
+    # verification workflow must not have.
+    #
+    # Measured on a comparable run: ~35s of setup (6s job setup, 1s checkout,
+    # 1s node, 5s warm `npm ci`, 22s Chromium) and well under 2 min for both
+    # preflights. 15 minutes of headroom covers a cold npm cache and a slow
+    # network several times over.
+    timeout-minutes: 30
     env:
       HOST_URL: ${{ inputs.host || 'https://dev1.ndexbio.org/cytoscape' }}
       APPS_BASE: ${{ inputs.appsBase || 'https://cytoscape.org/cytoscape-web-app-examples' }}
+      PAGES_WAIT_SECONDS: '900'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -96,7 +107,7 @@ jobs:
           # deployed, this endpoint answers 200 with an EMPTY status — not 404.
           # So an empty status is the pending signal, and treating a non-404 as
           # terminal would fail every run that starts before Pages does.
-          deadline=$(( SECONDS + 900 ))
+          deadline=$(( SECONDS + PAGES_WAIT_SECONDS ))
           while true; do
             status=$(gh api "repos/${GITHUB_REPOSITORY}/pages/deployments/${GITHUB_SHA}" \
               --jq '.status' 2>/dev/null || echo "")
