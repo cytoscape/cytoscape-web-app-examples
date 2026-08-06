@@ -49,6 +49,14 @@ const SELFTEST_APPS = 'https://selftest.invalid/apps'
 const joinUrl = (base, path) => `${base.replace(/\/+$/, '')}/${path}`
 
 /**
+ * The scope name every app declares in its `remotes.cyweb.shareScope`. Not
+ * configurable here on purpose: an app that used a different one would not
+ * resolve the host's singletons, which is a defect this should surface rather
+ * than accommodate.
+ */
+const SHARE_SCOPE = 'default'
+
+/**
  * Loads one app the way the host does — `import()` → `init()` → `get()` — from
  * inside the host page, so the descriptor, the origin, CORS and every
  * transitive chunk fetch are the real ones.
@@ -56,9 +64,9 @@ const joinUrl = (base, path) => `${base.replace(/\/+$/, '')}/${path}`
  * Runs entirely in the page: the dynamic import has to be evaluated by the
  * browser in that document's context for any of the above to mean anything.
  */
-const loadApp = (page, { url, exposes, federationName }) =>
+const loadApp = (page, { url, exposes, federationName, hostName }) =>
   page.evaluate(
-    async ({ url, exposes, federationName }) => {
+    async ({ url, exposes, federationName, hostName, shareScope }) => {
       const problems = []
 
       // Status and MIME first. A 404 or a text/html error page produces a
@@ -99,10 +107,36 @@ const loadApp = (page, { url, exposes, federationName }) =>
         }
       }
 
-      // Init against the HOST's live share scope where it is reachable, so
-      // `shared` resolves to the host's singletons exactly as it does in use.
-      // An empty scope would let an app that bundles its own React pass.
-      const scope = globalThis.__FEDERATION__?.__SHARE__?.cyweb ?? {}
+      // Init against the HOST's live share scope, so `shared` resolves to the
+      // host's singletons exactly as it does in use.
+      //
+      // TWO levels, and the shape is not guessable — measured on a running
+      // host. `__SHARE__` is keyed by federation INSTANCE name, and each
+      // instance holds its scopes by scope name:
+      //
+      //   __FEDERATION__.__SHARE__.cyweb.default
+      //     → { react, react-dom, react-dom/client, react/jsx-runtime,
+      //         @mui/material, @emotion/react, @emotion/styled }
+      //
+      // `__SHARE__.default` does not exist, and `__SHARE__.cyweb` is the map of
+      // scopes rather than the scope — passing either means init() never sees
+      // the host's copies, which is invisible because init() accepts it.
+      const scope =
+        globalThis.__FEDERATION__?.__SHARE__?.[hostName]?.[shareScope]
+      if (scope === undefined || Object.keys(scope).length === 0) {
+        // Not a soft fallback: without the real scope this cannot tell an app
+        // that reuses the host's React from one that bundles its own, and
+        // saying so is better than reporting a pass that means less than it
+        // appears to.
+        return {
+          ok: false,
+          stage: 'scope',
+          detail:
+            `host published no share scope at ` +
+            `__FEDERATION__.__SHARE__.${hostName}.${shareScope}`,
+        }
+      }
+
       try {
         await mod.init(scope)
       } catch (cause) {
@@ -146,9 +180,10 @@ const loadApp = (page, { url, exposes, federationName }) =>
         apiVersion: cyApp?.apiVersion,
         resources: (cyApp?.resources ?? []).map((r) => `${r.slot}:${r.id}`),
         exposesLoaded: loaded.length,
+        sharedFromHost: Object.keys(scope).length,
       }
     },
-    { url, exposes, federationName },
+    { url, exposes, federationName, hostName, shareScope: SHARE_SCOPE },
   )
 
 /**
@@ -186,12 +221,15 @@ const runContract = async (page, hostUrl, appsBase, apps) => {
       url,
       exposes: app.exposes,
       federationName: app.federationName,
+      // The descriptor names the host's federation instance, which is the key
+      // its share scope lives under.
+      hostName: descriptor.name,
     })
 
     if (result.ok) {
       const v = result.version === undefined ? '' : ` v${result.version}`
       console.log(
-        `  ✓ ${app.publishPath}${v}  api=${result.apiVersion}  ${result.exposesLoaded}/${app.exposes.length} exposes`,
+        `  ✓ ${app.publishPath}${v}  api=${result.apiVersion}  ${result.exposesLoaded}/${app.exposes.length} exposes  ${result.sharedFromHost} shared`,
       )
       if (result.resources.length > 0) {
         console.log(`      ${result.resources.join(', ')}`)
@@ -228,12 +266,25 @@ const selftest = async (page) => {
     if (url === SELFTEST_HOST) {
       return route.fulfill({
         contentType: 'text/html',
+        // The share scope matters here: without it the app would be rejected
+        // at the `scope` stage and the selftest would pass without ever
+        // reaching the import — proving nothing about the failure it exists
+        // for. The contents only have to be non-empty and shaped like a scope.
         body: `<!doctype html><meta charset=utf-8><script>
           window.__CYWEB_HOST__ = Object.freeze({
             name: 'cyweb',
             remoteEntry: '${SELFTEST_HOST}remoteEntry.js',
             apiVersion: '1.0',
           })
+          window.__FEDERATION__ = {
+            __SHARE__: {
+              cyweb: {
+                default: {
+                  react: { '18.3.1': { get: () => () => ({}), loaded: true } },
+                },
+              },
+            },
+          }
         </script>`,
       })
     }
