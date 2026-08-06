@@ -86,23 +86,35 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Keyed BY the sha, rather than reading /pages/builds/latest and
+          # comparing. "Latest" is a moving target: a push that lands while this
+          # waits makes the latest build a DIFFERENT commit, and a poll that
+          # waits for its own sha to be latest would then time out on a site
+          # that is perfectly healthy.
+          #
+          # Measured on this repository: for a commit that has not been
+          # deployed, this endpoint answers 200 with an EMPTY status — not 404.
+          # So an empty status is the pending signal, and treating a non-404 as
+          # terminal would fail every run that starts before Pages does.
           deadline=$(( SECONDS + 900 ))
           while true; do
-            build=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest" \
-              --jq '"\(.status) \(.commit)"' 2>/dev/null || echo "unknown none")
-            status=${build%% *}
-            commit=${build##* }
-            echo "pages build: status=$status commit=${commit:0:8} (want ${GITHUB_SHA:0:8})"
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/pages/deployments/${GITHUB_SHA}" \
+              --jq '.status' 2>/dev/null || echo "")
+            echo "pages deployment ${GITHUB_SHA:0:8}: ${status:-<pending>}"
 
-            if [ "$commit" = "$GITHUB_SHA" ]; then
-              case "$status" in
-                built)   echo "Pages is serving this commit."; break ;;
-                errored) echo "::error::Pages build failed for this commit."; exit 1 ;;
-              esac
-            fi
+            case "$status" in
+              succeed)
+                echo "Pages is serving this commit."
+                break
+                ;;
+              *error*|*fail*|*cancelled*|*lost*)
+                echo "::error::Pages deployment for ${GITHUB_SHA:0:8} ended as '$status'."
+                exit 1
+                ;;
+            esac
 
             if [ "$SECONDS" -ge "$deadline" ]; then
-              echo "::error::Timed out waiting for Pages to publish ${GITHUB_SHA:0:8}."
+              echo "::error::Timed out waiting for Pages to publish ${GITHUB_SHA:0:8} (last status: '${status:-<pending>}')."
               exit 1
             fi
             sleep 15
