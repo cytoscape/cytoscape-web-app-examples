@@ -42,6 +42,10 @@ on:
         required: false
         default: 'https://cytoscape.org/cytoscape-web-app-examples'
 
+permissions:
+  contents: read
+  pages: read
+
 concurrency:
   group: verify-published-apps
   cancel-in-progress: true
@@ -70,12 +74,39 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # Pages republishes asynchronously after the push that triggered this run,
-      # so checking immediately would read the PREVIOUS build and report a stale
-      # result — green for a publish that is actually broken, or red for one
-      # that is already fixed.
-      - name: Wait for Pages to republish
+      # so checking immediately reads the PREVIOUS build — green for a publish
+      # that is actually broken, or red for one already fixed.
+      #
+      # Waiting a fixed duration has the same defect, just less often: it does
+      # not establish WHICH revision is being served. This polls until Pages
+      # reports it has built THIS commit, and fails rather than proceeding to
+      # verify something other than what was pushed.
+      - name: Wait for Pages to publish this commit
         if: github.event_name == 'push'
-        run: sleep 90
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          deadline=$(( SECONDS + 900 ))
+          while true; do
+            build=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest" \
+              --jq '"\(.status) \(.commit)"' 2>/dev/null || echo "unknown none")
+            status=${build%% *}
+            commit=${build##* }
+            echo "pages build: status=$status commit=${commit:0:8} (want ${GITHUB_SHA:0:8})"
+
+            if [ "$commit" = "$GITHUB_SHA" ]; then
+              case "$status" in
+                built)   echo "Pages is serving this commit."; break ;;
+                errored) echo "::error::Pages build failed for this commit."; exit 1 ;;
+              esac
+            fi
+
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::Timed out waiting for Pages to publish ${GITHUB_SHA:0:8}."
+              exit 1
+            fi
+            sleep 15
+          done
 
       # Prove the gate can fail before trusting the run below. Reproduces the
       # 8/5 shape — valid JS, right MIME, 200, missing transitive chunk — with
