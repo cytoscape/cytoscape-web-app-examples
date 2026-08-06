@@ -302,9 +302,9 @@ npm run preflight:host -- <hostUrl>              # the host publishes a usable d
 npm run preflight:apps -- <hostUrl> <appsBase>   # the PUBLISHED apps load in that host
 ```
 
-The three do not overlap, and the middle one is the reason the third exists.
-`verify:federation` reads `dist/`, `preflight:host` reads the host — so a fault
-in the **serving layer** between them is invisible to both. That is not
+The three cover different layers, and the gap between the first two is why the
+third exists. `verify:federation` reads `dist/`, `preflight:host` reads the
+host — so a fault in the **serving layer** between them is invisible to both. That is not
 hypothetical: GitHub Pages ran this repo's `docs/` through Jekyll, which drops
 `_`-prefixed paths, and silently 404'd the `_virtual_mf-*` chunk every app
 imports first while both other checks stayed green.
