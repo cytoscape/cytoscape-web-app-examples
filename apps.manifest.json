@@ -22,11 +22,12 @@
     {
       "workspaceDir": "hello-world",
       "publishPath": "hello-world",
-      "federationName": "hello",
-      "port": 2222,
       "bundler": "vite",
       "published": true,
-      "exposes": ["./AppConfig", "./NetworkSummaryMenuItem"],
+      "exposes": [
+        "./AppConfig",
+        "./NetworkSummaryMenuItem"
+      ],
       "smokeObservable": {
         "kind": "dom",
         "setup": [
@@ -35,57 +36,29 @@
           }
         ],
         "selector": "[data-testid='hello-panel']"
-      },
-      "configuredShared": {
-        "react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "react-dom": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "@mui/material": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^5.18.0"
-        },
-        "@emotion/react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        },
-        "@emotion/styled": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        }
       }
     },
     {
       "workspaceDir": "network-statistics",
       "publishPath": "network-statistics",
-      "federationName": "networkStatistics",
-      "port": 3333,
       "bundler": "vite",
       "published": true,
-      "exposes": ["./AppConfig"],
+      "exposes": [
+        "./AppConfig"
+      ],
       "smokeObservable": {
         "kind": "console",
         "pattern": "\\[NetworkStatistics\\] Mounted"
-      },
-      "configuredShared": {}
+      }
     },
     {
       "workspaceDir": "network-workflows",
       "publishPath": "network-workflows",
-      "federationName": "networkWorkflows",
-      "port": 7000,
       "bundler": "vite",
       "published": true,
-      "exposes": ["./AppConfig"],
+      "exposes": [
+        "./AppConfig"
+      ],
       "smokeObservable": {
         "kind": "dom",
         "setup": [
@@ -94,43 +67,16 @@
           }
         ],
         "selector": "[data-testid='jupyter-connector-panel']"
-      },
-      "configuredShared": {
-        "react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "react-dom": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "@mui/material": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^5.18.0"
-        },
-        "@emotion/react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        },
-        "@emotion/styled": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        }
       }
     },
     {
       "workspaceDir": "project-template",
       "publishPath": "project-template",
-      "federationName": "template",
-      "port": 5555,
       "bundler": "vite",
       "published": true,
-      "exposes": ["./AppConfig"],
+      "exposes": [
+        "./AppConfig"
+      ],
       "smokeObservable": {
         "kind": "dom",
         "setup": [
@@ -139,70 +85,16 @@
           }
         ],
         "selector": "[data-testid='template-panel']"
-      },
-      "configuredShared": {
-        "react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "react-dom": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "@mui/material": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^5.18.0"
-        },
-        "@emotion/react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        },
-        "@emotion/styled": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        }
       }
     },
     {
       "workspaceDir": "claude-bridge",
       "publishPath": "claude-bridge",
-      "federationName": "claudeBridge",
-      "port": 6100,
       "bundler": "vite",
       "published": false,
-      "exposes": ["./AppConfig"],
-      "configuredShared": {
-        "react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "react-dom": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^18.3.1"
-        },
-        "@mui/material": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^5.18.0"
-        },
-        "@emotion/react": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        },
-        "@emotion/styled": {
-          "singleton": true,
-          "import": false,
-          "requiredVersion": "^11.10.4"
-        }
-      }
+      "exposes": [
+        "./AppConfig"
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/claude-bridge",
-  "description": "Claude Code \u2194 Cytoscape Web bridge via CDP + MCP",
+  "description": "Claude Code ↔ Cytoscape Web bridge via CDP + MCP",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,13 +13,24 @@
   "engines": {
     "node": ">=24.0.0"
   },
+  "//cyweb": [
+    "This app's identity, written ONCE. The federation container name, the",
+    "CyApp.id and the dev install manifest all read from here — before this",
+    "block they were three hand-synced string literals with no import between",
+    "them, and nothing noticed a mismatch until the host refused to load."
+  ],
+  "cyweb": {
+    "id": "claudeBridge",
+    "displayName": "Claude Bridge",
+    "port": 6100
+  },
   "//mcp-server": [
     "claude-bridge/mcp-server/ is a SEPARATE Node package built with plain tsc.",
-    "It never goes through the bundler and is out of scope for this config \u2014",
+    "It never goes through the bundler and is out of scope for this config —",
     "tsconfig.json's `include: [\"src/**/*\"]` already excludes it."
   ],
   "//peerDependencies": [
-    "Provided by the HOST as Module Federation singletons \u2014 the share block",
+    "Provided by the HOST as Module Federation singletons — the share block",
     "uses `import: false`, so no fallback copy is bundled. The ranges must",
     "match configuredShared in ../apps.manifest.json."
   ],
@@ -32,17 +43,15 @@
   },
   "devDependencies": {
     "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@cytoscape-web/app-runtime": "^0.1.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
-    "@module-federation/runtime": "2.5.1",
     "@module-federation/vite": "1.16.8",
     "@mui/material": "^5.18.0",
-    "@types/adm-zip": "^0.5.5",
     "@types/node": "^24.0.0",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "adm-zip": "^0.5.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "typescript": "^5.6.2",

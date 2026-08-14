@@ -5,7 +5,7 @@
     "Module Federation SDK's declarations do `import webpack from \"webpack\"`,",
     "which does not resolve here and is not worth depending on to silence."
   ],
-  "include": ["vite.config.ts", "src/cywebHostSentinel.ts"],
+  "include": ["vite.config.ts"],
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext"],

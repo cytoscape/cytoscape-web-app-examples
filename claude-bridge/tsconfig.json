@@ -7,7 +7,7 @@
     "src/ must never import Module Federation runtime types: those reach",
     "@module-federation/sdk, whose ModuleFederationPlugin.d.ts does",
     "`import webpack from \"webpack\"`, a package this app does not depend on.",
-    "src/mfRuntimePlugin.ts declares a local structural type instead.",
+    "@cytoscape-web/app-runtime declares a local structural type instead, so\n    nothing here reaches those declarations.",
     "",
     "`typeRoots` is deliberately absent: it pointed at ./node_modules/@types,",
     "a directory that does not exist here, and setting it suppresses the",

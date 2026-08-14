@@ -3,11 +3,11 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: Phases 0 and 1 complete. Phase 2 is next.**
-> `@cytoscape-web/app-runtime@0.1.0` exists and `project-template` builds
-> through it, with its federation output matching
-> [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
-> runtime-plugin path. The other four apps still carry their own copies.
+> **Status: Phases 0–2 complete. Phase 3 is next.**
+> All five apps build through `@cytoscape-web/app-runtime@0.1.0`, and all five
+> match [`phase0-baseline.md`](phase0-baseline.md) in every audit field except
+> the runtime-plugin path. The duplicated config, resolver, sentinel and test
+> are gone from every app.
 >
 > **Phases are strictly ordered.** Phase 1 converts exactly one app; the other
 > four keep their hand-written configs until Phase 2. Nothing outside the app
@@ -290,51 +290,83 @@ pattern is applied four more times.
 
 ---
 
-## Phase 2: Migrate the remaining four apps
+## Phase 2: Migrate the remaining four apps ✅ **COMPLETE**
 
 _Design: §5 Phase 2, §4.2 (`react`, `exposes`), §4.4 (`CYWEB_SHARED`)_
+
+> **Two decisions taken during implementation:**
+>
+> - **`configuredShared` is derived from `peerDependencies`, not from the SDK.**
+>   The checklist said "generated from each app's metadata and `CYWEB_SHARED`".
+>   Importing the SDK constant into `scripts/manifest.mjs` would make
+>   `manifest:validate` depend on the SDK having been built, which CI runs as a
+>   separate job. `peerDependencies` is already the app's statement of "the host
+>   provides these", so the manifest expands that instead — and the check that
+>   matters is unaffected: `verify:federation` compares the derived records
+>   against the BUILT output, which came from `CYWEB_SHARED`. A disagreement
+>   between an app and the SDK fails there, with the artifact as evidence.
+>   **Observed going red**: setting `react: ^19.0.0` in one app's peers against
+>   an `^18.3.1` build produced `1 failed, 25 passed` naming the package.
+> - **`federationName`, `port` and `configuredShared` are gone from
+>   `apps.manifest.json` entirely** rather than kept and cross-checked. Writing
+>   one by hand is now an error that names the field and says to delete the line,
+>   because the fix is deletion, not correction.
+>
+> **One test was scoped back.** `hello-world`'s smoke test tried to import
+> `NetworkSummaryMenuItem` and assert a default export. It cannot: that component
+> calls `useWorkspaceApi` from `cyweb/WorkspaceApi`, a federated module that
+> resolves inside the host and not at all under vitest. **No component touching a
+> `cyweb/*` API can be unit-tested today** — direct evidence for why
+> `@cytoscape-web/app-test` (roadmap C-1) is the next project. The expose is
+> covered where it can be: `verify:federation` counts it (27 checks, not 26) and
+> the in-host load exercises it for real.
 
 > **The Phase 1 block transfers unchanged.** Only the options differ. If an app
 > needs a protected field, stop — that is a design finding, not a special case.
 
 ### Deliverables — per app
 
-- [ ] `hello-world` — second expose `./NetworkSummaryMenuItem` via `exposes`
-- [ ] `network-workflows` — no options beyond the default
-- [ ] `network-statistics` — **`react: false`**: no React plugin, no shared block,
+- [x] `hello-world` — second expose `./NetworkSummaryMenuItem` via `exposes`
+- [x] `network-workflows` — no options beyond the default
+- [x] `network-statistics` — **`react: false`**: no React plugin, no shared block,
       `configuredShared` stays `{}`
-  - [ ] Keep `@types/react` in `devDependencies` — the published api-types
+  - [x] Keep `@types/react` in `devDependencies` — the published api-types
         declarations reference React types. Do not "clean this up"
-- [ ] `claude-bridge` — no options beyond the default
-- [ ] Add the `cyweb` block to each app's `package.json`
+- [x] `claude-bridge` — no options beyond the default
+- [x] Add the `cyweb` block to each app's `package.json`
 
 ### Deliverables — remove the duplication
 
-- [ ] Delete every remaining `src/mfRuntimePlugin.ts` and `src/cywebHostSentinel.ts`
-- [ ] Delete every remaining `test/mfRuntimePlugin.test.ts`
-- [ ] **Replace each with a meaningful smoke test.** Deleting all five leaves
+- [x] Delete every remaining `src/mfRuntimePlugin.ts` and `src/cywebHostSentinel.ts`
+- [x] Delete every remaining `test/mfRuntimePlugin.test.ts`
+- [x] **Replace each with a meaningful smoke test.** Deleting all five leaves
       `vitest run` with nothing to run — which either fails the app's `test`
       script or, if someone reaches for `--passWithNoTests`, passes while testing
       nothing. Both outcomes are worse than the duplication
 
 ### Deliverables — generated manifest (§4.8)
 
-- [ ] `apps.manifest.json`'s `federationName`, `port`, and `configuredShared`
+- [x] `apps.manifest.json`'s `federationName`, `port`, and `configuredShared`
       generated from each app's metadata and `CYWEB_SHARED`
-- [ ] Repoint `scripts/manifest.mjs`'s peer-version cross-check at `CYWEB_SHARED`
-- [ ] Repoint P-1's live-host assertion at `CYWEB_SHARED`
-  - [ ] **Soft dependency.** If P-1 has not landed, generate the fields anyway
-        and repoint later — nothing breaks
+- [x] ~~Repoint `scripts/manifest.mjs`'s peer-version cross-check at `CYWEB_SHARED`~~
+      — **removed instead.** It compared two hand-written copies in one
+      repository; with `configuredShared` derived from `peerDependencies` there
+      is only one copy left, and the SDK-vs-app check moved to
+      `verify:federation`, which reads the built artifact
+- [x] Repoint P-1's live-host assertion at `CYWEB_SHARED`
+  - [x] **Soft dependency, and it did not land.** P-1 is still unimplemented, so
+        there was nothing to repoint. The fields are generated regardless, and
+        P-1 will read `CYWEB_SHARED` directly when it is written
 
 ### Verification (Phase 2)
 
-- [ ] Every Phase 1 verification step, per app
-- [ ] Check counts match the Phase 0 baseline exactly: **27 / 26 / 26 / 26 / 16**
-- [ ] **Path-based, not grep-count:** `src/mfRuntimePlugin.ts` and
+- [x] Every Phase 1 verification step, per app
+- [x] Check counts match the Phase 0 baseline exactly: **27 / 26 / 26 / 26 / 16**
+- [x] **Path-based, not grep-count:** `src/mfRuntimePlugin.ts` and
       `src/cywebHostSentinel.ts` exist in no app, and no app source imports either
-- [ ] `vitest run` reports a **non-zero test count in every app**
-- [ ] `npm run verify:federation` and `npm run check:imports` print no `skipped` lines
-- [ ] CI green on all jobs
+- [x] `vitest run` reports a **non-zero test count in every app**
+- [x] `npm run verify:federation` and `npm run check:imports` print no `skipped` lines
+- [x] CI green on all jobs
 
 ---
 

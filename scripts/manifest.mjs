@@ -33,17 +33,21 @@ const BUNDLERS = ['webpack', 'vite']
 // them out, and copy-dist deletes its target before copying.
 const RESERVED_PUBLISH_PATHS = ['data', 'images', 'index.html']
 
+// federationName, port and configuredShared are NOT here on purpose: they are
+// DERIVED from each app's package.json (see deriveFromPackage) rather than
+// written twice. Listing one of them is therefore an "unknown field" error,
+// which is the point — a hand-written copy is exactly the drift this removes.
 const APP_FIELDS = new Set([
   'workspaceDir',
   'publishPath',
-  'federationName',
-  'port',
   'bundler',
   'published',
   'exposes',
   'smokeObservable',
-  'configuredShared',
 ])
+
+/** Fields the manifest used to carry that are now read from package.json. */
+const DERIVED_FIELDS = ['federationName', 'port', 'configuredShared']
 
 const SHARE_FIELDS = new Set(['singleton', 'import', 'requiredVersion'])
 
@@ -187,34 +191,61 @@ const validateSmokeObservable = (app) => {
  * lands (section 7.3), so this cannot apply earlier. The two are written by
  * hand in two files and nothing else would notice them diverging.
  */
-const validatePeerVersions = (app) => {
-  if (app.bundler !== 'vite') return
-  const shared = Object.entries(app.configuredShared)
-  if (shared.length === 0) return
+/**
+ * Fills in the fields that used to be hand-written, from the app's package.json.
+ *
+ * `federationName` and `port` come from the `cyweb` block — the same block
+ * defineCyWebApp reads, so the manifest cannot disagree with the build.
+ *
+ * `configuredShared` is expanded from `peerDependencies`, which is already the
+ * app's statement of "the host provides these": one record per peer, with the
+ * two constant flags. An app with no peers (the non-React example) gets `{}`.
+ *
+ * This replaces a cross-check rather than removing one. The old code compared
+ * the manifest's requiredVersions against peerDependencies — two hand-written
+ * copies in one repository. What actually needs checking is whether the app's
+ * declared peers match what the SDK really put in the bundle, and that check
+ * already exists at the right layer: `verify:federation` compares this derived
+ * `configuredShared` against the BUILT output, which came from the SDK's
+ * CYWEB_SHARED. A divergence between the two now fails there, with the built
+ * artifact as evidence.
+ *
+ * Reading the SDK's constant directly here was the alternative, and was
+ * rejected: it would make `manifest:validate` depend on the SDK having been
+ * built, which CI runs as a separate job.
+ */
+const SHARE_FLAGS = { singleton: true, import: false }
 
-  const pkgPath = resolve(REPO_ROOT, app.workspaceDir, 'package.json')
-  let peers
+const deriveFromPackage = (app, index) => {
+  const { workspaceDir } = app
+  if (typeof workspaceDir !== 'string' || workspaceDir === '') {
+    fail(`apps[${index}].workspaceDir: must be a non-empty string`)
+  }
+
+  const pkgPath = resolve(REPO_ROOT, workspaceDir, 'package.json')
+  let pkg
   try {
-    peers = JSON.parse(readFileSync(pkgPath, 'utf8')).peerDependencies ?? {}
+    pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
   } catch (cause) {
-    fail(`apps[${app.workspaceDir}]: cannot read ${pkgPath} — ${cause.message}`)
+    fail(`apps[${workspaceDir}]: cannot read ${pkgPath} — ${cause.message}`)
   }
 
-  for (const [pkg, record] of shared) {
-    const declared = peers[pkg]
-    if (declared === undefined) {
-      fail(
-        `apps[${app.workspaceDir}]: configuredShared has "${pkg}" but ` +
-          `${app.workspaceDir}/package.json declares no peerDependency for it`,
-      )
-    }
-    if (declared !== record.requiredVersion) {
-      fail(
-        `apps[${app.workspaceDir}]: "${pkg}" requiredVersion "${record.requiredVersion}" ` +
-          `!= peerDependencies "${declared}"`,
-      )
-    }
+  const block = pkg.cyweb
+  if (!isPlainObject(block)) {
+    fail(
+      `apps[${workspaceDir}]: ${workspaceDir}/package.json has no "cyweb" block — ` +
+        `federationName and port are read from it`,
+    )
   }
+
+  app.federationName = block.id
+  app.port = block.port
+  app.configuredShared = Object.fromEntries(
+    Object.entries(pkg.peerDependencies ?? {}).map(([name, range]) => [
+      name,
+      { ...SHARE_FLAGS, requiredVersion: range },
+    ]),
+  )
 }
 
 const validateApp = (app, index) => {
@@ -223,18 +254,29 @@ const validateApp = (app, index) => {
   for (const key of Object.keys(app)) {
     // An unknown field is usually a typo in a known one, which would otherwise
     // silently take its default.
-    if (!APP_FIELDS.has(key)) fail(`apps[${index}]: unknown field "${key}"`)
+    // DERIVED_FIELDS are on the object by now — deriveFromPackage put them
+    // there. A hand-written copy was already rejected, by name, before
+    // derivation ran.
+    if (!APP_FIELDS.has(key) && !DERIVED_FIELDS.includes(key)) {
+      fail(`apps[${index}]: unknown field "${key}"`)
+    }
   }
 
   const { workspaceDir } = app
-  if (typeof workspaceDir !== 'string' || workspaceDir === '') {
-    fail(`apps[${index}].workspaceDir: must be a non-empty string`)
-  }
+  // Derived, but still validated: the values come from package.json, so a bad
+  // one is the app author's typo rather than the manifest's, and the message
+  // has to say which file to open.
   if (typeof app.federationName !== 'string' || app.federationName === '') {
-    fail(`apps[${workspaceDir}].federationName: must be a non-empty string`)
+    fail(
+      `apps[${workspaceDir}]: cyweb.id in ${workspaceDir}/package.json must be ` +
+        `a non-empty string`,
+    )
   }
   if (!Number.isInteger(app.port) || app.port < 1 || app.port > 65535) {
-    fail(`apps[${workspaceDir}].port: must be an integer in 1..65535`)
+    fail(
+      `apps[${workspaceDir}]: cyweb.port in ${workspaceDir}/package.json must ` +
+        `be an integer in 1..65535`,
+    )
   }
   if (!BUNDLERS.includes(app.bundler)) {
     fail(
@@ -260,7 +302,6 @@ const validateApp = (app, index) => {
   validatePublishPath(app)
   validateShareRecords(app)
   validateSmokeObservable(app)
-  validatePeerVersions(app)
 }
 
 /**
@@ -332,6 +373,23 @@ export const loadManifest = () => {
   }
   if (raw.apps.length === 0) fail('apps.manifest.json: "apps" is empty')
 
+  // A leftover copy of a derived field is caught by name rather than by the
+  // generic "unknown field", because the fix is different: delete the line, do
+  // not correct it.
+  raw.apps.forEach((app, index) => {
+    if (!isPlainObject(app)) return
+    for (const field of DERIVED_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(app, field)) {
+        fail(
+          `apps[${app.workspaceDir ?? index}].${field}: no longer written here — ` +
+            `it is derived from ${app.workspaceDir ?? '<app>'}/package.json ` +
+            `(cyweb block and peerDependencies). Remove the line.`,
+        )
+      }
+    }
+  })
+
+  raw.apps.forEach(deriveFromPackage)
   raw.apps.forEach(validateApp)
 
   // Uniqueness across the whole set. workspaceDir matters as much as the rest:
