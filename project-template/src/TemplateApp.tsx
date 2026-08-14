@@ -19,21 +19,24 @@
 import { lazy } from 'react'
 
 import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'
+// Your app's identity, from the `cyweb` block and the standard fields in
+// package.json. Four values, supplied by the build.
+//
+// NOT `import packageJson from '../package.json'`, which is what this used to
+// be: that pulls the WHOLE file into the browser bundle — devDependencies,
+// scripts, every private field — to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 import { registerSelectNeighbors } from './contextMenus'
 
-const { version } = packageJson
-
 // TODO: Rename this export and update src/index.ts accordingly.
 export const TemplateApp: CyAppWithLifecycle = {
-  // TODO: Change id to match your Module Federation name.
-  id: 'template',
-  // TODO: Change name and description.
-  name: 'App Template',
-  description:
-    'Boilerplate app with a panel, a menu action, a context menu item, ' +
-    'and the recommended Cytoscape Web plugin shape.',
+  // Identity comes from package.json — change it there, not here. `id` is the
+  // Module Federation container name, the CyApp id and the registry id at once,
+  // so it is one value rather than three that have to agree.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 

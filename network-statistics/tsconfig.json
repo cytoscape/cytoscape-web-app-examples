@@ -32,6 +32,6 @@
 
     "skipLibCheck": false,
 
-    "types": ["@cytoscape-web/api-types"]
+    "types": ["@cytoscape-web/api-types", "@cytoscape-web/app-runtime/meta"]
   }
 }

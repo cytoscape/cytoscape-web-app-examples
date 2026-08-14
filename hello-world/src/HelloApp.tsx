@@ -1,18 +1,15 @@
 import { lazy } from 'react'
 
 import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
-// Import the version string directly from package.json.
-// This keeps the app version in sync with the npm package automatically —
-// no need to update it in two places. Requires `resolveJsonModule: true`
-// in tsconfig.json (already enabled in this project).
-// Note: default import + destructure, not a named import. Named imports from
-// JSON are not portable across bundlers — Vite's `resolveJsonModule` handling
-// treats the module as a default export.
-import packageJson from '../package.json'
+// Your app's identity, from the `cyweb` block and the standard fields in
+// package.json. Four values, supplied by the build.
+//
+// NOT `import packageJson from '../package.json'`, which is what this used to
+// be: that pulls the WHOLE file into the browser bundle — devDependencies,
+// scripts, every private field — to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 import { getLifecycleSnapshot, setLifecycleState } from './lifecycleState'
-
-const { version } = packageJson
 
 // ── Module-level variable ─────────────────────────────────────────────────────
 //
@@ -28,23 +25,21 @@ const { version } = packageJson
 let _networkHandler: ((e: Event) => void) | null = null
 
 export const HelloApp: CyAppWithLifecycle = {
-  // Unique identifier for this app within the Cytoscape Web ecosystem.
-  // Must match the federation `name` in vite.config.ts
-  // so the host can locate this app's remoteEntry.js at runtime.
-  id: 'hello',
+  // Identity comes from package.json — the `cyweb` block and the standard
+  // fields — so it is written once and read here, in the build, and in the dev
+  // install manifest.
+  //
+  // `id` in particular is the Module Federation container name, this CyApp's id
+  // and the host registry id all at once. It used to be three string literals
+  // with no import between them, and nothing noticed a mismatch until the host
+  // refused to load the app.
+  id,
 
-  // Human-readable display name shown in the App Settings panel.
-  name: 'Hello Cytoscape World App',
+  // Shown in the App Settings panel: `cyweb.displayName` and `description`.
+  name: displayName,
+  description,
 
-  // Short description shown beneath the app name in the App Settings panel.
-  // Optional, but recommended so users understand what the app does.
-  description:
-    'Reference app demonstrating core App API patterns: visual style editing, ' +
-    'selection tracking / clearing, async layout execution, app lifecycle hooks, ' +
-    'and both component-scoped and app-scoped event handling.',
-
-  // Semantic version of this app, imported from package.json.
-  // Displayed in the App Settings panel alongside the app name.
+  // Semantic version, displayed alongside the app name.
   version,
 
   // The Cytoscape Web App API version this app targets.

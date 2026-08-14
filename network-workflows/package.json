@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/network-workflows",
-  "description": "Advanced workflow examples for Cytoscape Web",
+  "description": "Network creation, CX2 import, and external integration examples",
   "version": "1.0.0",
   "private": true,
   "type": "module",

@@ -14,7 +14,13 @@
  *   - Proper cleanup in unmount()
  */
 import type { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'
+// Your app's identity, from the `cyweb` block and the standard fields in
+// package.json. Four values, supplied by the build.
+//
+// NOT `import packageJson from '../package.json'`, which is what this used to
+// be: that pulls the WHOLE file into the browser bundle — devDependencies,
+// scripts, every private field — to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 import {
   computeDegreeStats,
@@ -22,8 +28,6 @@ import {
   formatStatistics,
   type NetworkStatistics,
 } from './statistics'
-
-const { version } = packageJson
 
 const LOG_PREFIX = '[NetworkStatistics]'
 
@@ -147,12 +151,12 @@ function logStatisticsForNetwork(
 // ── App definition ──────────────────────────────────────────────────────────
 
 export const NetworkStatisticsApp: CyAppWithLifecycle = {
-  id: 'networkStatistics',
-  name: 'Network Statistics',
-  description:
-    'Logs network topology statistics (density, degree distribution, ' +
-    'roots, leaves) to the browser console on every network switch. ' +
-    'A non-React example using only mount/unmount lifecycle hooks.',
+  // Identity comes from package.json — change it there, not here. `id` is the
+  // Module Federation container name, the CyApp id and the registry id at once,
+  // so it is one value rather than three that have to agree.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 

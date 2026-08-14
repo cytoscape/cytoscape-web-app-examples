@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/network-statistics",
-  "description": "Non-React example: compute and log network statistics using the Graph Traversal API",
+  "description": "Logs network topology statistics (density, degree distribution, roots, leaves) to the browser console on every network switch. A non-React example using only mount/unmount lifecycle hooks.",
   "version": "1.0.0",
   "private": true,
   "type": "module",

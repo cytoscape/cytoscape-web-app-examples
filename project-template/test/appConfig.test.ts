@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { readAppMeta } from '@cytoscape-web/app-runtime/vite'
+import { buildInstallManifest, readAppMeta } from '@cytoscape-web/app-runtime/vite'
 
 const root = new URL('..', import.meta.url).pathname
 
@@ -49,5 +49,26 @@ describe('project-template', () => {
   it('has a mount hook, because its context menu registers there', async () => {
     const { default: app } = await import('../src/index')
     expect(typeof app.mount).toBe('function')
+  })
+
+  it('gives the same identity to the CyApp and to the dev install manifest', async () => {
+    // The propagation check. These three used to be independent strings — the
+    // federation container name, the CyApp id, and the entry in the host's
+    // apps.local.json — and nothing compared them until the host refused to
+    // load the app.
+    //
+    // They now derive from one place, so this asserts they still agree rather
+    // than asserting three hardcoded values, which would just be the old
+    // duplication moved into a test.
+    const meta = readAppMeta(root)
+    const { default: app } = await import('../src/index')
+    const entry = buildInstallManifest(meta, `http://localhost:${meta.port}`)[0]
+
+    expect(app.id).toBe(meta.id)
+    expect(entry.id).toBe(meta.id)
+    expect(entry.version).toBe(app.version)
+    expect(entry.name).toBe(app.name)
+    // The manifest points the host at the port the dev server binds.
+    expect(entry.url).toBe(`http://localhost:${meta.port}/remoteEntry.js`)
   })
 })

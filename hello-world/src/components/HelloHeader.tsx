@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material'
 
-import packageJson from '../../package.json'
+import { version } from 'virtual:cyweb-app-meta'
 
 /**
  * Example 0: MUI components + finding your own code at runtime
@@ -27,9 +27,10 @@ import packageJson from '../../package.json'
 // not change afterwards.
 const moduleUrl = import.meta.url
 
-// Version of this app, read from package.json at build time — the bundler
-// inlines the JSON import, so nothing is fetched at runtime.
-const { version } = packageJson
+// `version` comes from virtual:cyweb-app-meta — package.json's version field,
+// handed over by the build. This used to be `import packageJson from
+// '../../package.json'`, which inlined the ENTIRE file into this chunk to read
+// one string: dependency lists, scripts and all.
 
 export const HelloHeader = (): JSX.Element => (
   <Box>

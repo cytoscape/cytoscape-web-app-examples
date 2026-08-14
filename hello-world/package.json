@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/hello-world",
-  "description": "A minimal Hello World panel example for Cytoscape Web app developers",
+  "description": "Reference app demonstrating core App API patterns: visual style editing, selection tracking / clearing, async layout execution, app lifecycle hooks, and both component-scoped and app-scoped event handling.",
   "version": "1.0.0",
   "private": true,
   "type": "module",

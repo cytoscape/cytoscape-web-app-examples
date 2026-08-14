@@ -11,6 +11,7 @@ import {
 
 import { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
 import { readAppMeta } from './appMeta.js'
+import { cywebDevInstall } from './devInstall.js'
 import { noSharedPayload } from './noSharedPayload.js'
 import { assertNoProtectedOverrides } from './protectedFields.js'
 import { CYWEB_SHARED } from './shared.js'
@@ -18,6 +19,12 @@ import { cywebAppMeta } from './virtualMeta.js'
 import { zipForAppStore } from './zipForAppStore.js'
 
 export { CYWEB_SHARED, CYWEB_SHARED_PACKAGES } from './shared.js'
+export {
+  buildInstallManifest,
+  buildInstallUrl,
+  cywebDevInstall,
+  DEV_MANIFEST_PATH,
+} from './devInstall.js'
 export { noSharedPayload } from './noSharedPayload.js'
 export { zipForAppStore } from './zipForAppStore.js'
 export { cywebAppMeta } from './virtualMeta.js'
@@ -209,6 +216,7 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
     }
     plugins.push(
       cywebAppMeta(meta),
+      cywebDevInstall(meta, devHostPageUrl),
       federation({
         name: meta.id,
         filename: 'remoteEntry.js',

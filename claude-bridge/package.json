@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/claude-bridge",
-  "description": "Claude Code ↔ Cytoscape Web bridge via CDP + MCP",
+  "description": "Displays a live log of commands sent by Claude Code via the MCP bridge server.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

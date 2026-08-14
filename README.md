@@ -75,32 +75,45 @@ to publish your app, please
 
 ## Build Your First App
 
-Copy [project-template/](project-template/) and follow the 5 steps:
-
 ```bash
 cp -r project-template my-app && cd my-app
+npm install
 ```
 
-1. **`package.json`** — change `name` and `version`
-2. **`vite.config.ts`** — change `name` in `federation()` and `DEV_SERVER_PORT`
-3. **`src/TemplateApp.tsx`** — change `id` (must match MF name), `name`, `resources`
-4. **Host registry** — add an entry for your app in `cytoscape-web/src/assets/apps.local.json`:
-   ```json
-   {
-     "id": "myApp",
-     "name": "My App (display name)",
-     "url": "http://localhost:6000/remoteEntry.js",
-     "version": "0.1.0"
-   }
-   ```
-   > `id` is the unique identifier (must match the federation `name` and your
-   > `CyApp.id`); `name` is the human-readable label shown in App Settings.
-   >
-   > To test the template before copying, add:
-   > ```json
-   > { "id": "template", "name": "App Template", "url": "http://localhost:5555/remoteEntry.js", "version": "0.1.0" }
-   > ```
-5. **Verify** — `npm run dev`, then confirm in browser
+Then two things:
+
+**1. Your identity, in `package.json`.** Written once, and read from there by
+the build, by the app config, and by the install manifest:
+
+```json
+{
+  "name": "@you/my-app",
+  "version": "0.1.0",
+  "description": "What your app does — shown in App Settings",
+  "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+}
+```
+
+`cyweb.id` is the Module Federation container name, the `CyApp.id` and the id
+the host registers, all at the same time.
+
+**2. Your app, in `src/`.** Replace the panel and menu components, and adjust
+`resources` in `src/TemplateApp.tsx`. `vite.config.ts` is three lines and needs
+no edits.
+
+Then `npm run dev`. It prints the link that installs your app into a running
+local host:
+
+```
+  Cytoscape Web app myApp — http://localhost:6000
+
+  Install it into a local host:
+  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
+```
+
+**Nothing in the host repository is edited.** The dev server serves a one-entry
+manifest at `/cyweb-app.json`, generated from your `package.json` on each
+request, and the host has accepted `?installApp=` all along.
 
 See [project-template/README.md](project-template/README.md) for details.
 
@@ -257,24 +270,24 @@ Recommended reading order: project-template → hello-world → network-statisti
 Install the types package for IDE support:
 
 ```bash
-npm install --save-dev @cytoscape-web/api-types
+npm install --save-dev @cytoscape-web/api-types @cytoscape-web/app-runtime
 ```
 
-Reference the package's bundled declarations from your `tsconfig.json` so
-TypeScript resolves the `cyweb/*` ambient modules:
+Reference both packages' bundled declarations from your `tsconfig.json` so
+TypeScript resolves the `cyweb/*` ambient modules and `virtual:cyweb-app-meta`:
 
 ```json
 {
   "include": ["src/**/*"],
   "compilerOptions": {
     "moduleResolution": "bundler",
-    "types": ["@cytoscape-web/api-types"]
+    "types": ["@cytoscape-web/api-types", "@cytoscape-web/app-runtime/meta"]
   }
 }
 ```
 
-> Listing the package in `types` is what pulls in its ambient `cyweb/*`
-> declarations. Do **not** set `typeRoots`: the example apps used to point it
+> Listing them in `types` is what pulls in the ambient `cyweb/*` and
+> `virtual:cyweb-app-meta` declarations — the same mechanism `vite/client` uses. Do **not** set `typeRoots`: the example apps used to point it
 > at `./node_modules/@types`, a directory that does not exist in a workspace,
 > and setting it suppresses the default lookup that actually finds the types.
 > See any of the example apps' `tsconfig.json` for a working reference.

@@ -21,11 +21,26 @@ cd my-app
 # 2. Install dependencies
 npm install
 
-# 3. Start the dev server (host must be running on :5500)
+# 3. Start the dev server
 npm run dev
 ```
 
-Open `http://localhost:5500` → **Apps** → **App Settings** → enable your app.
+The dev server prints the link that installs your app into a local host:
+
+```
+  Cytoscape Web app template — http://localhost:5555
+
+  Install it into a local host:
+  http://localhost:5500/?installApp=http://localhost:5555/cyweb-app.json
+```
+
+Start the host (`cd cytoscape-web && npm run dev`), open that URL, confirm the
+install, and enable the app under **Apps → App Settings**.
+
+**You do not edit anything in the host repository.** The host has accepted a
+manifest URL through `?installApp=` all along; the dev server serves yours at
+`/cyweb-app.json`, generated from your `package.json` on every request, so it
+cannot go stale when you change the port or the version.
 
 ---
 
@@ -33,62 +48,61 @@ Open `http://localhost:5500` → **Apps** → **App Settings** → enable your a
 
 ### 1. `package.json`
 
-- `name` → your package name
-- `version` → your version
+```json
+{
+  "name": "@you/my-app",
+  "version": "0.1.0",
+  "description": "What your app does — shown in App Settings",
+  "cyweb": {
+    "id": "myApp",
+    "displayName": "My App",
+    "port": 6000
+  }
+}
+```
+
+That is your app's whole identity, and it is written **once**. `cyweb.id` is the
+Module Federation container name, the `CyApp.id` and the id the host registers,
+all at the same time — before this block those were three separate strings that
+had to be kept in agreement by hand.
+
+Pick a port nothing else uses. The examples occupy 2222, 3333, 5555, 6100 and
+7000, and the host takes 5500.
 
 ### 2. `vite.config.ts`
 
-- `DEV_SERVER_PORT` → pick an unused port
-- `name` in `federation()` → unique camelCase string (must match
-  `id` in your app config)
+Nothing. It is three lines and it reads the block above:
 
-Leave the rest of the `federation()` block alone — `type: 'module'`,
-`runtimePlugins`, the sentinel entry and the five `import: false` shares each
-fail in a way that is hard to read. The comments in the file say which.
+```ts
+import { defineCyWebApp } from '@cytoscape-web/app-runtime/vite'
+
+export default defineCyWebApp(import.meta.url)
+```
+
+The federation wiring lives in `@cytoscape-web/app-runtime`, because four parts
+of it are load-bearing and each fails in a way that is hard to read — an ESM
+remote type, a production entry that is a sentinel rather than a URL, the
+runtime plugin that resolves the host, and five shared singletons that must
+match the host exactly. The comments in the file say what each one does.
+
+Need a plugin, an alias or a `define`? Pass `{ vite: { … } }`; it is merged
+last. Touching a field the SDK owns fails the build and names the path.
 
 ### 3. `src/TemplateApp.tsx`
 
-- `id` → must match the federation `name` in `vite.config.ts`
-- `name`, `description` → human-readable labels
-- `resources` → add/remove panels and menu items
-- `mount()` → customize the context menu item or add more (edge, canvas)
-- `unmount()` → add cleanup for any event listeners you register
+- `resources` → add or remove panels and menu items
+- `mount()` → customize the context menu item, or add more (edge, canvas)
+- `unmount()` → clean up any event listeners you registered
+
+Identity is already handled: `id`, `displayName`, `version` and `description`
+arrive from `virtual:cyweb-app-meta`, which the build fills in from
+`package.json`. Do not import `package.json` directly — that pulls the whole
+file, `devDependencies` included, into your browser bundle to read one string.
 
 ### 4. `src/components/`
 
 - `TemplatePanel.tsx` → replace with your panel UI
 - `TemplateMenuItem.tsx` → replace with your menu action
-
-### 5. Host registration
-
-Add your app to the host's `src/assets/apps.local.json` (a JSON array):
-
-```json
-{
-  "id": "myApp",
-  "name": "My App (display name)",
-  "url": "http://localhost:XXXX/remoteEntry.js",
-  "author": "Your Name",
-  "description": "Short description",
-  "version": "0.1.0"
-}
-```
-
-> The `id` field is the unique identifier and must match the `id` in
-> your `CyApp` object and the federation `name` in `vite.config.ts`.
-> The `name` field is the display label shown in App Settings.
-
-> **Note:** The template itself is not pre-registered in `apps.local.json`.
-> To test it before copying, add:
->
-> ```json
-> {
->   "id": "template",
->   "name": "App Template",
->   "url": "http://localhost:5555/remoteEntry.js",
->   "version": "0.1.0"
-> }
-> ```
 
 ---
 
@@ -98,16 +112,14 @@ Add your app to the host's `src/assets/apps.local.json` (a JSON array):
 project-template/
 ├── src/
 │   ├── index.ts                  ← re-exports app config as default
-│   ├── TemplateApp.tsx           ← app config: id, name, resources, lifecycle
+│   ├── TemplateApp.tsx           ← app config: resources and lifecycle
 │   ├── contextMenus.ts           ← context menu registration (Graph Traversal example)
 │   └── components/
 │       ├── TemplatePanel.tsx     ← right-panel component (WorkspaceApi example)
 │       └── TemplateMenuItem.tsx  ← apps-menu component (NetworkApi example)
-├── vite.config.ts                ← Module Federation config (name, port, shares)
+├── vite.config.ts                ← three lines: defineCyWebApp(import.meta.url)
 ├── index.html                    ← remote-only stub (Vite needs an HTML entry)
-├── src/cywebHostSentinel.ts      ← entry a production build ships when no host is known
-├── src/mfRuntimePlugin.ts        ← resolves the host URL at runtime
-├── test/mfRuntimePlugin.test.ts  ← covers both remote arrays + every rejection
+├── test/appConfig.test.ts        ← identity, and the shape of what ./AppConfig exports
 ├── tsconfig.json                 ← app sources (skipLibCheck: false)
 ├── tsconfig.node.json            ← vite.config.ts
 ├── tsconfig.test.json            ← test/
@@ -124,8 +136,8 @@ project-template/
 | `contextMenus.ts` | `getConnectedNodes()` + `additiveSelect()` — Graph Traversal + Selection APIs |
 | `TemplatePanel.tsx` | `useWorkspaceApi()` + `ApiResult<T>` pattern, MUI shared singletons |
 | `TemplateMenuItem.tsx` | `useNetworkApi().createNetworkFromEdgeList()`, `closeOnAction: true` |
-| `vite.config.ts` | The federation block: exact share keys, `import: false`, the `noSharedPayload` gate |
-| `src/mfRuntimePlugin.ts` | Runtime host resolution — one build works against any deployment |
+| `vite.config.ts` | One call. The federation block, the runtime host resolution and the bundled-shared gate all come from `@cytoscape-web/app-runtime` |
+| `package.json` (`cyweb` block) | The app's identity, written once and read by the build, the app config and the dev install manifest |
 
 ---
 

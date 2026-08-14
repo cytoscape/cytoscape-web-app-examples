@@ -3,11 +3,12 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: Phases 0–2 complete. Phase 3 is next.**
-> All five apps build through `@cytoscape-web/app-runtime@0.1.0`, and all five
-> match [`phase0-baseline.md`](phase0-baseline.md) in every audit field except
-> the runtime-plugin path. The duplicated config, resolver, sentinel and test
-> are gone from every app.
+> **Status: Phases 0–3 complete. Phase 4 is next.**
+> All five apps build through `@cytoscape-web/app-runtime@0.1.0` and match
+> [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
+> runtime-plugin path. Identity is declared once in `package.json`, no app
+> imports that file into its bundle any more, and `npm run dev` prints a link
+> that installs the app into a local host without touching the host repository.
 >
 > **Phases are strictly ordered.** Phase 1 converts exactly one app; the other
 > four keep their hand-written configs until Phase 2. Nothing outside the app
@@ -370,46 +371,83 @@ _Design: §5 Phase 2, §4.2 (`react`, `exposes`), §4.4 (`CYWEB_SHARED`)_
 
 ---
 
-## Phase 3: Identity in app code, and dev registration
+## Phase 3: Identity in app code, and dev registration ✅ **COMPLETE**
 
 _Design: §4.3, §4.5_
 
+> **The leak is closed, and it was worth measuring.** Every app chunk used to
+> carry the WHOLE package.json — `devDependencies`, `scripts`, the prose blocks —
+> because app code imported it for one string. Switching to
+> `virtual:cyweb-app-meta` removed **6,608 bytes** across the five apps, and the
+> grep that found `typescript` and `vitest` in a browser bundle now finds nothing.
+>
+> `hello-world` had a SECOND importer, `HelloHeader.tsx`, which the first pass
+> missed — the app config was converted and the bundle was still dirty. Worth
+> noting because the check that caught it was grepping the built output, not
+> reading the source.
+>
+> **Descriptions moved into package.json.** They used to live in the CyApp
+> object, richer than the npm-style one-liners beside them; now package.json is
+> the single source and carries the user-facing text, which is also what the dev
+> install manifest serves to the host.
+>
+> **The install flow is verified as far as this project reaches.** The printed
+> link opens the host, the confirmation dialog names the app correctly ("App
+> Template", v1.0.0, and the description from package.json), and Install produces
+> `Installed app "template" (activate=true)` → `App template mounted` → `App
+> "template" activated`. Opening the right-side panel to look at the rendered
+> component was NOT automated: that is host UI navigation, unchanged by this
+> phase, and the resource registration itself is already asserted programmatically
+> in Phase 2 (`right-panel:TemplatePanel`).
+>
+> **One scope extension.** The root `README.md` was updated too, beyond the two
+> documents this phase names. It described the flow this phase replaced — copy the
+> template, edit `apps.local.json`, set `DEV_SERVER_PORT` — on the repository's
+> front page. Leaving the first thing a developer reads contradicting the thing
+> they would then do was worse than the scope purity.
+
 ### Deliverables — identity through the virtual module
 
-- [ ] Every app's `CyApp` reads `virtual:cyweb-app-meta`, not `../package.json`
-- [ ] No app imports `../package.json` any more
+- [x] Every app's `CyApp` reads `virtual:cyweb-app-meta`, not `../package.json`
+- [x] No app imports `../package.json` any more
 
 ### Deliverables — dev install manifest (§4.5)
 
-- [ ] Dev middleware serving `/cyweb-app.json`, generated per request from the
+- [x] Dev middleware serving `/cyweb-app.json`, generated per request from the
       parsed metadata
-  - [ ] **Not** a tracked `public/cyweb-app.json`. `public/` is copied into
+  - [x] **Not** a tracked `public/cyweb-app.json`. `public/` is copied into
         `dist/`, where the App Store publish allowlist matches no rule for it and
         **deliberately fails the build**. It would also go stale on the first
         port or version change
-- [ ] The banner prints **after the server actually listens**, so the port shown
+- [x] The banner prints **after the server actually listens**, so the port shown
       is the port bound
-- [ ] All URLs composed with the `URL` API, never string concatenation
-- [ ] `devHostPageUrl` and `devHostRemoteEntryUrl` are separate options
+- [x] All URLs composed with the `URL` API, never string concatenation
+- [x] `devHostPageUrl` and `devHostRemoteEntryUrl` are separate options
 
 ### Deliverables — documentation (this project's slice only)
 
-- [ ] `project-template/README.md` — the new three-line config and the printed
+- [x] `project-template/README.md` — the new three-line config and the printed
       install URL
-- [ ] `guides/getting-started.md` — the scaffold section; remove "edit
+- [x] `guides/getting-started.md` — the scaffold section; remove "edit
       `apps.local.json`" from the paths this project touches
-  - [ ] The wider documentation pass is A-3a and is **not** in scope here
+  - [x] The wider documentation pass is A-3a and is **not** in scope here
 
 ### Verification (Phase 3)
 
-- [ ] Changing `cyweb.id`, `cyweb.port`, or `version` in `package.json` **alone**
+- [x] Changing `cyweb.id`, `cyweb.port`, or `version` in `package.json` **alone**
       propagates to the dev manifest, the dev banner, and the `AppConfig` —
       asserted against the same source, not read three times by hand
-- [ ] `npm run build` succeeds for all five — nothing unclassified lands in `dist/`
-- [ ] The printed URL completes the install flow against a **stock host clone**:
-      open → confirm → install → activate → open the right panel → panel visible
-  - [ ] The exact dialog steps are confirmed against `PendingAppInstall` handling
-        when the test is written, not assumed from this checklist
+- [x] `npm run build` succeeds for all five — nothing unclassified lands in `dist/`
+- [x] The printed URL completes the install flow against a **stock host clone**:
+      open → confirm → install → activate. Confirmed against the real
+      `PendingAppInstall` path, not assumed: the dialog reads "Install into this
+      workspace?" and names the app from the served manifest, and the host logs
+      `Installed app "template" (activate=true)`, `App template mounted`,
+      `App "template" activated`
+  - [ ] **Opening the right panel to see the component was not automated.** It is
+        host UI navigation, unchanged by this phase; the right-panel resource
+        itself is asserted programmatically in Phase 2. Left unticked rather than
+        claimed
 
 ---
 

@@ -11,96 +11,79 @@ a context menu action — all loaded into the host via Module Federation.
 
 ## 1. Scaffold a New App
 
-The fastest way to start is to copy the **project-template** from
+Copy the **project-template** from
 [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples):
 
 ```bash
 cp -r project-template my-app
 cd my-app
+npm install
 ```
 
-Update the following in `package.json`:
+Then set your app's identity in `package.json` — **once**, in one place:
 
 ```jsonc
 {
-  "name": "@cytoscape-web/my-app",
+  "name": "@you/my-app",
   "version": "0.1.0",
-  "private": true
+  "description": "What your app does — shown in App Settings",
+  "private": true,
+  "cyweb": {
+    "id": "myApp",          // Module Federation container name AND CyApp.id
+    "displayName": "My App",
+    "port": 6000            // must be free; the examples use 2222/3333/5555/6100/7000
+  }
 }
 ```
 
-Install dependencies (including the type package):
-
-```bash
-npm install
-npm install --save-dev @cytoscape-web/api-types
-```
+`cyweb.id` has to be a valid JavaScript identifier — the host applies the same
+rule when it installs the app, so anything else is rejected there.
 
 ---
 
 ## 2. Configure Module Federation
 
-Edit `vite.config.ts`. If you copied `project-template`, most of this is
-already correct — change the port and the federation `name`:
+You do not. `vite.config.ts` is three lines and reads the block above:
 
 ```typescript
-federation({
-  // Unique name — must match the `id` field in your CyApp object
-  // and the `id` field in apps.json / apps.local.json.
-  name: 'myApp',
+import { defineCyWebApp } from '@cytoscape-web/app-runtime/vite'
 
-  filename: 'remoteEntry.js',
-  dts: false,
+export default defineCyWebApp(import.meta.url)
+```
 
-  // Rewrites the `cyweb` entry below with the URL the running host publishes.
-  // Without this line the resolver file is inert — see step 2b.
-  runtimePlugins: [mfRuntimePlugin],
+That one call sets up the whole federation configuration. Four parts of it are
+load-bearing, and each fails in a way that is hard to read — which is why they
+are in a package rather than in your config:
 
-  remotes: {
-    cyweb: {
-      // REQUIRED. The host emits an ESM remoteEntry.js; the plugin's default
-      // ('var') resolves no exports against it and fails silently.
-      type: 'module',
-      name: 'cyweb',
-      entryGlobalName: 'cyweb',
-      shareScope: 'default',
-      entry: command === 'serve'
-        ? 'http://localhost:5500/remoteEntry.js'
-        : CYWEB_HOST_REQUIRED,
-    },
-  },
+| What | Why it matters |
+| --- | --- |
+| `remotes.cyweb.type: 'module'` | The host emits an ESM `remoteEntry.js`. The plugin's default (`'var'`) resolves **no exports** against it and fails **silently** — the remote appears to load and exports nothing |
+| A production entry that is a **sentinel**, not a URL | So one build works against every deployment. Shipping `localhost:5500` would point a deployed app at the end user's own loopback |
+| `runtimePlugins` | The load-bearing half of the sentinel. The resolver is inert unless it is registered; the app then keeps whatever entry was compiled in |
+| `shared`, exact keys, `import: false` | Five singletons the host provides. Import from `@mui/material`, never `@mui/material/Box`, or a second MUI ends up inside your bundle |
 
-  exposes: {
-    // The host loads this entry point to discover your app
-    './AppConfig': './src/index.ts',
-  },
+The host publishes its own `remoteEntry.js` address on `window.__CYWEB_HOST__`
+at boot, and the runtime plugin substitutes it before any remote resolves. That
+is what makes one artifact work against production, a staging host, or a
+colleague's laptop.
 
-  shared: {
-    // Singletons provided by the host — `import: false` means you bundle no
-    // copy at all. Keys are EXACT: import from '@mui/material', never
-    // '@mui/material/Box', or MUI ends up inside your app.
-    react: { singleton: true, import: false, requiredVersion: '^18.3.1' },
-    'react-dom': { singleton: true, import: false, requiredVersion: '^18.3.1' },
-    '@mui/material': { singleton: true, import: false, requiredVersion: '^5.18.0' },
-    '@emotion/react': { singleton: true, import: false, requiredVersion: '^11.10.4' },
-    '@emotion/styled': { singleton: true, import: false, requiredVersion: '^11.10.4' },
-  },
+Need to add a plugin, an alias or a `define`?
+
+```typescript
+export default defineCyWebApp(import.meta.url, {
+  vite: { resolve: { alias: { '@': '/src' } } },
 })
 ```
 
-Choose a unique dev server port (e.g. 3333) in the `server` section.
+It is merged last. Setting a field the SDK owns fails the build and names the
+path, rather than silently winning or silently losing.
 
-### 2b. Why the host URL is not written here
+A non-React app passes `{ react: false }`; an app that federates more than
+`./AppConfig` passes `{ exposes: { … } }`.
 
-Your production build ships a **sentinel** rather than a host URL. The host
-publishes its own `remoteEntry.js` address on `window.__CYWEB_HOST__` when it
-boots, and `src/mfRuntimePlugin.ts` substitutes it before any remote resolves.
-
-The point is that **one build of your app works against every deployment** —
-production, a staging host, or a colleague's `localhost:5500` — instead of
-being compiled against one of them. Copy `src/mfRuntimePlugin.ts` and
-`src/cywebHostSentinel.ts` from the template unchanged, and keep the
-`runtimePlugins` line above.
+`npm run verify:federation` asserts all four against the built output, because
+every one of them looks correct in a config file when it is wrong. (Inside this
+repository today; a standalone `cyweb-app verify` for your own project is next.)
 
 ---
 
@@ -116,13 +99,18 @@ import type {
   ResourceDeclaration,
 } from 'cyweb/ApiTypes'
 
-const version = '0.1.0'
+// Identity from package.json — the `cyweb` block and the standard fields,
+// handed over by the build. Do NOT `import packageJson from '../package.json'`:
+// that pulls the whole file, devDependencies included, into your browser bundle
+// to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
-  // Must match the federation `name` in vite.config.ts
-  id: 'myApp',
-  name: 'My App',
-  description: 'A sample Cytoscape Web plugin.',
+  // Written once, in package.json. `id` is the federation container name, this
+  // CyApp's id and the id the host registers, all at the same time.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 
@@ -219,38 +207,35 @@ export default MyMenuItem
 
 ---
 
-## 5. Register with the Host
+## 5. Install into a Local Host
 
-Add your app to the host's plugin registry. For local development,
-edit `src/assets/apps.local.json` in the `cytoscape-web` repo (a JSON array):
+**You do not edit anything in the host repository.** Your dev server serves a
+one-entry app manifest at `/cyweb-app.json`, generated from your `package.json`
+on every request, and prints the link that installs it:
 
-```json
-[
-  {
-    "id": "hello",
-    "name": "Hello Cytoscape World App",
-    "url": "http://localhost:2222/remoteEntry.js",
-    "version": "1.0.0"
-  },
-  {
-    "id": "networkWorkflows",
-    "name": "Network Workflow Examples",
-    "url": "http://localhost:7000/remoteEntry.js",
-    "version": "1.0.0"
-  },
-  {
-    "id": "myApp",
-    "name": "My App",
-    "url": "http://localhost:3333/remoteEntry.js",
-    "version": "0.1.0"
-  }
-]
+```
+  Cytoscape Web app myApp — http://localhost:6000
+
+  Install it into a local host:
+  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
 ```
 
-> The `id` field is the unique identifier and must match your app's `id`
-> (in `CyApp`) and the federation `name` in `vite.config.ts`. The
-> `name` field is the human-readable label shown in App Settings.
-> Optional fields: `author`, `description`, `tags`, `license`, `repository`.
+Open that URL with the host running and confirm the install. The app lands in
+your workspace, and you enable it under **Apps → App Settings**.
+
+The host has accepted `?installApp=<manifestUrl>` all along — it is the same
+path the App Store will use. `installGate` allows a localhost app URL when the
+host is itself on localhost, which is what makes this work in development and,
+deliberately, not from a deployed host.
+
+Because the manifest is generated rather than written to a file, changing
+`cyweb.port` or your version updates it on the next request; there is no second
+copy to keep in step.
+
+> **Two other routes exist**, both in **Apps → App Settings**, and both take the
+> same `/cyweb-app.json` URL: *Install from URL* for a single app, and
+> *Manifest Source* to point the host at a catalog of several. The deep link is
+> just the one that needs no clicking.
 
 ---
 
@@ -263,26 +248,30 @@ no separate packaging step.
 It contains the browser publish set rather than all of `dist/`, so the build
 machine's absolute paths (`mf-manifest.json`), build metadata (`mf-stats.json`)
 and the Node-only SSR artifacts stay out of a public upload. The list is an
-allowlist in `vite.config.ts`, and an unrecognised file fails the build instead
-of being shipped.
+allowlist in `@cytoscape-web/app-runtime`, and an unrecognised file fails the
+build instead of being shipped.
+
+> The zip is **off by default** — pass `{ appStoreZip: true }` to
+> `defineCyWebApp`. It used to run on every build, which left stale archives
+> next to every package.json.
 
 ---
 
 ## 6. Run Both Dev Servers
 
 ```bash
-# Terminal 1 — Host (port 5500) with the local app registry
-cd cytoscape-web && npm run dev:local
+# Terminal 1 — Host (port 5500)
+cd cytoscape-web && npm run dev
 
-# Terminal 2 — Your app (port 3333)
+# Terminal 2 — Your app
 cd my-app && npm run dev
 ```
 
-> Use `npm run dev:local` so the host reads `apps.local.json` instead of
-> the production `apps.json` registry.
+Then open the install link your app printed (step 5). Your panel appears in the
+right-side panel area, and your menu item under the **Apps** dropdown.
 
-Your panel should appear in the right-side panel area, and your menu item
-under the **Apps** dropdown.
+> Reloading the host page picks up app changes; Vite's HMR does not cross the
+> federation boundary.
 
 ---
 
