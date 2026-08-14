@@ -9,9 +9,14 @@ Design and specification documents for `cytoscape-web-app-examples`.
 ```
 design/
 ├── specifications/     ← Cross-cutting specs (API contracts, shared conventions)
-│   └── vite-migration/                  ← Webpack → Vite migration
-│       ├── vite-migration.md            ← The plan: design, decisions, measurements
-│       └── vite-migration-checklist.md  ← Phase-by-phase implementation checklist
+│   ├── vite-migration/                  ← Webpack → Vite migration
+│   │   ├── vite-migration.md            ← The plan: design, decisions, measurements
+│   │   └── vite-migration-checklist.md  ← Phase-by-phase implementation checklist
+│   ├── developer-onboarding/            ← Lowering the barrier to entry
+│   │   └── developer-onboarding-roadmap.md  ← Umbrella: prioritized proposals, host-dependency split
+│   └── app-sdk/                         ← Carved out of the roadmap: SDK + scaffolding
+│       ├── app-sdk-design.md            ← app-runtime, create-cytoscape-app, app identity
+│       └── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
 └── apps/               ← Per-app design documents
     ├── hello-world/
     ├── network-workflows/
