@@ -86,12 +86,12 @@ staged rather than "publish and see".
 - Published under the `next` dist-tag, versioned `0.x`.
 - The README and the generated `AGENTS.md` state the boundary in plain terms: *an app you
   install has the same privileges as Cytoscape Web itself; install only apps you trust.*
-- **Possibly** an import allowlist permitting only the typed `cyweb/*` modules from the host —
-  a lint-grade guardrail against accidentally reaching into internals, **not a sandbox**, and
-  never to be described as one. This is **not yet designed**, and open question 2 asks whether
-  it should exist at all: a build-time check cannot see a dynamic `import()`, so a partial
-  guardrail may buy less than the false confidence it creates. Nothing else in this document
-  depends on it; **if the answer is no, drop it and the rest stands.**
+- **No import allowlist.** Restricting app sources to the typed `cyweb/*` modules was
+  considered and **dropped** (§9 D-2). As a security control it is worthless — the threat is a
+  malicious app author, who simply would not use this build tooling — and shipping it inside a
+  section about the trust boundary would imply a containment that does not exist. The honest
+  version of its value is a deprecation signal on the raw store exposes, which belongs in the
+  type declarations (roadmap B-1), not here.
 - What Preview does **not** promise: safety of untrusted app code, accurate runtime API
   version enforcement, or legible load-failure reporting.
 
@@ -482,15 +482,33 @@ project — taking the zip off the default build — is included (§4.9). `cyweb
 adopted in full, because a scaffolded app that cannot be verified outside the monorepo defeats
 goal 5.
 
-## 9. Open questions
+## 9. Decisions — closed in Phase 0
 
-1. **Package scope for the scaffolder.** `create-cytoscape-app` (unscoped, enables
-   `npm create cytoscape-app`) versus `@cytoscape-web/create-app` (scoped, requires
-   `npm create @cytoscape-web/app`). Unscoped reads better and is the stronger default; it
-   needs the npm name to be available.
-2. **Where the import allowlist is enforced** (§3). A Vite plugin failing the build on a
-   non-`cyweb/*` host import is the natural home, but it cannot see runtime `import()`. Worth
-   deciding whether a partial guardrail is worth the false confidence it may create.
-3. **Whether `virtual:cyweb-app-meta` should carry `author`, `license`, and `repository`.**
-   They are useful in an About panel and harmless to publish, but every field added is a field
-   that must stay allowlisted deliberately.
+Nothing here is open. All three were settled before implementation began; the baseline they
+were settled against is [`phase0-baseline.md`](phase0-baseline.md).
+
+**D-1. The scaffolder is `create-cytoscape-app`** — unscoped, so the invocation is
+`npm create cytoscape-app my-app`. All four candidate names (`create-cytoscape-app`,
+`@cytoscape-web/create-app`, `@cytoscape-web/app-runtime`, `@cytoscape-web/app-test`) were
+confirmed unpublished. The unscoped name costs a global-namespace claim and buys a call that
+is short enough to hand to an agent verbatim.
+
+**D-2. No import allowlist.** See §3. A build-time check cannot see a dynamic `import()`, and
+the party it would restrain is the one party guaranteed not to use the SDK. Dropped rather
+than shipped as a partial guardrail inside a trust-boundary section.
+
+**D-3. `virtual:cyweb-app-meta` carries four fields** — `id`, `displayName`, `version`,
+`description`. These are exactly what `CyApp` consumes. `author`, `license`, and `repository`
+stay out: no current app uses them, and adding an export later is non-breaking, so the
+reversible choice is the smaller one.
+
+### Accepted consequence — `ScopedApi` has no types in generated apps
+
+`@cytoscape-web/api-types` publishes `1.0.0-beta.3` as its highest version; **`beta.4` exists
+only in the host source and is not on npm.** Generated projects therefore pin `beta.3`, whose
+`mf-declarations.d.ts` does not declare `cyweb/ScopedApi` — so `useScopedApi` is untypeable in
+a scaffolded app until the host publishes.
+
+Accepted rather than worked around. Waiting on a host publish would make this project depend
+on the host, which §2 rules out; hand-writing a local declaration would reintroduce exactly the
+drifting `.d.ts` the api-types package exists to remove. Roadmap B-1 closes it.
