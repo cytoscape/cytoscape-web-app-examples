@@ -81,9 +81,13 @@ path, rather than silently winning or silently losing.
 A non-React app passes `{ react: false }`; an app that federates more than
 `./AppConfig` passes `{ exposes: { … } }`.
 
-`npm run verify:federation` asserts all four against the built output, because
-every one of them looks correct in a config file when it is wrong. (Inside this
-repository today; a standalone `cyweb-app verify` for your own project is next.)
+After a build, `npx cyweb-app verify` asserts all four against the built output,
+because every one of them looks correct in a config file when it is wrong. It
+reads your app directory and nothing else, so it works in your own project:
+
+```bash
+npm run build && npx cyweb-app verify
+```
 
 ---
 

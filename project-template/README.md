@@ -152,6 +152,22 @@ from `mount()`. Items are auto-cleaned when the app is disabled.
 
 ---
 
+## Verifying a build
+
+```bash
+npm run build && npx cyweb-app verify
+```
+
+Checks the built output against the federation contract: the ESM remote shape,
+the production sentinel, the registered runtime plugin, the shared singletons,
+and two artifact-hygiene rules — that `package.json` did not end up in your
+bundle, and that build-machine paths stayed out of your chunks.
+
+It reads this directory only, so it keeps working after you copy the app out of
+this repository.
+
+---
+
 ## Building for production
 
 ```bash

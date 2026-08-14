@@ -3,12 +3,14 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: Phases 0–3 complete. Phase 4 is next.**
+> **Status: Phases 0–4 complete. Phase 5 is next.**
 > All five apps build through `@cytoscape-web/app-runtime@0.1.0` and match
 > [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
 > runtime-plugin path. Identity is declared once in `package.json`, no app
 > imports that file into its bundle any more, and `npm run dev` prints a link
 > that installs the app into a local host without touching the host repository.
+> `npx cyweb-app verify` checks a built app from its own directory, inside this
+> repository or outside it.
 >
 > **Phases are strictly ordered.** Phase 1 converts exactly one app; the other
 > four keep their hand-written configs until Phase 2. Nothing outside the app
@@ -451,9 +453,37 @@ _Design: §4.3, §4.5_
 
 ---
 
-## Phase 4: `cyweb-app verify`
+## Phase 4: `cyweb-app verify` ✅ **COMPLETE**
 
 _Design: §4.7_
+
+> **Check counts went UP by exactly two, and that is the deliverable.** The
+> checklist asked for counts "unchanged after the extraction" AND for two new
+> checks; those cannot both hold. What matters is that nothing was LOST, and the
+> +2 is uniform across all five apps — 27/16/26/26/26 became 29/18/28/28/28.
+>
+> **Absolute paths are reported, not banned.** §4.7 asked for "no absolute
+> workspace paths" in the output. Taken literally that fails every correct build:
+> the Module Federation SSR loader emits ~10 of them into `remoteEntry.js` as
+> dead string literals, which the Vite migration measured and accepted (CI
+> publishes from a fixed runner account and an already-public repo name). The
+> check therefore FAILS on paths anywhere else — a chunk carrying one is a
+> regression — and reports the count in `remoteEntry.js` with the reason, so the
+> workstation-publishing case stays visible rather than hidden.
+>
+> **`manifest.mjs` stopped deriving `configuredShared`.** The verifier was its
+> only consumer, and the CLI now expands `peerDependencies` itself and compares
+> the result against the built output. Deriving it in both places would have been
+> a copy nothing checks. `validateShareRecords` and `SHARE_FIELDS` went with it.
+>
+> **A finding for Phase 5.** Building a standalone app outside this repository
+> turned the verifier red on a real problem: `npm install @emotion/react@^11.10.4`
+> writes `"^11.14.0"` into `peerDependencies` — the version it RESOLVED — so a
+> hand-assembled app drifts from the SDK's declared ranges without anyone
+> touching anything. **A scaffolded app would start red.** The scaffolder must
+> write `peerDependencies` from `CYWEB_SHARED` rather than letting `npm install`
+> fill them in; the Phase 5 checklist already says so, and this is why it matters.
+> The failure message now names the remedy and the cause.
 
 The repository's strongest asset is currently unreachable by the people the
 project exists for: `verify:federation` reads `apps.manifest.json` and only
@@ -461,25 +491,34 @@ works inside this monorepo.
 
 ### Deliverables
 
-- [ ] Extract `scripts/verify-federation-build.mjs` into the SDK as
+- [x] Extract `scripts/verify-federation-build.mjs` into the SDK as
       `cyweb-app verify`, reading **only the app's own directory**
-- [ ] Checks, against a built `dist/`:
-  - [ ] Federation shape — ESM entry, `type: 'module'`, runtime plugin
+- [x] Checks, against a built `dist/`:
+  - [x] Federation shape — ESM entry, `type: 'module'`, runtime plugin
         registered, production sentinel shipped rather than a localhost URL
-  - [ ] Metadata consistency — `mf-manifest.json` matches the parsed `package.json`
-  - [ ] Shared payload — no MUI, Emotion, React or ReactDOM implementation in the
+  - [x] Metadata consistency — `mf-manifest.json` matches the parsed `package.json`
+  - [x] Shared payload — no MUI, Emotion, React or ReactDOM implementation in the
         remote's chunks
-  - [ ] **No absolute workspace paths** and no full `package.json` in the output
-- [ ] `npm run verify:federation` becomes a loop over `cyweb-app verify`
+  - [x] **No absolute workspace paths** and no full `package.json` in the output
+- [x] `npm run verify:federation` becomes a loop over `cyweb-app verify`
 
 ### Verification (Phase 4)
 
-- [ ] Check counts unchanged from Phase 2 after the extraction
-- [ ] Runs green in a **clean copy outside the monorepo** (no `apps.manifest.json`
+- [x] ~~Check counts unchanged from Phase 2 after the extraction~~ — **+2 per
+      app, uniformly**, which is the two new checks and nothing lost:
+      27/16/26/26/26 → 29/18/28/28/28
+- [x] Runs green in a **clean copy outside the monorepo** (no `apps.manifest.json`
       reachable)
-- [ ] **Goes red on a deliberately broken build** — drop the runtime plugin,
-      swap the sentinel for a localhost URL, render a MUI subpath import. A gate
-      never seen to fail is not known to work
+- [x] **Goes red on a deliberately broken build.** Exercised on real builds:
+      dropping the runtime plugin and compiling in a localhost entry produced
+      three failures at once (sentinel, resolver, host URL in the artifact);
+      re-importing `package.json` into a component produced the leak failure;
+      `import: true` produced the fallback-chunk failure plus five share
+      mismatches. Each restored to green. The MUI subpath case is caught EARLIER,
+      by `noSharedPayload` at build time — there is no artifact left for the
+      verifier to inspect, which is the correct layering rather than a gap
+  - [x] The verifier now has its own negative test suite (15 cases), because it
+        is shipped code and a passing repository cannot exercise it negatively
 
 ---
 

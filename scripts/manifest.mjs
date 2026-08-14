@@ -49,7 +49,12 @@ const APP_FIELDS = new Set([
 /** Fields the manifest used to carry that are now read from package.json. */
 const DERIVED_FIELDS = ['federationName', 'port', 'configuredShared']
 
-const SHARE_FIELDS = new Set(['singleton', 'import', 'requiredVersion'])
+// NOTE: configuredShared is in DERIVED_FIELDS so a leftover copy is still
+// rejected by name, but nothing here derives it any more. `cyweb-app verify`
+// owns that expansion now: it reads peerDependencies from the same package.json
+// and compares the result against the BUILT output, which is the only place the
+// question is answerable. Deriving it a second time here would be a copy that
+// nothing checks.
 
 class ManifestError extends Error {}
 
@@ -98,34 +103,6 @@ const validatePublishPath = (app) => {
     fail(
       `${where}: resolves to ${resolved}, which is not a child of ${DOCS_ROOT}`,
     )
-  }
-}
-
-const validateShareRecords = (app) => {
-  const { configuredShared, workspaceDir } = app
-  if (!isPlainObject(configuredShared)) {
-    fail(
-      `apps[${workspaceDir}].configuredShared: must be an object (use {} for none)`,
-    )
-  }
-  for (const [pkg, record] of Object.entries(configuredShared)) {
-    const where = `apps[${workspaceDir}].configuredShared["${pkg}"]`
-    if (!isPlainObject(record)) fail(`${where}: must be an object`)
-    for (const key of Object.keys(record)) {
-      if (!SHARE_FIELDS.has(key)) fail(`${where}: unknown field "${key}"`)
-    }
-    if (typeof record.singleton !== 'boolean') {
-      fail(`${where}.singleton: must be a boolean`)
-    }
-    if (typeof record.import !== 'boolean') {
-      fail(`${where}.import: must be a boolean`)
-    }
-    if (
-      typeof record.requiredVersion !== 'string' ||
-      record.requiredVersion === ''
-    ) {
-      fail(`${where}.requiredVersion: must be a non-empty string`)
-    }
   }
 }
 
@@ -185,37 +162,17 @@ const validateSmokeObservable = (app) => {
 }
 
 /**
- * Cross-check each requiredVersion against that app's peerDependencies.
- *
- * Vite entries only: no app declares peerDependencies until its migration
- * lands (section 7.3), so this cannot apply earlier. The two are written by
- * hand in two files and nothing else would notice them diverging.
- */
-/**
  * Fills in the fields that used to be hand-written, from the app's package.json.
  *
  * `federationName` and `port` come from the `cyweb` block — the same block
  * defineCyWebApp reads, so the manifest cannot disagree with the build.
  *
- * `configuredShared` is expanded from `peerDependencies`, which is already the
- * app's statement of "the host provides these": one record per peer, with the
- * two constant flags. An app with no peers (the non-React example) gets `{}`.
- *
- * This replaces a cross-check rather than removing one. The old code compared
- * the manifest's requiredVersions against peerDependencies — two hand-written
- * copies in one repository. What actually needs checking is whether the app's
- * declared peers match what the SDK really put in the bundle, and that check
- * already exists at the right layer: `verify:federation` compares this derived
- * `configuredShared` against the BUILT output, which came from the SDK's
- * CYWEB_SHARED. A divergence between the two now fails there, with the built
- * artifact as evidence.
- *
- * Reading the SDK's constant directly here was the alternative, and was
- * rejected: it would make `manifest:validate` depend on the SDK having been
- * built, which CI runs as a separate job.
+ * The share records used to be expanded here too. They are not any more:
+ * `cyweb-app verify` reads peerDependencies itself and compares the expansion
+ * against the BUILT output, which is the only place the question — does what
+ * this app declares match what the SDK actually put in the bundle — can be
+ * answered. Doing it here as well would be a copy nothing checks.
  */
-const SHARE_FLAGS = { singleton: true, import: false }
-
 const deriveFromPackage = (app, index) => {
   const { workspaceDir } = app
   if (typeof workspaceDir !== 'string' || workspaceDir === '') {
@@ -240,12 +197,6 @@ const deriveFromPackage = (app, index) => {
 
   app.federationName = block.id
   app.port = block.port
-  app.configuredShared = Object.fromEntries(
-    Object.entries(pkg.peerDependencies ?? {}).map(([name, range]) => [
-      name,
-      { ...SHARE_FLAGS, requiredVersion: range },
-    ]),
-  )
 }
 
 const validateApp = (app, index) => {
@@ -300,7 +251,6 @@ const validateApp = (app, index) => {
   }
 
   validatePublishPath(app)
-  validateShareRecords(app)
   validateSmokeObservable(app)
 }
 
