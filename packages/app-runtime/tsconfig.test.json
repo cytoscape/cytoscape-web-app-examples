@@ -1,0 +1,20 @@
+{
+  "//": [
+    "The test imports @module-federation/runtime, whose types reach",
+    "@module-federation/sdk and its `import webpack from \"webpack\"`. That is",
+    "why skipLibCheck is true here and why the test lives outside src/ — the",
+    "same split the apps use."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["test/**/*", "src/**/*", "scripts/**/*"]
+}

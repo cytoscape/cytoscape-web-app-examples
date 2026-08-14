@@ -3,8 +3,11 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: NOT STARTED.** No package exists yet. Phase 0 must close the §9
-> open questions and capture the baseline before any code is written.
+> **Status: Phases 0 and 1 complete. Phase 2 is next.**
+> `@cytoscape-web/app-runtime@0.1.0` exists and `project-template` builds
+> through it, with its federation output matching
+> [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
+> runtime-plugin path. The other four apps still carry their own copies.
 >
 > **Phases are strictly ordered.** Phase 1 converts exactly one app; the other
 > four keep their hand-written configs until Phase 2. Nothing outside the app
@@ -37,13 +40,32 @@ the virtual module in app code, the dev middleware, and the docs.
 
 ---
 
-## Phase 0: Baseline and open questions
+## Phase 0: Baseline and open questions ✅ **COMPLETE**
 
 _Design: §9, and the exit criterion of §5 Phase 1_
 
 No implementation. This phase exists for two reasons: Phase 1's success test
 compares against a build that no longer exists once work starts, and §9's open
 questions change the shape of what gets built.
+
+> **Three decisions taken, all recorded in design §9 as D-1…D-3:**
+>
+> - **`create-cytoscape-app`**, unscoped. All four candidate names were confirmed
+>   unpublished, so the constraint §9 Q1 hung on ("it needs the npm name to be
+>   available") is satisfied.
+> - **No import allowlist.** Dropped, not deferred — design §3 now says so. It
+>   restrains only the party guaranteed to use the SDK, which is not the threat,
+>   and a partial guardrail inside a trust-boundary section implies containment
+>   that does not exist.
+> - **Four metadata fields** — `id`, `displayName`, `version`, `description`.
+>   Adding an export later is non-breaking, so the smaller set is the reversible one.
+>
+> **One consequence accepted:** `@cytoscape-web/api-types` publishes `1.0.0-beta.3`
+> as its highest version — **`beta.4` is not on npm**, it exists only in the host
+> source. Generated apps pin `beta.3`, so **`cyweb/ScopedApi` is untypeable in a
+> scaffolded app** until the host publishes. Waiting would make this project depend
+> on the host; a hand-written local declaration would reintroduce the drifting
+> `.d.ts` that api-types exists to remove. Roadmap B-1 closes it.
 
 ### Pre-read files
 
@@ -59,47 +81,89 @@ questions change the shape of what gets built.
 
 ### Deliverables — decisions (write them down)
 
-- [ ] **Scaffolder package name** — `create-cytoscape-app` (unscoped, enables
-      `npm create cytoscape-app`) or `@cytoscape-web/create-app`. §9 Q1
-  - [ ] Availability confirmed: `npm view create-cytoscape-app`
-- [ ] **SDK package name** availability confirmed: `npm view @cytoscape-web/app-runtime`
-- [ ] **Import allowlist — in or out.** §9 Q2. A build-time check cannot see a
-      dynamic `import()`, so a partial guardrail may buy less than the false
-      confidence it creates. **If out, edit design §3** so Preview stops
-      promising it
-- [ ] **`virtual:cyweb-app-meta` field list frozen.** §9 Q3 — whether `author`,
-      `license`, `repository` join `id`, `displayName`, `version`, `description`
-- [ ] **Preview version line and tag** — `0.x` under `next`, both packages moving
-      in lockstep
-- [ ] **The exact `@cytoscape-web/api-types` version** generated projects pin
-      (currently `1.0.0-beta.3` is published; the host source is at `beta.4`)
+- [x] **Scaffolder package name** — **`create-cytoscape-app`**, unscoped (§9 D-1)
+  - [x] Availability confirmed — all four unpublished: `create-cytoscape-app`,
+        `@cytoscape-web/create-app`, `@cytoscape-web/app-runtime`,
+        `@cytoscape-web/app-test`
+- [x] **SDK package name** — `@cytoscape-web/app-runtime`, available
+- [x] **Import allowlist — OUT** (§9 D-2). Design §3 edited: it no longer
+      promises one, and records why it was dropped rather than deferred
+- [x] **`virtual:cyweb-app-meta` field list frozen** (§9 D-3) — `id`,
+      `displayName`, `version`, `description`. `author` / `license` /
+      `repository` stay out; adding an export later is non-breaking
+- [x] **Preview version line and tag** — `0.x` under `next`, both packages in lockstep
+- [x] **`@cytoscape-web/api-types` pin for generated projects** —
+      **`1.0.0-beta.3` exactly**. It is the highest version on npm; `beta.4` is
+      host-source-only. See the consequence note above
 
 ### Deliverables — baseline (Phase 1 compares against this)
 
-- [ ] Build all five apps at current HEAD; archive each `dist/mf-manifest.json`
-      outside the working tree. **Record the commit sha** — the comparison is
-      meaningless without it
-- [ ] Record the per-app `verify:federation` check counts — expected to be
-      unchanged after migration: `hello-world` 27, `network-workflows` 26,
-      `project-template` 26, `claude-bridge` 26, `network-statistics` **16**
-      (it shares nothing, so the per-package assertions have nothing to assert)
-- [ ] Record per-app bundle sizes (raw, gzip, file count) from the vite-migration
-      Phase 8 table, or re-measure
+- [x] Build all five apps at current HEAD and capture the audit fields —
+      [`phase0-baseline.md`](phase0-baseline.md), commit `2e91020`
+  - [x] Raw `mf-manifest.json` files kept out of git: they embed the absolute
+        build-machine path including the username, and this repository is public.
+        The committed record carries the audit fields with the path normalized to
+        `<REPO>/`, which is exactly what Phase 1 compares
+- [x] Record the per-app `verify:federation` check counts — **measured, and they
+      match the predicted values exactly**: `hello-world` 27,
+      `network-statistics` **16**, `network-workflows` 26, `project-template` 26,
+      `claude-bridge` 26
+- [x] Record per-app bundle sizes (raw, gzip, file count) — measured over the
+      whole `dist/`, not the narrower publish set. Total 727,835 raw / 237,876
+      gzip / 111 files
 
 ### Verification (Phase 0)
 
-- [ ] Baseline archived and reachable by sha
-- [ ] No open §9 question remains
-- [ ] Both npm names are available, or the fallbacks are chosen
+- [x] Baseline archived and reachable by sha — `2e91020`, committed in the repo
+      rather than a scratch directory, so Phase 1 can still reach it in a later session
+- [x] No open §9 question remains — all three closed as D-1…D-3
+- [x] All npm names are available; no fallback needed
+- [x] `npm run build` and `npm run verify:federation` both green at the baseline
+      commit, so the comparison starts from a known-good state
 
 ---
 
-## Phase 1: Extract the SDK, convert `project-template` only
+## Phase 1: Extract the SDK, convert `project-template` only ✅ **COMPLETE**
 
 _Design: §4.1, §4.2, §4.3, §4.4, §4.8, §4.9_
 
 Deliberately one app. Everything unknown becomes verified fact here before the
 pattern is applied four more times.
+
+> **Four decisions taken during implementation, and one measurement:**
+>
+> - **The runtime-plugin path is derived, not resolved.** The design said
+>   `createRequire(import.meta.url).resolve(...)`; the implementation uses
+>   `new URL('../runtime/mfRuntimePlugin.js', import.meta.url)`. It cannot be
+>   defeated by a symlinked workspace or a store layout, and it needs no entry in
+>   `exports`, which keeps the public surface at the two subpaths §4.1 promises.
+>   **Verified both ways**: under npm the path lands in
+>   `node_modules/@cytoscape-web/app-runtime/…`, under pnpm in the real
+>   `node_modules/.pnpm/…` path. Name resolution would have had to be correct
+>   about `exports` self-reference in both.
+> - **`noSharedPayload` never needed the app root.** §4.4's table lists it beside
+>   `zipForAppStore` as reading `import.meta.url`; only `zipForAppStore` did. The
+>   module ids `noSharedPayload` inspects are already absolute, so it moved
+>   unchanged and `configResolved` was added to the zip plugin alone.
+> - **`project-template`'s smoke test landed here, not in Phase 2.** Deleting its
+>   only test file leaves `vitest run` with nothing to run, which fails the app's
+>   `test` script. The replacement asserts what is specific to this app — its
+>   metadata and the shape of what `./AppConfig` exports — rather than the runtime
+>   plugin, which is now tested once in the package.
+> - **The SDK carries its own tests for the new logic.** `readAppMeta` and the
+>   protected-field check are new code with new failure modes; 42 tests across
+>   three files, up from the 12 the single ported suite contributes.
+>
+> **Measured, and it confirms why the virtual module exists.** The built app
+> chunk contains the WHOLE package.json — `devDependencies`, `scripts`, the `"//"`
+> prose blocks, everything — because `TemplateApp.tsx` still does
+> `import packageJson from '../package.json'`. Grepping the output finds
+> `devDependencies`, `typescript` and `vitest` in a browser bundle. This is
+> pre-existing (the Phase 0 baseline has it too) and Phase 3 is where app code
+> switches to `virtual:cyweb-app-meta`. The tarball fixture, which already uses
+> the virtual module, shows **no leak** — so the fix is proven, just not yet
+> adopted. Note that adding the `cyweb` block grew the leak by ~0.8 kB in the
+> meantime.
 
 ### Pre-read files
 
@@ -112,109 +176,114 @@ pattern is applied four more times.
 
 ### Deliverables — package skeleton (§4.1, §4.8)
 
-- [ ] Create `packages/app-runtime/` — `@cytoscape-web/app-runtime`, `0.1.0`,
+- [x] Create `packages/app-runtime/` — `@cytoscape-web/app-runtime`, `0.1.0`,
       `type: module`, `engines.node >= 24`
-  - [ ] `exports` limited to **`./vite` and `./meta`**. The runtime plugin is
+  - [x] `exports` limited to **`./vite` and `./meta`**. The runtime plugin is
         resolved internally, not exported
-  - [ ] `bin: { "cyweb-app": … }` declared now, implemented in Phase 4
-- [ ] Add `packages/*` to the root `workspaces`
-- [ ] **Scope `scripts/manifest.mjs` validation to app workspaces only** — it
+  - [x] `bin: { "cyweb-app": … }` declared now, implemented in Phase 4
+- [x] Add `packages/*` to the root `workspaces`
+- [x] **Scope `scripts/manifest.mjs` validation to app workspaces only** — it
       currently asserts the `workspaceDir` set equals the `workspaces` set in
       both directions, so adding a package breaks it immediately
-- [ ] Fix build order: **SDK → the five apps → (Phase 5) scaffolder fixtures**
+- [x] Fix build order: **SDK → the five apps → (Phase 5) scaffolder fixtures**
 
 ### Deliverables — app metadata (§4.3)
 
-- [ ] `cyweb` block schema with **runtime** validation, failing the build with
+- [x] `cyweb` block schema with **runtime** validation, failing the build with
       the offending field named:
-  - [ ] `id` matches `/^[a-zA-Z_$][a-zA-Z0-9_$]*$/` — the same rule the host's
+  - [x] `id` matches `/^[a-zA-Z_$][a-zA-Z0-9_$]*$/` — the same rule the host's
         `parseManifest.ts` applies, so a locally valid id cannot be rejected on install
-  - [ ] `id` of `cyweb` is reserved and refused
-  - [ ] `port` present and free-form valid; `displayName` present
-  - [ ] `version` is canonical SemVer
-- [ ] Read `<root>/package.json` with `node:fs` — **not** an import.
+  - [x] `id` of `cyweb` is reserved and refused
+  - [x] `port` present and free-form valid; `displayName` present
+  - [x] `version` is canonical SemVer
+- [x] Read `<root>/package.json` with `node:fs` — **not** an import.
       `tsconfig.node.json` does not enable `resolveJsonModule`
-- [ ] `./meta` export — the schema types plus the `virtual:cyweb-app-meta`
+- [x] `./meta` export — the schema types plus the `virtual:cyweb-app-meta`
       module declaration
-- [ ] The virtual-module plugin, exposing **only the allowlisted fields**
-  - [ ] Never the raw `package.json`: importing it bundles `devDependencies`,
+- [x] The virtual-module plugin, exposing **only the allowlisted fields**
+  - [x] Never the raw `package.json`: importing it bundles `devDependencies`,
         `scripts`, and every private field into the browser bundle
-- [ ] Add the `cyweb` block to `project-template/package.json`
+- [x] Add the `cyweb` block to `project-template/package.json`
 
 ### Deliverables — the config builder (§4.2)
 
-- [ ] `defineCyWebApp(import.meta.url, options?)` — the first argument is
+- [x] `defineCyWebApp(import.meta.url, options?)` — the first argument is
       **required**. `process.cwd()` is wrong whenever Vite runs from a monorepo
       root or with `--config`
-- [ ] Options, and only these: `react`, `exposes`, `devHostPageUrl`,
+- [x] Options, and only these: `react`, `exposes`, `devHostPageUrl`,
       `devHostRemoteEntryUrl`, `appStoreZip`, `vite`
-  - [ ] **No `id` override** — identity has one source
-  - [ ] **No wholesale `shared` replacement** — it would defeat P-1
-- [ ] `exposes` merged with the mandatory `./AppConfig`; a key collision is fatal
-- [ ] Protected fields enforced, with a **named error naming the path** when user
+  - [x] **No `id` override** — identity has one source
+  - [x] **No wholesale `shared` replacement** — it would defeat P-1
+- [x] `exposes` merged with the mandatory `./AppConfig`; a key collision is fatal
+- [x] Protected fields enforced, with a **named error naming the path** when user
       `vite` config touches one — it must neither silently win nor silently lose:
-  - [ ] the runtime-plugin registration
-  - [ ] `remotes.cyweb` — `type`, `name`, `entryGlobalName`, `shareScope`, and the
+  - [x] the runtime-plugin registration
+  - [x] `remotes.cyweb` — `type`, `name`, `entryGlobalName`, `shareScope`, and the
         production entry sentinel
-  - [ ] the shared singleton set and its `singleton: true` / `import: false` flags
-  - [ ] the `./AppConfig` expose
-  - [ ] `server.port`, `server.strictPort`, `server.origin`, the CORS header
-  - [ ] `build.target`, `build.outDir`, and the deliberate **absence** of `base`
-- [ ] Composable exports — `cywebFederation`, `noSharedPayload`, `CYWEB_SHARED` —
+  - [x] the shared singleton set and its `singleton: true` / `import: false` flags
+  - [x] the `./AppConfig` expose
+  - [x] `server.port`, `server.strictPort`, `server.origin`, the CORS header
+  - [x] `build.target`, `build.outDir`, and the deliberate **absence** of `base`
+- [x] Composable exports — `cywebFederation`, `noSharedPayload`, `CYWEB_SHARED` —
       documented as **advanced and unsupported**, outside the high-level API's guarantees
-- [ ] `CYWEB_SHARED` is the single source of truth for the five singletons
+- [x] `CYWEB_SHARED` is the single source of truth for the five singletons
 
 ### Deliverables — the runtime plugin (§4.4)
 
-- [ ] Move `mfRuntimePlugin` and `cywebHostSentinel` into the package
-- [ ] **Ship precompiled `.js`, not `.ts`** — `runtimePlugins` entries are
+- [x] Move `mfRuntimePlugin` and `cywebHostSentinel` into the package
+- [x] **Ship precompiled `.js`, not `.ts`** — `runtimePlugins` entries are
       interpolated into an `import "<path>"` inside a generated virtual module,
       and a `.ts` file in `node_modules` is not reliably transformed
-- [ ] Resolve the path with `createRequire(import.meta.url).resolve(...)`, still
+- [x] Resolve the path with `createRequire(import.meta.url).resolve(...)`, still
       `normalizePath`-ed (a Windows backslash path is an invalid specifier)
-- [ ] Preserve the **both-arrays** write: `userOptions.remotes` **and**
+- [x] Preserve the **both-arrays** write: `userOptions.remotes` **and**
       `options.remotes`. Writing one works in exactly one of the two init paths,
       silently
-- [ ] `apiVersion` is **read for the dev banner only** — no comparison, no
+- [x] `apiVersion` is **read for the dev banner only** — no comparison, no
       enforcement (the P-2 retraction)
-- [ ] Move the five copies of `test/mfRuntimePlugin.test.ts` into one suite here,
+- [x] Move the five copies of `test/mfRuntimePlugin.test.ts` into one suite here,
       still against a **real `ModuleFederation` instance**
 
 ### Deliverables — build plugins (§4.4, §4.9)
 
-- [ ] `noSharedPayload` takes the app root from `configResolved`
+- [x] `noSharedPayload` takes the app root from `configResolved`
       (`config.root`, `config.build.outDir`), **not** from `import.meta.url`
-  - [ ] Keep `apply: 'build'`, `enforce: 'post'`, and the **namespace prefixes**
+  - [x] Keep `apply: 'build'`, `enforce: 'post'`, and the **namespace prefixes**
         (`/node_modules/@mui/`, not a package list — `@mui/utils` is the case)
-- [ ] `zipForAppStore` likewise, and **opt-in with `appStoreZip` defaulting to
+- [x] `zipForAppStore` likewise, and **opt-in with `appStoreZip` defaulting to
       `false`**. It currently runs on every build, which is why stale `*.zip`
       files sit in the working tree
-- [ ] The explanatory comments move **with** the code they explain
+- [x] The explanatory comments move **with** the code they explain
 
 ### Deliverables — convert `project-template`
 
-- [ ] `vite.config.ts` → three lines
-- [ ] Delete `src/mfRuntimePlugin.ts`, `src/cywebHostSentinel.ts`,
+- [x] `vite.config.ts` → three lines
+- [x] Delete `src/mfRuntimePlugin.ts`, `src/cywebHostSentinel.ts`,
       `test/mfRuntimePlugin.test.ts`
-- [ ] Keep a short block in the template stating what `defineCyWebApp` sets up
+- [x] Keep a short block in the template stating what `defineCyWebApp` sets up
       and why, linking to the SDK source for the full reasoning
-- [ ] Confirm `guides/architecture-overview.md` still carries the four-item table
+- [x] Confirm `guides/architecture-overview.md` still carries the four-item table
 
 ### Verification (Phase 1)
 
-- [ ] **Byte-comparable federation shape** — the built `mf-manifest.json` audit
+- [x] **Byte-comparable federation shape** — the built `mf-manifest.json` audit
       fields (`configuredShared`, `configuredRemote`, `configuredRuntimePlugins`)
       match the Phase 0 baseline **except the runtime-plugin path**. This is the
       phase's whole point: the config moved, the output did not
-- [ ] `npm run verify:federation` passes with the **same check count** as baseline (26)
-- [ ] `npm run typecheck` passes on all three configs
-- [ ] `npm run check:imports` passes
-- [ ] The SDK's runtime-plugin suite passes — all cases the five copies covered
-- [ ] The production build carries the sentinel, never `localhost:5500`
-- [ ] `noSharedPayload` still fires on a **rendered** `@mui/material/Box`. An
+- [x] `npm run verify:federation` passes with the **same check count** as baseline (26)
+- [x] `npm run typecheck` passes on all three configs
+- [x] `npm run check:imports` passes
+- [x] The SDK's runtime-plugin suite passes — all cases the five copies covered
+- [x] The production build carries the sentinel, never `localhost:5500`
+- [x] `noSharedPayload` still fires on a **rendered** `@mui/material/Box`. An
       unused subpath import does not bundle MUI; the fixture has to render it
-- [ ] The app loads in a running host from `apps.local.json`, mounts, panel renders
-- [ ] **Packed-tarball resolution smoke test, npm and pnpm.** `npm pack` the SDK,
+- [x] The app loads in a running host from `apps.local.json` — verified through
+      the real host loader, not by eye: a dynamic `import()` inside a live
+      `localhost:5500` page, `init()` against the host's own share scope (11
+      entries), then `get('./AppConfig')`, which returned `id: 'template'` and
+      both declared resources. A resolver that never ran could not have loaded at
+      all — the production build carries a sentinel, not a URL
+- [x] **Packed-tarball resolution smoke test, npm and pnpm.** `npm pack` the SDK,
       install into a temp fixture app, build, and assert
       `configuredRuntimePlugins` points **inside the package**. This is the
       highest technical risk in the project (§6) and cannot be deferred
@@ -450,7 +519,9 @@ _Design: §3, §4.1_
 - [ ] **`@cytoscape-web/app-test`** — the mock host. The scaffolder's smoke test
       is deliberately independent of it
 - [ ] **`AGENTS.md` content** — the scaffolder emits a placeholder; E-1c fills it
-- [ ] **Import allowlist** — if Phase 0 decided it out (§9 Q2)
+- [x] **Import allowlist** — decided **out** in Phase 0 (§9 D-2). Not deferred:
+      dropped. The deprecation signal it was reaching for belongs in the type
+      declarations (roadmap B-1)
 
 ### Known non-issues
 

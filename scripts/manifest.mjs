@@ -263,11 +263,25 @@ const validateApp = (app, index) => {
   validatePeerVersions(app)
 }
 
+/**
+ * Workspaces that are libraries, not apps.
+ *
+ * `packages/*` is the SDK. It is a workspace so the apps can depend on it and
+ * npm links it, but it has no federation name, no port, and nothing to publish
+ * to Pages — so it has no manifest entry, and the parity check below must not
+ * demand one. Matched as a path prefix rather than by name: a second package
+ * should not require editing this file.
+ */
+const NON_APP_WORKSPACE_PREFIXES = ['packages/']
+
+const isAppWorkspace = (dir) =>
+  !NON_APP_WORKSPACE_PREFIXES.some((prefix) => dir.startsWith(prefix))
+
 const validateWorkspaceParity = (apps) => {
-  const workspaces =
+  const declared =
     JSON.parse(readFileSync(ROOT_PACKAGE_PATH, 'utf8')).workspaces ?? []
   const inManifest = new Set(apps.map((a) => a.workspaceDir))
-  const inWorkspaces = new Set(workspaces)
+  const inWorkspaces = new Set(declared.filter(isAppWorkspace))
 
   // Both directions. An app in one and not the other is either built but never
   // verified, or verified but never built. Removing an entry is an ERROR, not a

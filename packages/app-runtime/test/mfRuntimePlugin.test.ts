@@ -11,14 +11,18 @@
 //   construct → beforeInit sees userOptions.remotes = [declared], options.remotes = []
 //   re-init   → beforeInit sees userOptions.remotes = [new],      options.remotes = [previous]
 //
-// Lives outside src/ so the app tsconfig (which keeps skipLibCheck: false) does
-// not have to pull in the MF runtime's types — those reach `webpack`.
+// ONE copy. Until the SDK existed this file was duplicated into all five apps,
+// differing only by the federation name passed to the instance — so the case
+// this guards was, in practice, maintained five times and reviewed once.
+//
+// Lives outside src/ so the build tsconfig does not have to pull in the MF
+// runtime's types — those reach `webpack`.
 
 import { ModuleFederation } from '@module-federation/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { CYWEB_HOST_REQUIRED } from '../src/cywebHostSentinel'
-import cywebHostResolver from '../src/mfRuntimePlugin'
+import { CYWEB_HOST_REQUIRED } from '../src/runtime/cywebHostSentinel.js'
+import cywebHostResolver from '../src/runtime/mfRuntimePlugin.js'
 
 const DEV_ENTRY = 'http://localhost:5500/remoteEntry.js'
 const HOST_ENTRY = 'https://web.cytoscape.org/remoteEntry.js'
@@ -88,7 +92,10 @@ describe('cyweb-host-resolver', () => {
     ['remoteEntry empty', { name: 'cyweb', remoteEntry: '' }],
     ['remoteEntry relative', { name: 'cyweb', remoteEntry: '/remoteEntry.js' }],
     ['remoteEntry file: scheme', { name: 'cyweb', remoteEntry: 'file:///x.js' }],
-    ['remoteEntry data: scheme', { name: 'cyweb', remoteEntry: 'data:text/javascript,0' }],
+    [
+      'remoteEntry data: scheme',
+      { name: 'cyweb', remoteEntry: 'data:text/javascript,0' },
+    ],
     ['remoteEntry not a string', { name: 'cyweb', remoteEntry: 42 }],
   ])(
     'a production build throws when the descriptor is unusable: %s',
@@ -109,12 +116,19 @@ describe('cyweb-host-resolver', () => {
       name: 'template',
       remotes: [
         { name: 'cyweb', entry: CYWEB_HOST_REQUIRED, type: 'module' },
-        { name: 'other', entry: 'https://elsewhere.example/remoteEntry.js', type: 'module' },
+        {
+          name: 'other',
+          entry: 'https://elsewhere.example/remoteEntry.js',
+          type: 'module',
+        },
       ],
       plugins: [cywebHostResolver()],
     })
 
-    const remotes = instance.options.remotes as Array<{ name: string; entry?: string }>
+    const remotes = instance.options.remotes as Array<{
+      name: string
+      entry?: string
+    }>
     expect(remotes.find((r) => r.name === 'other')?.entry).toBe(
       'https://elsewhere.example/remoteEntry.js',
     )

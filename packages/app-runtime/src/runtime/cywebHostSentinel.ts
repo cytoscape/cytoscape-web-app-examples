@@ -1,8 +1,8 @@
 /**
  * Entry value a production build ships when no host descriptor is available.
  *
- * Its own dependency-free module because BOTH `vite.config.ts` (Node, at build
- * time) and `mfRuntimePlugin.ts` (browser, at runtime) need it. One definition
+ * Its own dependency-free module because BOTH the Vite config (Node, at build
+ * time) and the runtime resolver (browser, at runtime) need it. One definition
  * means the value the build compiles in and the value the resolver checks for
  * cannot drift apart.
  *

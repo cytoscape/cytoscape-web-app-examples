@@ -1,24 +1,25 @@
 // Resolves the `cyweb` host entry at RUNTIME instead of build time.
 //
 // Why this exists: without it, an app artifact is bound to one host deployment.
-// The old config picked between two hardcoded URLs with a build flag, so the
-// published build could only ever be loaded by web.cytoscape.org — not by a
-// Netlify branch preview, a self-hosted instance, or a colleague's local host.
-// A remote's remoteEntry.js is imported BY the host, INTO the host's page, so
-// the host knows its own entry URL exactly and publishes it; this reads it.
-// Deriving it here instead (`location.origin + '/remoteEntry.js'`) would be a
-// guess, because the host's base comes from its config.json.
+// Picking between two hardcoded URLs with a build flag means the published
+// build can only ever be loaded by one origin — not by a branch preview, a
+// self-hosted instance, or a colleague's local host. A remote's remoteEntry.js
+// is imported BY the host, INTO the host's page, so the host knows its own
+// entry URL exactly and publishes it; this reads it. Deriving it here instead
+// (`location.origin + '/remoteEntry.js'`) would be a guess, because the host's
+// base comes from its config.json.
 //
-// See design/specifications/vite-migration/vite-migration.md section 6.
+// SHIPPED PRECOMPILED. `runtimePlugins` entries are interpolated into an
+// `import "<path>"` inside a module the federation plugin generates, and a .ts
+// file sitting in node_modules is not reliably transformed. dist/ carries .js.
 
-import { CYWEB_HOST_REQUIRED } from './cywebHostSentinel'
+import { CYWEB_HOST_REQUIRED } from './cywebHostSentinel.js'
 
 // Structural subset of the MF runtime plugin contract. Declared locally rather
 // than imported from @module-federation/runtime: that package's types reach
 // @module-federation/sdk, whose ModuleFederationPlugin.d.ts does
-// `import webpack from "webpack"`. This app's tsconfig keeps
-// `skipLibCheck: false` on purpose, so that import would break `typecheck` the
-// moment Webpack is uninstalled.
+// `import webpack from "webpack"`. Apps keep `skipLibCheck: false` on purpose,
+// so that import would break their typecheck.
 type RemoteEntryRecord = { name?: string; entry?: string }
 type BeforeInitArgs = {
   userOptions: { remotes?: RemoteEntryRecord[] }
@@ -40,8 +41,12 @@ const HOST_REMOTE_NAME = 'cyweb'
  * The host's entry URL, or undefined if the descriptor cannot be used for
  * routing. Validates the two fields routing depends on — `name` identifies the
  * descriptor as Cytoscape Web's, and an empty or relative `remoteEntry` is as
- * wrong as a missing one. `apiVersion` is deliberately NOT checked; acting on
- * it is deferred (section 6.6).
+ * wrong as a missing one.
+ *
+ * `apiVersion` is deliberately NOT checked. The host publishes a hardcoded
+ * '1.0' and has no policy for ever bumping it, so a comparison against it
+ * detects nothing and manufactures false assurance. It is read for diagnostics
+ * only. See the design's §9 and the roadmap's P-2 retraction.
  */
 const readHostEntry = (): string | undefined => {
   const descriptor = (

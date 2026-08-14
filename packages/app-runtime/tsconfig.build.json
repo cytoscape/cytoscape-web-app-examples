@@ -1,0 +1,32 @@
+{
+  "//": [
+    "Emits dist/. Relative imports in src/ carry explicit .js extensions so the",
+    "output is valid Node ESM without a resolver step — the runtime plugin in",
+    "particular is loaded by Vite from inside node_modules, where nothing will",
+    "rewrite an extensionless specifier for us.",
+    "",
+    "skipLibCheck is true HERE, for building this package. It says nothing about",
+    "the apps: their tsconfig keeps skipLibCheck false, and dist/meta/*.d.ts is",
+    "checked under that setting, which is why the ./meta entry imports nothing."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "strict": true,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "outDir": "dist",
+    "rootDir": "src",
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}
