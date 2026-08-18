@@ -194,18 +194,30 @@
         </li>
       </ul>
       <p>
-        <strong>To run them, use the repository.</strong> Clone it, start the
-        host and the app's dev server side by side, and the host picks the app
-        up from its local registry:
+        <strong>Building your own app? Start here instead</strong> &mdash; no
+        clone, and nothing in the host repository to edit:
       </p>
-      <pre><code># Terminal 1 — the host, reading apps.local.json
-cd cytoscape-web &amp;&amp; npm run dev:local
+      <pre><code>npm create cytoscape-app my-app
+cd my-app &amp;&amp; npm run dev</code></pre>
+      <p>
+        The dev server prints a link that installs your app into a running local
+        host. <strong>Developer Preview:</strong> npm prints a deprecation notice
+        on install, deliberately &mdash; an app runs with the host's full
+        privileges, with no sandbox and no signature verification.
+      </p>
+      <p>
+        <strong>To run these examples,</strong> clone the repository and start
+        the host and the apps side by side; the host's dev server already lists
+        them:
+      </p>
+      <pre><code># Terminal 1 — the host
+cd cytoscape-web &amp;&amp; npm run dev
 
 # Terminal 2 — the app you want to try
 cd cytoscape-web-app-examples &amp;&amp; npm run dev:hello-world</code></pre>
       <p>
         Then open <a href="http://localhost:5500">localhost:5500</a> and enable
-        the app under <strong>Apps &rarr; Manage Apps&hellip;</strong>. See
+        the app under <strong>Apps &rarr; App Settings</strong>. See
         <a
           href="https://github.com/cytoscape/cytoscape-web-app-examples/blob/main/guides/getting-started.md"
         >the getting-started guide</a> for the full walkthrough.
@@ -364,12 +376,12 @@ cd cytoscape-web-app-examples &amp;&amp; npm run dev:hello-world</code></pre>
 
       <h2>Build Your Own App</h2>
       <p>
-        To build a new app, fork
-        <a href="https://github.com/cytoscape/cytoscape-web-app-examples">the
-        repository</a> and start from <code>project-template/</code>. The
-        README walks through running the host and the example apps locally,
-        registering your local <code>remoteEntry.js</code> with Cytoscape Web
-        via <code>apps.local.json</code>, and publishing your finished app.
+        To build a new app, run <code>npm create cytoscape-app my-app</code>.
+        The generated project builds, verifies and tests as it stands, and its
+        dev server prints a link that installs it into a running local host
+        &mdash; nothing in the host repository is edited. The
+        <a href="https://github.com/cytoscape/cytoscape-web-app-examples">repository</a>
+        README covers the APIs, the example apps, and publishing.
       </p>
       <div class="button-row">
         <a

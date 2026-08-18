@@ -1,11 +1,27 @@
 # Developing Apps for _[Cytoscape Web](https://github.com/cytoscape/cytoscape-web/)_
 
+> ## ⚠️ Developer Preview
+>
+> The SDK and scaffolder are published at **`0.1.0`**, and **npm will print a
+> deprecation notice when you install them. That is deliberate, not a mistake** —
+> it is how this says, at the moment you install it, that it is not ready to
+> carry production work.
+>
+> **An app runs inside Cytoscape Web with the host's full privileges** — same
+> origin, DOM, storage and network identity. There is no sandbox and no
+> signature verification, and an app can read the user's credentials. Install
+> only apps you trust, and understand that asking someone to install yours asks
+> the same of them.
+>
+> The API may change before `1.0`. What is missing before it can be called ready
+> is host-side: app isolation, a capability API, and artifact integrity.
+
+Reference implementations and documentation for building apps for
+[Cytoscape Web](https://web.cytoscape.org).
+
 - Targets Cytoscape Web **App API 1.0** ([`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types))
-
-> Reference implementations and documentation for Cytoscape Web app development
-
 - [Live examples](https://cytoscape.org/cytoscape-web-app-examples/)
-- [API types package (`@cytoscape-web/api-types`)](https://www.npmjs.com/package/@cytoscape-web/api-types)
+- [`create-cytoscape-app`](https://www.npmjs.com/package/create-cytoscape-app) · [`@cytoscape-web/app-runtime`](https://www.npmjs.com/package/@cytoscape-web/app-runtime)
 
 ## Introduction
 
@@ -23,52 +39,55 @@ through Module Federation (Vite). Apps can add:
 
 ## Quick Start
 
-### Set up the local workspace
-
-Both the **host application** and this **examples repository** are needed side by side.
-The host runs the Cytoscape Web UI at `localhost:5500` and loads your app from
-your own dev server, so you never rebuild the host to work on your app.
-
-> **Editing your app does not hot-reload inside the host.** Vite's HMR does not
-> cross the federation boundary — that is a separate feature (`dev.remoteHmr`),
-> off by default. Your dev server rebuilds the changed module immediately, but
-> you reload the host page to pick it up.
-
 ```bash
-mkdir cytoscape-web-dev && cd cytoscape-web-dev
-git clone https://github.com/cytoscape/cytoscape-web.git
-git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
-```
-
-### 1. Run the example apps
-
-```bash
-cd cytoscape-web-app-examples
-npm install
+npm create cytoscape-app my-app
+cd my-app
 npm run dev
 ```
 
-### 2. Run the host with the local app registry
+The dev server prints the link that installs your app into a running local host:
 
-```bash
-cd cytoscape-web
-npm install
-npm run dev:local
+```
+  Cytoscape Web app myApp — http://localhost:6000
+
+  Install it into a local host:
+  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
 ```
 
-### 3. Check that it works
+Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
+checkout), open that link, confirm the install, and enable the app under
+**Apps → App Settings**.
 
-1. Open `http://localhost:5500`
-2. Open **Apps** -> **App Settings**
-3. Enable one of the example apps
-4. Open the **Apps** menu or the right-side **App Panel**
+**Nothing in the host repository is edited.** Your dev server serves a one-entry
+app manifest at `/cyweb-app.json`, generated from your `package.json` on every
+request, and the host has accepted `?installApp=` all along.
+
+> **Your app does not hot-reload inside the host.** Vite's HMR does not cross the
+> federation boundary — that is a separate feature (`dev.remoteHmr`), off by
+> default. Your dev server rebuilds the changed module immediately; reload the
+> host page to pick it up.
+
+### Working on this repository instead
+
+If you want to run the five example apps rather than build your own:
+
+```bash
+git clone https://github.com/cytoscape/cytoscape-web.git
+git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
+
+cd cytoscape-web-app-examples && npm install && npm run dev   # all five apps
+cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
+```
+
+Then open `http://localhost:5500`, **Apps → App Settings**, and enable one. The
+dev server reads `src/assets/apps.local.json`, which already lists them.
 
 ### Publishing to the public Cytoscape Web site
 
-The production instance of Cytoscape Web loads apps from a curated allowlist
-(`apps.json`) maintained by the core team. There are plans for a dynamic loading mechanism and the public App
-store in the future, but for now public app registration is manual. If you would like
-to publish your app, please
+Still manual, and deliberately so. The production instance loads apps from a
+curated allowlist (`apps.json`) maintained by the core team; a self-service App
+Store is designed but not built, and its launch is gated on the same host-side
+isolation work as the banner above. To publish, please
 [contact the Cytoscape team](https://github.com/cytoscape/cytoscape-web/issues).
 
 ---
@@ -134,14 +153,20 @@ Every app exports one `CyAppWithLifecycle` object:
 ```typescript
 import { lazy } from 'react'
 import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'
-
-const { version } = packageJson
+// Identity, from the `cyweb` block and the standard fields in package.json.
+// Do NOT `import packageJson from '../package.json'` — that pulls the whole
+// file, devDependencies included, into your browser bundle to read one string.
+// `cyweb-app verify` fails a build that does.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
-  id: 'myApp',
-  name: 'My App',
-  description: 'Short description of your app',
+  // Written once, in package.json:
+  //   "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+  // `id` is the Module Federation container name, this CyApp's id and the id
+  // the host registers, all at the same time.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 

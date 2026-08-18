@@ -55,23 +55,37 @@ and a panel that ignores the host's theme.
 
 ### App Discovery
 
-The host reads `apps.json` (production) or `apps.local.json` (development)
-to discover plugins:
+The host discovers apps from a **manifest**: a JSON array of entries, each
+naming an app and the `remoteEntry.js` to load it from.
 
 ```json
 [
   {
     "id": "myApp",
     "name": "My App (display name)",
-    "url": "http://localhost:3333/remoteEntry.js",
+    "url": "http://localhost:6000/remoteEntry.js",
     "version": "0.1.0"
   }
 ]
 ```
 
-The `id` field is the unique identifier and must match your app's `id`
-(in `CyApp`) and the federation `name` in `vite.config.ts`. The
-`name` field is the human-readable label shown in App Settings.
+There are three ways the host gets one, and **none of them requires editing a
+file in the host repository**:
+
+| Route | When |
+| --- | --- |
+| `?installApp=<manifestUrl>` deep link | Development. Your dev server serves this manifest at `/cyweb-app.json`, generated from your `package.json` per request, and prints the link on startup |
+| **Apps → App Settings → Install from URL** | The same thing by hand, one app at a time |
+| **Apps → App Settings → Manifest Source** | Point the host at a catalog of several apps |
+
+The production instance additionally ships a curated `apps.json` at its own
+origin, which is how the published examples appear without anyone installing
+them.
+
+`id` is the unique identifier, and it has to match the Module Federation
+container name and your `CyApp.id`. You do not keep those in step by hand:
+`defineCyWebApp` reads all three from the `cyweb` block in `package.json`, and
+so does the generated manifest.
 
 ### How your app finds the host
 
@@ -101,8 +115,10 @@ promised because the federation runtime caches a remote's `Module` against the
 loaded could not reach that remote anyway, so the host says so rather than
 implying an update path that does not exist.
 
-`src/mfRuntimePlugin.ts` in your app reads that during the federation runtime's
-`beforeInit` hook and substitutes it before any remote resolves. A production
+The Module Federation runtime plugin that `defineCyWebApp` registers for you —
+it lives in `@cytoscape-web/app-runtime`, not in your sources — reads that
+during the runtime's `beforeInit` hook and substitutes it before any remote
+resolves. A production
 build compiles in a **sentinel** (`cyweb:__CYWEB_HOST_REQUIRED__`) rather than
 a URL, so if the descriptor is missing the app throws a named error instead of
 quietly trying to reach a `localhost` address on the end user's machine.

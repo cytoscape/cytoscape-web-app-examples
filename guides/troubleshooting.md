@@ -53,20 +53,25 @@ Or use the pattern from `project-template` where `src/index.ts` does
 
 ### Host dev server shows "Container missing" or blank panel
 
-**Cause:** The `name` in your `federation()` block does not match the `id` in
-`apps.local.json`.
+**Cause:** The federation container name, your `CyApp.id` and the id the host
+registered are not the same string. The host refuses to load an app whose
+`CyApp.id` does not match the id it registered, and says so only in a
+debug-gated console warning.
 
-**Fix:** Ensure all three match:
+**Fix:** They come from one place — the `cyweb` block in `package.json`:
 
+```json
+"cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
 ```
-vite.config.ts:     federation({ name: 'myApp' })
-apps.local.json:    { "id": "myApp", "name": "My App", "url": "..." }
-MyApp.ts:           id: 'myApp'
-```
 
-> The `id` field in `apps.local.json` is the unique identifier (it
-> matches the federation `name`). The `name` field is the
-> display label shown in App Settings — it does not need to match.
+`defineCyWebApp` uses `cyweb.id` as the federation name, your app reads it from
+`virtual:cyweb-app-meta`, and the dev install manifest is generated from it. If
+they disagree, something is not reading it:
+
+- Does `src/MyApp.tsx` still hardcode `id: 'myApp'` instead of importing it?
+- Did you install this app under an older id, before renaming it? Uninstall it
+  in **Apps → App Settings** and open the printed install link again — the host
+  keeps what it installed, not what your dev server now serves.
 
 ### The app "loads" but nothing happens, and there is no error
 
@@ -101,9 +106,9 @@ publish the host descriptor, or is not running inside a Cytoscape Web host at
 all.
 
 A production build deliberately compiles in a sentinel instead of a host URL,
-so `src/mfRuntimePlugin.ts` throws this named error rather than silently
-attempting to reach `localhost:5500` — which, on a deployed app, would mean the
-**end user's own machine**.
+so the runtime plugin throws this named error rather than silently attempting to
+reach `localhost:5500` — which, on a deployed app, would mean the **end user's
+own machine**.
 
 **Check, in order:**
 
@@ -113,9 +118,11 @@ attempting to reach `localhost:5500` — which, on a deployed app, would mean th
    `window.__CYWEB_HOST__` should be a frozen object with `name: 'cyweb'` and
    an absolute `remoteEntry` URL. A host predating this feature has no such
    global and cannot load Vite-built apps.
-3. Is `runtimePlugins: [mfRuntimePlugin]` still in your `federation()` block?
-   Copying `src/mfRuntimePlugin.ts` without registering it leaves it inert, and
-   the symptom is identical.
+3. Are you still going through `defineCyWebApp`? It registers the runtime
+   plugin for you, and a config that assembles `federation()` by hand without
+   `runtimePlugins` leaves the resolver inert — identical symptom. `npx
+   cyweb-app verify` asserts the resolver is present in the built output, which
+   is the fastest way to tell.
 
 ---
 
