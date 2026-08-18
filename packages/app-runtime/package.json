@@ -3,6 +3,20 @@
   "version": "0.1.0",
   "description": "Build-time SDK for Cytoscape Web apps: one call configures Module Federation correctly.",
   "license": "MIT",
+  "//repository": [
+    "REQUIRED for provenance, not decoration. npm validates that this",
+    "matches the repository the sigstore bundle attests to; an absent or",
+    "mismatched url fails the publish with a 422 \u2014 and `npm publish",
+    "--dry-run` cannot catch it, because a dry run never contacts the",
+    "registry and so never runs that validation."
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cytoscape/cytoscape-web-app-examples.git",
+    "directory": "packages/app-runtime"
+  },
+  "homepage": "https://github.com/cytoscape/cytoscape-web-app-examples#readme",
+  "bugs": "https://github.com/cytoscape/cytoscape-web-app-examples/issues",
   "type": "module",
   "engines": {
     "node": ">=24.0.0"

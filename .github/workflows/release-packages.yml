@@ -98,6 +98,29 @@ jobs:
       - run: npm run typecheck --workspaces
       - run: npm test
 
+      # Provenance is validated by the REGISTRY, against package.json's
+      # repository field. `npm publish --dry-run` never contacts the registry,
+      # so it cannot catch a missing or mismatched url — the 0.1.0 attempt
+      # passed every local check and every dry run, then failed with a 422 after
+      # burning an approval. Checking it here costs a second and fails before
+      # anything is uploaded.
+      - name: Check the repository field provenance will be validated against
+        run: |
+          set -euo pipefail
+          expected="https://github.com/${{ github.repository }}"
+          for dir in packages/app-runtime packages/create-cytoscape-app; do
+            url=$(node -p "require('./$dir/package.json').repository?.url ?? ''")
+            normalized=${url#git+}
+            normalized=${normalized%.git}
+            if [ "$normalized" != "$expected" ]; then
+              echo "::error::$dir/package.json repository.url is '$url'," \
+                   "which normalizes to '$normalized'. Provenance will reject" \
+                   "anything that is not '$expected'."
+              exit 1
+            fi
+            echo "  $dir -> $normalized"
+          done
+
       # What is actually about to be uploaded. `files` is an allowlist, so a
       # missing entry produces a package that installs and then fails at use.
       - name: Show the tarball contents

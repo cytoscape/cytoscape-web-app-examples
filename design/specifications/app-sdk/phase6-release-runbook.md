@@ -243,6 +243,14 @@ npm pack -w create-cytoscape-app --dry-run
       `README.md`
 - [ ] Neither contains `src/`, `node_modules/`, or a `.tgz`
 
+> **A dry run cannot catch everything, and one class in particular.** Provenance
+> is validated by the REGISTRY, against `package.json`'s `repository` field —
+> and `npm publish --dry-run` never contacts the registry. The first `0.1.0`
+> attempt passed every local check and both dry runs, then failed with
+> `422 … "repository.url" is "", expected to match …` after an approval had
+> already been spent. The workflow now checks that field before uploading
+> anything, but the general point stands: a green dry run is not a green publish.
+
 Then rehearse the whole publish without publishing:
 
 ```bash
