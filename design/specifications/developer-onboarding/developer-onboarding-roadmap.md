@@ -566,6 +566,39 @@ H-1 is the prerequisite for the others and is independently useful: every value 
 | 【host】 `installGate.ts:17` | Says "webpack DefinePlugin", post-Vite-migration |
 | 【host】 `src/app-api/AGENTS.md` | Says `window.CyWebApi` is assigned in `src/init.tsx` (it is `src/boot/bootstrap.tsx`); the directory tree is stale |
 
+#### F-1. The pinned toolchain carries known advisories 【both repos】
+
+Both repositories pin `vite@8.0.13` and `@module-federation/vite@1.16.8`, matched
+to each other on purpose, and both carry the same five high-severity advisories:
+
+| Advisory | Reaches us through | Exploitable here? |
+| --- | --- | --- |
+| `adm-zip <0.6.0` — crafted ZIP triggers a 4GB allocation | `@module-federation/vite` → `dts-plugin` | **No.** The vulnerability is in *parsing* a ZIP; neither repo reads one. The SDK only ever creates them |
+| `undici 7.0.0-7.28.0` — twelve advisories | same path | Not reached: `dts-plugin` is build-time type generation, and `dts: false` everywhere |
+| `vite 8.0.0-8.0.15` — `server.fs.deny` bypass, launch-editor NTLM disclosure | direct | Windows dev servers only. Affects a developer's own machine, not published artifacts or Cytoscape Web's users |
+
+**None of them reach a published app or an end user.** They are build-tooling
+advisories on a developer's machine.
+
+They cannot be fixed in one repository. `@module-federation/vite` produces the
+federation output — the remoteEntry format, the share-scope wiring — that this
+whole project verifies, and the two repos pin it to the same version precisely so
+they cannot disagree. Bumping the examples alone manufactures the host/app
+divergence P-1 exists to catch; `npm audit fix --force` would do exactly that,
+jumping 1.16.8 → 1.20.7 and vite → 8.2.1, both outside the stated ranges.
+
+Do it as **one coordinated bump across both repos**, through the full loop:
+`verify:federation`, the in-host load, and `preflight:apps`. Not as a pre-release
+tidy-up.
+
+> Already done, and not a substitute: `@cytoscape-web/app-runtime` no longer
+> declares `adm-zip` as a runtime dependency — the App Store zip is opt-in and off
+> by default, so the module is loaded at the point of use and the package now ships
+> with **zero runtime dependencies**. That is the right shape regardless of the
+> advisory, but it does **not** reduce anyone's audit count: `@module-federation/vite`
+> pulls `adm-zip` in transitively either way. Only the coordinated bump clears it.
+
+
 ---
 
 ## 3. Sequencing

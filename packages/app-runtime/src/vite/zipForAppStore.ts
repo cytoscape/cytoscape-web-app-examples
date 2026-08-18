@@ -1,7 +1,6 @@
 import { readdirSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-import AdmZip from 'adm-zip'
 import type { Plugin } from 'vite'
 
 /**
@@ -67,7 +66,23 @@ export const zipForAppStore = (appId: string, version: string): Plugin => {
     },
     // closeBundle, not generateBundle: the files have to exist on disk to be
     // zipped, and generateBundle runs before anything is written.
-    closeBundle() {
+    //
+    // async, and adm-zip is imported HERE rather than at module scope. This
+    // plugin is opt-in and off by default, so a static import would make every
+    // consumer of this package install a dependency almost none of them use —
+    // and carry its advisories in their tree for a feature they never turned
+    // on. Loading it at the point of use is what lets adm-zip be an OPTIONAL
+    // peer: present only for the builds that actually produce a zip.
+    async closeBundle() {
+      const { default: AdmZip } = await import('adm-zip').catch(() => {
+        this.error(
+          `[zip-for-app-store] appStoreZip is on but adm-zip is not installed. ` +
+            `It is an optional peer dependency — run: npm install --save-dev adm-zip`,
+        )
+        // this.error throws; the return keeps the type checker honest.
+        return { default: null as never }
+      })
+
       const distDir = resolve(root, outDir)
       const zipPath = resolve(root, `${appId}-${version}.zip`)
 

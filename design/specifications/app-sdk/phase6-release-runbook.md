@@ -119,6 +119,17 @@ npm test
 - [ ] All green
 - [ ] You are on the branch you intend to release from, and it is pushed
 
+`npm audit` reports high-severity advisories, and that is **expected**. They come
+from the pinned build toolchain — `vite@8.0.13` and `@module-federation/vite@1.16.8`,
+matched to the host on purpose — and none reaches a published app or an end user.
+Fixing them means moving both repositories together; see roadmap **F-1**. Do not
+run `npm audit fix --force` here: it jumps the federation plugin four minors,
+outside the stated range, and that is exactly the host/app divergence P-1 exists
+to catch.
+
+- [ ] The advisory list matches F-1 — `adm-zip`, `undici`, `vite`. Anything else
+      is new and worth reading before you publish
+
 Confirm what each tarball actually contains — this is the last chance to notice a
 missing file, and `files` is an allowlist:
 
