@@ -71,40 +71,72 @@ published versions regardless of dist-tags. Only a bare `npm install <pkg>` read
 
 ---
 
-## 3. Two decisions to make before publishing
+## 3. Two decisions — taken 2026-08-17
 
-### 3.1 Provenance requires CI — a manual publish cannot produce it
+### 3.1 Provenance: **release from CI.** `.github/workflows/release-packages.yml`
 
-npm provenance needs `--provenance` from a supported CI with `id-token: write`.
-Publishing from a workstation cannot generate it, so the checklist's provenance
-item cannot be ticked by this runbook.
+Not a manual publish. The deciding argument is that
+`@cytoscape-web/app-runtime` is a **Vite plugin**: it runs as code on every app
+author's build machine, so a compromised release rewrites the output of every app
+built with it. That is a higher-value target than a runtime library, and this
+repository — whose subject is what an installed app is trusted with — should not
+ship its own tooling from an unattested source.
 
-| Option | Consequence |
-| --- | --- |
-| **Publish by hand now** | No provenance on `0.1.0`. Defensible for a Preview; note it in the checklist rather than ticking the item |
-| **Build a release workflow first** | Provenance from the start, and the protected-environment requirement is satisfied. Costs a workflow and an npm automation token in repository secrets |
+Three supporting reasons:
 
-Either is reasonable. Do not tick the item under the first.
+- Provenance needs `id-token: write` from a supported CI. A workstation publish
+  **cannot** produce it, so the choice is not "now versus later" but "ever versus
+  never for this version".
+- Bus factor is 1. "Add it at 0.1.1" is technically possible — provenance is
+  per-version — but a thing not done under no pressure is not done under pressure.
+- A workflow is written once and serves every release. The manual path is paid
+  again each time, OTP and all.
 
-### 3.2 "Pin the examples to the published versions" needs reinterpreting
+The workflow also **refuses `latest` outright**, as its first step. A dist-tag
+input is the single easiest way to bypass the release gate by accident; removing
+that check is now a visible diff.
 
-The checklist says to move the examples off workspace links. Taken literally it
-makes development worse for no added assurance: npm workspaces prefer the local
-package whenever the version satisfies the range, so un-linking means either
-removing `packages/*` from `workspaces` or pinning to versions that deliberately
-do not match — and every subsequent SDK change stops reaching the apps until it
-is published.
+**One-time setup in repository settings, before the first run:**
 
-The property the item is reaching for — *what we publish works, not just what we
-link* — is already proved by the CI scaffold job, which installs both packages
-**from packed tarballs into a directory outside the repository**.
+1. An environment named **`release`** with required reviewers — this is the
+   "protected release environment", and what stops a dispatch from publishing
+   without a human.
+2. Either npm **Trusted Publishing** for both packages (preferred: OIDC, so no
+   long-lived token exists to leak) or an npm automation token as `NPM_TOKEN` in
+   that environment. With trusted publishing, delete the `NODE_AUTH_TOKEN` lines.
+3. The repository must be public for provenance to be attestable. It is.
 
-Recommended: keep the workspace links, and record the reinterpretation in the
-checklist rather than silently skipping it.
+### 3.2 "Pin the examples to the published versions": **reinterpreted, not done**
+
+Kept as workspace links. Taken literally the item does not work and costs real
+development speed: npm workspaces prefer the local package whenever the version
+satisfies the range, so un-linking means removing `packages/*` from `workspaces`
+or pinning versions that deliberately do not match — after which **no SDK change
+reaches the apps until it is published**, and development becomes publish-driven.
+On a one-maintainer project that is a standing tax.
+
+The property the item reaches for — *what we publish works, not just what we
+link* — is already proved, by the CI scaffold job, which installs both packages
+**from packed tarballs into a directory outside this repository** and then
+builds, verifies, typechecks and tests the result.
+
+Coverage was checked rather than assumed. The public surface is two subpaths, and
+a scaffolded app exercises both: `defineCyWebApp` from `./vite`, the
+`virtual:cyweb-app-meta` declarations from `./meta`, `readAppMeta` and
+`buildInstallManifest` in its smoke test, and the `bin` through
+`npx cyweb-app verify`. A missing `files` entry fails there.
+
+**What would change this:** an example app using a public API that no scaffolded
+app touches. The cheap answer then is to add one example to the tarball job — not
+to un-link the repository.
 
 ---
 
 ## 4. Pre-flight
+
+The workflow runs all of this itself. Doing it locally first is still worth the
+two minutes: a failure here costs a rerun, a failure inside the release job costs
+an approval too.
 
 ```bash
 cd cytoscape-web-app-examples
@@ -153,24 +185,30 @@ npm publish -w create-cytoscape-app --tag next --dry-run
 
 ---
 
-## 5. Publish
+## 5. Publish — from the workflow
 
-Log in first; `npm whoami` should print the account that owns the
-`@cytoscape-web` scope. Have your 2FA device ready — npm will ask for an OTP.
+**Actions → Release packages → Run workflow.**
 
-**Order matters only for tidiness**: the scaffolder does not depend on the SDK,
-but publishing the SDK first means the first project anyone scaffolds installs
-cleanly.
+| Input | Value |
+| --- | --- |
+| `tag` | `next` — `latest` is refused by the workflow's first step |
+| `dry_run` | **`true` first.** Then `false` |
 
-```bash
-npm publish -w @cytoscape-web/app-runtime --tag next
-npm publish -w create-cytoscape-app --tag next
-```
+Run it once with `dry_run: true`. That exercises the whole path — the build, the
+full verification battery, the tarball listings and `npm publish --dry-run` for
+both packages — without touching the registry. Read the tarball listings against
+§4's checklist before the real run.
 
-If you chose §3.1's second option, add `--provenance` and run it from the release
-workflow instead.
+Then run it again with `dry_run: false`. The `release` environment will ask for
+approval; the workflow publishes the SDK first, so the first project anyone
+scaffolds installs cleanly rather than racing the registry.
 
-- [ ] Both publishes reported success
+- [ ] Dry run green, and the tarball listings match §4
+- [ ] Real run green, and its final step reports `next` with no `latest`
+
+The workflow runs the same checks as §4 rather than trusting they were run. A
+release is exactly the moment someone skips a check because they ran it an hour
+ago.
 
 ---
 
@@ -236,7 +274,8 @@ That last one is the end-to-end claim this whole project makes. Do it once.
       the generated `@cytoscape-web/app-runtime` dependency to a packed tarball
       because the package did not exist. It does now, and a plain `npm install`
       is the thing worth testing from here on. The step is commented to say so
-- [ ] Mark Phase 6 complete in the checklist, recording the §3.1 provenance
-      decision and the §3.2 reinterpretation rather than ticking them silently
+- [ ] Mark Phase 6 complete in the checklist. §3.1 and §3.2 are already recorded
+      there; tick the provenance item only if the run actually produced it —
+      `npm view <pkg> --json` should carry a `dist.attestations` entry
 - [ ] Leave the `latest` gate item **unticked**. It closes when Theme G does, not
       when this runbook ends

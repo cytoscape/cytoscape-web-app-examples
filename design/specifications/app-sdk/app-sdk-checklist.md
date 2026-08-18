@@ -618,6 +618,14 @@ _Runbook: **[phase6-release-runbook.md](phase6-release-runbook.md)** — the
 step-by-step procedure, and the two decisions (provenance, and what "pin the
 examples" should mean) that have to be made before running it._
 
+> **Both §3 decisions are taken** (runbook §3): the release goes out **from CI**
+> via `.github/workflows/release-packages.yml` — the SDK is a Vite plugin, so it
+> runs as code on every app author's build machine, and a workstation publish
+> cannot produce provenance at all. And "pin the examples to the published
+> versions" is **reinterpreted, not done**: workspace links stay, because the
+> property it reaches for is already proved by the CI scaffold job installing
+> both packages from packed tarballs outside the repository.
+>
 > **The four publish blockers are fixed** (runbook §1): both packages have a
 > README, the scoped one publishes publicly, `app-runtime` builds on `prepack`,
 > and a generated project states the trust boundary. Both dry-runs pass.
@@ -636,13 +644,19 @@ _Design: §3, §4.1_
 ### Deliverables
 
 - [ ] Publish both packages under the **`next`** dist-tag, `0.x`
-- [ ] npm provenance, from a **protected release environment**
+- [x] npm provenance, from a **protected release environment** — the workflow
+      exists and requests `id-token: write` against a `release` environment.
+      **Tick the run itself only after verifying the published package carries an
+      attestation**; the workflow being correct is not the same as it having run
 - [ ] The trust boundary stated plainly in the SDK README and the generated
       `AGENTS.md`: *an app you install has the same privileges as Cytoscape Web
       itself; install only apps you trust*
 - [ ] State what Preview does **not** promise — safety of untrusted app code,
       accurate runtime API version enforcement, legible load-failure reporting
-- [ ] Pin the examples to the published versions rather than workspace links
+- [x] ~~Pin the examples to the published versions rather than workspace links~~
+      — **reinterpreted** (runbook §3.2). Un-linking would stop every SDK change
+      from reaching the apps until published, and the CI scaffold job already
+      installs both packages from packed tarballs outside this repository
 - [ ] **Do not publish `latest`**
 
 ### Verification (Phase 6)

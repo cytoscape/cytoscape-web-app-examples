@@ -1,0 +1,131 @@
+name: Release packages
+
+# Publishes @cytoscape-web/app-runtime and create-cytoscape-app to npm.
+#
+# From CI rather than a workstation, for one reason above the others: the SDK is
+# a Vite plugin, so it runs as CODE on every app author's build machine. A
+# compromised release rewrites the output of every app built with it. That is a
+# higher-value target than a runtime library, and it is why this repository —
+# whose whole subject is what an installed app is trusted with — should not ship
+# its own tooling from an unattested source.
+#
+# Provenance needs `id-token: write` and a supported CI, so a manual `npm
+# publish` cannot produce it at all. Doing this once also makes it the default
+# for every later release; the manual path is a cost paid again every time.
+#
+# Prerequisites, one-time, in repository settings:
+#   1. An environment named `release`, with required reviewers. That is the
+#      "protected release environment" — it is what stops a push from
+#      publishing without a human.
+#   2. Either npm Trusted Publishing configured for both packages (preferred:
+#      OIDC, no long-lived token exists to leak), or an npm automation token in
+#      the `release` environment as NPM_TOKEN. If trusted publishing is set up,
+#      delete the NODE_AUTH_TOKEN lines below.
+#   3. The repository must be public for provenance to be attestable.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag. `latest` is refused — see the gate below.'
+        required: true
+        default: next
+      dry_run:
+        description: 'Rehearse without publishing'
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: release-packages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # provenance
+    steps:
+      # THE RELEASE GATE, first and unconditional.
+      #
+      # `latest` stays unpublished until the host-side security work lands
+      # (roadmap Theme G): an installed app runs in the host's own origin with
+      # no sandbox and can read the user's credentials, and `latest` is what
+      # makes the tooling for that ecosystem maximally discoverable.
+      #
+      # This is a workflow input, so the single most likely way to bypass the
+      # gate is to type `latest` into a box. Refusing it here costs one step.
+      # Removing this check is a deliberate act that shows up in a diff — which
+      # is the point.
+      - name: Refuse to publish `latest`
+        if: ${{ inputs.tag == 'latest' }}
+        run: |
+          # Single quotes: a backtick inside double quotes is command
+          # substitution, and the shell would try to run `latest`.
+          echo '::error::Publishing to latest is gated on roadmap Theme G (app isolation, capability API, artifact integrity). If that work has landed, remove this step in the same commit that records why.'
+          exit 1
+
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          # Required for npm to authenticate on publish.
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # The same battery the runbook's pre-flight describes. It runs HERE rather
+      # than being trusted to have been run: a release is exactly the moment
+      # someone skips a check because they ran it an hour ago.
+      - run: npm run build
+      - run: npm run verify:federation
+      - run: npm run typecheck --workspaces
+      - run: npm test
+
+      # What is actually about to be uploaded. `files` is an allowlist, so a
+      # missing entry produces a package that installs and then fails at use.
+      - name: Show the tarball contents
+        run: |
+          npm pack -w @cytoscape-web/app-runtime --dry-run
+          npm pack -w create-cytoscape-app --dry-run
+
+      - name: Publish @cytoscape-web/app-runtime
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish -w @cytoscape-web/app-runtime \
+            --provenance --access public --tag "${{ inputs.tag }}" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # Second, deliberately. The scaffolder does not depend on the SDK, but
+      # publishing the SDK first means the first project anyone scaffolds
+      # installs cleanly rather than racing the registry.
+      - name: Publish create-cytoscape-app
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish -w create-cytoscape-app \
+            --provenance --tag "${{ inputs.tag }}" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # Read back what the registry actually has. A scoped package that
+      # published privately, or a stray `latest`, looks identical to success
+      # from the job that created it.
+      - name: Verify the dist-tags
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          for pkg in @cytoscape-web/app-runtime create-cytoscape-app; do
+            echo "── $pkg ──"
+            npm view "$pkg" dist-tags
+            if npm view "$pkg" dist-tags --json | grep -q '"latest"'; then
+              echo "::error::$pkg has a \`latest\` tag. Remove it now:" \
+                   "npm dist-tag rm $pkg latest"
+              exit 1
+            fi
+          done
