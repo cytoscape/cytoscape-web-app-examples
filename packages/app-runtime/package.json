@@ -8,6 +8,15 @@
     "node": ">=24.0.0"
   },
   "files": ["dist", "README.md"],
+  "//publishConfig": [
+    "A scoped package defaults to RESTRICTED. Without this the publish either",
+    "fails or succeeds privately — and privately looks identical from the",
+    "machine that ran it, so the failure would be discovered by whoever could",
+    "not install it."
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "//exports": [
     "Exactly two public entries. The Module Federation runtime plugin is NOT",
     "exported: apps never import it, and defineCyWebApp resolves its path",
@@ -35,6 +44,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "//prepack": [
+      "`npm publish` does not run `build`. Without this, publishing from a",
+      "clean clone ships whatever happens to be in dist/ — stale, or nothing at",
+      "all — and the tarball looks plausible either way."
+    ],
+    "prepack": "npm run build",
     "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "clean": "rm -rf dist"

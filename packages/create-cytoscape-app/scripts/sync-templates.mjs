@@ -197,6 +197,15 @@ A Cytoscape Web app, loaded into the host at runtime through Module Federation.
 It is not a standalone page: \`index.html\` exists only because a Vite build needs
 an HTML entry, and the host never loads it.
 
+## Trust boundary — say this out loud before you publish
+
+This app runs in the HOST's browser context: same origin, DOM, storage and
+network identity. There is no sandbox, no capability restriction and no
+signature verification. An app can read the user's credentials.
+
+That cuts both ways. Install only apps you trust — and understand that asking
+someone to install YOURS asks the same of them.
+
 ## Rules that are not obvious
 
 - **Every \`cyweb/*\` API returns \`ApiResult<T>\`.** Check \`result.success\` before

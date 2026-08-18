@@ -221,6 +221,15 @@ npm run build && npx cyweb-app verify
 the ESM remote shape, the production sentinel, the registered runtime plugin and
 the shared singletons. Every one of them looks correct in a config file when it
 is wrong, which is why it checks the artifact instead.
+
+## Before you ask anyone to install this
+
+This app runs in the host's own browser context: same origin, DOM, storage and
+network identity. There is no sandbox and no signature verification, and an app
+can read the user's credentials.
+
+Installing it asks someone to trust it the way they trust Cytoscape Web itself.
+Say what it does, and say where it sends anything it collects.
 `
 
 /**

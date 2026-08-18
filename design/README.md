@@ -16,7 +16,9 @@ design/
 │   │   └── developer-onboarding-roadmap.md  ← Umbrella: prioritized proposals, host-dependency split
 │   └── app-sdk/                         ← Carved out of the roadmap: SDK + scaffolding
 │       ├── app-sdk-design.md            ← app-runtime, create-cytoscape-app, app identity
-│       └── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
+│       ├── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
+│       ├── phase0-baseline.md           ← Pre-SDK build output, what Phase 1 was graded against
+│       └── phase6-release-runbook.md    ← Manual publish procedure for the Preview
 └── apps/               ← Per-app design documents
     ├── hello-world/
     ├── network-workflows/

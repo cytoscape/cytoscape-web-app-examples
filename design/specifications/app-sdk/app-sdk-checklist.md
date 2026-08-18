@@ -614,6 +614,23 @@ _Design: §4.6_
 
 ## Phase 6: Developer Preview release
 
+_Runbook: **[phase6-release-runbook.md](phase6-release-runbook.md)** — the
+step-by-step procedure, and the two decisions (provenance, and what "pin the
+examples" should mean) that have to be made before running it._
+
+> **The four publish blockers are fixed** (runbook §1): both packages have a
+> README, the scoped one publishes publicly, `app-runtime` builds on `prepack`,
+> and a generated project states the trust boundary. Both dry-runs pass.
+>
+> **One consequence to know before starting.** Withholding `latest` breaks the
+> bare `npm create cytoscape-app` — verified, not assumed: `npm init <spec>` is
+> `npx create-<spec>`, a bare spec resolves to `latest`, and a missing tag gives
+> `E404 No match found for version`. The working form is
+> `npm create cytoscape-app@next`, and every document that names the command has
+> to say so. Do **not** add a `latest` tag to make the short form work — that tag
+> is the thing being withheld. Generated projects are unaffected: a semver range
+> resolves against all published versions regardless of dist-tags.
+
 _Design: §3, §4.1_
 
 ### Deliverables
