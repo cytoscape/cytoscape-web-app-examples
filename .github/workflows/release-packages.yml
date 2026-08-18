@@ -17,21 +17,23 @@ name: Release packages
 #   1. An environment named `release`, with required reviewers. That is the
 #      "protected release environment" — it is what stops a push from
 #      publishing without a human.
-#   2. A credential, and the FIRST release necessarily differs from the rest:
+#   2. npm Trusted Publishing, configured on BOTH packages (done 2026-08-18):
+#      GitHub Actions / cytoscape / cytoscape-web-app-examples /
+#      release-packages.yml / environment `release` / action `npm publish`.
 #
-#      npm configures a trusted publisher on a package's SETTINGS PAGE, which
-#      exists only once the package has been published. Neither of these has
-#      been. So 0.1.0 goes out with a granular access token in NPM_TOKEN —
-#      still from CI, still attested, still behind the protected environment —
-#      and trusted publishing is configured immediately afterwards.
+#      There is no token any more. 0.1.0 needed one — a trusted publisher is
+#      configured on a package's settings page, which exists only once the
+#      package has been published, so the first release could not use OIDC —
+#      and it was revoked as soon as both packages existed.
 #
-#      From 0.1.1 on: OIDC, no token, and npm generates provenance by itself
-#      (the --provenance flag below becomes redundant but stays, because it is
-#      what attests the token-based first publish). DELETE the two
-#      NODE_AUTH_TOKEN lines, and the token, once that is set up — a credential
-#      that outlives its purpose is the thing this design is trying not to have.
+#      The environment name in that configuration is what binds the trust to a
+#      REVIEWED run rather than to any run of this workflow. Leave it set.
 #
-#      Runbook §3.1 has the field-by-field setup.
+#      NOTE for the next release: setup-node's registry-url writes
+#      `_authToken=${NODE_AUTH_TOKEN}` into .npmrc. With no such variable that
+#      becomes an empty token, and npm may treat it as "credentials present but
+#      wrong" rather than falling back to OIDC. If a publish fails with a 401,
+#      dropping registry-url from setup-node is the first thing to try.
 #   3. The repository must be public for provenance to be attestable.
 
 on:
@@ -164,8 +166,6 @@ jobs:
 
       - name: Publish @cytoscape-web/app-runtime
         if: ${{ steps.todo.outputs.runtime == 'true' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm publish -w @cytoscape-web/app-runtime \
             --provenance --access public --tag "${{ inputs.tag }}" \
@@ -176,8 +176,6 @@ jobs:
       # installs cleanly rather than racing the registry.
       - name: Publish create-cytoscape-app
         if: ${{ steps.todo.outputs.scaffolder == 'true' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm publish -w create-cytoscape-app \
             --provenance --access public --tag "${{ inputs.tag }}" \
@@ -202,8 +200,6 @@ jobs:
       # version published by a partially-failed run needs the notice most.
       - name: Mark the published versions as a Developer Preview
         if: ${{ !cancelled() && !inputs.dry_run }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -uo pipefail
           NOTICE="Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/${{ github.repository }}"
