@@ -17,10 +17,21 @@ name: Release packages
 #   1. An environment named `release`, with required reviewers. That is the
 #      "protected release environment" — it is what stops a push from
 #      publishing without a human.
-#   2. Either npm Trusted Publishing configured for both packages (preferred:
-#      OIDC, no long-lived token exists to leak), or an npm automation token in
-#      the `release` environment as NPM_TOKEN. If trusted publishing is set up,
-#      delete the NODE_AUTH_TOKEN lines below.
+#   2. A credential, and the FIRST release necessarily differs from the rest:
+#
+#      npm configures a trusted publisher on a package's SETTINGS PAGE, which
+#      exists only once the package has been published. Neither of these has
+#      been. So 0.1.0 goes out with a granular access token in NPM_TOKEN —
+#      still from CI, still attested, still behind the protected environment —
+#      and trusted publishing is configured immediately afterwards.
+#
+#      From 0.1.1 on: OIDC, no token, and npm generates provenance by itself
+#      (the --provenance flag below becomes redundant but stays, because it is
+#      what attests the token-based first publish). DELETE the two
+#      NODE_AUTH_TOKEN lines, and the token, once that is set up — a credential
+#      that outlives its purpose is the thing this design is trying not to have.
+#
+#      Runbook §3.1 has the field-by-field setup.
 #   3. The repository must be public for provenance to be attestable.
 
 on:

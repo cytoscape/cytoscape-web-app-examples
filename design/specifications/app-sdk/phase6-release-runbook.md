@@ -96,6 +96,52 @@ The workflow also **refuses `latest` outright**, as its first step. A dist-tag
 input is the single easiest way to bypass the release gate by accident; removing
 that check is now a visible diff.
 
+#### Trusted publishing has a bootstrap problem — read this before setting it up
+
+npm configures a trusted publisher **on a package's settings page**, which only
+exists once the package has been published. npm's documentation does not cover
+the brand-new-package case at all; it goes straight to "navigate to your package
+settings on npmjs.com". Neither of ours exists yet.
+
+So the first release cannot use OIDC, and the order is:
+
+**Step 1 — publish `0.1.0` with a token, from the workflow.**
+
+Create a **granular access token** on npmjs.com (Access Tokens → Generate →
+Granular), scoped as narrowly as npm lets you:
+
+- `@cytoscape-web/app-runtime` can be scoped to the `@cytoscape-web` **scope**.
+- `create-cytoscape-app` is unscoped and does not exist, so npm may require a
+  broader "all packages" permission for exactly this one publish. Give it the
+  shortest expiry offered.
+
+Put it in the `release` environment as `NPM_TOKEN` and run the workflow. This
+release still gets provenance, still runs behind the protected environment, and
+still comes from CI — only the credential is a token rather than OIDC.
+
+**Step 2 — configure the trusted publisher on both packages.** Now that they
+exist: package settings → **Trusted Publisher** → GitHub Actions.
+
+| Field | Value |
+| --- | --- |
+| Organization or user | `cytoscape` |
+| Repository | `cytoscape-web-app-examples` |
+| Workflow filename | `release-packages.yml` — **the filename only**, not a path |
+| Environment | `release` — optional, but set it: it binds the trust to the reviewed environment rather than to any run of that workflow |
+| Allowed actions | `npm publish` |
+
+**Step 3 — delete the token.** From the npm account AND from the `release`
+environment secrets, and remove the two `NODE_AUTH_TOKEN` lines from the
+workflow. From `0.1.1` onward there is no long-lived credential to leak, which
+is the point of doing this at all.
+
+> With trusted publishing, npm generates provenance **automatically** — the
+> `--provenance` flag becomes redundant. It is harmless to leave, and it is what
+> makes step 1's token-based publish attested, so leave it.
+
+**Requirements, already met here:** npm ≥ 11.5.1 and Node ≥ 22.14 for the OIDC
+exchange. This machine has npm 11.19.0 and Node 24.13.1.
+
 **One-time setup in repository settings, before the first run:**
 
 1. An environment named **`release`** with required reviewers — this is the
