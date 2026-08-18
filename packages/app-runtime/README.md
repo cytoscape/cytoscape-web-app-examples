@@ -4,9 +4,10 @@ Build-time SDK for [Cytoscape Web](https://web.cytoscape.org) apps. One call
 configures Module Federation correctly; a CLI checks that the build came out the
 way it was configured.
 
-> **Developer Preview.** Published under the `next` dist-tag. The API may change
-> before `1.0`, and there are things it deliberately does not promise — see
-> [Trust boundary](#trust-boundary) below.
+> **Developer Preview.** Published at `0.x` under the `next` dist-tag, and marked
+> deprecated on purpose: npm prints that notice on every install because there
+> are things this deliberately does not promise. The API may change before `1.0`.
+> See [Trust boundary](#trust-boundary).
 
 ```bash
 npm install --save-dev @cytoscape-web/app-runtime
@@ -15,7 +16,7 @@ npm install --save-dev @cytoscape-web/app-runtime
 Starting from scratch? Use the scaffolder instead:
 
 ```bash
-npm create cytoscape-app@next my-app
+npm create cytoscape-app my-app
 ```
 
 ## The config
@@ -136,7 +137,7 @@ What this Preview does **not** promise:
 - legible reporting when an app fails to load
 
 Those need host-side work — isolation, a capability API, artifact integrity —
-which is why this is published under `next` and not `latest`.
+which is why every published version carries a deprecation notice saying so.
 
 ## Public API
 

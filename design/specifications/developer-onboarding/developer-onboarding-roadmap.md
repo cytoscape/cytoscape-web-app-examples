@@ -166,7 +166,7 @@ export default defineCyWebApp(import.meta.url)
 #### A-2. Scaffolder: `npm create cytoscape-app` 【examples】
 
 ```bash
-npm create cytoscape-app@latest my-app -- --id myApp --port 6000 --template panel --yes
+npm create cytoscape-app my-app -- --id myApp --port 6000 --template panel --yes
 ```
 
 - Substitutes identity **everywhere at once**, removing the three-way manual sync. Directory
@@ -693,7 +693,7 @@ developers.
 | P-1 | Hand-editing a `configuredShared` version in `apps.manifest.json` turns CI red. Bumping the host's React major (simulated) turns CI red |
 | A-3a | Neither `README.md` nor `guides/` mentions `apps.local.json`, and the documented path works against a stock host clone |
 | A-1 / A-2 | On a clean machine, `npm create cytoscape-app my-app -- --yes --id x --port 6000` → `npm run dev` → open the printed `?installApp=` URL — **and nothing else** — shows the panel. All five existing apps build through the new package and pass `cyweb-app verify`. *(The SDK design's §7 is the full list and is authoritative.)* |
-| G | The `latest` dist-tag and any public app catalog stay unpublished until G-1…G-6 land |
+| G | Every published SDK version carries the Preview deprecation notice, and no public app catalog launches, until G-1…G-6 land. (Withholding the `latest` dist-tag was the original mechanism and is **not possible** — npm assigns it to a new package's first version and refuses to delete it; see the app-sdk runbook §2) |
 | G-6 / H-4 | After the bypass is closed, an organization can still serve its own catalog **and** its own artifacts to a host it did not build — verified end to end, not asserted. A fix that passes the security test and fails this one is not done |
 | H-1 | Changing `appInstallAllowedOrigins` takes effect by replacing a served file, with no rebuild — the treatment `apps.json` already gets |
 | C-1 / P-4 | `project-template` has a "click the menu item → the selection changes" test that passes with no browser, no host, and no network — **and the same suite passes against a real host page** |

@@ -17,11 +17,15 @@
 > four keep their hand-written configs until Phase 2. Nothing outside the app
 > currently being converted may break.
 >
-> **Release gate.** Phase 6 publishes under the `next` dist-tag only. The
-> `latest` tag stays unpublished until the host-side security work
-> (roadmap Theme G, G-1…G-6) lands — see design §3. This is not a formality:
-> an installed app has the host's full privileges, including credential access
-> through `cyweb/CredentialStore`.
+> **Release gate.** Phase 6 publishes under the `next` dist-tag, at `0.x`, with
+> a **deprecation notice on every version** stating the Preview status and the
+> trust boundary. That notice is the gate. `latest` cannot be withheld — npm
+> assigns it to a new package's first version and refuses to delete it, which
+> was discovered the hard way after `0.1.0` shipped; see the runbook §2. What
+> `--tag next` still guarantees is that `latest` does not MOVE.
+>
+> This is not a formality: an installed app has the host's full privileges,
+> including credential access through `cyweb/CredentialStore`.
 
 _Design: [app-sdk-design.md](app-sdk-design.md) — full rationale and the reasoning behind every decision below. Section references (§) point into it._
 
@@ -630,14 +634,13 @@ examples" should mean) that have to be made before running it._
 > README, the scoped one publishes publicly, `app-runtime` builds on `prepack`,
 > and a generated project states the trust boundary. Both dry-runs pass.
 >
-> **One consequence to know before starting.** Withholding `latest` breaks the
-> bare `npm create cytoscape-app` — verified, not assumed: `npm init <spec>` is
-> `npx create-<spec>`, a bare spec resolves to `latest`, and a missing tag gives
-> `E404 No match found for version`. The working form is
-> `npm create cytoscape-app@next`, and every document that names the command has
-> to say so. Do **not** add a `latest` tag to make the short form work — that tag
-> is the thing being withheld. Generated projects are unaffected: a semver range
-> resolves against all published versions regardless of dist-tags.
+> **Corrected 2026-08-18.** An earlier note here claimed that withholding
+> `latest` would break the bare `npm create cytoscape-app`, so everyone would
+> have to type `@next`. **`latest` cannot be withheld** — npm assigns it to a new
+> package's first version and refuses to delete it — so the bare command works
+> and the `@next` instruction was wrong. The gate is a deprecation notice on
+> every version instead; runbook §2 has the full correction and how the mistake
+> was made.
 
 _Design: §3, §4.1_
 
@@ -657,11 +660,12 @@ _Design: §3, §4.1_
       — **reinterpreted** (runbook §3.2). Un-linking would stop every SDK change
       from reaching the apps until published, and the CI scaffold job already
       installs both packages from packed tarballs outside this repository
-- [ ] **Do not publish `latest`**
+- [x] ~~**Do not publish `latest`**~~ — **not possible**; replaced by a
+      deprecation notice on every published version (runbook §2)
 
 ### Verification (Phase 6)
 
-- [ ] `npm view <pkg> dist-tags` shows `next` and **no `latest`**
+- [ ] `npm view <pkg> dist-tags` shows `next`; a `latest` is expected and cannot be removed. `npm view <pkg>@<version> deprecated` returns the Preview notice — that is the gate
 - [ ] The full acceptance criterion runs on a **clean machine**:
       `npm create cytoscape-app my-app -- --yes --id myApp --port 6000` →
       `npm run dev` → open the printed URL → panel appears, **with no file

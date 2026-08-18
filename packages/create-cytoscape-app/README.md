@@ -3,13 +3,13 @@
 Scaffold an app for [Cytoscape Web](https://web.cytoscape.org).
 
 ```bash
-npm create cytoscape-app@next my-app
+npm create cytoscape-app my-app
 ```
 
-> **`@next` is required, and not a typo.** These packages are published under the
-> `next` dist-tag only; there is no `latest`, so the bare
-> `npm create cytoscape-app` fails with a 404. That is deliberate — see
-> [Developer Preview](#developer-preview).
+> **Developer Preview.** Published at `0.x` under the `next` dist-tag, and every
+> version carries an npm deprecation notice you will see on install. Read
+> [Developer Preview](#developer-preview) before you build anything you intend
+> to ship.
 
 ## Non-interactive
 
@@ -18,7 +18,7 @@ than a convenience: a large share of the people this exists for drive it through
 an LLM, and a prompt with no flag equivalent makes that path unusable.
 
 ```bash
-npm create cytoscape-app@next my-app -- \
+npm create cytoscape-app my-app -- \
   --yes --id degreeColorizer --display-name "Degree Colorizer" \
   --template panel --port 6000
 ```
@@ -86,8 +86,9 @@ is edited.**
 
 ## Developer Preview
 
-The tooling is published under `next` while the host-side security work is
-outstanding.
+The tooling is published at `0.x`, and every version is marked deprecated with a
+notice saying so — that is deliberate, and it is what npm prints on install while
+the host-side security work is outstanding.
 
 **An app runs in the host's own browser context** — same origin, DOM, storage and
 network identity, with no sandbox and no signature verification. An app can read

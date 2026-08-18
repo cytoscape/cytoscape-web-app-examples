@@ -61,23 +61,25 @@ jobs:
       contents: read
       id-token: write # provenance
     steps:
-      # THE RELEASE GATE, first and unconditional.
+      # Do not MOVE `latest` forward.
       #
-      # `latest` stays unpublished until the host-side security work lands
-      # (roadmap Theme G): an installed app runs in the host's own origin with
-      # no sandbox and can read the user's credentials, and `latest` is what
-      # makes the tooling for that ecosystem maximally discoverable.
+      # Read this together with the deprecation step at the end. npm assigns
+      # `latest` to a new package's first version on its own and will not let it
+      # be deleted, so "no latest tag" was never achievable — that was a mistake
+      # in the original design, corrected after 0.1.0 went out carrying both
+      # `next` and `latest`.
       #
-      # This is a workflow input, so the single most likely way to bypass the
-      # gate is to type `latest` into a box. Refusing it here costs one step.
-      # Removing this check is a deliberate act that shows up in a diff — which
-      # is the point.
+      # What this step still buys is real: publishing with --tag next leaves
+      # `latest` pointing at whatever it already pointed at, so a later Preview
+      # cannot become the default install by accident. Dispatching with
+      # `tag: latest` is the one way to move it, and that stays a deliberate act
+      # visible in a diff until roadmap Theme G is done.
       - name: Refuse to publish `latest`
         if: ${{ inputs.tag == 'latest' }}
         run: |
           # Single quotes: a backtick inside double quotes is command
           # substitution, and the shell would try to run `latest`.
-          echo '::error::Publishing to latest is gated on roadmap Theme G (app isolation, capability API, artifact integrity). If that work has landed, remove this step in the same commit that records why.'
+          echo '::error::Moving the latest tag is gated on roadmap Theme G (app isolation, capability API, artifact integrity). Publish with tag=next; latest stays where it is. If Theme G has landed, remove this step in the same commit that records why.'
           exit 1
 
       - uses: actions/checkout@v5
@@ -128,7 +130,29 @@ jobs:
           npm pack -w @cytoscape-web/app-runtime --dry-run
           npm pack -w create-cytoscape-app --dry-run
 
+      # Which versions are already on the registry. npm refuses to republish a
+      # version, so a run that failed halfway could otherwise never be resumed:
+      # the first package would 403 before the second one was reached. Skipping
+      # is not a shortcut — it is exactly equivalent to the failure npm would
+      # produce, minus the dead end.
+      - name: Decide what still needs publishing
+        id: todo
+        run: |
+          set -uo pipefail
+          for w in @cytoscape-web/app-runtime create-cytoscape-app; do
+            v=$(node -p "require('./packages/'+('$w'==='create-cytoscape-app'?'create-cytoscape-app':'app-runtime')+'/package.json').version")
+            key=$(echo "$w" | tr -c 'a-zA-Z0-9' '_')
+            if npm view "$w@$v" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+              echo "  $w@$v is already published — will skip"
+              echo "publish$key=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "  $w@$v is not on the registry — will publish"
+              echo "publish$key=true" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
       - name: Publish @cytoscape-web/app-runtime
+        if: ${{ steps.todo.outputs.publish_cytoscape_web_app_runtime == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -140,26 +164,59 @@ jobs:
       # publishing the SDK first means the first project anyone scaffolds
       # installs cleanly rather than racing the registry.
       - name: Publish create-cytoscape-app
+        if: ${{ steps.todo.outputs.publish_create_cytoscape_app == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm publish -w create-cytoscape-app \
-            --provenance --tag "${{ inputs.tag }}" \
+            --provenance --access public --tag "${{ inputs.tag }}" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      # Read back what the registry actually has. A scoped package that
-      # published privately, or a stray `latest`, looks identical to success
-      # from the job that created it.
-      - name: Verify the dist-tags
-        if: ${{ !inputs.dry_run }}
+      # Mark every published version as a Preview, and read back what the
+      # registry actually has.
+      #
+      # This replaces a check that could not work. The original design withheld
+      # the `latest` dist-tag as the release gate — but npm assigns `latest` to a
+      # brand-new package's first version whatever --tag says, and the registry
+      # REFUSES to delete it (400, after a successful auth; the CLI docs do not
+      # mention the restriction). Every published package has a `latest`. The
+      # gate as written was unachievable.
+      #
+      # A deprecation notice is the mechanism that does work, and is arguably the
+      # stronger one: almost nobody notices a missing dist-tag, while npm prints
+      # a deprecation on every single install. Combined with 0.x versioning it
+      # says what the tag was meant to say, to the people who need to hear it.
+      #
+      # Runs whenever the release was not a dry run, failed steps or not: a
+      # version published by a partially-failed run needs the notice most.
+      - name: Mark the published versions as a Developer Preview
+        if: ${{ !cancelled() && !inputs.dry_run }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          set -euo pipefail
-          for pkg in @cytoscape-web/app-runtime create-cytoscape-app; do
-            echo "── $pkg ──"
-            npm view "$pkg" dist-tags
-            if npm view "$pkg" dist-tags --json | grep -q '"latest"'; then
-              echo "::error::$pkg has a \`latest\` tag. Remove it now:" \
-                   "npm dist-tag rm $pkg latest"
-              exit 1
+          set -uo pipefail
+          NOTICE="Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/${{ github.repository }}"
+          failed=0
+          for dir in packages/app-runtime packages/create-cytoscape-app; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            encoded=$(node -p "encodeURIComponent('$name')")
+
+            if ! curl -sf "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json; then
+              echo "  $name — not on the registry, nothing to mark"
+              continue
             fi
+
+            npm deprecate "$name@$version" "$NOTICE" || { echo "::error::could not deprecate $name@$version"; failed=1; }
+
+            curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json
+            node -e '
+              const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
+              const v = d.versions[process.argv[1]]
+              console.log("  " + process.argv[2])
+              console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
+              console.log("    deprecated: " + (v?.deprecated ? "yes" : "NO"))
+              if (!v?.deprecated) { console.log("::error::" + process.argv[2] + " carries no Preview notice"); process.exit(1) }
+            ' "$version" "$name" || failed=1
           done
+          exit $failed

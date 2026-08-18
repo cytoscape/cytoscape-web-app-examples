@@ -11,13 +11,13 @@
 
 Two packages at `0.1.0`, under the **`next`** dist-tag only.
 
-`latest` stays unpublished until the host-side security work lands (roadmap
-Theme G). That is not paperwork: an installed app runs in the host's own origin
-with no sandbox and can import `cyweb/CredentialStore`. Publishing the tooling
-under `latest` makes authoring apps maximally discoverable while that is still
-true.
+Every published version also carries an npm **deprecation notice** naming the
+Preview status and the trust boundary. That notice is the release gate, and it
+stays until the host-side security work lands (roadmap Theme G). This is not
+paperwork: an installed app runs in the host's own origin with no sandbox and can
+import `cyweb/CredentialStore`.
 
-**Read the consequence before you start** — see §2.
+**§2 corrects an earlier mistake in this runbook — read it before you start.**
 
 ---
 
@@ -47,27 +47,47 @@ machine that made it.
 
 Both dry-runs pass: `app-runtime` 29 files, `create-cytoscape-app` 57.
 
-## 2. Withholding `latest` breaks the bare `npm create` — on purpose
+## 2. `latest` cannot be withheld — corrected 2026-08-18
 
-**Verified, not assumed.** `npm init <spec>` is `npx create-<spec>`, and a bare
-spec resolves to the `latest` dist-tag; asking for a tag that does not exist
-gives `E404 No match found for version <tag>`.
+**An earlier revision of this runbook was wrong, and the error shipped.** It said
+that publishing under `next` only would leave no `latest` tag, so the bare
+`npm create cytoscape-app` would 404 and everyone would have to type `@next`.
 
-So after this release:
+Neither half holds:
 
-```bash
-npm create cytoscape-app my-app          # E404 — no latest tag
-npm create cytoscape-app@next my-app     # works
+- npm assigns `latest` to a **brand-new package's first version** whatever
+  `--tag` says. `@cytoscape-web/app-runtime@0.1.0` went out with `{"next":
+  "0.1.0", "latest": "0.1.0"}`.
+- The registry **refuses to delete** `latest`: `DELETE …/dist-tags/latest`
+  returns `400` after a successful authentication. The npm CLI documentation
+  does not mention the restriction.
+
+How the mistake was made, since it is the reusable part: the reasoning verified
+that *resolving a tag that does not exist* fails (`npm view pkg@beta` → E404) and
+then assumed the premise — that `latest` could be absent — without testing it.
+A check of the conclusion is not a check of the premise.
+
+### What actually gates the release
+
+**A deprecation notice on every published version.** Applied automatically by the
+release workflow:
+
+```
+Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges
+- no sandbox, no signature verification. Not for production use: <repo>
 ```
 
-This is the release gate doing its job, and every document that mentions the
-command has to say `@next`. Do not add a `latest` tag to make the short form
-work — that is the thing being withheld.
+This is arguably stronger than the tag ever was. Almost nobody notices a missing
+dist-tag; npm prints a deprecation on **every install**, to the person installing
+it, at the moment they do.
 
-**Generated projects are unaffected.** They depend on
-`"@cytoscape-web/app-runtime": "^0.1.0"`, and a semver range resolves against all
-published versions regardless of dist-tags. Only a bare `npm install <pkg>` reads
-`latest`.
+**And `--tag next` still buys something real:** publishing with it leaves
+`latest` pointing where it already pointed, so a later Preview cannot silently
+become the default install. The workflow refuses a `tag: latest` dispatch for
+that reason.
+
+`npm create cytoscape-app` will therefore work without `@next` once
+`create-cytoscape-app` is published. Documentation that says otherwise is wrong.
 
 ---
 
@@ -279,7 +299,7 @@ approval; the workflow publishes the SDK first, so the first project anyone
 scaffolds installs cleanly rather than racing the registry.
 
 - [ ] Dry run green, and the tarball listings match §4
-- [ ] Real run green, and its final step reports `next` with no `latest`
+- [ ] Real run green, and its final step reports the deprecation notice applied to every published version
 
 The workflow runs the same checks as §4 rather than trusting they were run. A
 release is exactly the moment someone skips a check because they ran it an hour
@@ -294,8 +314,11 @@ npm view @cytoscape-web/app-runtime dist-tags
 npm view create-cytoscape-app dist-tags
 ```
 
-- [ ] Each shows **`next: 0.1.0`** and **no `latest`**. A `latest` here means the
-      gate was bypassed — see §7
+- [ ] Each shows **`next: 0.1.0`**. A `latest` is expected on a first publish and
+      cannot be removed (§2); what matters is that it was not MOVED by this run
+- [ ] Each published version is **deprecated** with the Preview notice — that is
+      the gate. The workflow applies and verifies it; confirm with
+      `npm view <pkg>@<version> deprecated`
 
 ```bash
 npm view @cytoscape-web/app-runtime files 2>/dev/null || npm pack @cytoscape-web/app-runtime@next --dry-run
@@ -308,7 +331,7 @@ in a directory with no link to it:
 
 ```bash
 cd "$(mktemp -d)"
-npm create cytoscape-app@next my-app -- --yes --id myApp --port 6001
+npm create cytoscape-app my-app -- --yes --id myApp --port 6001
 cd my-app
 npm run build
 npx cyweb-app verify
@@ -327,9 +350,9 @@ That last one is the end-to-end claim this whole project makes. Do it once.
 
 ## 7. If something is wrong
 
-- **Published to the wrong tag.** `npm dist-tag rm <pkg> latest` removes it. Do
-  this immediately — the window where a `latest` exists is the window where
-  someone installs it.
+- **Published to the wrong tag.** `npm dist-tag add <pkg>@<version> <tag>` moves
+  a tag. `latest` cannot be removed at all (§2) — if it moved somewhere wrong,
+  move it back by pointing it at the version it should name.
 - **Broken artifact.** Publish a patched `0.1.1` under `next`; then
   `npm deprecate '<pkg>@0.1.0' 'Broken — use 0.1.1'`. Prefer this to unpublishing.
 - **Unpublish** is possible within 72 hours (`npm unpublish <pkg>@0.1.0`) and
@@ -341,7 +364,7 @@ That last one is the end-to-end claim this whole project makes. Do it once.
 ## 8. After publishing
 
 - [ ] Update the docs that still say `cp -r project-template` to lead with
-      `npm create cytoscape-app@next` — root `README.md`,
+      `npm create cytoscape-app` — root `README.md`,
       `guides/getting-started.md`, `project-template/README.md`. Keep the copy
       route documented as the fallback; the `@next` form is unusual enough to
       confuse someone who mistypes it
@@ -352,5 +375,5 @@ That last one is the end-to-end claim this whole project makes. Do it once.
 - [ ] Mark Phase 6 complete in the checklist. §3.1 and §3.2 are already recorded
       there; tick the provenance item only if the run actually produced it —
       `npm view <pkg> --json` should carry a `dist.attestations` entry
-- [ ] Leave the `latest` gate item **unticked**. It closes when Theme G does, not
-      when this runbook ends
+- [ ] Confirm every published version carries the deprecation notice. That is
+      the gate now, and it closes when Theme G does, not when this runbook ends

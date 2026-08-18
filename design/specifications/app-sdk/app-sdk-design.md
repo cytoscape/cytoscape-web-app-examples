@@ -83,7 +83,9 @@ staged rather than "publish and see".
 
 **Developer Preview (this project's deliverable)**
 
-- Published under the `next` dist-tag, versioned `0.x`.
+- Published under the `next` dist-tag, versioned `0.x`, and **every version
+  carries an npm deprecation notice** naming the Preview status and the trust
+  boundary. That notice is the gate — see the correction below.
 - The README and the generated `AGENTS.md` state the boundary in plain terms: *an app you
   install has the same privileges as Cytoscape Web itself; install only apps you trust.*
 - **No import allowlist.** Restricting app sources to the typed `cyweb/*` modules was
@@ -94,6 +96,19 @@ staged rather than "publish and see".
   type declarations (roadmap B-1), not here.
 - What Preview does **not** promise: safety of untrusted app code, accurate runtime API
   version enforcement, or legible load-failure reporting.
+
+> **Correction (2026-08-18).** An earlier revision made "no `latest` dist-tag"
+> the release gate. **That is not achievable on npm**: the registry assigns
+> `latest` to a brand-new package's first version whatever `--tag` says, and
+> refuses to delete it (`400`, after a successful auth; the CLI docs do not
+> mention the restriction). `0.1.0` went out carrying both `next` and `latest`
+> before this was discovered.
+>
+> The mechanism is now a **deprecation notice** applied to every published
+> version, which is arguably the stronger one: almost nobody notices a missing
+> dist-tag, while npm prints a deprecation on **every install**. What the tag
+> still buys is that publishing with `--tag next` does not MOVE `latest`, so a
+> later Preview cannot become the default install by accident.
 
 **GA is gated on host-side work**, none of it in this project's scope. Registered on the host
 track of the roadmap:
@@ -451,7 +466,7 @@ workspace links, and run the acceptance criteria on a clean machine.
 | 10 | A `@mui/material/Box` subpath import still fails the build via `noSharedPayload` |
 | 11 | `vite` config touching a protected path fails with a named error identifying the path |
 | 12 | Built artifacts contain no absolute workspace path, no full `package.json`, and no unexpected shared payload |
-| 13 | **GA gate**: the `latest` dist-tag stays unpublished until the §3 host-side prerequisites — threat model, penetration test, and privilege-control E2E — are complete |
+| 13 | **GA gate**: every published version carries the Preview deprecation notice, and `latest` is never MOVED forward, until the §3 host-side prerequisites — threat model, penetration test, privilege-control E2E — are complete. (`latest` existing at all is unavoidable; see the correction in §3) |
 
 ## 8. Review disposition
 
