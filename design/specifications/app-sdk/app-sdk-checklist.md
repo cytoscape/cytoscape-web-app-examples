@@ -3,7 +3,8 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: Phases 0–5 complete. Phase 6 (the Preview release) is next.**
+> **Status: ALL PHASES COMPLETE (2026-08-18).** Both packages are on npm under
+> `next`, at `0.1.0`, attested and marked as a Developer Preview.
 > All five apps build through `@cytoscape-web/app-runtime@0.1.0` and match
 > [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
 > runtime-plugin path. Identity is declared once in `package.json`, no app
@@ -616,7 +617,7 @@ _Design: §4.6_
 
 ---
 
-## Phase 6: Developer Preview release
+## Phase 6: Developer Preview release ✅ **COMPLETE (2026-08-18)**
 
 _Runbook: **[phase6-release-runbook.md](phase6-release-runbook.md)** — the
 step-by-step procedure, and the two decisions (provenance, and what "pin the
@@ -644,17 +645,49 @@ examples" should mean) that have to be made before running it._
 
 _Design: §3, §4.1_
 
+> **Published.** `@cytoscape-web/app-runtime@0.1.0` and
+> `create-cytoscape-app@0.1.0`, both with provenance attestations, both carrying
+> the Preview deprecation notice, both with a correct `repository` field.
+> Verified end to end from an empty directory with no override:
+> `npm create cytoscape-app` → `npm run build` → `cyweb-app verify` (27 checks) →
+> tests, with no file edited by hand.
+>
+> **It took five attempts, and each failure was a real defect rather than bad
+> luck.** Recorded because four of the five could not have been caught by the
+> checks that were in place:
+>
+> 1. **`repository` missing** → `422` from the registry. Provenance is validated
+>    by the REGISTRY, and `npm publish --dry-run` never contacts it. A green
+>    local pre-flight and two green dry runs said nothing about this.
+> 2. **`latest` cannot be withheld.** npm assigns it to a new package's first
+>    version and refuses to delete it (`400`). The gate this project had designed
+>    was unachievable, and `0.1.0` shipped before anyone knew. Replaced with a
+>    deprecation notice — see the correction in the runbook §2 and design §3.
+> 3. **`--access public` is required on the unscoped package too**, whatever the
+>    scoping, when provenance is on.
+> 4. **Both publishes silently skipped** because GitHub Actions output names were
+>    derived from package names with `tr -c`, which converted `echo`'s trailing
+>    newline as well. A skipped step is not a failed one, so the run stayed green
+>    until something else broke.
+> 5. **`403` on the unscoped package** — the only failure that was predicted, and
+>    the runbook's "start narrow, widen on refusal" advice was what it was for.
+>
+> The recurring shape: **a check that does not run, or a substitution that
+> matches nothing, looks exactly like success.**
+
 ### Deliverables
 
-- [ ] Publish both packages under the **`next`** dist-tag, `0.x`
-- [x] npm provenance, from a **protected release environment** — the workflow
-      exists and requests `id-token: write` against a `release` environment.
-      **Tick the run itself only after verifying the published package carries an
-      attestation**; the workflow being correct is not the same as it having run
-- [ ] The trust boundary stated plainly in the SDK README and the generated
+- [x] Publish both packages under the **`next`** dist-tag, `0.x`
+- [x] npm provenance, from a **protected release environment** — **verified on
+      the published packages**: both carry `dist.attestations`. `0.1.0` was
+      published with a granular token (a trusted publisher cannot be configured
+      for a package that does not exist yet); trusted publishing is configured
+      now and the token is revoked, so `0.1.1` onward uses OIDC with no
+      credential to leak
+- [x] The trust boundary stated plainly in the SDK README and the generated
       `AGENTS.md`: *an app you install has the same privileges as Cytoscape Web
       itself; install only apps you trust*
-- [ ] State what Preview does **not** promise — safety of untrusted app code,
+- [x] State what Preview does **not** promise — safety of untrusted app code,
       accurate runtime API version enforcement, legible load-failure reporting
 - [x] ~~Pin the examples to the published versions rather than workspace links~~
       — **reinterpreted** (runbook §3.2). Un-linking would stop every SDK change
@@ -665,8 +698,8 @@ _Design: §3, §4.1_
 
 ### Verification (Phase 6)
 
-- [ ] `npm view <pkg> dist-tags` shows `next`; a `latest` is expected and cannot be removed. `npm view <pkg>@<version> deprecated` returns the Preview notice — that is the gate
-- [ ] The full acceptance criterion runs on a **clean machine**:
+- [x] `npm view <pkg> dist-tags` shows `next`; a `latest` is expected and cannot be removed. `npm view <pkg>@<version> deprecated` returns the Preview notice — that is the gate
+- [x] The full acceptance criterion runs on a **clean machine**:
       `npm create cytoscape-app my-app -- --yes --id myApp --port 6000` →
       `npm run dev` → open the printed URL → panel appears, **with no file
       edited by hand anywhere**

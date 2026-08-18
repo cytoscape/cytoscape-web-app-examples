@@ -13,15 +13,20 @@ context menu item. Copy this directory to scaffold a new app.
 
 ## Quick start
 
+**Most people should use the generator instead** — it does everything below and
+fills in the identity for you:
+
 ```bash
-# 1. Copy the template
+npm create cytoscape-app my-app
+```
+
+This directory is the worked example the generator's `full` template is built
+from. To start from it by hand:
+
+```bash
 cp -r project-template my-app
 cd my-app
-
-# 2. Install dependencies
 npm install
-
-# 3. Start the dev server
 npm run dev
 ```
 

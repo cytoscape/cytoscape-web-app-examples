@@ -76,9 +76,17 @@ to publish your app, please
 ## Build Your First App
 
 ```bash
-cp -r project-template my-app && cd my-app
-npm install
+npm create cytoscape-app my-app
+cd my-app
 ```
+
+That is the whole setup — it installs dependencies and leaves a project that
+builds, verifies and tests as it stands. Add `--yes` with `--id`, `--port` and
+`--template` to skip the prompts entirely; every prompt has a flag, so an agent
+can drive it without a terminal.
+
+> Prefer to start from a worked example? `cp -r project-template my-app` still
+> works and gives you the same shape by hand.
 
 Then two things:
 
@@ -98,8 +106,8 @@ the build, by the app config, and by the install manifest:
 the host registers, all at the same time.
 
 **2. Your app, in `src/`.** Replace the panel and menu components, and adjust
-`resources` in `src/TemplateApp.tsx`. `vite.config.ts` is three lines and needs
-no edits.
+`resources` in `src/MyApp.tsx`. `vite.config.ts` is three lines and needs no
+edits.
 
 Then `npm run dev`. It prints the link that installs your app into a running
 local host:

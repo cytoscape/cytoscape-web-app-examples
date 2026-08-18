@@ -11,16 +11,25 @@ a context menu action — all loaded into the host via Module Federation.
 
 ## 1. Scaffold a New App
 
-Copy the **project-template** from
-[cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples):
-
 ```bash
-cp -r project-template my-app
+npm create cytoscape-app my-app
 cd my-app
-npm install
 ```
 
-Then set your app's identity in `package.json` — **once**, in one place:
+Templates: `panel` (the default), `menu`, `context-menu`, `non-react`, `full`.
+Every prompt has a flag, and `--yes` never asks:
+
+```bash
+npm create cytoscape-app my-app -- \
+  --yes --id myApp --display-name "My App" --template panel --port 6000
+```
+
+> Copying `project-template` from
+> [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples)
+> by hand still works, and gives you the same shape.
+
+The generator writes your app's identity into `package.json` — **once**, in one
+place:
 
 ```jsonc
 {

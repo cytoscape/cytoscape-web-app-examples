@@ -112,9 +112,11 @@ jobs:
       - name: Scaffold every template, then build, verify, typecheck and test it
         run: |
           set -euo pipefail
+          # The SDK is still packed, though nothing installs it here: `npm pack`
+          # runs prepack, so a broken build or a `files` entry that no longer
+          # matches fails in this job rather than at release time.
           npm pack -w @cytoscape-web/app-runtime --pack-destination /tmp
           npm pack -w create-cytoscape-app --pack-destination /tmp
-          SDK=$(ls /tmp/cytoscape-web-app-runtime-*.tgz)
           CREATE=$(ls /tmp/create-cytoscape-app-*.tgz)
           WORK=$(mktemp -d)
           cd "$WORK"
@@ -124,10 +126,16 @@ jobs:
             node node_modules/create-cytoscape-app/dist/index.js "app-$T" --yes \
               --id "app${T//-/}" --template "$T" --port "$((6400 + RANDOM % 100))" --no-install
             cd "app-$T"
-            # PRE-PUBLICATION: the SDK is not on npm yet, so point the generated
-            # dependency at the tarball. Delete this once it is published — at
-            # that point a plain `npm install` is the thing worth testing.
-            node -e 'const f="package.json",j=require("fs").readFileSync(f,"utf8"),o=JSON.parse(j);o.devDependencies["@cytoscape-web/app-runtime"]=process.argv[1];require("fs").writeFileSync(f,JSON.stringify(o,null,2))' "file:$SDK"
+            # A plain install, resolving @cytoscape-web/app-runtime from npm.
+            # This used to rewrite that dependency to a packed tarball because
+            # the package was unpublished; it is published now, and what is
+            # worth testing is what a user actually gets.
+            #
+            # Note the asymmetry that remains, deliberately: the SCAFFOLDER is
+            # still installed from its tarball above, because a change to it in
+            # this PR is exactly what this job exists to test. The SDK is the
+            # published one because a generated project depends on the published
+            # one.
             npm install --silent
             npm run build
             npx cyweb-app verify
