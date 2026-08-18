@@ -173,8 +173,20 @@ exist: package settings → **Trusted Publisher** → GitHub Actions.
 **Step 3 — delete the token.** From the npm account AND from the `release`
 environment secrets, and remove the two `NODE_AUTH_TOKEN` lines from the
 workflow. Do all three: a revoked token still in a secret store is confusing
-later, and a live token nobody references is worse. From `0.1.1` onward there is no long-lived credential to leak, which
-is the point of doing this at all.
+later, and a live token nobody references is worse. From `0.1.1` onward there is
+no long-lived credential to leak, which is the point of doing this at all.
+
+> **Done 2026-08-18** for both packages. Note what could NOT be verified first:
+> a dry run never contacts the registry, so it never authenticates, and OIDC is
+> therefore unproven until the next real publish. Deleting the token anyway is
+> the right trade — a failed release is recoverable by making a new token, while
+> a live All-Packages credential is a standing risk.
+>
+> **If the next release fails with a 401**, the likely cause is `setup-node`'s
+> `registry-url`, which writes `_authToken=${NODE_AUTH_TOKEN}` into `.npmrc`.
+> With that variable gone it writes an empty token, and npm may read that as
+> "credentials present but wrong" instead of falling back to OIDC. Dropping
+> `registry-url` is the first thing to try.
 
 > With trusted publishing, npm generates provenance **automatically** — the
 > `--provenance` flag becomes redundant. It is harmless to leave, and it is what
