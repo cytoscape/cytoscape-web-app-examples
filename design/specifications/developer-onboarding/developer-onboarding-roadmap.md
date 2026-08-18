@@ -502,8 +502,9 @@ serves the manifest about a file served by someone else. Only `id` is checked ag
 loaded module (`loadRemoteApp.ts:32-37`).
 
 **Acceptance constraint — do not fix this by applying the allow-list to the catalog path.**
-The bypass is, today, the *only* thing that makes an organization's internal app catalog work
-against a host it did not build (Theme H). A naive fix deletes that capability and leaves no
+The bypass is, today, the only thing that makes **two** planned configurations work against a
+host the developer did not build: an organization's internal app catalog (H-2), and a shared
+dev host loading an app from `localhost` (H-5). A naive fix deletes both and leaves no
 replacement.
 
 The fix must instead be: **a trusted-origin set that is configurable at runtime and applied
@@ -544,9 +545,51 @@ narrowly removes this configuration outright.
 | **H-2** Additive catalog sources | `obtainCatalogEntries` **replaces**: given a custom source it never fetches `DEFAULT_MANIFEST_URL`. `composeCatalog` unions the manifest with `installedApps`, not manifest with manifest. An organization wanting "internal apps **and** public apps" must copy the public entries into its own manifest |
 | **H-3** Organization-wide provisioning | `setManifestSource` is called only from `AppSettingsDialog`. There is no URL parameter, no policy file, no deployment-time default — every user configures it by hand. (`?installApp=` installs one app; it does not select a catalog) |
 | **H-4** Keep this configuration working across the G-6 fix | See the acceptance constraint under G-6 |
+| **H-5** Let a non-localhost host opt into localhost apps | The allow-list is an EXACT origin match including the port, so "localhost on any port" cannot be expressed at all (§below) |
 
 H-1 is the prerequisite for the others and is independently useful: every value in
 `config.json` is currently frozen at build time for every deployment.
+
+#### H-5, in detail — a shared dev host cannot accept a developer's local app
+
+Same shape as the organizational catalog, different audience:
+**`https://dev1.ndexbio.org/cytoscape` is intended as a recommended host for app
+developers**, with the app itself on `http://localhost:<port>`.
+
+Measured 2026-08-18, and the host side is ready: dev1 publishes a correct
+descriptor — `{"name":"cyweb","remoteEntry":"https://dev1.ndexbio.org/cytoscape/remoteEntry.js","apiVersion":"1.0"}`,
+with the `/cytoscape/` base present exactly once — and a full seven-key share
+scope. An app loads there.
+
+**Installing one does not work**, and cannot be configured to:
+
+```js
+if (allowedOrigins.includes(parsed.origin)) return true          // EXACT match, port included
+const hostIsLocalhost = window.location.hostname === 'localhost' || '127.0.0.1'
+const urlIsLocalhost  = parsed.hostname === 'localhost' || '127.0.0.1'
+return hostIsLocalhost && urlIsLocalhost                          // BOTH must be localhost
+```
+
+`parsed.origin` carries the port, and there is no wildcard, so allow-listing
+"localhost" means allow-listing one port. The scaffolder picks the first free
+port from 6000, so it differs per developer and per app. Enumerating them is not
+a configuration, it is a losing game.
+
+The fix is a policy change rather than a longer list — one boolean instead of N
+ports:
+
+```js
+return (hostIsLocalhost || allowsLocalhostApps) && urlIsLocalhost
+```
+
+**This route works TODAY only through the G-6 bypass** — Manifest Source reaches
+`activateApp`, which skips the origin check entirely. So it joins the
+organizational catalog as a second thing the G-6 fix must not quietly remove;
+the acceptance constraint under G-6 covers both.
+
+**Until H-1, H-5 and G-6 land together, dev1 is documented for the job it can do
+today**: verifying a DEPLOYED app against a real HTTPS host served from a
+non-`/` base path, which localhost cannot exercise at all.
 
 ---
 

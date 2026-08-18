@@ -3,15 +3,22 @@
 > Track progress across all eight phases. Mark `[x]` when complete. Run the
 > per-phase verification before starting the next phase.
 >
-> **Status (8/5/2026): Phases 1–7 complete. Phase 8 is rehearsed in full
+> **Status (8/18/2026): Phases 1–7 complete. Phase 8's host-side blocker is
+> CLOSED** — `https://dev1.ndexbio.org/cytoscape` publishes
+> `window.__CYWEB_HOST__` and passes `preflight:host` 10/10, including the
+> based-deployment branch that only a subpath deployment can exercise. What
+> remains is about the APPS, not the host: the SHA-256 identity checks, which
+> need `preflight:apps` run against deployed apps.
+>
+> _Original status (8/5/2026): Phases 1–7 complete. Phase 8 is rehearsed in full
 > locally and waits on one thing — a deployed host publishing
 > `window.__CYWEB_HOST__`. The next step is
 > `https://dev1.ndexbio.org/cytoscape`, not production: it already runs a Vite
 > build of the host, and being served from a subpath it is the only environment
-> that can exercise the based-`urlBaseName` branch.** Everything downstream of that is verified: five
+> that can exercise the based-`urlBaseName` branch. Everything downstream of that is verified: five
 > apps on Vite, the Webpack toolchain gone, CI green on every push, and all
 > four published apps loading through the real host loader from a separate
-> origin. See Phase 8 for exactly what a deployed run would add.
+> origin. See Phase 8 for exactly what a deployed run would add._
 >
 > **Phases are strictly ordered**, and nothing Webpack-breaking happens outside
 > the app that is currently migrating.
@@ -271,8 +278,16 @@ the descriptor live in production. **It was closed without that**, deliberately
     `Object.freeze({…}),writable:!1,configurable:!1`, so both the served page
     and the shipped chunk are accounted for
 - [x] ~~**The full §8 descriptor contract passes against `web.cytoscape.org`**,
-      deployed, not merely merged~~ — **waived with the deploy, 8/1/2026.**
-      Deferred to the staging deployment, `https://dev1.ndexbio.org/cytoscape`:
+      deployed, not merely merged~~ — **waived with the deploy, 8/1/2026**, and
+      **since CLOSED on dev1 (8/18/2026)**: `npm run preflight:host --
+      https://dev1.ndexbio.org/cytoscape` now passes **10/10**, including the
+      based-deployment branch — the descriptor reads
+      `https://dev1.ndexbio.org/cytoscape/remoteEntry.js`, carrying `/cytoscape/`
+      exactly once. `application/javascript` from Apache over HTTPS, frozen,
+      non-writable, non-configurable, `init`/`get` both functions. The share
+      scope carries all seven keys.
+
+      Original instructions kept below for the record:
 
       ```
       npm run preflight:host -- https://dev1.ndexbio.org/cytoscape
@@ -947,19 +962,22 @@ decision showing up at the scale of the whole publish set.
 Everything specific to the real deployment, and worth being precise about since
 this is the part still owed:
 
-1. **That a deployed host publishes the descriptor at all** — the one thing the
-   whole migration waits on. **Closable on dev1** before production.
-2. **A non-`/` `urlBaseName`** — production uses `/`, so
-   `buildHostRemoteEntryUrl`'s based-deployment branch is still covered only by
-   its unit test. **Only dev1 can close this**: it serves from `/cytoscape/`,
-   so a descriptor there must read
-   `https://dev1.ndexbio.org/cytoscape/remoteEntry.js`. A bug that drops or
-   doubles the base is invisible at `/` and fatal here.
-3. **A real server's MIME types and cache headers** — `http-server` is not
-   Apache. **Closable on dev1** (Apache 2.4.37, same family as production's
-   2.4.62).
+1. ~~**That a deployed host publishes the descriptor at all**~~ — **CLOSED
+   8/18/2026.** dev1 publishes it; `preflight:host` passes 10/10.
+2. ~~**A non-`/` `urlBaseName`**~~ — **CLOSED 8/18/2026.** The descriptor on dev1
+   reads `https://dev1.ndexbio.org/cytoscape/remoteEntry.js`, with the base
+   segment present exactly once. `buildHostRemoteEntryUrl`'s based-deployment
+   branch is no longer covered only by its unit test.
+3. ~~**A real server's MIME types**~~ — **CLOSED 8/18/2026** for the host entry:
+   Apache serves `remoteEntry.js` as `application/javascript` over HTTPS. Cache
+   headers are still unexamined.
 4. **The SHA-256 identity checks**, which are meaningless when the "CDN" is the
-   build directory.
+   build directory. Still open — it needs deployed apps checked against the
+   hashes of what was built, which `preflight:apps` is the vehicle for.
+
+> Closed by measurement while documenting dev1 as a staging target for app
+> developers, not by a deliberate pass at this checklist. The remaining item is
+> about the APPS, not the host.
 
 ### Order to close them
 

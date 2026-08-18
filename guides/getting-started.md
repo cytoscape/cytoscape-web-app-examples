@@ -270,6 +270,55 @@ build instead of being shipped.
 
 ---
 
+## 5c. Check a Deployed App Against a Real Host
+
+Everything above runs against a host on `localhost`. Three things that break in
+production cannot happen there, and one of them has bitten this project before:
+
+- **HTTPS, and a real web server's MIME types and cache headers.** A dev server
+  is not Apache.
+- **A base path that is not `/`.** If the host is served from a subdirectory,
+  anything that drops or doubles that segment is invisible on localhost and
+  fatal in production.
+- **Cross-origin loading for real** — CORS on `remoteEntry.js` *and every
+  transitive chunk*.
+
+**`https://dev1.ndexbio.org/cytoscape` is the staging host to use for this.** It
+is a Vite + Module Federation build, served by Apache over HTTPS, from the
+subpath `/cytoscape/` — which makes it the only environment that exercises the
+based-deployment case at all. It publishes a correct host descriptor:
+
+```json
+{ "name": "cyweb",
+  "remoteEntry": "https://dev1.ndexbio.org/cytoscape/remoteEntry.js",
+  "apiVersion": "1.0" }
+```
+
+Once your app is deployed somewhere, check it against dev1 from a clone of
+[cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples):
+
+```bash
+# Does that host publish a descriptor your app can use?
+npm run preflight:host -- https://dev1.ndexbio.org/cytoscape
+
+# Do the DEPLOYED apps actually load in it?
+npm run preflight:apps -- https://dev1.ndexbio.org/cytoscape <yourAppsBaseUrl>
+```
+
+`preflight:apps` runs a real dynamic `import()` inside a real host page and
+initialises against the host's own share scope, so a missing transitive chunk,
+a wrong MIME type or a broken CORS header shows up as a failure rather than as a
+silent blank panel.
+
+> **What you cannot do yet: run dev1 as the host for an app on your `localhost`.**
+> The host refuses to install an app whose origin is not on its allow-list, and
+> the allow-list is an exact origin match *including the port* — so "localhost on
+> any port" cannot be expressed, and your dev server's port changes per app.
+> Making that configuration official needs host-side work (roadmap H-1 and H-5).
+> Until then, develop against a local host and use dev1 to check what you deploy.
+
+---
+
 ## 6. Run Both Dev Servers
 
 ```bash
