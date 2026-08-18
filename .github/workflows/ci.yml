@@ -64,6 +64,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # The apps resolve @cytoscape-web/app-runtime through a workspace link, but
+      # what they import is its dist/ — `./vite` for the config, `./meta` for the
+      # virtual-module declarations. A link without a build is a directory with
+      # no entry points, so this job fails on TS2688 without it.
+      #
+      # build:sdk rather than build: only the two packages are needed, not five
+      # app bundles.
+      - run: npm run build:sdk
       # Always all apps. tsc --noEmit works on a Webpack app and a Vite app
       # alike, so there is no reason to stage it — and it replaces the type
       # safety ts-loader was providing once that goes away.
@@ -155,6 +163,15 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # The apps resolve @cytoscape-web/app-runtime through a workspace link, but
+      # what they import is its dist/ — `./vite` for the config, `./meta` for the
+      # virtual-module declarations. A link without a build is a directory with
+      # no entry points, so this job fails on ERR_MODULE_NOT_FOUND and
+      # TS2688 without it.
+      #
+      # build:sdk rather than build: only the two packages are needed, not five
+      # app bundles.
+      - run: npm run build:sdk
       # --if-present: an app joins the test scope by gaining a `test` script in
       # its migration commit. No workflow edit, nothing to forget.
       - run: npm run test
