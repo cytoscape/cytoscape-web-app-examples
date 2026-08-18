@@ -107,17 +107,37 @@ So the first release cannot use OIDC, and the order is:
 
 **Step 1 — publish `0.1.0` with a token, from the workflow.**
 
-Create a **granular access token** on npmjs.com (Access Tokens → Generate →
-Granular), scoped as narrowly as npm lets you:
+Create a **granular access token** on npmjs.com — Access Tokens → Generate New
+Token → **Granular Access Token**.
 
-- `@cytoscape-web/app-runtime` can be scoped to the `@cytoscape-web` **scope**.
-- `create-cytoscape-app` is unscoped and does not exist, so npm may require a
-  broader "all packages" permission for exactly this one publish. Give it the
-  shortest expiry offered.
+| Field | Value | Why |
+| --- | --- | --- |
+| **Expiration** | **7 days** (custom; npm's minimum is 1 day) | It is deleted in step 3 within the hour. The expiry is a backstop for the case where step 3 is forgotten, not the plan |
+| **Packages and scopes** → permission | **Read and write** | Publishing needs write. Read-only cannot publish |
+| **Packages and scopes** → selection | Try **Only select packages and scopes** → the `@cytoscape-web` scope first. Fall back to **All Packages** only if the publish is refused | See the note below — this is the one field where npm's behaviour is not documented |
+| **Organizations** | **No access** | npm's own documentation says this permission "does not give the token the right to publish packages managed by the organization". It grants settings and team management and nothing this release needs |
+| **IP allowlist** | **Leave empty** | GitHub-hosted runners have dynamic egress IPs. An allowlist here fails the publish, and the error will not obviously point at this field |
+| **Bypass 2FA** | **Enabled** | Otherwise npm asks for an OTP and there is nobody at the keyboard. This is the setting that makes a token usable from CI at all |
 
-Put it in the `release` environment as `NPM_TOKEN` and run the workflow. This
-release still gets provenance, still runs behind the protected environment, and
-still comes from CI — only the credential is a token rather than OIDC.
+**The one undocumented field.** npm's documentation does not say whether selecting
+a *scope* grants permission to publish a package that does not exist in it yet,
+and both of ours are new. `create-cytoscape-app` is also unscoped, so it cannot
+be picked from a list of packages that do not exist.
+
+Start narrow anyway. A refusal costs one failed job and publishes nothing — a
+403 is a clean failure — whereas starting at "All Packages" grants more than
+needed and you will never find out whether you had to. If it is refused, widen
+to **All Packages** for this one run.
+
+> An alternative exists and is not recommended: publish `create-cytoscape-app`
+> once from a workstation with your normal login and OTP, purely to create the
+> name, so a scope-limited token covers the rest. It trades a broad token that
+> lives for minutes against a manual, unattested release of one package. The
+> token is the smaller exposure, and it is the one you can delete.
+
+Put the token in the `release` environment as `NPM_TOKEN` and run the workflow.
+This release still gets provenance, still runs behind the protected environment,
+and still comes from CI — only the credential is a token rather than OIDC.
 
 **Step 2 — configure the trusted publisher on both packages.** Now that they
 exist: package settings → **Trusted Publisher** → GitHub Actions.
@@ -132,7 +152,8 @@ exist: package settings → **Trusted Publisher** → GitHub Actions.
 
 **Step 3 — delete the token.** From the npm account AND from the `release`
 environment secrets, and remove the two `NODE_AUTH_TOKEN` lines from the
-workflow. From `0.1.1` onward there is no long-lived credential to leak, which
+workflow. Do all three: a revoked token still in a secret store is confusing
+later, and a live token nobody references is worse. From `0.1.1` onward there is no long-lived credential to leak, which
 is the point of doing this at all.
 
 > With trusted publishing, npm generates provenance **automatically** — the
