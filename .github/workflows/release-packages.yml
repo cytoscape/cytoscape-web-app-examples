@@ -135,24 +135,35 @@ jobs:
       # the first package would 403 before the second one was reached. Skipping
       # is not a shortcut — it is exactly equivalent to the failure npm would
       # produce, minus the dead end.
+      #
+      # Output names are WRITTEN OUT, not derived from the package name. Deriving
+      # them is what broke the first attempt: `echo "$name" | tr -c 'a-zA-Z0-9'
+      # '_'` also converts echo's trailing newline, so the outputs were
+      # `publish_cytoscape_web_app_runtime_` and `publishcreate_cytoscape_app_`
+      # while the `if:` conditions read the names without those artefacts. Both
+      # publishes were skipped, silently, and the run still went green until a
+      # later step failed. Two literals cannot do that.
       - name: Decide what still needs publishing
         id: todo
         run: |
           set -uo pipefail
-          for w in @cytoscape-web/app-runtime create-cytoscape-app; do
-            v=$(node -p "require('./packages/'+('$w'==='create-cytoscape-app'?'create-cytoscape-app':'app-runtime')+'/package.json').version")
-            key=$(echo "$w" | tr -c 'a-zA-Z0-9' '_')
-            if npm view "$w@$v" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
-              echo "  $w@$v is already published — will skip"
-              echo "publish$key=false" >> "$GITHUB_OUTPUT"
+          decide() {
+            local name="$1" dir="$2" out="$3"
+            local version
+            version=$(node -p "require('./packages/$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "  $name@$version — already published, will skip"
+              echo "$out=false" >> "$GITHUB_OUTPUT"
             else
-              echo "  $w@$v is not on the registry — will publish"
-              echo "publish$key=true" >> "$GITHUB_OUTPUT"
+              echo "  $name@$version — not on the registry, will publish"
+              echo "$out=true" >> "$GITHUB_OUTPUT"
             fi
-          done
+          }
+          decide @cytoscape-web/app-runtime app-runtime          runtime
+          decide create-cytoscape-app       create-cytoscape-app scaffolder
 
       - name: Publish @cytoscape-web/app-runtime
-        if: ${{ steps.todo.outputs.publish_cytoscape_web_app_runtime == 'true' }}
+        if: ${{ steps.todo.outputs.runtime == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -164,7 +175,7 @@ jobs:
       # publishing the SDK first means the first project anyone scaffolds
       # installs cleanly rather than racing the registry.
       - name: Publish create-cytoscape-app
-        if: ${{ steps.todo.outputs.publish_create_cytoscape_app == 'true' }}
+        if: ${{ steps.todo.outputs.scaffolder == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -207,7 +218,19 @@ jobs:
               continue
             fi
 
-            npm deprecate "$name@$version" "$NOTICE" || { echo "::error::could not deprecate $name@$version"; failed=1; }
+            # Idempotent: re-applying an identical notice is rejected with a
+            # 422, so a resumed run would fail on a version that is already
+            # correct. Only call it when the message would actually change.
+            current=$(node -p "
+              const d = JSON.parse(require('fs').readFileSync('/tmp/pkg.json','utf8'))
+              d.versions['$version']?.deprecated ?? ''
+            ")
+            if [ "$current" = "$NOTICE" ]; then
+              echo "  $name@$version — notice already applied"
+            else
+              npm deprecate "$name@$version" "$NOTICE" \
+                || { echo "::error::could not deprecate $name@$version"; failed=1; }
+            fi
 
             curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json
             node -e '
