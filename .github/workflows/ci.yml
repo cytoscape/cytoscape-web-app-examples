@@ -88,6 +88,54 @@ jobs:
       # construction, which is the regression check working as designed.
       - run: npm run verify:federation
 
+  scaffold:
+    name: Scaffold & verify a generated app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:sdk
+      # From PACKED TARBALLS, into a directory outside the repository. Running
+      # the scaffolder in place would resolve the SDK through the workspace
+      # symlink and prove nothing about what a user installs — the risk being
+      # exactly that the published package is missing a file the workspace had.
+      # Every script a generated project ships is run here, `test` included.
+      # The smoke test is part of what the scaffolder emits: if it does not
+      # pass, every project created from this template starts with a red
+      # `npm test`, and the developer's first impression is that the tool is
+      # broken. It went unrun through Phase 5 and is the reason this line exists.
+      - name: Scaffold every template, then build, verify, typecheck and test it
+        run: |
+          set -euo pipefail
+          npm pack -w @cytoscape-web/app-runtime --pack-destination /tmp
+          npm pack -w create-cytoscape-app --pack-destination /tmp
+          SDK=$(ls /tmp/cytoscape-web-app-runtime-*.tgz)
+          CREATE=$(ls /tmp/create-cytoscape-app-*.tgz)
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          npm install --silent "$CREATE"
+          for T in panel menu context-menu non-react full; do
+            echo "── $T ──"
+            node node_modules/create-cytoscape-app/dist/index.js "app-$T" --yes \
+              --id "app${T//-/}" --template "$T" --port "$((6400 + RANDOM % 100))" --no-install
+            cd "app-$T"
+            # PRE-PUBLICATION: the SDK is not on npm yet, so point the generated
+            # dependency at the tarball. Delete this once it is published — at
+            # that point a plain `npm install` is the thing worth testing.
+            node -e 'const f="package.json",j=require("fs").readFileSync(f,"utf8"),o=JSON.parse(j);o.devDependencies["@cytoscape-web/app-runtime"]=process.argv[1];require("fs").writeFileSync(f,JSON.stringify(o,null,2))' "file:$SDK"
+            npm install --silent
+            npm run build
+            npx cyweb-app verify
+            npm run typecheck
+            npm test
+            cd ..
+          done
+
   test:
     name: Test
     runs-on: ubuntu-latest

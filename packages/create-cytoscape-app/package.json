@@ -1,0 +1,32 @@
+{
+  "name": "create-cytoscape-app",
+  "version": "0.1.0",
+  "description": "Scaffold a Cytoscape Web app: npm create cytoscape-app my-app",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "files": ["dist", "templates", "README.md"],
+  "bin": {
+    "create-cytoscape-app": "./dist/index.js"
+  },
+  "//scripts": [
+    "sync-templates copies the template sources OUT of the working example apps",
+    "before the package is built or published, so a template cannot drift from",
+    "an app that is actually built, verified and loaded in a host on every CI",
+    "run. prepack runs it again because `npm pack` does not run `build`."
+  ],
+  "scripts": {
+    "build": "node scripts/sync-templates.mjs && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "clean": "rm -rf dist templates"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.8"
+  }
+}

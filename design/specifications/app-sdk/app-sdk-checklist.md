@@ -3,14 +3,15 @@
 > Track progress across Phase 0 and the six design phases. Mark `[x]` when
 > complete. Run the per-phase verification before starting the next phase.
 >
-> **Status: Phases 0–4 complete. Phase 5 is next.**
+> **Status: Phases 0–5 complete. Phase 6 (the Preview release) is next.**
 > All five apps build through `@cytoscape-web/app-runtime@0.1.0` and match
 > [`phase0-baseline.md`](phase0-baseline.md) in every audit field except the
 > runtime-plugin path. Identity is declared once in `package.json`, no app
 > imports that file into its bundle any more, and `npm run dev` prints a link
 > that installs the app into a local host without touching the host repository.
 > `npx cyweb-app verify` checks a built app from its own directory, inside this
-> repository or outside it.
+> repository or outside it, and `npm create cytoscape-app` scaffolds a project
+> that builds and passes that check with nothing edited by hand.
 >
 > **Phases are strictly ordered.** Phase 1 converts exactly one app; the other
 > four keep their hand-written configs until Phase 2. Nothing outside the app
@@ -522,47 +523,92 @@ works inside this monorepo.
 
 ---
 
-## Phase 5: The scaffolder
+## Phase 5: The scaffolder ✅ **COMPLETE**
 
 _Design: §4.6_
 
+> **Template generation turned out to be a file copy, and that is the payoff of
+> Phase 3.** Because the apps read identity from `virtual:cyweb-app-meta`, the
+> only file that differs between two scaffolded apps is `package.json` — which
+> the generator writes rather than copies. No token substitution runs over the
+> template sources at all.
+>
+> **`sync-templates` copies out of the working apps at build time.** Shared files
+> — `vite.config.ts`, the three tsconfigs, `index.html`, the components, the
+> context-menu module — come from `project-template` and `network-statistics`,
+> which are built, verified and loaded into a real host on every CI run. What is
+> AUTHORED in the package is the per-variant app file: expressing "the same file
+> minus one resource" as a source transform would be more fragile than four short
+> files, and the drift that leaves is caught by the acceptance job, which builds
+> and verifies all five.
+>
+> **`templates/` is generated and gitignored.** Committing it would recreate the
+> second copy the whole approach exists to avoid.
+>
+> **The Phase 4 finding is fixed at the source.** `peerDependencies` are written
+> from the SDK's ranges rather than left to `npm install`, which records the
+> version it RESOLVED (`^11.14.0` for a requested `^11.10.4`) and would make every
+> scaffolded app fail `cyweb-app verify` on day one. There is a test for it.
+>
+> **Acceptance ran under both package managers**, from packed tarballs, in a
+> directory outside this repository: five templates scaffolded, installed, built
+> and verified — 27 checks for the React variants, 17 for non-React (one fewer
+> than in-repo, because standalone there is no declared expose list to compare
+> against). Zero `TODO:` markers survive into a generated project.
+>
+> **A gap found by hand-testing, and closed.** The acceptance runs and the CI job
+> exercised `build`, `verify` and `typecheck` — but not `test`, even though the
+> smoke test is part of what the scaffolder emits. An unrun generated test means
+> every project created from the template could start with a red `npm test`, and
+> the developer's first impression would be that the tool is broken. CI now runs
+> every script a generated project ships; all five templates pass (3 tests each).
+>
+> **One pre-publication compromise, marked as such in CI.** pnpm resolves the
+> whole dependency graph before installing, so an unpublished
+> `@cytoscape-web/app-runtime` 404s where npm tolerates it. The acceptance job
+> rewrites that one dependency to the packed tarball; the comment says to delete
+> that step once the package is on npm, at which point a plain install is the
+> thing worth testing.
+
 ### Deliverables — the CLI
 
-- [ ] Create `packages/create-cytoscape-app/` (name per Phase 0)
-- [ ] Flags, with directory name / package name / display name / federation id
+- [x] Create `packages/create-cytoscape-app/` (name per Phase 0)
+- [x] Flags, with directory name / package name / display name / federation id
       kept as **four separate things**: positional target, `--package-name`,
       `--id`, `--display-name`, `--port`, `--template`, `--yes`, `--pm`,
       `--no-install`
-- [ ] **Every prompt has a flag equivalent.** A prompt without one is a bug: it
+- [x] **Every prompt has a flag equivalent.** A prompt without one is a bug: it
       makes the agent path unusable
-- [ ] Port picker takes the first free port from 6000, skipping 5500 and the
+- [x] Port picker takes the first free port from 6000, skipping 5500 and the
       examples' 2222 / 3333 / 5555 / 6100 / 7000
-- [ ] **All validation before any filesystem side effect** — non-empty or
+- [x] **All validation before any filesystem side effect** — non-empty or
       symlinked target, unknown flag, reserved or malformed id, occupied port,
       invalid SemVer, `./AppConfig` expose collision
-- [ ] Generated projects **pin `@cytoscape-web/api-types` to the exact version
+- [x] Generated projects **pin `@cytoscape-web/api-types` to the exact version
       chosen in Phase 0**, not a floating range. `^1.0.0-beta.3` floats across
       betas — which is how the examples reached `beta.3` while the host source
       was at `beta.4` with `ScopedApi` missing
 
 ### Deliverables — the templates
 
-- [ ] Five templates — `panel`, `menu`, `context-menu`, `non-react`, `full` —
+- [x] Five templates — `panel`, `menu`, `context-menu`, `non-react`, `full` —
       generated **from the migrated apps**, not maintained as a separate copy
-- [ ] `AGENTS.md` **placeholder** only; E-1c owns the content
-- [ ] `test/smoke.test.ts` asserting the `AppConfig` shape — deliberately **no**
+- [x] `AGENTS.md` **placeholder** only; E-1c owns the content
+- [x] `test/smoke.test.ts` asserting the `AppConfig` shape — deliberately **no**
       dependency on `@cytoscape-web/app-test`, which does not exist yet
-- [ ] **No `TODO:` marker survives** — everything they currently mark is
+- [x] **No `TODO:` marker survives** — everything they currently mark is
       substituted at generation time
 
 ### Verification (Phase 5)
 
-- [ ] `--yes` plus flags never prompts
-- [ ] Each rejection case aborts with **nothing written**
-- [ ] **Packed tarball → temp directory → scaffold all five templates → build →
+- [x] `--yes` plus flags never prompts
+- [x] Each rejection case aborts with **nothing written**
+- [x] **Packed tarball → temp directory → scaffold all five templates → build →
       `cyweb-app verify`, under npm AND pnpm**
-- [ ] A CI job scaffolds, builds and verifies, so a template cannot drift from a
-      working example unnoticed
+- [x] A CI job scaffolds, then runs **every script the generated project ships** —
+      `build`, `cyweb-app verify`, `typecheck` and `test` — so a template cannot
+      drift from a working example unnoticed. `test` was added after a manual run
+      showed it had never been executed anywhere
 
 ---
 

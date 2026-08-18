@@ -22,11 +22,11 @@
   "scripts": {
     "//build": [
       "The SDK builds first and explicitly. Apps consume its dist/, so an",
-      "ordering that happens to work is not good enough — a fresh clone would",
+      "ordering that happens to work is not good enough \u2014 a fresh clone would",
       "fail on whichever app npm decided to visit first."
     ],
     "build": "npm run build:sdk && npm run build:apps",
-    "build:sdk": "npm run build -w @cytoscape-web/app-runtime",
+    "build:sdk": "npm run build -w @cytoscape-web/app-runtime && npm run build -w create-cytoscape-app",
     "build:apps": "npm run build -w hello-world -w network-statistics -w network-workflows -w project-template -w claude-bridge",
     "dev": "concurrently \"npm:dev:*\"",
     "dev:hello-world": "npm run dev -w hello-world",
@@ -34,7 +34,7 @@
     "dev:network-workflows": "npm run dev -w network-workflows",
     "dev:project-template": "npm run dev -w project-template",
     "dev:claude-bridge": "npm run dev -w claude-bridge",
-    "clean": "rm -rf hello-world/dist network-statistics/dist network-workflows/dist project-template/dist claude-bridge/dist packages/app-runtime/dist",
+    "clean": "rm -rf hello-world/dist network-statistics/dist network-workflows/dist project-template/dist claude-bridge/dist packages/app-runtime/dist packages/create-cytoscape-app/dist packages/create-cytoscape-app/templates",
     "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && npm run copy-dist",
     "copy-dist": "node scripts/copy-dist.mjs",
