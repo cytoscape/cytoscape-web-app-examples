@@ -22,8 +22,14 @@
 > the flag's value separating the two stages. That is the whole design, and it
 > is also the whole risk — see §0.4.
 >
-> **Status: NOT STARTED.** Phase 0 is measurement and decisions; nothing below it
-> has been built.
+> **Status: Phases 0–3 complete** (2026-08-18), on branch `feat/remote-dev-host`
+> in both repositories. The host now has the opt-in, honours it at every install
+> gate, and no longer loads catalog entries unchecked. **dev1 still cannot reach
+> this**: nothing points a dev server at it until Phase 4, and none of it is
+> documented until Phase 6.
+>
+> Two items are **HELD** pending a team decision about `config.dev.json`
+> (Phase 1), and Phase 3's release note is still to write.
 >
 > **This is the first project here that changes the HOST.** Everything in the App
 > SDK work was deliberately host-free; this one is not, and the split is marked
@@ -536,13 +542,42 @@ check**. That is the only reason dev1 + localhost works today, through Manifest
 Source — and the only reason an organization's internal catalog works. Closing it
 naively deletes both.
 
+**The naive fix is worse than the plan assumed.** Measured during Phase 3: every
+app in the shipped `src/assets/apps.json` is served from `https://cytoscape.org`,
+and `appInstallAllowedOrigins` names `https://apps.cytoscape.org` — a different
+origin. Sending the catalog through `isAllowedOrigin` would therefore have
+**disabled every app the product ships with**, not merely inconvenienced
+organizations.
+
+So the gate turns on **provenance, not origin**:
+
+```ts
+if (provenance === 'manifest' && !manifestIsUserSet) return true
+return isAllowedOrigin(url, allowedOrigins, allowsLocalhostAppsOn)
+```
+
+Entries from the deployment's own default manifest are the operator's own list,
+as trusted as the deployment serving them. A manifest the *user* pointed at is
+not, and neither are App Store installs or restored snapshots — all of which
+already passed this gate when they arrived.
+
 ### Deliverables
 
-- [ ] The catalog path goes through the same gate as the install paths
-- [ ] It passes **because the host opted in** (Phase 2), not because the check is
-      absent
-- [ ] The default catalog (`/apps.json`, same origin, operator-curated) keeps
-      working with no configuration
+- [x] `isCatalogEntryAllowed` added to `installGate.ts` and applied on **both**
+      paths that reach `loadRemoteApp`: `activateApp`, and the startup auto-load
+      of active apps
+- [x] The startup path needed the gate **separately, not incidentally**: it loads
+      `catalog[id].url`, not the installed record's URL, so a user-set manifest
+      declaring an existing app's id would otherwise redirect where an
+      already-trusted app is fetched from
+- [x] Checked before the fast re-enable path too. A module already in memory was
+      loaded under whatever configuration applied then; re-mounting it would keep
+      that decision alive for the life of the tab
+- [x] It passes **because the deployment opted in** (Phase 2), not because the
+      check is absent
+- [x] The default catalog keeps working with no configuration
+- [x] The refusal is reported — a message naming the app and a log line naming
+      the URL — rather than a silent failure to load
 
 This is the one phase whose effect on **production** users is visible, and it
 arrives with the release that makes production a Vite build (§0.4) rather than
@@ -551,13 +586,37 @@ hardening detail.
 
 ### Verification (Phase 3)
 
-- [ ] A user-set Manifest Source naming a non-allow-listed origin is **refused**,
-      where today it loads
-- [ ] The refusal is written up for the release notes of the deploy that carries
-      it — a user who set this up months ago will otherwise read it as a break
-- [ ] dev1 + localhost still works with the Phase 2 flag on — the acceptance
-      constraint, verified end to end rather than asserted
-- [ ] An organizational catalog on an allow-listed internal origin still works
+- [x] A user-set Manifest Source naming a non-allow-listed origin is **refused**,
+      where today it loads — verified **end to end** in
+      `remote-app-load.spec.ts`, which points the host at a fixture manifest
+      naming `https://blocked.invalid/remoteEntry.js` and asserts both the
+      refusal message and that **no request to that origin was ever made**. The
+      unresolvable TLD is deliberate: without the request assertion, "blocked"
+      and "failed anyway" look identical
+- [x] The e2e was mutation-checked — with the gate removed it fails, so it is
+      not passing for an unrelated reason
+- [x] The two pre-existing e2e cases still pass, so local plugin development
+      through a custom manifest is unaffected
+- [x] An organizational catalog on an allow-listed origin still works, and a
+      localhost app from a user-set manifest works on an opted-in deployment —
+      both covered in `installGate.test.ts`
+- [x] Unit-level mutation check on the subtle failure: passing a hardcoded
+      `'manifest', false` instead of the real provenance would restore the bypass
+      while leaving the call in place. A test fails on exactly that
+- [x] Full suite **3515 passing**; `tsc --noEmit` and `oxlint` clean; build
+      succeeds; `remote-app-load.spec.ts` 3/3 on Chromium
+
+> **Gap, stated rather than papered over.** "The default catalog keeps working"
+> is verified at the unit level — the bundled `cytoscape.org` URL is accepted
+> with `manifest`/not-user-set — but **not end to end**, because no e2e activates
+> a bundled app; every existing spec drives the catalog through a custom manifest
+> URL. Worth an e2e when one exists that can activate a default-catalog entry.
+
+- [ ] **Release note still to write.** This is the one user-visible behaviour
+      change in the project, and it arrives with the deploy that makes production
+      a Vite build (§0.4) — a release nobody would otherwise flag as behavioural.
+      A user who configured a custom Manifest Source months ago will experience
+      it as a break unless it is named.
 
 ---
 
