@@ -14,11 +14,13 @@ design/
 │   │   └── vite-migration-checklist.md  ← Phase-by-phase implementation checklist
 │   ├── developer-onboarding/            ← Lowering the barrier to entry
 │   │   └── developer-onboarding-roadmap.md  ← Umbrella: prioritized proposals, host-dependency split
-│   └── app-sdk/                         ← Carved out of the roadmap: SDK + scaffolding
-│       ├── app-sdk-design.md            ← app-runtime, create-cytoscape-app, app identity
-│       ├── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
-│       ├── phase0-baseline.md           ← Pre-SDK build output, what Phase 1 was graded against
-│       └── phase6-release-runbook.md    ← Manual publish procedure for the Preview
+│   ├── app-sdk/                         ← Carved out of the roadmap: SDK + scaffolding
+│   │   ├── app-sdk-design.md            ← app-runtime, create-cytoscape-app, app identity
+│   │   ├── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
+│   │   ├── phase0-baseline.md           ← Pre-SDK build output, what Phase 1 was graded against
+│   │   └── phase6-release-runbook.md    ← Manual publish procedure for the Preview
+│   └── remote-dev-host/                 ← Shared hosts for local app development (HOST changes)
+│       └── remote-dev-host-checklist.md ← dev1 first, then production; browser permission + origin policy
 └── apps/               ← Per-app design documents
     ├── hello-world/
     ├── network-workflows/
