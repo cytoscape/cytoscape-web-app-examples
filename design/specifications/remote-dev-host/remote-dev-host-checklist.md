@@ -22,11 +22,13 @@
 > the flag's value separating the two stages. That is the whole design, and it
 > is also the whole risk — see §0.4.
 >
-> **Status: Phases 0–3 complete** (2026-08-18), on branch `feat/remote-dev-host`
+> **Status: Phases 0–5 complete** (2026-08-19), except that dev1 itself is
+> blocked on a merge and deploy — see Phase 5. Original status line:
+> Phases 0–4 complete (2026-08-18), on branch `feat/remote-dev-host`
 > in both repositories. The host now has the opt-in, honours it at every install
-> gate, and no longer loads catalog entries unchecked. **dev1 still cannot reach
-> this**: nothing points a dev server at it until Phase 4, and none of it is
-> documented until Phase 6.
+> gate, and no longer loads catalog entries unchecked, and a dev server can be
+> pointed at dev1 with one environment variable. **What is left is proof and
+> prose**: Phase 5 runs the whole path end to end, Phase 6 writes it down.
 >
 > Two items are **HELD** pending a team decision about `config.dev.json`
 > (Phase 1), and Phase 3's release note is still to write.
@@ -629,40 +631,134 @@ the app.
 
 ### Deliverables
 
-- [ ] **Settle §0.1's gesture risk first.** This phase prints a `?installApp=`
-      deep link; if that path cannot raise the permission prompt, what the banner
-      should print is the Install-from-URL instruction instead. Building the
-      banner before knowing this is building the wrong banner
-- [ ] `devHostPageUrl` can be set from the environment, so a developer can run
+- [x] §0.1's gesture risk was settled in Phase 0 — the prompt is raised without
+      transient activation, so the `?installApp=` deep link this phase prints is
+      the right thing to print
+- [x] `resolveDevHost` (new, `src/vite/devHost.ts`) resolves the host from
+      options and `CYWEB_DEV_HOST`, so a developer runs
       `CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev` for one
-      session and leave the committed config alone
-- [ ] The dev-server banner prints the link for whichever host is configured
-- [ ] The banner says, once, that the browser will ask for local network
-      permission the first time — the failure without it is a CORS message that
-      names neither the cause nor the fix
+      session and the committed config is untouched
+- [x] Both the install link **and the host `remoteEntry.js` the app loads** come
+      from that one resolution. Redirecting only the link would produce an app
+      running against the local host while telling the developer it was on dev1
+- [x] Unusable values are **refused, not ignored**: a non-`http(s)` or unparsable
+      value fails the build, and so does combining the variable with an explicit
+      `devHostRemoteEntryUrl` — those name different hosts, which is the silent
+      mismatch this package exists to catch
+- [x] The dev-server banner prints the link for whichever host is configured, and
+      **names the host and `(CYWEB_DEV_HOST)`** when the variable chose it — a
+      link the developer does not recognise is the first sign of a stale variable
+- [x] The banner says, once, that the browser will ask for local network
+      permission, quoting the prompt's actual wording (§0.1) since it mentions
+      neither localhost nor dev servers. Shown **only for an off-loopback host**:
+      a localhost host reaching a localhost app crosses no address-space
+      boundary, so the note would be noise on the common path
+- [x] Trailing slashes normalized. Without it the link is
+      `https://dev1.ndexbio.org/cytoscape?installApp=…`, which dev1 answers with
+      a **301** — harmless there because Apache preserves the query, but this is
+      the one link a developer is told to open and not every server preserves a
+      query string across a directory redirect. Measured both forms against dev1
+- [x] `README.md` documents the variable, the permission prompt, how to undo a
+      previous Block, and that the host must have opted in
 
 ### Verification (Phase 4)
 
-- [ ] The env var changes the printed link and nothing else
-- [ ] With it unset, behaviour is unchanged
+- [x] The env var changes the printed link and the resolved host entry, and
+      nothing else — confirmed by running `project-template`'s dev server both
+      ways and diffing the banner
+- [x] With it unset, behaviour is unchanged:
+      `http://localhost:5500/?installApp=…`, no permission note
+- [x] 15 unit tests in `test/devHost.test.ts`, covering the unset path first
+      because "an app that does not opt in must not change" is the property most
+      worth pinning
+- [x] `npx vitest run` in `packages/app-runtime` — **79 passing**; `typecheck`
+      clean; `npm run build` succeeds; `verify:federation` **29/18/28/28/28**,
+      the same counts as before this phase
 
 ---
 
 ## Phase 5: End-to-end verification
 
-- [ ] **Automated**: Playwright against dev1, granting `local-network-access` for
-      the host origin, installing an app served from `localhost`, asserting it
-      mounts. Without the grant this fails for reasons unrelated to the code, so
-      the grant is part of the test, not a workaround. Note what it therefore
-      **cannot** prove: granting programmatically skips the prompt, so this test
-      is green in exactly the world where a real user is never asked (§0.1)
-- [ ] **Manual, in a headed browser** — the only step that can settle §0.1's open
-      risk: the prompt actually appears **on the deep-link path**, the flow works
-      after allowing, and the failure after *denying* is legible enough to act
-      on. If no prompt appears without a click, Phase 4's banner is pointing at a
-      flow that cannot work and the reorder in §0.1 is required
-- [ ] `preflight:host -- https://dev1.ndexbio.org/cytoscape` still 10/10 after
-      the host changes
+**dev1 itself is blocked, and not on anything this project can do.**
+`feat/remote-dev-host` is not merged into `development`, and dev1 tracks
+`development` — verified twice: the branch is not an ancestor of
+`origin/development`, and none of dev1's served bundles contain
+`allowsLocalhostAppsOn`. A test against dev1 today would fail for a reason
+unrelated to the code, so the flow was verified against **a host on a
+non-localhost origin** instead, which is the property the host changes actually
+turn on.
+
+### Verified — a real browser, a real host, a real app server
+
+Host: the dev build served on this machine's LAN address
+(`http://172.20.116.215:5500`), so `hostIsLocalhost` is **false** and the opt-in
+is the only way through. App: `project-template` on `http://localhost:5555`.
+Driven with Playwright.
+
+- [x] **Positive** — `allowsLocalhostAppsOn` naming the host's own origin. The
+      whole chain executed, confirmed by the requests the app server actually
+      received:
+
+      ```
+      /cyweb-app.json                → manifest fetched
+      [confirmation dialog shown, confirmed]
+      /remoteEntry.js                → the bundle was loaded AS CODE
+      …/mfRuntimePlugin.js           → the runtime resolver ran
+      /src/index.ts, /src/TemplateApp.tsx, virtual:cyweb-app-meta
+                                     → the app module was evaluated
+      ```
+
+      Asserting on the app server's request log rather than on a DOM marker
+      turned out to matter: the app auto-activates on install, so the App
+      Manager toggle this first looked for was never rendered and an entirely
+      successful run reported failure.
+
+- [x] **Negative** — the same everything, with `allowsLocalhostAppsOn` naming a
+      *different* deployment. **No confirmation dialog, and `/remoteEntry.js` was
+      never requested.** The manifest is still fetched, because the origin check
+      runs on the entry inside it; nothing is executed
+- [x] The refusal is **user-visible**, not a console line: *"Failed to install
+      app from http://localhost:5555/cyweb-app.json: its URL is not from an
+      allowed origin"*. Nearly recorded as silent — the toast auto-dismisses
+      after 5s and the first check looked too late
+- [x] `preflight:host` against the local build → **10/10**. The host changes did
+      not disturb the descriptor contract
+
+### Not verified, and why
+
+- [ ] **dev1 itself.** Blocked on merging `feat/remote-dev-host` into
+      `development` and redeploying. Nothing else is in the way — the host code
+      is done and the app side points at it with one environment variable
+- [x] **The browser permission was not exercised, despite the plan assuming it
+      would be.** A private LAN address was expected to make loopback a more
+      private space and trigger Local Network Access; it does not. With the
+      permission **denied**, the install still succeeded — the restriction §0.1
+      measured is **public → loopback**, and a private origin does not cross it.
+      So this reproduction covers the *host gate* thoroughly and the *browser
+      layer* not at all. Only a genuinely public origin — dev1 — can cover that,
+      which §0.1 already did in isolation
+
+      Consequence for Phase 4: `needsLocalNetworkPermission` warns for **any**
+      non-loopback host, including private addresses that will not prompt.
+      Deliberate — a hostname cannot be classified without resolving it, and
+      over-warning costs a line of output while under-warning costs a developer
+      an unexplained hang
+
+- [ ] **The prompt on the deep-link path, in a headed browser.** §0.1 established
+      that the prompt is raised without a user gesture and captured its wording,
+      both against dev1; what remains is seeing it on this specific flow, which
+      needs dev1 to be running this code
+
+### Found while testing — worth knowing before reproducing this
+
+- [x] **Keycloak stops the flow on an unregistered origin.** On the LAN address
+      the host redirects to `dev1.ndexbio.org/auth2`, which answers **400**
+      because that `redirect_uri` is not registered, and the boot never reaches
+      the install intents. Pointing `keycloakConfig.url` at an unreachable
+      address made the boot fall through — *"authentication timed out, continuing
+      without SSO"* — and the flow proceeded. Anyone reproducing this locally
+      will hit the same wall first, and the symptom (a blank redirect) names
+      neither Keycloak nor the cause
 
 ---
 
