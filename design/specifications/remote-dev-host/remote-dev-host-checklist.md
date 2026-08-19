@@ -468,36 +468,62 @@ and it differs per developer and per app.
 
 ### Deliverables
 
-- [ ] The localhost special case becomes the opt-in decided in D-2:
-      ```js
-      const optedIn = cfg.allowsLocalhostAppsOn === window.location.origin
-      return (hostIsLocalhost || optedIn) && urlIsLocalhost
+- [x] `isAllowedOrigin` takes the opt-in and applies D-2:
+      ```ts
+      return (
+        (hostIsLocalhost || isLocalhostAppOptIn(allowsLocalhostAppsOn)) &&
+        urlIsLocalhost
+      )
       ```
-      One origin-scoped value rather than N ports
-- [ ] **Default off, by configuration and not by build.** A deployment whose
-      config omits the field behaves exactly as today — that is the regression
-      test, not a nicety. The same binary with a matching origin must allow
-      localhost, because that is precisely what stage 2 asks of production
-- [ ] `127.0.0.1` and `localhost` both covered; anything else still refused,
-      including a hostname that merely contains "localhost"
-- [ ] **`validateManifestUrl` gets the same opt-in** (§0.5). It is a separate
-      protocol check with its own `isDev`, and leaving it out means a developer
-      on dev1 still cannot type their `http://localhost:…` manifest URL after
-      every other part of this project has shipped
-- [ ] Unit tests for each branch, including the case that matters most: host on a
-      public origin, flag OFF, localhost app URL → **refused**
+      The parameter is **optional, and omitting it is off**, so a call site that
+      was missed fails closed rather than open
+- [x] **Default off, by configuration and not by build.** A deployment whose
+      config omits the field behaves exactly as today — proven by the existing
+      suite passing **unchanged**, not by inspection
+- [x] `127.0.0.1` and `localhost` both covered; `localhost.evil.example.com`
+      still refused
+- [x] **`validateManifestUrl` got the same opt-in** (§0.5) and **moved into
+      `installGate.ts`** on the way. It is a trust-boundary check like its new
+      neighbours, and as a module-private function in a component file it could
+      not be tested at all. Its relaxation is **narrower than the existing
+      localhost-page case on purpose**: that one allows any `http:` URL, which is
+      tolerable when the page is on localhost; here the page is a shared
+      deployment, so the opt-in permits `http:` only for localhost addresses
+- [x] Unit tests for each branch, including the case that matters most: host on a
+      public origin, opt-in absent, localhost app URL → **refused**
 
 ### Verification (Phase 2)
 
-- [ ] With the flag off, every existing `installGate` test passes unchanged
-- [ ] With the flag on, a localhost app URL is accepted and a non-localhost,
+- [x] With the opt-in off, every existing test passes unchanged — the whole
+      suite went **3483 → 3505** with no edits to an existing assertion
+- [x] With it on, a localhost app URL is accepted and a non-localhost,
       non-allow-listed one is still refused
-- [ ] **All four** `isAllowedOrigin` call sites honour it (§0.5) — Install from
-      URL, the `?installApp=` intent, programmatic install, and **workspace
-      restore**, the one easiest to miss
-- [ ] Restoring a saved workspace that carries a localhost app on a host with the
-      flag **off** fails in a way that names the reason. Workspaces travel
-      through NDEx between hosts, so this will happen to someone
+- [x] **All four** `isAllowedOrigin` call sites honour it (§0.5), plus
+      `validateManifestUrl` — five wirings in total:
+
+      | Wiring | Covered by |
+      | --- | --- |
+      | Install from URL | `AppSettingsDialog.test.tsx` (new) |
+      | Manifest Source | `AppSettingsDialog.test.tsx` (new) |
+      | `?installApp=` intent | `runInstallIntents.test.ts` (new) |
+      | programmatic install | `useAppManager.test.tsx` |
+      | **workspace restore** | `useLoadWorkspace.test.ts` |
+
+- [x] **Every one of the five was mutation-checked**: the third argument was
+      removed at each call site and the corresponding test was confirmed to
+      fail, then restored. Wiring tests are the kind that pass whether or not
+      they assert anything, so "the test exists" is not evidence on its own
+- [x] Restoring a saved workspace that carries a localhost app on a host without
+      the opt-in imports it **inactive** and logs a reason naming the origin.
+      Workspaces travel through NDEx between hosts, so this will happen to
+      someone
+- [x] `tsc --noEmit` and `oxlint` clean; `npm run build` succeeds;
+      `remote-app-load.spec.ts` passes on Chromium (2/2)
+
+> **Still not reachable from dev1.** Phase 2 makes the host willing; the catalog
+> path that dev1 actually uses today is still the unchecked bypass Phase 3
+> closes, and no dev-server banner points anywhere but a local host until
+> Phase 4.
 
 ---
 
