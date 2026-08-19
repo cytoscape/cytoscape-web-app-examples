@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 
 import type { CyWebAppMeta } from '../meta/index.js'
+import { DEV_HOST_ENV, type ResolvedDevHost } from './devHost.js'
 
 /**
  * The path the dev server answers with this app's install manifest.
@@ -55,7 +56,10 @@ export const buildInstallUrl = (hostPageUrl: string, manifestUrl: string): strin
  * manifest URL through `?installApp=` all along; nothing here needed building on
  * the host side, only pointing at.
  */
-export const cywebDevInstall = (meta: CyWebAppMeta, hostPageUrl: string): Plugin => ({
+export const cywebDevInstall = (
+  meta: CyWebAppMeta,
+  host: ResolvedDevHost,
+): Plugin => ({
   name: 'cyweb-dev-install',
   apply: 'serve',
   configureServer(server) {
@@ -74,10 +78,24 @@ export const cywebDevInstall = (meta: CyWebAppMeta, hostPageUrl: string): Plugin
     server.httpServer?.once('listening', () => {
       const origin = `http://localhost:${meta.port}`
       const manifestUrl = new URL(DEV_MANIFEST_PATH, origin).href
+      // Named so the developer can tell which host this session is pointed at.
+      // With CYWEB_DEV_HOST set it is not the one in their config file, and a
+      // link they do not recognise is the first sign of that.
+      const where = host.fromEnv ? ` (${DEV_HOST_ENV})` : ''
+
+      // Only when the host is off-loopback. A localhost host reaching a
+      // localhost app never crosses an address-space boundary, so the browser
+      // asks nothing and the note would be noise on the common path.
+      const permissionNote = host.needsLocalNetworkPermission
+        ? `\n  The browser will ask this host for permission to "access other apps\n` +
+          `  and services on this device" — that is this dev server. Click Allow.\n`
+        : ''
+
       server.config.logger.info(
         `\n  Cytoscape Web app ${meta.id} — ${origin}\n` +
-          `\n  Install it into a local host:\n` +
-          `  ${buildInstallUrl(hostPageUrl, manifestUrl)}\n`,
+          `\n  Install it into ${host.pageUrl}${where}:\n` +
+          `  ${buildInstallUrl(host.pageUrl, manifestUrl)}\n` +
+          permissionNote,
       )
     })
   },

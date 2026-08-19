@@ -11,6 +11,7 @@ import {
 
 import { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
 import { readAppMeta } from './appMeta.js'
+import { resolveDevHost } from './devHost.js'
 import { cywebDevInstall } from './devInstall.js'
 import { noSharedPayload } from './noSharedPayload.js'
 import { assertNoProtectedOverrides } from './protectedFields.js'
@@ -47,9 +48,6 @@ export type { CyWebAppMeta, CyWebBlock } from '../meta/index.js'
 const RUNTIME_PLUGIN_PATH = normalizePath(
   fileURLToPath(new URL('../runtime/mfRuntimePlugin.js', import.meta.url)),
 )
-
-/** Where a local host serves its UI during development. */
-const DEFAULT_DEV_HOST_PAGE_URL = 'http://localhost:5500'
 
 /** The one expose the host loads an app through. Not negotiable. */
 const APP_CONFIG_EXPOSE = './AppConfig'
@@ -99,6 +97,11 @@ export interface CyWebAppOptions {
    * @default 'http://localhost:5500'
    */
   readonly devHostPageUrl?: string
+  /*
+   * Overridden for one session by the CYWEB_DEV_HOST environment variable, so
+   * that developing against a shared host does not mean editing a committed
+   * file — see resolveDevHost.
+   */
 
   /**
    * The host's `remoteEntry.js` in development. Derived from
@@ -167,7 +170,7 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
   const {
     react: withReact = true,
     exposes: extraExposes = {},
-    devHostPageUrl = DEFAULT_DEV_HOST_PAGE_URL,
+    devHostPageUrl,
     devHostRemoteEntryUrl,
     appStoreZip = false,
     vite: userConfig,
@@ -183,10 +186,8 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
     )
   }
 
-  // Built with the URL API, not concatenation: a host served under a base path
-  // keeps its entry inside that path, and string joining loses or doubles it.
-  const devEntry =
-    devHostRemoteEntryUrl ?? new URL('remoteEntry.js', `${devHostPageUrl}/`).href
+  const devHost = resolveDevHost({ devHostPageUrl, devHostRemoteEntryUrl })
+  const devEntry = devHost.remoteEntryUrl
 
   return defineConfig(async ({ command }) => {
     // Single definition, passed to federation() AND embedded in the manifest —
@@ -216,7 +217,7 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
     }
     plugins.push(
       cywebAppMeta(meta),
-      cywebDevInstall(meta, devHostPageUrl),
+      cywebDevInstall(meta, devHost),
       federation({
         name: meta.id,
         filename: 'remoteEntry.js',

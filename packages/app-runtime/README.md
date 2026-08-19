@@ -64,6 +64,7 @@ defineCyWebApp(import.meta.url, {
   react?: boolean                    // false for an app with no UI
   exposes?: Record<string, string>   // merged with the mandatory './AppConfig'
   devHostPageUrl?: string            // default http://localhost:5500
+                                     //   overridden per session by CYWEB_DEV_HOST
   devHostRemoteEntryUrl?: string     // derived from the page URL when omitted
   appStoreZip?: boolean              // default false
   vite?: UserConfig                  // merged last
@@ -73,6 +74,36 @@ defineCyWebApp(import.meta.url, {
 The `vite` option is the escape hatch — plugins, aliases, `define`, test
 settings. Setting a field the SDK owns fails the build and names the path,
 rather than silently winning or silently losing.
+
+### Developing against a different host
+
+The host you develop against is a property of the *session*, not of the app, so
+it is an environment variable rather than a config edit:
+
+```bash
+CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
+```
+
+The dev server then prints an install link for that host instead of the local
+one, and the app loads the host's `remoteEntry.js` from there. Nothing in your
+committed config changes, so there is nothing to remember to undo.
+
+Two notes for a host that is not on `localhost`:
+
+- **The browser will ask permission the first time**, wording it as "access
+  other apps and services on this device" — that device is your own machine, and
+  the thing being reached is your dev server. Click **Allow**. Nothing about
+  localhost or dev servers appears in the prompt, so it is easy to refuse by
+  reflex; if you already have, the site permission is reset from the icon at the
+  left of the address bar.
+- **The host must permit it.** Loading an app from a developer's `localhost` is
+  something a deployment opts into, so this works against a host configured for
+  it. A host that has not opted in refuses the install and says so.
+
+The variable is refused rather than ignored when it cannot mean anything: a
+value that is not an absolute `http(s)` URL fails the build, as does combining
+it with an explicit `devHostRemoteEntryUrl`, which would point the app at one
+host while the install link named another.
 
 ### What it sets up, and why it is not yours to write
 
