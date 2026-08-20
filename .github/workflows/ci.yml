@@ -134,17 +134,30 @@ jobs:
             node node_modules/create-cytoscape-app/dist/index.js "app-$T" --yes \
               --id "app${T//-/}" --template "$T" --port "$((6400 + RANDOM % 100))" --no-install
             cd "app-$T"
-            # A plain install, resolving @cytoscape-web/app-runtime from npm.
-            # This used to rewrite that dependency to a packed tarball because
-            # the package was unpublished; it is published now, and what is
-            # worth testing is what a user actually gets.
+            # Resolve @cytoscape-web/app-runtime from npm, because that is
+            # what a generated project actually depends on.
             #
+            # Except during the commit that raises the pin. Then the version
+            # scaffolds ask for does not exist on the registry yet, and this
+            # job would demand a publish that cannot happen until this job
+            # passes. The fallback is not a workaround for that deadlock so
+            # much as the same intent at a different moment: what a user gets
+            # after the release is the tarball built above.
+            #
+            # Loud on purpose. A silent fallback would also hide a publish that
+            # simply failed, which looks identical from here.
+            PINNED=$(node -p "require('./package.json').devDependencies['@cytoscape-web/app-runtime']")
+            if npm view "@cytoscape-web/app-runtime@$PINNED" version >/dev/null 2>&1; then
+              npm install --silent
+            else
+              echo "::notice::app-runtime@$PINNED is not on the registry yet — installing the tarball built in this job. Expected only on a version-bump commit."
+              npm install --silent "$(ls /tmp/cytoscape-web-app-runtime-*.tgz)"
+              npm install --silent
+            fi
+
             # Note the asymmetry that remains, deliberately: the SCAFFOLDER is
-            # still installed from its tarball above, because a change to it in
-            # this PR is exactly what this job exists to test. The SDK is the
-            # published one because a generated project depends on the published
-            # one.
-            npm install --silent
+            # installed from its tarball above, because a change to it in this
+            # PR is exactly what this job exists to test.
             npm run build
             npx cyweb-app verify
             npm run typecheck
