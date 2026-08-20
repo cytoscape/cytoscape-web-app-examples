@@ -11,6 +11,8 @@
 
 import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
+
+import { isInteractive } from './interactive.js'
 import { basename, resolve } from 'node:path'
 
 import {
@@ -106,7 +108,24 @@ const noInstall = argv.includes('--no-install')
 const pm = flag('--pm') ?? 'npm'
 if (pm !== 'npm' && pm !== 'pnpm') die(`create-cytoscape-app: --pm must be npm or pnpm`)
 
-const rl = yes ? undefined : createInterface({ input: process.stdin, output: process.stdout })
+// Interactive only when someone is actually there to answer.
+//
+// `--yes` is the explicit way in. The TTY check is the one that matters in
+// practice: the Quick Start is a three-line block, and pasting it fed `cd
+// my-app` and `npm run dev` to the prompts as ANSWERS, then exited 13 on an
+// unsettled await with stdin exhausted. The reporter of that read it as the
+// package not being installed, which is exactly how illegible it was
+// (issue #6). Prompting into a pipe cannot work; taking the defaults can.
+const interactive = isInteractive(yes)
+if (!yes && !interactive) {
+  process.stderr.write(
+    'create-cytoscape-app: stdin is not a terminal — using defaults. ' +
+      'Pass --id, --port and --template to choose them explicitly.\n',
+  )
+}
+const rl = interactive
+  ? createInterface({ input: process.stdin, output: process.stdout })
+  : undefined
 const ask = async (question: string, fallback: string): Promise<string> => {
   if (rl === undefined) return fallback
   const answer = (await rl.question(`${question} (${fallback}) `)).trim()
