@@ -40,7 +40,7 @@ export const HOST_SINGLETONS: Readonly<Record<string, string>> = {
  * runtime that ignored it, with no error and only a banner naming the wrong
  * host to give it away.
  */
-export const SDK_VERSION = '^0.2.0'
+export const SDK_VERSION = '^0.3.0'
 
 /**
  * Sets `CYWEB_APP_ZIP` for the `build:zip` script.
