@@ -128,6 +128,40 @@ own machine**.
 
 ## Runtime Errors
 
+### "Failed to install app from …: Failed to fetch"
+
+**Cause:** the browser refused the host's request to your `localhost` dev
+server. This happens when the host is *not* on localhost — a shared host such as
+`https://dev1.ndexbio.org/cytoscape` — and you have not granted, or have
+previously blocked, permission for it to reach your machine.
+
+The message names neither the permission nor the fix, which is why it is worth
+knowing on sight. In the console it is more explicit:
+
+```
+Access to fetch at 'http://localhost:6000/cyweb-app.json' from origin
+'https://dev1.ndexbio.org' has been blocked by CORS policy:
+Permission was denied for this request to access the loopback address space.
+```
+
+**Fix:** allow it. On the first attempt the browser asks:
+
+```
+  dev1.ndexbio.org wants to
+  🖥  Access other apps and services on this device
+                              [ Block ]   [ Allow ]
+```
+
+**If no prompt appears, you have already answered it.** The decision is
+remembered **per site, not per port**, and this host raises the same prompt for
+its Cytoscape Desktop integration — so a Block clicked long ago, for an
+unrelated reason, still applies. Reset it from the icon at the left of the
+address bar, reload, and choose Allow.
+
+No server header fixes this: the request is stopped before it is sent, so CORS
+headers on your dev server have nothing to answer. See
+[getting-started §5d](getting-started.md#5d-develop-against-a-shared-host).
+
 ### "Cannot assign to read only property '_status'"
 
 **Cause:** A `React.lazy()` component was stored in an Immer-managed

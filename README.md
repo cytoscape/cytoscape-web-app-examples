@@ -50,13 +50,31 @@ The dev server prints the link that installs your app into a running local host:
 ```
   Cytoscape Web app myApp — http://localhost:6000
 
-  Install it into a local host:
+  Install it into http://localhost:5500/:
   http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
 ```
 
 Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
 checkout), open that link, confirm the install, and enable the app under
 **Apps → App Settings**.
+
+**Or skip the host checkout entirely** and develop against the shared staging
+host, with your app still on `localhost`:
+
+```bash
+CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
+```
+
+The printed link then points at dev1. Your browser asks once for permission to
+reach your own machine — click **Allow**; see
+[getting-started §5d](guides/getting-started.md#5d-develop-against-a-shared-host)
+for what that prompt says and what to do if you have already dismissed it.
+
+> **Not in `@cytoscape-web/app-runtime@0.1.0`.** That version ignores the
+> variable *silently* — the banner still names `localhost:5500` and the app
+> still loads the local host, which is the tell. Until a release carries it, use
+> this repository's own apps (`npm run dev:<app>` here), which build against the
+> workspace copy.
 
 **Nothing in the host repository is edited.** Your dev server serves a one-entry
 app manifest at `/cyweb-app.json`, generated from your `package.json` on every
@@ -134,7 +152,7 @@ local host:
 ```
   Cytoscape Web app myApp — http://localhost:6000
 
-  Install it into a local host:
+  Install it into http://localhost:5500/:
   http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
 ```
 

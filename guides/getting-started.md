@@ -229,7 +229,7 @@ on every request, and prints the link that installs it:
 ```
   Cytoscape Web app myApp — http://localhost:6000
 
-  Install it into a local host:
+  Install it into http://localhost:5500/:
   http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
 ```
 
@@ -238,8 +238,9 @@ your workspace, and you enable it under **Apps → App Settings**.
 
 The host has accepted `?installApp=<manifestUrl>` all along — it is the same
 path the App Store will use. `installGate` allows a localhost app URL when the
-host is itself on localhost, which is what makes this work in development and,
-deliberately, not from a deployed host.
+host is itself on localhost, which is what makes this work with no
+configuration. A deployed host can opt in to the same thing for its own origin;
+that is §5d, and it is off unless the deployment sets it.
 
 Because the manifest is generated rather than written to a file, changing
 `cyweb.port` or your version updates it on the next request; there is no second
@@ -310,12 +311,95 @@ initialises against the host's own share scope, so a missing transitive chunk,
 a wrong MIME type or a broken CORS header shows up as a failure rather than as a
 silent blank panel.
 
-> **What you cannot do yet: run dev1 as the host for an app on your `localhost`.**
-> The host refuses to install an app whose origin is not on its allow-list, and
-> the allow-list is an exact origin match *including the port* — so "localhost on
-> any port" cannot be expressed, and your dev server's port changes per app.
-> Making that configuration official needs host-side work (roadmap H-1 and H-5).
-> Until then, develop against a local host and use dev1 to check what you deploy.
+> This section is about an app you have already **deployed**. To develop against
+> dev1 with your app still on `localhost`, see §5d.
+
+---
+
+## 5d. Develop Against a Shared Host
+
+You can point your dev server at dev1 and skip running a host altogether. Your
+app stays on `localhost`; only the host is remote.
+
+```bash
+CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
+```
+
+> **Requires a build of `@cytoscape-web/app-runtime` that has it — `0.1.0` does
+> not.** An older version ignores the variable *silently*: no error, the banner
+> just still names `localhost:5500`. If that is what you see, check the version
+> rather than the spelling.
+
+The banner then prints an install link for that host instead of the local one:
+
+```
+  Cytoscape Web app myApp — http://localhost:6000
+
+  Install it into https://dev1.ndexbio.org/cytoscape/ (CYWEB_DEV_HOST):
+  https://dev1.ndexbio.org/cytoscape/?installApp=http://localhost:6000/cyweb-app.json
+```
+
+Nothing in your committed config changes, so there is nothing to remember to
+undo. Both the link **and** the host `remoteEntry.js` your app loads come from
+that one variable — pointing only one of them elsewhere is the kind of mismatch
+that produces an app running against a host it is not reporting.
+
+### The browser will ask for permission — say yes
+
+Your app is on `localhost` and dev1 is not, so the host is making a request from
+a public site to your own machine. Chrome asks before allowing that:
+
+```
+  ┌──────────────────────────────────────────────┐
+  │  dev1.ndexbio.org wants to               ✕   │
+  │                                              │
+  │  🖥  Access other apps and services on       │
+  │      this device                             │
+  │                                              │
+  │                     [ Block ]   [ Allow ]    │
+  └──────────────────────────────────────────────┘
+```
+
+**Click Allow.** Nothing in that wording mentions localhost, ports or dev
+servers — it is written for the case it normally guards against, a website
+reaching devices on your network — so the correct answer here looks like the
+unsafe one. The "other app or service on this device" is your own dev server.
+
+**If you see `Failed to fetch`, that is this permission.** The message the host
+shows is:
+
+> Failed to install app from http://localhost:6000/cyweb-app.json: **Failed to
+> fetch**
+
+which names neither the permission nor the fix. The grant is remembered **per
+site, not per port**, so a Block you clicked months ago — quite possibly for the
+unrelated Cytoscape Desktop prompt, which this host also raises — is still in
+force. Reset it from the icon at the left of the address bar, reload, and answer
+Allow.
+
+This flow was measured on **Chrome**. Edge shares the engine and should behave
+the same, but was not tested. Firefox and Safari have not been measured and are
+not claimed either way.
+
+### What you are trusting
+
+dev1 is a **shared** host: an app you install there is installed for whoever
+uses that browser profile, and pointing it at your own `localhost` is asking
+your own browser to trust your own machine. Both are small, and worth knowing
+rather than worrying about.
+
+The host has to permit this — it is a per-deployment opt-in naming the one
+origin it applies to, and dev1 sets it. A host that has not opted in refuses the
+install and says so.
+
+### Production is not this, yet
+
+`https://web.cytoscape.org` will not work this way. It is still a Webpack build
+and predates the descriptor the SDK's runtime resolver reads, so an app built
+with this toolchain resolves **no exports** against it and fails silently — the
+remote appears to load and provides nothing. Production gains this when the
+current `development` branch ships there and the same opt-in is enabled for it;
+until then, dev1 is the shared host to use.
 
 ---
 
@@ -331,6 +415,8 @@ cd my-app && npm run dev
 
 Then open the install link your app printed (step 5). Your panel appears in the
 right-side panel area, and your menu item under the **Apps** dropdown.
+
+> One terminal is enough if you use a shared host instead — see §5d.
 
 > Reloading the host page picks up app changes; Vite's HMR does not cross the
 > federation boundary.
