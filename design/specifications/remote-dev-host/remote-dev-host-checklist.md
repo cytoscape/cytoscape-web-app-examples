@@ -25,9 +25,13 @@
 > **Status: Phases 0–5 complete** (2026-08-19). PR #677 is merged and dev1 is
 > running it, and **the flow has been verified end to end against dev1 itself**:
 > an app served from `localhost` installs into the shared host and mounts.
-> Phase 6 (documentation) is done, with one item open that Phase 6 uncovered
-> rather than created: the SDK release that makes `CYWEB_DEV_HOST` reachable
-> from a scaffolded app. Also outstanding: Phase 3's release note, and Phase 7., on branch `feat/remote-dev-host`
+> **Phases 0–6 are complete**, and the SDK release that makes `CYWEB_DEV_HOST`
+> reachable from a scaffolded app shipped on 2026-08-20 (`app-runtime` and
+> `create-cytoscape-app` at 0.2.0, `latest`). Verified from the registry rather
+> than the workspace: `npm create cytoscape-app` → dev1 install link → the app
+> loads in dev1.
+>
+> Outstanding: Phase 3's release note, the two Phase 1 holds, and Phase 7., on branch `feat/remote-dev-host`
 > in both repositories. The host now has the opt-in, honours it at every install
 > gate, and no longer loads catalog entries unchecked, and a dev server can be
 > pointed at dev1 with one environment variable. **What is left is proof and
@@ -838,7 +842,7 @@ is the one that was opened.
       the barrier-to-entry improvement this whole project exists for. The stale
       banner text (`Install it into a local host:`) was corrected in both the
       README and the guide to what the dev server actually prints now
-- [ ] **The docs describe an unreleased capability — a release is needed.**
+- [x] **The docs described an unreleased capability — released 2026-08-20.**
       Found while checking that a scaffolded app can actually do what the README
       now says: the published `@cytoscape-web/app-runtime@0.1.0` has no
       `devHost.js`, and `create-cytoscape-app` pins `^0.1.0`. A newly scaffolded
@@ -897,35 +901,33 @@ is the one that was opened.
         there also spent the one field that could later say "superseded by
         x.y.z"
 
-- [ ] **`latest` must be moved to 0.2.0 — one manual command.** Found while
-      checking the above, and the more serious of the two: holding `latest` at
-      0.1.0 protected nothing, because 0.1.0 is a Preview with **identical**
-      security properties. Its only effect was that both commands the README
-      tells people to run —
+- [x] **`latest` moved to 0.2.0** (2026-08-20), and 0.1.0 deprecated as
+      *"Superseded by 0.2.0."* — which is what npm's `deprecated` field is
+      actually for. Both needed a logged-in shell: `npm dist-tag` is no more
+      covered by trusted publishing than `npm deprecate` is.
+
+      This was the more serious of the two findings. Holding `latest` at 0.1.0
+      protected nothing, because 0.1.0 is a Preview with **identical** security
+      properties; the only effect was that both commands the README tells people
+      to run served the build without `devHost.js`, so `CYWEB_DEV_HOST` did
+      nothing — **silently**, in exactly the way this feature exists to end. The
+      release had shipped without fixing what it was for.
+
+      Verified afterwards from an isolated npm cache, running the documented
+      command with no version specifier:
 
       ```
-      npm install @cytoscape-web/app-runtime  -> 0.1.0
-      npm create cytoscape-app                -> 0.1.0, pinning ^0.1.0
+      npm create cytoscape-app my-app  ->  create-cytoscape-app@0.2.0
+        pinned                         ->  ^0.2.0
+        installed                      ->  app-runtime 0.2.0
+      CYWEB_DEV_HOST=… npm run dev     ->  install link naming dev1
       ```
 
-      — served the build without `devHost.js`, so `CYWEB_DEV_HOST` did nothing,
-      **silently**. The release had shipped without fixing what it was for.
-
-      Needs a logged-in shell; `npm dist-tag` is not covered by trusted
-      publishing either:
-
-      ```bash
-      npm dist-tag add @cytoscape-web/app-runtime@0.2.0 latest
-      npm dist-tag add create-cytoscape-app@0.2.0 latest
-      ```
-
-      Optional, and now accurate in npm's own vocabulary — 0.1.0 really is
-      superseded:
-
-      ```bash
-      npm deprecate "@cytoscape-web/app-runtime@0.1.0" "Superseded by 0.2.0."
-      npm deprecate "create-cytoscape-app@0.1.0" "Superseded by 0.2.0."
-      ```
+      Then end to end into the real dev1: confirmation dialog, `/remoteEntry.js`
+      fetched, the app's own modules evaluated — **13 requests** reached the dev
+      server. The only deprecation warning left in the install log is
+      `cron-parser`, a transitive dependency, which is the point: nothing of
+      ours competes with it any more.
 
       Future releases publish with `tag: latest` directly — the workflow's
       refusal step is gone.
