@@ -181,61 +181,51 @@ jobs:
             --provenance --access public --tag "${{ inputs.tag }}" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      # Mark every published version as a Preview, and read back what the
-      # registry actually has.
+      # Print the Preview notice commands. Does NOT apply them.
       #
-      # This replaces a check that could not work. The original design withheld
-      # the `latest` dist-tag as the release gate — but npm assigns `latest` to a
-      # brand-new package's first version whatever --tag says, and the registry
-      # REFUSES to delete it (400, after a successful auth; the CLI docs do not
-      # mention the restriction). Every published package has a `latest`. The
-      # gate as written was unachievable.
+      # `npm deprecate` cannot run here. Trusted publishing issues a credential
+      # scoped to `npm publish`, and nothing else — so with no NODE_AUTH_TOKEN,
+      # setup-node writes its placeholder into .npmrc and deprecate answers 404.
+      # That is what happened on the 0.2.0 release: both publishes succeeded and
+      # this step failed afterwards, which made a complete release look broken.
       #
-      # A deprecation notice is the mechanism that does work, and is arguably the
-      # stronger one: almost nobody notices a missing dist-tag, while npm prints
-      # a deprecation on every single install. Combined with 0.x versioning it
-      # says what the tag was meant to say, to the people who need to hear it.
+      # The 0.1.0 release did apply it automatically, from the granular token
+      # that existed only because trusted publishing cannot be configured on a
+      # package that does not exist yet. Removing that token was deliberate; it
+      # cost this step, and a manual notice is the cheaper half of that trade.
       #
-      # Runs whenever the release was not a dry run, failed steps or not: a
-      # version published by a partially-failed run needs the notice most.
-      - name: Mark the published versions as a Developer Preview
-        if: ${{ !cancelled() && !inputs.dry_run }}
+      # Not fatal, because the release itself is complete by this point. The
+      # notice is what npm prints on every install, so it still matters — hence
+      # a warning loud enough to act on rather than a silent skip.
+      - name: Preview notice — run these by hand
+        if: ${{ !inputs.dry_run }}
         run: |
           set -uo pipefail
-          NOTICE="Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/${{ github.repository }}"
-          failed=0
+          NOTICE="Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
+          echo "::warning::npm deprecate cannot run under trusted publishing. Apply the Preview notice from a logged-in shell:"
+          for dir in packages/app-runtime packages/create-cytoscape-app; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            echo "  npm deprecate \"$name@$version\" \"$NOTICE\""
+          done
+
+      # What the registry actually has, read back after publishing.
+      - name: Read back the registry
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -uo pipefail
           for dir in packages/app-runtime packages/create-cytoscape-app; do
             name=$(node -p "require('./$dir/package.json').name")
             version=$(node -p "require('./$dir/package.json').version")
             encoded=$(node -p "encodeURIComponent('$name')")
-
-            if ! curl -sf "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json; then
-              echo "  $name — not on the registry, nothing to mark"
-              continue
-            fi
-
-            # Idempotent: re-applying an identical notice is rejected with a
-            # 422, so a resumed run would fail on a version that is already
-            # correct. Only call it when the message would actually change.
-            current=$(node -p "
-              const d = JSON.parse(require('fs').readFileSync('/tmp/pkg.json','utf8'))
-              d.versions['$version']?.deprecated ?? ''
-            ")
-            if [ "$current" = "$NOTICE" ]; then
-              echo "  $name@$version — notice already applied"
-            else
-              npm deprecate "$name@$version" "$NOTICE" \
-                || { echo "::error::could not deprecate $name@$version"; failed=1; }
-            fi
-
             curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json
             node -e '
               const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
               const v = d.versions[process.argv[1]]
-              console.log("  " + process.argv[2])
+              console.log("  " + process.argv[2] + "@" + process.argv[1])
+              console.log("    published:  " + (v ? "yes" : "NO"))
               console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
-              console.log("    deprecated: " + (v?.deprecated ? "yes" : "NO"))
-              if (!v?.deprecated) { console.log("::error::" + process.argv[2] + " carries no Preview notice"); process.exit(1) }
-            ' "$version" "$name" || failed=1
+              console.log("    deprecated: " + (v?.deprecated ? "yes" : "not yet — see the warning above"))
+              if (!v) process.exit(1)
+            ' "$version" "$name"
           done
-          exit $failed

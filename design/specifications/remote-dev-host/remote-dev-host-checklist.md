@@ -859,8 +859,45 @@ is the one that was opened.
       workspace, and it fails with the instruction rather than a bare
       mismatch. Mutation-checked by putting `^0.1.0` back.
 
-      Remaining: dispatch `release-packages.yml` with `tag: next`. `latest`
-      stays where it is — that gate is roadmap Theme G and is unchanged.
+      **Published 2026-08-20.** Both packages are on npm at 0.2.0, `next` points
+      at them and `latest` stays at 0.1.0 — the Theme G gate is unchanged.
+
+      Verified from the registry rather than the workspace, which is the only
+      check that means anything here: scaffolded into an empty directory with
+      `npm create cytoscape-app@0.2.0`, installed from npm, and
+      `CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev` printed a
+      dev1 install link. That is exactly what 0.1.0 could not do, silently.
+
+      Two failures preceded it, both caught before anything was published and
+      both structural rather than transient:
+
+      - **The lock file and the workspace link.** Bumping a workspace version
+        is not a local edit: all five example apps declared `^0.1.0`, which a
+        0.2.0 workspace does not satisfy, so regenerating the lock made npm
+        resolve app-runtime from the **registry**. The repository would have
+        built and verified against the published 0.1.0 while appearing to test
+        the new code
+      - **CI and publishing waited on each other.** The scaffold job resolves
+        the SDK from npm by design, so raising the pin made it demand a version
+        that could not exist until the job passed. It now falls back to the
+        tarball it already packs, with a `::notice::` so a genuinely failed
+        publish is not waved through
+
+- [ ] **Preview notice on 0.2.0 — one manual command, not yet run.**
+      `npm deprecate` cannot run in the release workflow: trusted publishing
+      issues a credential scoped to `npm publish` and nothing else, so the step
+      answered 404 and failed *after* both packages had published, making a
+      complete release look broken. 0.1.0 only managed it automatically because
+      a granular token still existed then, and removing that token was
+      deliberate.
+
+      The workflow now prints the commands instead of attempting them, and no
+      longer fails the release for it. Run from a logged-in shell:
+
+      ```bash
+      npm deprecate "@cytoscape-web/app-runtime@0.2.0" "Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
+      npm deprecate "create-cytoscape-app@0.2.0" "Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
+      ```
 
 ---
 
