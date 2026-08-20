@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   API_TYPES_VERSION,
+  CROSS_ENV_VERSION,
   SDK_VERSION,
   HOST_SINGLETONS,
   RESERVED_PORTS,
@@ -230,5 +231,33 @@ describe('SDK_VERSION', () => {
       Number(aMinor) > Number(rMinor) ||
       (aMinor === rMinor && Number(aPatch) >= Number(rPatch))
     expect(admitsPatch).toBe(true)
+  })
+})
+
+describe('build:zip', () => {
+  const templatesRoot = new URL('../templates', import.meta.url).pathname
+  const generated = (): any => {
+    const s = spec()
+    scaffold(s, templatesRoot)
+    return JSON.parse(readFileSync(join(s.targetDir, 'package.json'), 'utf8'))
+  }
+
+  // The App Store zip is off by default, so producing one has to be reachable
+  // without editing vite.config.ts. `npm run` lists this; a variable name does
+  // not appear anywhere until you already know it.
+  it('is a script the generated project ships', () => {
+    const pkg = generated()
+    expect(pkg.scripts['build:zip']).toContain('CYWEB_APP_ZIP=1')
+    expect(pkg.scripts['build:zip']).toContain('vite build')
+  })
+
+  // `VAR=1 cmd` is not valid in cmd.exe. Without cross-env the script would
+  // work on two platforms of three, which is worse than not shipping it.
+  it('brings the dependency that makes it work on Windows', () => {
+    expect(generated().devDependencies['cross-env']).toBe(CROSS_ENV_VERSION)
+  })
+
+  it('leaves the plain build alone', () => {
+    expect(generated().scripts.build).toBe('vite build')
   })
 })

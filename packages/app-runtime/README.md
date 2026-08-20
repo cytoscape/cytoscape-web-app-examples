@@ -68,9 +68,29 @@ defineCyWebApp(import.meta.url, {
                                      //   overridden per session by CYWEB_DEV_HOST
   devHostRemoteEntryUrl?: string     // derived from the page URL when omitted
   appStoreZip?: boolean              // default false
+                                     //   per-build override: CYWEB_APP_ZIP
   vite?: UserConfig                  // merged last
 })
 ```
+
+### The App Store zip
+
+Off by default. A generated project ships a script for it, so neither the config
+field nor the variable name has to be remembered:
+
+```bash
+npm run build:zip        # cross-env CYWEB_APP_ZIP=1 vite build
+```
+
+`CYWEB_APP_ZIP` works in **both** directions, which is the point of having it as
+well as the option: an app that commits `{ appStoreZip: true }` can still skip
+the zip while iterating (`CYWEB_APP_ZIP=0`), without editing its config back and
+forth. Any other value turns it on.
+
+The zip needs `adm-zip`, an **optional** peer dependency — npm installs it for
+you, and if it is ever missing the build stops and says so rather than skipping
+the archive silently. It is optional so that the builds which never produce a
+zip do not carry it, or its advisories, for a feature they never enabled.
 
 The `vite` option is the escape hatch — plugins, aliases, `define`, test
 settings. Setting a field the SDK owns fails the build and names the path,

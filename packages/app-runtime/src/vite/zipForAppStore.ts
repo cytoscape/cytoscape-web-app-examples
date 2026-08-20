@@ -3,6 +3,34 @@ import { dirname, join, resolve } from 'node:path'
 
 import type { Plugin } from 'vite'
 
+/** Turns the App Store zip on or off for one build, from the command line. */
+export const APP_ZIP_ENV = 'CYWEB_APP_ZIP'
+
+const FALSY = new Set(['0', 'false', 'no', 'off'])
+
+/**
+ * Decide whether this build writes an App Store zip.
+ *
+ * The config option says what an app normally wants; the environment variable
+ * overrides it for one build, in **both** directions. Off-by-default with a
+ * committed `appStoreZip: true` is the common case, but an app that always
+ * wants the zip still needs a way to skip it while iterating, and a one-way
+ * switch would send them back to editing the config file — which is what this
+ * exists to avoid.
+ *
+ * An unrecognised value is **on**, not an error: the variable is reached for at
+ * the moment someone wants a zip, and refusing the build over `CYWEB_APP_ZIP=yes`
+ * would fail them for being right.
+ */
+export const resolveAppStoreZip = (
+  option: boolean | undefined,
+  env: Record<string, string | undefined> = process.env,
+): boolean => {
+  const raw = env[APP_ZIP_ENV]?.trim()
+  if (raw === undefined || raw === '') return option ?? false
+  return !FALSY.has(raw.toLowerCase())
+}
+
 /**
  * Packages the app for submission to the Cytoscape App Store.
  *

@@ -17,7 +17,7 @@ import { noSharedPayload } from './noSharedPayload.js'
 import { assertNoProtectedOverrides } from './protectedFields.js'
 import { CYWEB_SHARED } from './shared.js'
 import { cywebAppMeta } from './virtualMeta.js'
-import { zipForAppStore } from './zipForAppStore.js'
+import { resolveAppStoreZip, zipForAppStore } from './zipForAppStore.js'
 
 export { CYWEB_SHARED, CYWEB_SHARED_PACKAGES } from './shared.js'
 export {
@@ -115,6 +115,9 @@ export interface CyWebAppOptions {
 
   /**
    * Write `<id>-<version>.zip` next to package.json on every production build.
+   *
+   * Overridden for a single build by the `CYWEB_APP_ZIP` environment variable,
+   * in either direction — see `resolveAppStoreZip`.
    *
    * @default false
    */
@@ -243,7 +246,8 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
       // AFTER federation() — it inspects the graph that plugin produces.
       noSharedPayload(),
     )
-    if (appStoreZip) plugins.push(zipForAppStore(meta.id, meta.version))
+    if (resolveAppStoreZip(appStoreZip))
+      plugins.push(zipForAppStore(meta.id, meta.version))
 
     // NOTE: `base` is intentionally NOT set. The MF plugin then resolves
     // publicPath to 'auto', so chunks resolve relative to remoteEntry.js

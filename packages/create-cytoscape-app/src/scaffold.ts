@@ -41,6 +41,15 @@ export const HOST_SINGLETONS: Readonly<Record<string, string>> = {
  * host to give it away.
  */
 export const SDK_VERSION = '^0.2.0'
+
+/**
+ * Sets `CYWEB_APP_ZIP` for the `build:zip` script.
+ *
+ * The one dependency a generated project carries purely for ergonomics.
+ * `VAR=1 cmd` is not valid in cmd.exe, so without it `build:zip` would work on
+ * two of the three platforms — which is worse than not shipping the script.
+ */
+export const CROSS_ENV_VERSION = '^10.1.0'
 export const TEMPLATES = ['panel', 'menu', 'context-menu', 'non-react', 'full'] as const
 export type Template = (typeof TEMPLATES)[number]
 
@@ -169,6 +178,11 @@ const packageJsonFor = (spec: ScaffoldSpec): string => {
       scripts: {
         dev: 'vite',
         build: 'vite build',
+        // Discoverable: `npm run` lists it, so producing a zip needs neither a
+        // config field nor a remembered variable name. Sugar over
+        // CYWEB_APP_ZIP, which stays available for CI and can also turn the
+        // zip OFF for an app that has it on by default.
+        'build:zip': 'cross-env CYWEB_APP_ZIP=1 vite build',
         verify: 'cyweb-app verify',
         typecheck:
           'tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json',
@@ -178,6 +192,7 @@ const packageJsonFor = (spec: ScaffoldSpec): string => {
       devDependencies: {
         '@cytoscape-web/api-types': API_TYPES_VERSION,
         '@cytoscape-web/app-runtime': SDK_VERSION,
+        'cross-env': CROSS_ENV_VERSION,
         ...(react ? HOST_SINGLETONS : {}),
         '@module-federation/vite': '1.16.8',
         '@types/node': '^24.0.0',

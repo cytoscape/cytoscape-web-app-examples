@@ -265,9 +265,22 @@ and the Node-only SSR artifacts stay out of a public upload. The list is an
 allowlist in `@cytoscape-web/app-runtime`, and an unrecognised file fails the
 build instead of being shipped.
 
-> The zip is **off by default** — pass `{ appStoreZip: true }` to
-> `defineCyWebApp`. It used to run on every build, which left stale archives
-> next to every package.json.
+The zip is **off by default** — it used to run on every build, which left stale
+archives next to every package.json. Three ways to ask for one, in order of how
+often you will want them:
+
+```bash
+npm run build:zip                    # the script your project already ships
+CYWEB_APP_ZIP=1 npm run build        # the same thing, for CI
+```
+
+```ts
+defineCyWebApp(import.meta.url, { appStoreZip: true })   // every build
+```
+
+`CYWEB_APP_ZIP` overrides the config field in **both** directions, so an app
+that has it on can still skip the zip for a quick build with
+`CYWEB_APP_ZIP=0`.
 
 ---
 
