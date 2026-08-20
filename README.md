@@ -70,11 +70,9 @@ reach your own machine — click **Allow**; see
 [getting-started §5d](guides/getting-started.md#5d-develop-against-a-shared-host)
 for what that prompt says and what to do if you have already dismissed it.
 
-> **Not in `@cytoscape-web/app-runtime@0.1.0`.** That version ignores the
+> **Needs `@cytoscape-web/app-runtime` 0.2.0 or newer.** `0.1.0` ignores the
 > variable *silently* — the banner still names `localhost:5500` and the app
-> still loads the local host, which is the tell. Until a release carries it, use
-> this repository's own apps (`npm run dev:<app>` here), which build against the
-> workspace copy.
+> still loads the local host, which is the only tell.
 
 **Nothing in the host repository is edited.** Your dev server serves a one-entry
 app manifest at `/cyweb-app.json`, generated from your `package.json` on every

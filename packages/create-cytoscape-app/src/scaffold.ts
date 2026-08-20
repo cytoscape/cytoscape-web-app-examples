@@ -30,7 +30,17 @@ export const HOST_SINGLETONS: Readonly<Record<string, string>> = {
   'react-dom': '^18.3.1',
 }
 
-export const SDK_VERSION = '^0.1.0'
+/**
+ * The app-runtime a scaffolded project depends on.
+ *
+ * Must be raised in the same change that publishes a runtime feature the
+ * templates or the docs rely on. `^0.1.0` does not admit `0.2.0` — 0.x carets
+ * pin the minor — so leaving it behind produces the worst failure this package
+ * has: `CYWEB_DEV_HOST` was documented while scaffolded apps still resolved a
+ * runtime that ignored it, with no error and only a banner naming the wrong
+ * host to give it away.
+ */
+export const SDK_VERSION = '^0.2.0'
 export const TEMPLATES = ['panel', 'menu', 'context-menu', 'non-react', 'full'] as const
 export type Template = (typeof TEMPLATES)[number]
 

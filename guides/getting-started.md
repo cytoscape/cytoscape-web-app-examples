@@ -325,10 +325,9 @@ app stays on `localhost`; only the host is remote.
 CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
 ```
 
-> **Requires a build of `@cytoscape-web/app-runtime` that has it — `0.1.0` does
-> not.** An older version ignores the variable *silently*: no error, the banner
-> just still names `localhost:5500`. If that is what you see, check the version
-> rather than the spelling.
+> **Requires `@cytoscape-web/app-runtime` 0.2.0 or newer.** `0.1.0` ignores the
+> variable *silently*: no error, the banner just still names `localhost:5500`.
+> If that is what you see, check the version rather than the spelling.
 
 The banner then prints an install link for that host instead of the local one:
 

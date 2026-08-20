@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   API_TYPES_VERSION,
+  SDK_VERSION,
   HOST_SINGLETONS,
   RESERVED_PORTS,
   TEMPLATES,
@@ -193,5 +194,41 @@ describe('port defaults', () => {
   it('reserves the ports the examples and the host already bind', () => {
     expect(RESERVED_PORTS).toContain(5500)
     for (const p of [2222, 3333, 5555, 6100, 7000]) expect(RESERVED_PORTS).toContain(p)
+  })
+})
+
+describe('SDK_VERSION', () => {
+  const runtimeVersion = JSON.parse(
+    readFileSync(join(__dirname, '../../app-runtime/package.json'), 'utf8'),
+  ).version as string
+
+  // The failure this guards against is silent and was shipped once: the docs
+  // described CYWEB_DEV_HOST while scaffolded apps still resolved a runtime
+  // that ignored it. No error, no warning — only a dev-server banner naming
+  // the wrong host, which nobody compares against a document.
+  it('admits the app-runtime in this workspace', () => {
+    const range = SDK_VERSION.match(/^\^(\d+)\.(\d+)\.(\d+)$/)
+    expect(range, `SDK_VERSION must look like ^x.y.z, got ${SDK_VERSION}`).not.toBeNull()
+    const actual = runtimeVersion.match(/^(\d+)\.(\d+)\.(\d+)/)
+    expect(actual).not.toBeNull()
+
+    const [, rMajor, rMinor, rPatch] = range as RegExpMatchArray
+    const [, aMajor, aMinor, aPatch] = actual as RegExpMatchArray
+    expect(aMajor).toBe(rMajor)
+
+    // A 0.x caret pins the MINOR: ^0.1.0 is >=0.1.0 <0.2.0, so publishing
+    // 0.2.0 without raising this leaves every new project on the old runtime.
+    if (rMajor === '0') {
+      expect(
+        aMinor,
+        `app-runtime is ${runtimeVersion} but scaffolds pin ${SDK_VERSION}, ` +
+          `which cannot resolve it — raise SDK_VERSION in the same change`,
+      ).toBe(rMinor)
+    }
+
+    const admitsPatch =
+      Number(aMinor) > Number(rMinor) ||
+      (aMinor === rMinor && Number(aPatch) >= Number(rPatch))
+    expect(admitsPatch).toBe(true)
   })
 })

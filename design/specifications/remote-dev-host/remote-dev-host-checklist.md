@@ -846,11 +846,21 @@ is the one that was opened.
       simply still names `localhost:5500`, which is precisely the mismatch class
       this package exists to prevent.
 
-      Both documents now state the version requirement and name the silent
-      symptom, so nothing published is untrue. But the flow is only reachable
-      from this repository's own apps until a release carries it, and
-      `SDK_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` has to be
-      bumped in the same change — `^0.1.0` would not admit a `0.2.0`.
+      Both documents state the version requirement and name the silent symptom.
+
+      **Prepared, not yet published.** Both packages bumped to **0.2.0** and
+      `SDK_VERSION` raised to `^0.2.0` in the same change. A scaffold produced
+      from the built scaffolder now pins `^0.2.0`, and `devHost.js` is present in
+      the app-runtime tarball — checked against the tarball rather than the
+      source tree, because `files` is an allowlist.
+
+      A test now closes this failure class rather than relying on someone
+      remembering: `SDK_VERSION` must admit the app-runtime version in the
+      workspace, and it fails with the instruction rather than a bare
+      mismatch. Mutation-checked by putting `^0.1.0` back.
+
+      Remaining: dispatch `release-packages.yml` with `tag: next`. `latest`
+      stays where it is — that gate is roadmap Theme G and is unchanged.
 
 ---
 

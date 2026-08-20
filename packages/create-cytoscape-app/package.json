@@ -1,6 +1,6 @@
 {
   "name": "create-cytoscape-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scaffold a Cytoscape Web app: npm create cytoscape-app my-app",
   "license": "MIT",
   "//repository": [
