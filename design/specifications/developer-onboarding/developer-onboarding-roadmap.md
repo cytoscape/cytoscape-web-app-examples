@@ -476,7 +476,7 @@ author an app. That asymmetry is the reason this theme exists.
 | **G-3** Block raw store exposes, `CredentialStore` first | Direct credential read today |
 | **G-4** Subresource integrity / artifact signature | The store must be able to verify what it serves; today nothing checks that the artifact matches what its manifest claims (§below) |
 | **G-5** Threat model, penetration test, privilege-control E2E | The evidence the gate opens on |
-| **G-6** Close the catalog-path bypass of the origin allow-list | The install path's "hard gate" is not applied on the catalog path (§below) |
+| **G-6** Close the catalog-path bypass of the origin allow-list | **DONE** — cytoscape-web PR #677. The install path's "hard gate" was not applied on the catalog path (§below); it is now, and the acceptance constraint was verified rather than promised |
 
 #### G-6, in detail — the origin allow-list is bypassed on the catalog path
 
@@ -485,9 +485,16 @@ The origin allow-list gates **the remote's URL, not the manifest's** — every
 `runInstallIntents.ts:93-97` states the reasoning: *"A React app's bundle is loaded as code
 into this origin, so the allow-list stays a hard gate."*
 
-But it is applied on **only four** paths — the install intent, Install from URL, `installApp`,
-and workspace restore. `activateApp` is not one of them: it calls
+But it was applied on **only four** paths — the install intent, Install from URL, `installApp`,
+and workspace restore. `activateApp` was not one of them: it called
 `loadRemoteApp(id, catalogEntry.url, …)` directly, with no origin check.
+
+> **Fixed in PR #677**, on both paths that reach `loadRemoteApp` — `activateApp`
+> and the startup auto-load of active apps. The startup path needed the gate on
+> its own account: it resolves `catalog[id].url`, not the installed record's URL,
+> so a user-set manifest declaring an existing app's id would otherwise redirect
+> where an already-trusted app is fetched from. The rest of this section is left
+> in the past tense it was written in; the analysis is what led to the fix.
 
 For the default catalog (`DEFAULT_MANIFEST_URL = '/apps.json'`, same-origin and operator-
 curated) that is fine. It stops being fine the moment a user sets **App Settings → Manifest
@@ -541,14 +548,21 @@ narrowly removes this configuration outright.
 
 | Item | Detail |
 |---|---|
-| **H-1** Load `config.json` at runtime | Today it is bundled. An operator should be able to set `appInstallAllowedOrigins` (and the NDEx URL, thresholds, Keycloak settings) without a rebuild — the same treatment `apps.json` already gets via `appsConfigPlugin` |
+| **H-1** Load `config.json` at runtime | **STILL OPEN.** Today it is bundled. An operator should be able to set `appInstallAllowedOrigins` (and the NDEx URL, thresholds, Keycloak settings) without a rebuild — the same treatment `apps.json` already gets via `appsConfigPlugin`. *Not* required for H-5 after all: see the note below |
 | **H-2** Additive catalog sources | `obtainCatalogEntries` **replaces**: given a custom source it never fetches `DEFAULT_MANIFEST_URL`. `composeCatalog` unions the manifest with `installedApps`, not manifest with manifest. An organization wanting "internal apps **and** public apps" must copy the public entries into its own manifest |
 | **H-3** Organization-wide provisioning | `setManifestSource` is called only from `AppSettingsDialog`. There is no URL parameter, no policy file, no deployment-time default — every user configures it by hand. (`?installApp=` installs one app; it does not select a catalog) |
 | **H-4** Keep this configuration working across the G-6 fix | See the acceptance constraint under G-6 |
-| **H-5** Let a non-localhost host opt into localhost apps | The allow-list is an EXACT origin match including the port, so "localhost on any port" cannot be expressed at all (§below) |
+| **H-5** Let a non-localhost host opt into localhost apps | **DONE** — cytoscape-web PR #677, deployed to dev1 2026-08-19. `allowsLocalhostAppsOn` names the one origin it applies to and is honoured only against the origin actually served, so the value is inert wherever it is copied. Verified end to end against dev1: an app on `localhost` installs into the shared host and mounts |
 
-H-1 is the prerequisite for the others and is independently useful: every value in
+H-1 is the prerequisite for H-2…H-4 and is independently useful: every value in
 `config.json` is currently frozen at build time for every deployment.
+
+**H-5 did not need it.** The plan assumed a runtime `config.json` was a
+prerequisite, because a build-time flag set for dev1 would also be set for
+production. Making the opt-in name *the origin it applies to* removes that
+coupling: the same committed value that enables dev1 is inert everywhere else,
+so the flag ships safely in a bundled config. H-1 remains worth doing on its own
+merits, and stays a prerequisite for the organizational-catalog items.
 
 #### H-5, in detail — a shared dev host cannot accept a developer's local app
 
@@ -582,14 +596,28 @@ ports:
 return (hostIsLocalhost || allowsLocalhostApps) && urlIsLocalhost
 ```
 
-**This route works TODAY only through the G-6 bypass** — Manifest Source reaches
-`activateApp`, which skips the origin check entirely. So it joins the
-organizational catalog as a second thing the G-6 fix must not quietly remove;
-the acceptance constraint under G-6 covers both.
+**This route USED to work only through the G-6 bypass** — Manifest Source reached
+`activateApp`, which skipped the origin check entirely.
 
-**Until H-1, H-5 and G-6 land together, dev1 is documented for the job it can do
-today**: verifying a DEPLOYED app against a real HTTPS host served from a
-non-`/` base path, which localhost cannot exercise at all.
+**Both landed together in PR #677, and the acceptance constraint was verified
+rather than promised.** The catalog path now goes through the same gate as the
+install paths, and the dev1 route survives it because the deployment opted in,
+not because the check is absent. Two things had to be got right, and neither was
+visible from the plan:
+
+- The gate turns on **provenance, not origin**. Sending the catalog through
+  `isAllowedOrigin` would have disabled every app the product ships with:
+  `apps.json` serves them from `cytoscape.org` while the allow-list names
+  `apps.cytoscape.org`.
+- **Stored `AppSource` is not that provenance.** `reconcileInstalledStatus`
+  stamps `source: 'manifest'` on first activation whichever manifest the entry
+  came from, so an app activated from a custom Manifest Source persists as
+  `'manifest'` and would be trusted once the source was reset. The exemption is
+  now decided against the manifest **as loaded**, matched on url as well as id.
+
+dev1 is now documented for both jobs — verifying a deployed app against a real
+HTTPS host on a non-`/` base path, and hosting an app served from a developer's
+`localhost` (`guides/getting-started.md` §5c and §5d).
 
 ---
 

@@ -22,9 +22,12 @@
 > the flag's value separating the two stages. That is the whole design, and it
 > is also the whole risk — see §0.4.
 >
-> **Status: Phases 0–5 complete** (2026-08-19), except that dev1 itself is
-> blocked on a merge and deploy — see Phase 5. Original status line:
-> Phases 0–4 complete (2026-08-18), on branch `feat/remote-dev-host`
+> **Status: Phases 0–5 complete** (2026-08-19). PR #677 is merged and dev1 is
+> running it, and **the flow has been verified end to end against dev1 itself**:
+> an app served from `localhost` installs into the shared host and mounts.
+> Phase 6 (documentation) is done, with one item open that Phase 6 uncovered
+> rather than created: the SDK release that makes `CYWEB_DEV_HOST` reachable
+> from a scaffolded app. Also outstanding: Phase 3's release note, and Phase 7., on branch `feat/remote-dev-host`
 > in both repositories. The host now has the opt-in, honours it at every install
 > gate, and no longer loads catalog entries unchecked, and a dev server can be
 > pointed at dev1 with one environment variable. **What is left is proof and
@@ -679,14 +682,10 @@ the app.
 
 ## Phase 5: End-to-end verification
 
-**dev1 itself is blocked, and not on anything this project can do.**
-`feat/remote-dev-host` is not merged into `development`, and dev1 tracks
-`development` — verified twice: the branch is not an ancestor of
-`origin/development`, and none of dev1's served bundles contain
-`allowsLocalhostAppsOn`. A test against dev1 today would fail for a reason
-unrelated to the code, so the flow was verified against **a host on a
-non-localhost origin** instead, which is the property the host changes actually
-turn on.
+**Done — including against dev1.** PR #677 merged 2026-08-19 19:02 UTC and dev1
+was redeployed (assets stamped 20:28 UTC), which unblocked the two items this
+phase had to leave open. Both are now closed below; the earlier local
+reproduction is kept because it covers a case dev1 cannot.
 
 ### Verified — a real browser, a real host, a real app server
 
@@ -724,11 +723,49 @@ Driven with Playwright.
 - [x] `preflight:host` against the local build → **10/10**. The host changes did
       not disturb the descriptor contract
 
-### Not verified, and why
+### Verified against dev1 — 2026-08-19
 
-- [ ] **dev1 itself.** Blocked on merging `feat/remote-dev-host` into
-      `development` and redeploying. Nothing else is in the way — the host code
-      is done and the app side points at it with one environment variable
+App: `project-template` on `http://localhost:5555`, started with
+`./dev-start.sh apps project-template --against https://dev1.ndexbio.org/cytoscape`.
+Host: the real dev1. Driven with Playwright; the deep link the dev server printed
+is the one that was opened.
+
+- [x] **Stage 1 is achieved.** With `local-network-access` granted for
+      `https://dev1.ndexbio.org`, the whole chain ran against the deployed host:
+      manifest fetched → confirmation dialog → confirmed → `/remoteEntry.js` →
+      the app's own modules. **14 requests reached the dev server**, the last of
+      them the app's source. A developer running only their own app now gets a
+      working install on a shared host
+- [x] **The browser layer really is in play here, unlike the local
+      reproduction.** With the permission denied, the same deep link fails:
+
+      ```
+      http://localhost:5555/cyweb-app.json :: net::ERR_FAILED
+      console: blocked by CORS policy: Permission was denied for this
+               request to access the loopback address space
+      ```
+
+      This is what the LAN-address reproduction could not show, and it confirms
+      §0.1's measurement applies to this exact flow rather than only to a
+      synthetic one
+- [x] **The prompt is raised by the install fetch itself**, not merely by the
+      Cytoscape Desktop poll that §0.6 found firing at load. Verified by routing
+      `127.0.0.1:1234` to an abort so the manifest fetch was the only
+      public→loopback request left; the prompt still appeared, in a headed
+      browser, with the same wording §0.1 captured
+- [x] **The denied path is illegible, and this is the finding Phase 6 has to
+      act on.** The message a developer sees is:
+
+      > Failed to install app from http://localhost:5555/cyweb-app.json:
+      > **Failed to fetch**
+
+      It names neither the permission nor the fix. Combined with §0.6 — the
+      permission is per-origin and a Block from months ago still applies — a
+      developer can be permanently stuck behind a message that says nothing.
+      Documenting the prompt is not enough; the docs must name **"Failed to
+      fetch"** as the symptom
+
+### Not verified, and why
 - [x] **The browser permission was not exercised, despite the plan assuming it
       would be.** A private LAN address was expected to make loopback a more
       private space and trigger Local Network Access; it does not. With the
@@ -744,10 +781,7 @@ Driven with Playwright.
       over-warning costs a line of output while under-warning costs a developer
       an unexplained hang
 
-- [ ] **The prompt on the deep-link path, in a headed browser.** §0.1 established
-      that the prompt is raised without a user gesture and captured its wording,
-      both against dev1; what remains is seeing it on this specific flow, which
-      needs dev1 to be running this code
+- [x] ~~The prompt on the deep-link path, in a headed browser.~~ Closed above.
 
 ### Found while testing — worth knowing before reproducing this
 
@@ -764,29 +798,59 @@ Driven with Playwright.
 
 ## Phase 6: Documentation
 
-- [ ] `guides/getting-started.md` §5c currently says this **cannot** be done and
-      names H-1 and H-5. Replace with the supported flow, including the browser
-      permission step
-- [ ] State **D-3** plainly: Chrome and Edge are what this flow is verified on;
-      Firefox and Safari are not claimed either way. Do not write a
-      compatibility table for browsers nobody measured
-- [ ] Show the prompt **as captured** (§0.1) and say to click Allow. The wording
-      names neither localhost nor a dev server, so a screenshot does the work
-      that prose cannot
-- [ ] Say how to **undo a previous Block** — the icon at the left of the address
-      bar. Per §0.6 a developer may have blocked this long ago for unrelated
-      reasons, and the resulting failure is a hang with no message
-- [ ] The roadmap's Theme H entries for H-1 and H-5 are marked done, and G-6's
-      acceptance constraint records that it was verified rather than promised
-- [ ] Say plainly what this is for. dev1 is a **shared** host: an app installed
-      there is installed for whoever is using that browser profile, and a
-      developer pointing it at their own `localhost` is asking their own browser
-      to trust their own machine. That is a small risk and worth one sentence,
-      not a warning banner
-- [ ] Say that production is **not** this, yet — and say why, so the question
-      stops being asked in issues. Documenting stage 2 as planned costs a
-      sentence; leaving it out invites developers to try `web.cytoscape.org` and
-      hit §0.4's silent no-exports failure with nothing to read
+- [x] `guides/getting-started.md` §5c no longer says this cannot be done. The
+      "what you cannot do yet" note is replaced by a pointer to **§5d, Develop
+      Against a Shared Host** — a new section, because checking a *deployed* app
+      against a real host and developing against one are different activities
+      and cramming both into §5c made neither clear
+- [x] **D-3, stated more narrowly than planned.** The flow was measured on
+      **Chrome**; Edge shares the engine and should behave the same but was not
+      tested, and that is what the guide says. Firefox and Safari are not
+      claimed either way. Writing "Chrome and Edge are verified" would have been
+      the kind of small overclaim this project has spent its time avoiding
+- [x] The prompt is reproduced **as captured**, in its own words, with "click
+      Allow". Rendered as text rather than a screenshot: the guides carry no
+      images, and the wording — which is the whole point — stays greppable and
+      diffable this way
+- [x] How to **undo a previous Block** is documented, including *why* a
+      developer may have one: the grant is per site rather than per port, and
+      §0.6's Cytoscape Desktop poll raises the same prompt at load for an
+      unrelated reason
+- [x] **The `Failed to fetch` symptom is named** — the Phase 5 finding, and the
+      one that most needed writing down. It appears in getting-started §5d and
+      as a `troubleshooting.md` **Runtime Errors** entry, which is where someone
+      already stuck will look. That entry carries the console text, the reset
+      instructions, and the fact that no server header can fix it
+- [x] Roadmap updated: **H-5 and G-6 marked DONE**, G-6's acceptance constraint
+      recorded as *verified rather than promised*, with the two non-obvious
+      things it turned on (provenance not origin; stored `AppSource` is not that
+      provenance). **H-1 stays open** — and the roadmap now records that H-5 did
+      **not** need it after all, because an origin-scoped opt-in removes the
+      coupling that made a runtime config a prerequisite
+- [x] What this is for, in one sentence rather than a warning banner: dev1 is a
+      shared host, and pointing it at your own `localhost` is asking your own
+      browser to trust your own machine
+- [x] Production is named as **not this, yet**, with the reason — re-measured
+      2026-08-19 rather than repeated from §0.4: `web.cytoscape.org` is still
+      the Webpack build (assets stamped 2026-07-08), so an app built with this
+      toolchain resolves no exports against it and fails silently
+- [x] **README Quick Start** offers it too, since removing the host checkout is
+      the barrier-to-entry improvement this whole project exists for. The stale
+      banner text (`Install it into a local host:`) was corrected in both the
+      README and the guide to what the dev server actually prints now
+- [ ] **The docs describe an unreleased capability — a release is needed.**
+      Found while checking that a scaffolded app can actually do what the README
+      now says: the published `@cytoscape-web/app-runtime@0.1.0` has no
+      `devHost.js`, and `create-cytoscape-app` pins `^0.1.0`. A newly scaffolded
+      app therefore **ignores `CYWEB_DEV_HOST` silently** — no error, the banner
+      simply still names `localhost:5500`, which is precisely the mismatch class
+      this package exists to prevent.
+
+      Both documents now state the version requirement and name the silent
+      symptom, so nothing published is untrue. But the flow is only reachable
+      from this repository's own apps until a release carries it, and
+      `SDK_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` has to be
+      bumped in the same change — `^0.1.0` would not admit a `0.2.0`.
 
 ---
 
