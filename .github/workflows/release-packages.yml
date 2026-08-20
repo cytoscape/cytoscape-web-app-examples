@@ -40,9 +40,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'npm dist-tag. `latest` is refused — see the gate below.'
+        description: 'npm dist-tag. `latest` is allowed; `next` for a pre-release.'
         required: true
-        default: next
+        default: latest
       dry_run:
         description: 'Rehearse without publishing'
         type: boolean
@@ -63,27 +63,14 @@ jobs:
       contents: read
       id-token: write # provenance
     steps:
-      # Do not MOVE `latest` forward.
+      # `latest` may be moved. It used to be refused here, gated on roadmap
+      # Theme G, on the reasoning that a Preview must not become the default
+      # install. Holding it at 0.1.0 turned out to achieve the opposite: 0.1.0
+      # is a Preview with IDENTICAL security properties, so nothing was
+      # protected and the documented install commands simply served an older,
+      # less capable build. "The current Preview is the default" is the honest
+      # state; 0.x and the README say what it is.
       #
-      # Read this together with the deprecation step at the end. npm assigns
-      # `latest` to a new package's first version on its own and will not let it
-      # be deleted, so "no latest tag" was never achievable — that was a mistake
-      # in the original design, corrected after 0.1.0 went out carrying both
-      # `next` and `latest`.
-      #
-      # What this step still buys is real: publishing with --tag next leaves
-      # `latest` pointing at whatever it already pointed at, so a later Preview
-      # cannot become the default install by accident. Dispatching with
-      # `tag: latest` is the one way to move it, and that stays a deliberate act
-      # visible in a diff until roadmap Theme G is done.
-      - name: Refuse to publish `latest`
-        if: ${{ inputs.tag == 'latest' }}
-        run: |
-          # Single quotes: a backtick inside double quotes is command
-          # substitution, and the shell would try to run `latest`.
-          echo '::error::Moving the latest tag is gated on roadmap Theme G (app isolation, capability API, artifact integrity). Publish with tag=next; latest stays where it is. If Theme G has landed, remove this step in the same commit that records why.'
-          exit 1
-
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
@@ -181,34 +168,25 @@ jobs:
             --provenance --access public --tag "${{ inputs.tag }}" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      # Print the Preview notice commands. Does NOT apply them.
+      # No deprecation step, deliberately.
       #
-      # `npm deprecate` cannot run here. Trusted publishing issues a credential
-      # scoped to `npm publish`, and nothing else — so with no NODE_AUTH_TOKEN,
-      # setup-node writes its placeholder into .npmrc and deprecate answers 404.
-      # That is what happened on the 0.2.0 release: both publishes succeeded and
-      # this step failed afterwards, which made a complete release look broken.
+      # Both Previews used to be marked deprecated, so npm would print the
+      # trust-boundary notice on every install. It was the wrong field. npm's
+      # `deprecated` means superseded or going away; a Preview is the newest
+      # thing and is meant to be used, and the notice appeared in install logs
+      # beside genuinely abandoned packages with nothing to tell them apart.
+      # Dependency tooling treats a deprecated dependency as something to
+      # remediate, which would have flagged app authors for following the
+      # documentation.
       #
-      # The 0.1.0 release did apply it automatically, from the granular token
-      # that existed only because trusted publishing cannot be configured on a
-      # package that does not exist yet. Removing that token was deliberate; it
-      # cost this step, and a manual notice is the cheaper half of that trade.
+      # It was also the wrong scope: "no sandbox, no signature verification" is
+      # a property of the product until Theme G lands, not of one version, and
+      # keeping it in that field leaves no way to say "superseded by x.y.z" when
+      # a version actually is.
       #
-      # Not fatal, because the release itself is complete by this point. The
-      # notice is what npm prints on every install, so it still matters — hence
-      # a warning loud enough to act on rather than a silent skip.
-      - name: Preview notice — run these by hand
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -uo pipefail
-          NOTICE="Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
-          echo "::warning::npm deprecate cannot run under trusted publishing. Apply the Preview notice from a logged-in shell:"
-          for dir in packages/app-runtime packages/create-cytoscape-app; do
-            name=$(node -p "require('./$dir/package.json').name")
-            version=$(node -p "require('./$dir/package.json').version")
-            echo "  npm deprecate \"$name@$version\" \"$NOTICE\""
-          done
-
+      # The Preview status is carried by 0.x versioning, the package READMEs
+      # (which npm renders on the package page) and the guides.
+      #
       # What the registry actually has, read back after publishing.
       - name: Read back the registry
         if: ${{ !inputs.dry_run }}
@@ -225,7 +203,7 @@ jobs:
               console.log("  " + process.argv[2] + "@" + process.argv[1])
               console.log("    published:  " + (v ? "yes" : "NO"))
               console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
-              console.log("    deprecated: " + (v?.deprecated ? "yes" : "not yet — see the warning above"))
+              console.log("    deprecated: " + (v?.deprecated ?? "no"))
               if (!v) process.exit(1)
             ' "$version" "$name"
           done

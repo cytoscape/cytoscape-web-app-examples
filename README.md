@@ -2,10 +2,10 @@
 
 > ## ⚠️ Developer Preview
 >
-> The SDK and scaffolder are published at **`0.1.0`**, and **npm will print a
-> deprecation notice when you install them. That is deliberate, not a mistake** —
-> it is how this says, at the moment you install it, that it is not ready to
-> carry production work.
+> The SDK and scaffolder are published at **`0.x`**. An app runs inside
+> Cytoscape Web with **the host's full privileges — no sandbox, no signature
+> verification**, so nothing here is ready to carry production work. That is a
+> property of the platform today, not of this tooling.
 >
 > **An app runs inside Cytoscape Web with the host's full privileges** — same
 > origin, DOM, storage and network identity. There is no sandbox and no

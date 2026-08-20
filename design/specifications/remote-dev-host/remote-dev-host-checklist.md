@@ -883,21 +883,52 @@ is the one that was opened.
         tarball it already packs, with a `::notice::` so a genuinely failed
         publish is not waved through
 
-- [ ] **Preview notice on 0.2.0 — one manual command, not yet run.**
-      `npm deprecate` cannot run in the release workflow: trusted publishing
-      issues a credential scoped to `npm publish` and nothing else, so the step
-      answered 404 and failed *after* both packages had published, making a
-      complete release look broken. 0.1.0 only managed it automatically because
-      a granular token still existed then, and removing that token was
-      deliberate.
+- [x] **The Preview notice was retired instead of applied**, after the failed
+      step prompted the question of whether `deprecated` was ever the right
+      field. It was not, on two counts, and the second only became visible once
+      0.2.0 existed:
 
-      The workflow now prints the commands instead of attempting them, and no
-      longer fails the release for it. Run from a logged-in shell:
+      - `deprecated` is npm's word for *superseded or going away*. On install
+        the notice appeared beside `cron-parser@4.9.0: v4 is no longer
+        maintained` with nothing to tell them apart, and dependency tooling
+        reads a deprecated dependency as something to remediate — flagging app
+        authors for following the documentation
+      - It is a property of the **platform**, not of a version, so parking it
+        there also spent the one field that could later say "superseded by
+        x.y.z"
+
+- [ ] **`latest` must be moved to 0.2.0 — one manual command.** Found while
+      checking the above, and the more serious of the two: holding `latest` at
+      0.1.0 protected nothing, because 0.1.0 is a Preview with **identical**
+      security properties. Its only effect was that both commands the README
+      tells people to run —
+
+      ```
+      npm install @cytoscape-web/app-runtime  -> 0.1.0
+      npm create cytoscape-app                -> 0.1.0, pinning ^0.1.0
+      ```
+
+      — served the build without `devHost.js`, so `CYWEB_DEV_HOST` did nothing,
+      **silently**. The release had shipped without fixing what it was for.
+
+      Needs a logged-in shell; `npm dist-tag` is not covered by trusted
+      publishing either:
 
       ```bash
-      npm deprecate "@cytoscape-web/app-runtime@0.2.0" "Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
-      npm deprecate "create-cytoscape-app@0.2.0" "Developer Preview (0.x). Cytoscape Web apps run with the host's full privileges - no sandbox, no signature verification. Not for production use: https://github.com/cytoscape/cytoscape-web-app-examples"
+      npm dist-tag add @cytoscape-web/app-runtime@0.2.0 latest
+      npm dist-tag add create-cytoscape-app@0.2.0 latest
       ```
+
+      Optional, and now accurate in npm's own vocabulary — 0.1.0 really is
+      superseded:
+
+      ```bash
+      npm deprecate "@cytoscape-web/app-runtime@0.1.0" "Superseded by 0.2.0."
+      npm deprecate "create-cytoscape-app@0.1.0" "Superseded by 0.2.0."
+      ```
+
+      Future releases publish with `tag: latest` directly — the workflow's
+      refusal step is gone.
 
 ---
 

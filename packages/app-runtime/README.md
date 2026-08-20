@@ -4,10 +4,11 @@ Build-time SDK for [Cytoscape Web](https://web.cytoscape.org) apps. One call
 configures Module Federation correctly; a CLI checks that the build came out the
 way it was configured.
 
-> **Developer Preview.** Published at `0.x` under the `next` dist-tag, and marked
-> deprecated on purpose: npm prints that notice on every install because there
-> are things this deliberately does not promise. The API may change before `1.0`.
-> See [Trust boundary](#trust-boundary).
+> **Developer Preview**, and `0.x` means it: the API may change before `1.0`.
+> More importantly, an app built with this runs inside the host with the host's
+> full privileges — no sandbox, no signature verification. That is a property of
+> Cytoscape Web today, not of this package, and it is what makes "not for
+> production" the honest summary. See [Trust boundary](#trust-boundary).
 
 ```bash
 npm install --save-dev @cytoscape-web/app-runtime
@@ -168,7 +169,8 @@ What this Preview does **not** promise:
 - legible reporting when an app fails to load
 
 Those need host-side work — isolation, a capability API, artifact integrity —
-which is why every published version carries a deprecation notice saying so.
+and until it lands, this stays at `0.x` and says so here rather than pretending
+otherwise.
 
 ## Public API
 

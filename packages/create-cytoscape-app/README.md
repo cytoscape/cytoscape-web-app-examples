@@ -6,10 +6,10 @@ Scaffold an app for [Cytoscape Web](https://web.cytoscape.org).
 npm create cytoscape-app my-app
 ```
 
-> **Developer Preview.** Published at `0.x` under the `next` dist-tag, and every
-> version carries an npm deprecation notice you will see on install. Read
+> **Developer Preview**, published at `0.x`. Read
 > [Developer Preview](#developer-preview) before you build anything you intend
-> to ship.
+> to ship — the limits are about what a Cytoscape Web app is trusted with, not
+> about this tool's polish.
 
 ## Non-interactive
 
@@ -86,9 +86,10 @@ is edited.**
 
 ## Developer Preview
 
-The tooling is published at `0.x`, and every version is marked deprecated with a
-notice saying so — that is deliberate, and it is what npm prints on install while
-the host-side security work is outstanding.
+The tooling is published at `0.x` while the host-side security work is
+outstanding. An app runs inside Cytoscape Web with the host's full privileges —
+no sandbox, no signature verification — so what "Preview" marks is a property of
+the platform, not the maturity of this generator.
 
 **An app runs in the host's own browser context** — same origin, DOM, storage and
 network identity, with no sandbox and no signature verification. An app can read

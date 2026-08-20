@@ -466,7 +466,7 @@ workspace links, and run the acceptance criteria on a clean machine.
 | 10 | A `@mui/material/Box` subpath import still fails the build via `noSharedPayload` |
 | 11 | `vite` config touching a protected path fails with a named error identifying the path |
 | 12 | Built artifacts contain no absolute workspace path, no full `package.json`, and no unexpected shared payload |
-| 13 | **GA gate**: every published version carries the Preview deprecation notice, and `latest` is never MOVED forward, until the §3 host-side prerequisites — threat model, penetration test, privilege-control E2E — are complete. (`latest` existing at all is unavoidable; see the correction in §3) |
+| 13 | ~~**GA gate**: every published version carries the Preview deprecation notice, and `latest` is never MOVED forward~~ — **retired 2026-08-20, both halves.** The §3 host-side prerequisites still gate **1.0**; what changed is the mechanism, because neither half did what it was written to do. `deprecated` is npm's word for *superseded or going away*, so the notice landed in install logs beside abandoned packages with nothing to distinguish it, dependency tooling read it as something to remediate, and it occupied the one field that could later say "superseded by x.y.z". Holding `latest` back protected nothing either: 0.1.0 is a Preview with identical security properties, so the effect was only that the documented install commands served an older, less capable build. Preview status now rides on `0.x`, the package READMEs npm renders, and the guides |
 
 ## 8. Review disposition
 

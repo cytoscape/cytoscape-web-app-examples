@@ -69,6 +69,29 @@ A check of the conclusion is not a check of the premise.
 
 ### What actually gates the release
 
+> **Superseded 2026-08-20 — read this section as history.** The deprecation
+> notice described below was applied to 0.1.0 and then **retired** before 0.2.0.
+> Two reasons, both found by asking what the field means rather than what it
+> displays:
+>
+> - `deprecated` is npm's word for *superseded or going away*. A Preview is the
+>   newest thing and is meant to be used. On install the notice appeared beside
+>   `cron-parser@4.9.0: v4 is no longer maintained` with nothing to tell them
+>   apart, and dependency tooling reads a deprecated dependency as something to
+>   remediate — flagging app authors for following the documentation.
+> - It is a property of the **platform**, not a version: "no sandbox, no
+>   signature verification" stays true of 0.3.0. Parking it in that field also
+>   spends the one place that could later say "superseded by x.y.z".
+>
+> **The `latest` half was retired with it.** Holding the tag back protected
+> nothing — 0.1.0 is a Preview with identical security properties, so the only
+> effect was that `npm install @cytoscape-web/app-runtime` and
+> `npm create cytoscape-app`, both of which the README tells people to run,
+> served an older build whose missing feature failed **silently**.
+>
+> Preview status now rides on `0.x`, the package READMEs npm renders on the
+> package page, and the guides. The §3 host-side prerequisites still gate 1.0.
+
 **A deprecation notice on every published version.** Applied automatically by the
 release workflow:
 
