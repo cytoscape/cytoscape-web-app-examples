@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   API_TYPES_VERSION,
+  BROWSER_BLOCKED_PORTS,
   CROSS_ENV_VERSION,
   SDK_VERSION,
   HOST_SINGLETONS,
@@ -21,6 +22,7 @@ import {
   displayNameFromId,
   idFromDirectory,
   scaffold,
+  pickPort,
   validateSpec,
   type ScaffoldSpec,
 } from '../src/scaffold.js'
@@ -34,7 +36,7 @@ const spec = (over: Partial<ScaffoldSpec> = {}): ScaffoldSpec => ({
   displayName: 'My App',
   description: 'A Cytoscape Web app',
   version: '0.1.0',
-  port: 6000,
+  port: 6001, // 6000 is X11, which browsers refuse — see BROWSER_BLOCKED_PORTS
   template: 'panel',
   ...over,
 })
@@ -259,5 +261,32 @@ describe('build:zip', () => {
 
   it('leaves the plain build alone', () => {
     expect(generated().scripts.build).toBe('vite build')
+  })
+})
+
+describe('browser-blocked ports', () => {
+  // The port search used to start at 6000 — X11, and on every browser's
+  // blocked list. A developer taking the defaults got a dev server the HOST
+  // could not fetch from: net::ERR_UNSAFE_PORT, surfacing as "Failed to
+  // fetch", which is also what a denied local-network permission looks like.
+  it('does not hand out 6000', async () => {
+    expect(BROWSER_BLOCKED_PORTS).toContain(6000)
+    expect(await pickPort(6000)).not.toBe(6000)
+  })
+
+  it('never hands out any blocked port', async () => {
+    for (const start of [6000, 6665, 6697]) {
+      expect(BROWSER_BLOCKED_PORTS).not.toContain(await pickPort(start))
+    }
+  })
+
+  it('rejects one passed explicitly, naming the symptom', () => {
+    const problems = validateSpec(spec({ port: 6000 }))
+    expect(problems.join('\n')).toMatch(/blocked list/)
+    expect(problems.join('\n')).toMatch(/Failed to fetch/)
+  })
+
+  it('still accepts a normal port', () => {
+    expect(validateSpec(spec({ port: 6001 }))).toEqual([])
   })
 })

@@ -61,7 +61,7 @@ debug-gated console warning.
 **Fix:** They come from one place — the `cyweb` block in `package.json`:
 
 ```json
-"cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+"cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
 ```
 
 `defineCyWebApp` uses `cyweb.id` as the federation name, your app reads it from
@@ -130,16 +130,34 @@ own machine**.
 
 ### "Failed to install app from …: Failed to fetch"
 
-**Cause:** the browser refused the host's request to your `localhost` dev
-server. This happens when the host is *not* on localhost — a shared host such as
-`https://dev1.ndexbio.org/cytoscape` — and you have not granted, or have
-previously blocked, permission for it to reach your machine.
+The browser refused the host's request to your dev server. **Two unrelated
+causes produce this identical message**, so check the console first — it names
+which one:
 
-The message names neither the permission nor the fix, which is why it is worth
-knowing on sight. In the console it is more explicit:
+| Console says | Cause |
+| --- | --- |
+| `Permission was denied … loopback address space` | the local-network permission, below |
+| `net::ERR_UNSAFE_PORT` | your dev server is on a port browsers refuse |
+
+#### `net::ERR_UNSAFE_PORT` — the port
+
+Browsers refuse to load `http://` from a set of ports whatever is listening;
+`6000` (X11) is the one that catches people. **The host cannot fetch from such a
+port either**, so the app never installs.
+
+Change `cyweb.port` in your `package.json` to something outside that list —
+`6001` and up are fine — and restart the dev server. `create-cytoscape-app`
+0.3.0 and newer will not pick or accept one of these ports; earlier versions
+defaulted to `6000`.
+
+#### The local-network permission
+
+This happens when the host is *not* on localhost — a shared host such as
+`https://dev1.ndexbio.org/cytoscape` — and you have not granted, or have
+previously blocked, permission for it to reach your machine. In the console:
 
 ```
-Access to fetch at 'http://localhost:6000/cyweb-app.json' from origin
+Access to fetch at 'http://localhost:6001/cyweb-app.json' from origin
 'https://dev1.ndexbio.org' has been blocked by CORS policy:
 Permission was denied for this request to access the loopback address space.
 ```

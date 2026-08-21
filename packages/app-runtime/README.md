@@ -39,7 +39,7 @@ Your app's identity goes in `package.json`, once:
 {
   "version": "0.1.0",
   "description": "Colors nodes by degree",
-  "cyweb": { "id": "myApp", "displayName": "Degree Colorizer", "port": 6000 }
+  "cyweb": { "id": "myApp", "displayName": "Degree Colorizer", "port": 6001 }
 }
 ```
 
@@ -147,10 +147,10 @@ runtime plugin substitutes it before any remote resolves.
 from your `package.json` on every request, and prints the link that installs it:
 
 ```
-  Cytoscape Web app myApp — http://localhost:6000
+  Cytoscape Web app myApp — http://localhost:6001
 
   Install it into a local host:
-  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
 Nothing in the host repository needs editing.

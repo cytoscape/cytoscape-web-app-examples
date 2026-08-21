@@ -56,6 +56,29 @@ export type Template = (typeof TEMPLATES)[number]
 /** Ports the example apps bind, plus the host's. A new app should avoid them. */
 export const RESERVED_PORTS = [5500, 2222, 3333, 5555, 6100, 7000]
 
+/**
+ * Ports Chrome and Firefox refuse to load over http, whatever is listening.
+ *
+ * A dev server on one of these is not merely awkward to open — the **host**
+ * cannot fetch from it either. The request dies as `net::ERR_UNSAFE_PORT`
+ * before it leaves the browser, and what the developer sees is
+ * `Failed to install app from …: Failed to fetch`, which is the same message a
+ * denied local-network permission produces. Two unrelated causes, one sentence.
+ *
+ * 6000 is the one that mattered: it is X11, it was where the port search
+ * started, and it is therefore what a developer taking the defaults got.
+ *
+ * From Chromium's `net/base/port_util.cc` restricted list.
+ */
+export const BROWSER_BLOCKED_PORTS = [
+  1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79,
+  87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137,
+  138, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530, 531,
+  532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720,
+  1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668,
+  6669, 6679, 6697, 10080,
+]
+
 const JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
 /** npm's rules, reduced to what a generated name can be. */
@@ -115,6 +138,15 @@ export const validateSpec = (spec: ScaffoldSpec): string[] => {
   }
   if (!Number.isInteger(spec.port) || spec.port < 1024 || spec.port > 65535) {
     problems.push(`--port ${spec.port} must be an integer in 1024..65535`)
+  } else if (BROWSER_BLOCKED_PORTS.includes(spec.port)) {
+    // Refused rather than warned about: the host fetches the app over http from
+    // the browser, and a blocked port fails that fetch as ERR_UNSAFE_PORT with
+    // a "Failed to fetch" the developer has no way to trace back to a port.
+    problems.push(
+      `--port ${spec.port} is on the browsers' blocked list, so the host cannot ` +
+        `load an app from it — the install fails with "Failed to fetch". ` +
+        `Pick another port.`,
+    )
   }
   if (!TEMPLATES.includes(spec.template)) {
     problems.push(`--template "${spec.template}" is not one of ${TEMPLATES.join(', ')}`)
@@ -151,11 +183,22 @@ export const isPortFree = async (port: number): Promise<boolean> =>
     socket.once('error', () => done(true))
   })
 
-/** First free port from 6000 that no example app has claimed. */
+/**
+ * First usable port from 6000: free, unclaimed by an example app, and one a
+ * browser will actually load (see {@link BROWSER_BLOCKED_PORTS}).
+ *
+ * The fallback skips blocked ports too. Returning one because nothing was free
+ * would hand back the very port that cannot work.
+ */
 export const pickPort = async (start = 6000): Promise<number> => {
+  const usable = (port: number): boolean =>
+    !RESERVED_PORTS.includes(port) && !BROWSER_BLOCKED_PORTS.includes(port)
   for (let port = start; port < start + 200; port += 1) {
-    if (RESERVED_PORTS.includes(port)) continue
+    if (!usable(port)) continue
     if (await isPortFree(port)) return port
+  }
+  for (let port = start; port < start + 200; port += 1) {
+    if (usable(port)) return port
   }
   return start
 }

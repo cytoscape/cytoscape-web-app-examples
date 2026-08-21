@@ -21,7 +21,7 @@ Every prompt has a flag, and `--yes` never asks:
 
 ```bash
 npm create cytoscape-app my-app -- \
-  --yes --id myApp --display-name "My App" --template panel --port 6000
+  --yes --id myApp --display-name "My App" --template panel --port 6001
 ```
 
 > Copying `project-template` from
@@ -40,7 +40,7 @@ place:
   "cyweb": {
     "id": "myApp",          // Module Federation container name AND CyApp.id
     "displayName": "My App",
-    "port": 6000            // must be free; the examples use 2222/3333/5555/6100/7000
+    "port": 6001            // must be free, and not one browsers block (6000 is X11)
   }
 }
 ```
@@ -227,10 +227,10 @@ one-entry app manifest at `/cyweb-app.json`, generated from your `package.json`
 on every request, and prints the link that installs it:
 
 ```
-  Cytoscape Web app myApp — http://localhost:6000
+  Cytoscape Web app myApp — http://localhost:6001
 
   Install it into http://localhost:5500/:
-  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
 Open that URL with the host running and confirm the install. The app lands in
@@ -345,10 +345,10 @@ CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
 The banner then prints an install link for that host instead of the local one:
 
 ```
-  Cytoscape Web app myApp — http://localhost:6000
+  Cytoscape Web app myApp — http://localhost:6001
 
   Install it into https://dev1.ndexbio.org/cytoscape/ (CYWEB_DEV_HOST):
-  https://dev1.ndexbio.org/cytoscape/?installApp=http://localhost:6000/cyweb-app.json
+  https://dev1.ndexbio.org/cytoscape/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
 Nothing in your committed config changes, so there is nothing to remember to
@@ -380,7 +380,7 @@ unsafe one. The "other app or service on this device" is your own dev server.
 **If you see `Failed to fetch`, that is this permission.** The message the host
 shows is:
 
-> Failed to install app from http://localhost:6000/cyweb-app.json: **Failed to
+> Failed to install app from http://localhost:6001/cyweb-app.json: **Failed to
 > fetch**
 
 which names neither the permission nor the fix. The grant is remembered **per

@@ -38,7 +38,8 @@ Options
   --display-name <text>   Shown in App Settings.   Default: from --id
   --description <text>    One line, shown with it. Default: a placeholder
   --version <semver>      Default: 0.1.0
-  --port <number>         Dev server port. Default: the first free one from 6000
+  --port <number>         Dev server port. Default: the first usable one from
+                          6000 — browsers refuse some ports (6000 is X11)
   --template <name>       ${TEMPLATES.join(' | ')}
                           Default: panel
   --pm <npm|pnpm>         Package manager for the install. Default: npm

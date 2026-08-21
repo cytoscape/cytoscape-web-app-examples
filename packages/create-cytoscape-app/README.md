@@ -20,7 +20,7 @@ an LLM, and a prompt with no flag equivalent makes that path unusable.
 ```bash
 npm create cytoscape-app my-app -- \
   --yes --id degreeColorizer --display-name "Degree Colorizer" \
-  --template panel --port 6000
+  --template panel --port 6001
 ```
 
 | Flag | Default |
@@ -31,7 +31,7 @@ npm create cytoscape-app my-app -- \
 | `--display-name` | from `--id` |
 | `--description` | a placeholder |
 | `--version` | `0.1.0` |
-| `--port` | the first free port from 6000, skipping the ones the examples and the host use |
+| `--port` | the first usable port from 6000 — free, unclaimed by the examples or the host, and not one browsers refuse (6000 itself is X11) |
 | `--template` | `panel` |
 | `--pm` | `npm`, or `pnpm` |
 | `--no-install` | skip dependency installation |

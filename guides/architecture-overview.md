@@ -63,7 +63,7 @@ naming an app and the `remoteEntry.js` to load it from.
   {
     "id": "myApp",
     "name": "My App (display name)",
-    "url": "http://localhost:6000/remoteEntry.js",
+    "url": "http://localhost:6001/remoteEntry.js",
     "version": "0.1.0"
   }
 ]

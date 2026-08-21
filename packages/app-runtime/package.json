@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/app-runtime",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Build-time SDK for Cytoscape Web apps: one call configures Module Federation correctly.",
   "license": "MIT",
   "//repository": [

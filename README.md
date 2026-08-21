@@ -48,10 +48,10 @@ npm run dev
 The dev server prints the link that installs your app into a running local host:
 
 ```
-  Cytoscape Web app myApp — http://localhost:6000
+  Cytoscape Web app myApp — http://localhost:6001
 
   Install it into http://localhost:5500/:
-  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
 Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
@@ -133,7 +133,7 @@ the build, by the app config, and by the install manifest:
   "name": "@you/my-app",
   "version": "0.1.0",
   "description": "What your app does — shown in App Settings",
-  "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+  "cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
 }
 ```
 
@@ -148,10 +148,10 @@ Then `npm run dev`. It prints the link that installs your app into a running
 local host:
 
 ```
-  Cytoscape Web app myApp — http://localhost:6000
+  Cytoscape Web app myApp — http://localhost:6001
 
   Install it into http://localhost:5500/:
-  http://localhost:5500/?installApp=http://localhost:6000/cyweb-app.json
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
 **Nothing in the host repository is edited.** The dev server serves a one-entry
@@ -177,7 +177,7 @@ import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
   // Written once, in package.json:
-  //   "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+  //   "cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
   // `id` is the Module Federation container name, this CyApp's id and the id
   // the host registers, all at the same time.
   id,
