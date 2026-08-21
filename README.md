@@ -78,6 +78,12 @@ for what that prompt says and what to do if you have already dismissed it.
 app manifest at `/cyweb-app.json`, generated from your `package.json` on every
 request, and the host has accepted `?installApp=` all along.
 
+> **If it behaves like an older version, it probably is one.** `npm create` can
+> run a cached copy of the scaffolder without checking the registry, so anyone
+> who ran it before keeps that one. `npm create cytoscape-app@latest my-app`
+> names the tag explicitly —
+> [how to tell, and how to clear it](guides/troubleshooting.md#create-cytoscape-app-behaves-like-an-older-version).
+
 > **Your app does not hot-reload inside the host.** Vite's HMR does not cross the
 > federation boundary — that is a separate feature (`dev.remoteHmr`), off by
 > default. Your dev server rebuilds the changed module immediately; reload the

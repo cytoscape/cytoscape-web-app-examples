@@ -6,6 +6,11 @@ Scaffold an app for [Cytoscape Web](https://web.cytoscape.org).
 npm create cytoscape-app my-app
 ```
 
+> `npm create` may run a **cached** copy of this package rather than fetching
+> the current one, so a version you ran before is what you keep getting. Name
+> the tag — `npm create cytoscape-app@latest my-app` — or pass
+> `--prefer-online`.
+
 > **Developer Preview**, published at `0.x`. Read
 > [Developer Preview](#developer-preview) before you build anything you intend
 > to ship — the limits are about what a Cytoscape Web app is trusted with, not

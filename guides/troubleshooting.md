@@ -272,6 +272,48 @@ const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
 
 ## Development Workflow
 
+### `create-cytoscape-app` behaves like an older version
+
+**Symptom:** the scaffolder does something the documentation says it no longer
+does — offers a port the docs warn against, is missing a script, prompts where
+it should not.
+
+**Cause:** `npm create` may run a **cached copy** of the scaffolder without
+checking the registry. This is npx's behaviour, not something this project
+controls, and it means a developer who ran the tool once keeps getting that
+version.
+
+The tell is a line that is *absent*. On a fresh fetch npm prints:
+
+```
+npm warn exec The following package was not found and will be installed: create-cytoscape-app@0.3.1
+```
+
+No such line means it came from the cache.
+
+**Check what you actually have:**
+
+```bash
+find ~/.npm/_npx -path '*create-cytoscape-app/package.json' \
+  -exec node -p "require('{}').version" \;
+npm view create-cytoscape-app version     # what the registry has
+```
+
+**Fixes**, any of which work:
+
+```bash
+npm create cytoscape-app@latest my-app      # name the tag
+npm create --prefer-online cytoscape-app my-app
+npm create cytoscape-app@0.3.1 my-app       # or an exact version
+```
+
+To clear it outright: `npx clear-npx-cache`, or `npm cache clean --force`.
+
+> **When comparing versions, watch the ports.** `pickPort` returns the first
+> *free* port, so an occupied 6000 is skipped by every version — including ones
+> without the blocked-port fix. Testing whether that fix works needs 6000 to be
+> free, or the result means nothing.
+
 ### How to switch between local and production host
 
 **You do not.** This used to require a build flag and two hardcoded URLs; it
