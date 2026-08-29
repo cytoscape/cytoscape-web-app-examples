@@ -83,8 +83,82 @@ Two consequences for Phase 4:
 
 ## 5. Current-Store submission baseline
 
-- [ ] **Not captured.** Requires submitting one unmodified current-format ZIP to
-      `apps-stage.cytoscape.org` and recording the outcome, which needs a
-      submitter account on that server. Phase 4's "the current Store still accepts
-      the archive" verification compares against this, so it must be captured
-      before Phase 4 closes — not before Phase 1 starts.
+One archive built exactly as §4's third-party path produces it — scaffolded
+outside the repository, `package.json` given `author`/`license`/`repository`/
+`homepage`/`keywords`, `npm run build:zip` — was submitted by hand to
+`apps-stage.cytoscape.org` on 2026-08-28 and published.
+
+| | |
+| --- | --- |
+| Submitted | `submissionTest-1.0.0.zip`, 31,682 bytes, 15 members |
+| | `sha256:0b7cbf8e894130f09c0686aed1b799c59ccd4665f031a5b385078e7cd7c9240c` |
+| `cyweb.id` in the bundle | `submissionTest` |
+| Display name typed into the form | `Cytoscape Web Submission Test` |
+| Listing | `https://apps-stage.cytoscape.org/apps/cytoscapewebsubmissiontest` |
+| Artifact root | `https://apps-stage.cytoscape.org/web/cytoscapewebsubmissiontest/1.0.0/` |
+
+### 5.1 The identity mismatch, reproduced
+
+**Store-derived id: `cytoscapewebsubmissiontest`. Bundle `CyApp.id`:
+`submissionTest`.** The derivation rule is exactly the predicted one — strip
+non-word characters from the display name, lowercase — and the two can never
+agree, because a JavaScript identifier cannot survive it.
+
+The published per-app manifest is a one-element `AppCatalogEntry[]`:
+
+```json
+[{"id": "cytoscapewebsubmissiontest", "name": "Cytoscape Web Submission Test",
+  "version": "1.0.0",
+  "url": "https://apps-stage.cytoscape.org/web/cytoscapewebsubmissiontest/1.0.0/remoteEntry.js",
+  "author": "Keiichiro Ono", "description": "…", "license": "MIT",
+  "tags": ["submission-test", "reference"]}]
+```
+
+Feeding that entry to the host reaches `loadRemoteApp(id, url, …)` with
+`id = "cytoscapewebsubmissiontest"`, loads `./AppConfig`, and hits:
+
+```ts
+if (remoteApp.id !== id) {          // "submissionTest" !== "cytoscapewebsubmissiontest"
+  logApp.warn(`[loadRemoteApp]: Remote app id mismatch. Expected "${id}", received "${remoteApp.id}" …`)
+  return undefined
+}
+```
+
+The app does not load. There is no error surfaced to the user — one console
+warning, and `undefined`. **This is a published artifact demonstrating the
+failure, not an argument that it could happen.**
+
+### 5.2 What the Store already does right
+
+Worth stating, because the §11 requirements should not read as a list of
+complaints:
+
+- **the publication layout is already `/web/{id}/{version}/`** — the immutable
+  versioned shape §11.10 asks for, with `manifest.json` and `remoteEntry.js`
+  beside each other;
+- **the per-app manifest is already a one-element array** that today's host
+  parser accepts, with `author`, `description`, `license`, and `tags` carried
+  through;
+- **the archive is republished byte-for-byte** — the served `remoteEntry.js`
+  hashes identically to the locally built one;
+- **`Access-Control-Allow-Origin: *` is present** on the manifest, the entry,
+  and a transitive chunk (`assets/src-*.js`), so cross-origin ESM loading works.
+
+### 5.3 Gaps measured on the published artifact
+
+| Observation | Against |
+| --- | --- |
+| `Content-Type: application/javascript` on JS | §11.10 asks for `text/javascript; charset=utf-8` — functional today, but unstated |
+| **No `X-Content-Type-Options: nosniff`** | §11.10 |
+| **No `Cross-Origin-Resource-Policy`** | §11.10 asks for an explicit `cross-origin` |
+| `Cache-Control: no-cache, no-store, must-revalidate` **on versioned artifacts** | §11.10/§11.13 assumed long-lived immutable caching. The current policy makes revocation trivial and every load a refetch — a deliberate-looking trade the Store team should confirm rather than have us assume |
+| **`index.html` is published** (200 on the version root) | §6.3 excludes it from the archive precisely so developer HTML does not land on a Store origin. Today it does |
+| `mf-manifest.json` → 404 | correct: the archive never carried it |
+| No `type`, `compatibleHostVersions`, `repository`, `homepage`, or `icon` in the entry | the form does not collect them; §11.5 defines the projection |
+
+### 5.4 Manual entry, measured
+
+`author`, `description`, `license`, and `tags` reached the catalog **only
+because they were typed into the form**. Every one of them was already in the
+submitted project's `package.json` and none of them was in the archive — which
+is the whole of issue #8 in one submission.

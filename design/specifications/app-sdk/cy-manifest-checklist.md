@@ -133,20 +133,24 @@ _Captured in [`cy-manifest-phase0-baseline.md`](cy-manifest-phase0-baseline.md).
       emits has to be decided rather than discovered
 - [x] Record the current `verify:federation` / `cyweb-app verify` check counts
       per app, so Phase 3's relocation can be proved output-neutral
-- [ ] **Submit one unmodified current-format ZIP to `apps-stage`** — **owner:
-      maintainer** (submitter account required); recorded as open in
-      [`cy-manifest-phase0-baseline.md`](cy-manifest-phase0-baseline.md) §5. Record the
-      result. Phase 4 must not change it: the new member is additive to today's
-      Store, and that is a test (§7), not an assumption
+- [x] **Submit one unmodified current-format ZIP to `apps-stage`** — done
+      2026-08-28; the identity mismatch reproduced live, and the response headers,
+      publication layout and manual-entry cost measured on the published artifact.
+      Recorded in
+      [`cy-manifest-phase0-baseline.md`](cy-manifest-phase0-baseline.md) §5. Phase 4
+      must not change it: the new member is additive to today's Store, and that is
+      a test (§7), not an assumption
 
 ### Verification (Phase 0)
 
 - [ ] Every decision above is written into `cy-manifest.md` or this file — no
       decision lives only in a review thread
 - [ ] The three approvals are recorded, or the phases they gate are blocked
-- [ ] The handshake list (§12) has been **sent to the App Store team** as a
+- [x] The handshake list (§12) has been **sent to the App Store team** as a
       comment on Issue #8, with the five gating items separated from the
-      non-gating questions
+      non-gating questions —
+      [issuecomment-5436202697](https://github.com/cytoscape/cytoscape-web-app-examples/issues/8#issuecomment-5436202697),
+      2026-08-27. **Answers to all five gate stable promotion (Phase 7).**
 
 ---
 
