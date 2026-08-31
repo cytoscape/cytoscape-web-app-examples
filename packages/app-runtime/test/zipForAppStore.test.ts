@@ -19,58 +19,16 @@ import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { describe, expect, it } from 'vitest'
 
-import { parseAppMeta, parseSubmissionMeta, readPackageSnapshot } from '../src/vite/appMeta.js'
-import { CYWEB_HOST_REQUIRED } from '../src/runtime/cywebHostSentinel.js'
+import {
+  parseAppMeta,
+  parseSubmissionMeta,
+  readPackageSnapshot,
+} from '../src/vite/appMeta.js'
 import { zipForAppStore } from '../src/vite/zipForAppStore.js'
 
-const APP_META = {
-  id: 'myApp',
-  displayName: 'My App',
-  port: 6431,
-  version: '1.0.0',
-  description: 'Colors nodes by degree',
-}
+import { APP_CYWEB, appRootFixture } from './fixtures/appRoot.js'
 
-/** A build output good enough to pass verification is not the point here. */
-const appRoot = (over: { version?: string } = {}): string => {
-  const dir = mkdtempSync(join(tmpdir(), 'cyweb-zip-'))
-  writeFileSync(
-    join(dir, 'package.json'),
-    JSON.stringify({
-      name: '@example/my-app',
-      version: over.version ?? '1.0.0',
-      description: 'Colors nodes by degree',
-      cyweb: APP_META,
-    }),
-  )
-  const dist = join(dir, 'dist')
-  mkdirSync(join(dist, 'assets'), { recursive: true })
-
-  // Enough of a real build to pass verification, which the packager now runs
-  // before it will write anything: an ESM entry with the resolver registered,
-  // and the audit fields `manifest.additionalData` embeds.
-  writeFileSync(
-    join(dist, 'remoteEntry.js'),
-    'export { a as init, b as get }\nregister("cyweb-host-resolver")\n',
-  )
-  writeFileSync(
-    join(dist, 'mf-manifest.json'),
-    JSON.stringify({
-      name: 'myApp',
-      metaData: { remoteEntry: { type: 'module' } },
-      exposes: [{ path: './AppConfig' }],
-      shared: [],
-      remotes: [{ alias: 'cyweb' }],
-      configuredShared: {},
-      configuredRemote: { name: 'cyweb', type: 'module', entry: CYWEB_HOST_REQUIRED },
-      configuredRuntimePlugins: ['/somewhere/mfRuntimePlugin.js'],
-    }),
-  )
-  writeFileSync(join(dist, 'assets', 'chunk-Abc.js'), 'export const x = 1\n')
-  writeFileSync(join(dist, 'index.html'), '<!doctype html>\n')
-  writeFileSync(join(dist, 'mf-stats.json'), '{}\n')
-  return dir
-}
+const appRoot = appRootFixture
 
 interface Recorded {
   warnings: string[]
@@ -78,7 +36,9 @@ interface Recorded {
 }
 
 /** Runs the plugin the way Vite would, and reports what it said. */
-const runPackager = async (root: string): Promise<{ error?: string; recorded: Recorded }> => {
+const runPackager = async (
+  root: string,
+): Promise<{ error?: string; recorded: Recorded }> => {
   const snapshot = readPackageSnapshot(root)
   const plugin = zipForAppStore({
     appMeta: parseAppMeta(snapshot),
@@ -107,7 +67,9 @@ const runPackager = async (root: string): Promise<{ error?: string; recorded: Re
 }
 
 const membersOf = (zipPath: string): string[] =>
-  new AdmZip(zipPath, { noSort: true } as any).getEntries().map((e) => e.entryName)
+  new AdmZip(zipPath, { noSort: true } as any)
+    .getEntries()
+    .map((e) => e.entryName)
 
 describe('the archive it writes', () => {
   it('contains one root manifest, one root entry, and no denied class', async () => {
@@ -140,10 +102,16 @@ describe('the archive it writes', () => {
     await runPackager(root)
 
     const members = membersOf(join(root, 'myApp-1.0.0.zip'))
-    expect([...members]).toEqual([...members].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b))))
+    expect([...members]).toEqual(
+      [...members].sort((a, b) =>
+        Buffer.compare(Buffer.from(a), Buffer.from(b)),
+      ),
+    )
     // `Z` (0x5A) before `_` (0x5F) before lowercase — not adm-zip's default,
     // which lowercases and then localeCompares.
-    expect(members.indexOf('assets/Zed.js')).toBeLessThan(members.indexOf('assets/_under.js'))
+    expect(members.indexOf('assets/Zed.js')).toBeLessThan(
+      members.indexOf('assets/_under.js'),
+    )
   })
 
   it('warns about the build-machine paths a developer upload would disclose', async () => {
@@ -191,7 +159,10 @@ describe('what it refuses to package', () => {
     // so the message names the unreadable file rather than the link. What
     // matters is that nothing is packaged and the file is named.
     const root = appRoot()
-    symlinkSync(join(root, 'nothing-here.js'), join(root, 'dist', 'assets', 'dangling.js'))
+    symlinkSync(
+      join(root, 'nothing-here.js'),
+      join(root, 'dist', 'assets', 'dangling.js'),
+    )
     const { error } = await runPackager(root)
     expect(error).toContain('assets/dangling.js')
     expect(error).toContain('could not be read')
@@ -218,13 +189,16 @@ describe('what it refuses to package', () => {
 
   it('refuses a cy-manifest.json that is already in the build output', async () => {
     const root = appRoot()
-    writeFileSync(join(root, 'dist', 'cy-manifest.json'), '{"formatVersion":1}\n')
+    writeFileSync(
+      join(root, 'dist', 'cy-manifest.json'),
+      '{"formatVersion":1}\n',
+    )
     expect((await runPackager(root)).error).toContain('already exists')
   })
 })
 
 describe('the stale-output guarantee, scoped exactly', () => {
-  it('leaves nothing at this run\'s final path when packaging fails', async () => {
+  it("leaves nothing at this run's final path when packaging fails", async () => {
     const root = appRoot()
     await runPackager(root) // a good archive first
     expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
@@ -235,7 +209,7 @@ describe('the stale-output guarantee, scoped exactly', () => {
     expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
   })
 
-  it('leaves an earlier version\'s archive alone', async () => {
+  it("leaves an earlier version's archive alone", async () => {
     // Deliberate. Removing files this run cannot name is how a packager deletes
     // a release someone still wanted.
     const root = appRoot()
@@ -244,7 +218,11 @@ describe('the stale-output guarantee, scoped exactly', () => {
 
     writeFileSync(
       join(root, 'package.json'),
-      JSON.stringify({ name: '@example/my-app', version: '1.1.0', cyweb: APP_META }),
+      JSON.stringify({
+        name: '@example/my-app',
+        version: '1.1.0',
+        cyweb: APP_CYWEB,
+      }),
     )
     await runPackager(root)
 
@@ -288,7 +266,13 @@ describe('the captured snapshot is what gets packaged', () => {
       }),
     )
 
-    const context = { error: (m: string) => { throw new Error(m) }, warn: () => {}, info: () => {} }
+    const context = {
+      error: (m: string) => {
+        throw new Error(m)
+      },
+      warn: () => {},
+      info: () => {},
+    }
     plugin.configResolved({ root, build: { outDir: 'dist' } })
     plugin.buildStart.call(context)
     await plugin.closeBundle.call(context)

@@ -22,7 +22,10 @@ import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { parseAppMeta, parseSubmissionMeta, readPackageSnapshot } from '../src/vite/appMeta.js'
 import { runManifest } from '../src/cli/manifest.js'
+import { zipForAppStore } from '../src/vite/zipForAppStore.js'
+import { appRootFixture } from './fixtures/appRoot.js'
 
 const PKG = {
   name: '@example/my-app',
@@ -186,6 +189,10 @@ describe('the packed candidate, as a real process', () => {
     return { status: result.status ?? -1, stdout: result.stdout, stderr: result.stderr }
   }
 
+  /** The version the packed CLI will report, read from the extracted tarball. */
+  const packedSdkVersion = (): string =>
+    JSON.parse(readFileSync(join(extracted, 'package', 'package.json'), 'utf8')).version as string
+
   it('runs the packed binary, not the workspace one', () => {
     expect(cli).toContain('cyweb-cli-pack-')
     expect(existsSync(cli)).toBe(true)
@@ -219,17 +226,32 @@ describe('the packed candidate, as a real process', () => {
     expect(run(['--nope']).stdout).toBe('')
   })
 
-  it('is byte-identical to the copy the packager embeds in an archive', () => {
+  it('is byte-identical to the copy the packager embeds in an archive', async () => {
     // The whole reason both call one serializer. "Equal objects" would pass with
     // different spacing; this would not.
-    const zipPath = join(import.meta.dirname, '../../../hello-world/hello-1.0.0.zip')
-    if (!existsSync(zipPath)) return // built by the packager suite / a zip build
-    const embedded = new AdmZip(zipPath).readFile('cy-manifest.json') as Buffer
-    const printed = execFileSync(
-      'node',
-      [cli, 'manifest', '--root', join(import.meta.dirname, '../../../hello-world')],
-      { encoding: 'buffer', stdio: ['ignore', 'pipe', 'pipe'] },
-    )
+    //
+    // The archive is built HERE rather than read from wherever another suite
+    // left one: a stale archive carries the generator string of whichever SDK
+    // version built it, so the comparison would pass or fail on suite order and
+    // on how recently someone ran a release.
+    const root = appRootFixture()
+    const snapshot = readPackageSnapshot(root)
+    const plugin = zipForAppStore({
+      appMeta: parseAppMeta(snapshot),
+      submissionMeta: parseSubmissionMeta(snapshot),
+      expectedShared: {},
+      sdkVersion: packedSdkVersion(),
+    }) as any
+    const silent = { error: (m: string) => { throw new Error(m) }, warn: () => {}, info: () => {} }
+    plugin.configResolved({ root, build: { outDir: 'dist' } })
+    plugin.buildStart.call(silent)
+    await plugin.closeBundle.call(silent)
+
+    const embedded = new AdmZip(join(root, 'myApp-1.0.0.zip')).readFile('cy-manifest.json') as Buffer
+    const printed = execFileSync('node', [cli, 'manifest', '--root', root], {
+      encoding: 'buffer',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
     expect(Buffer.compare(embedded, printed)).toBe(0)
   })
 })

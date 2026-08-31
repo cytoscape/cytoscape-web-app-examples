@@ -58,7 +58,7 @@
   ],
   "devDependencies": {
     "@cytoscape-web/api-types": "^1.0.0-beta.3",
-    "@cytoscape-web/app-runtime": "^0.3.0",
+    "@cytoscape-web/app-runtime": "0.4.0-next.1",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@module-federation/vite": "1.16.8",

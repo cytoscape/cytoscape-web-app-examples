@@ -40,7 +40,12 @@ export const HOST_SINGLETONS: Readonly<Record<string, string>> = {
  * runtime that ignored it, with no error and only a banner naming the wrong
  * host to give it away.
  */
-export const SDK_VERSION = '^0.3.0'
+// EXACT during the preview, `^x.y.z` once a stable version exists. A caret over
+// a prerelease admits only prereleases of the same major.minor.patch — neither
+// the stability an exact pin gives nor the breadth a caret suggests — so a
+// preview says what it means. `SDK_VERSION`'s test enforces whichever rule the
+// runtime's own version calls for.
+export const SDK_VERSION = '0.4.0-next.1'
 
 /**
  * Sets `CYWEB_APP_ZIP` for the `build:zip` script.

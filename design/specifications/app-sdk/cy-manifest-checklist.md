@@ -536,25 +536,36 @@ _Design: §9_
 
 ### Deliverables
 
-- [ ] One change set moves, together: `packages/app-runtime`,
+- [x] One change set moves, together: `packages/app-runtime`,
       `packages/create-cytoscape-app` and the `SDK_VERSION` it writes, all five
       examples, the lockfile and generated snapshots, and every document in
       Phase 6 — a `0.x` caret range does **not** cross a minor bump, so a partial
       bump silently leaves projects on the old SDK
-- [ ] Publish `0.4.0-next.N` under `next`, with the **preview** schema and
-      predicate identities
-- [ ] Release notes record the one breaking change (`zipForAppStore` removed from
-      `./vite`) and the Preview status
-- [ ] The §12 handshake is **open with the App Store team**, and the stable
-      identity is explicitly *not* issued
+- [ ] Publish `0.4.0-next.1` under `next`, with the **preview** schema and
+      predicate identities — **prepared, not published**. The change set is on
+      `docs/cy-manifest`; publishing runs from the `release` workflow after the
+      branch merges, so the published artifact and its provenance attest to a
+      commit on the main line rather than to a feature branch. Rehearsed locally
+      with `npm publish --tag next --dry-run` for both packages
+- [x] Release notes record the one breaking change (`zipForAppStore` removed
+      from `./vite`) and the Preview status — [`phase6-release-runbook.md`](phase6-release-runbook.md)
+      §3b
+- [x] The §12 handshake is **open with the App Store team**
+      ([issue #8](https://github.com/cytoscape/cytoscape-web-app-examples/issues/8#issuecomment-5436202697)),
+      and the stable identity is explicitly *not* issued
 
 ### Verification (Phase 7)
 
 - [ ] The published preview installs from `next` and scaffolds a project that
-      builds a valid submission ZIP
-- [ ] The ledger contains the preview identities and their digests, taken from
-      the published tarball
-- [ ] No document claims `formatVersion: 1` is stable
+      builds a valid submission ZIP — the release workflow's own post-publish
+      step does this. Verified locally against the packed candidates under both
+      npm and pnpm (Phase 6)
+- [x] The ledger contains the preview identities and their digests, taken from
+      the packed tarball — both entries are `…/v1/draft/0.4.0-next.1/…`, and a
+      test re-hashes them from inside the tarball rather than from the workspace
+- [x] No document claims `formatVersion: 1` is stable — the schema and
+      predicate `$id`s carry `/draft/`, and §3.1 states the envelope freezes only
+      when the first stable identity is issued
 
 ---
 
