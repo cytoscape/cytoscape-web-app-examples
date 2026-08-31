@@ -390,8 +390,8 @@ _Design: §3.4, §6.3_
         ICU data, so its sorting is turned OFF and `compareMemberNames` decides.
         The Windows leg of the matrix lands in Phase 6
   - [x] one fixture per supported asset class
-  - [ ] CLI output byte-equal to the embedded copy — **Phase 5**, once
-        `cyweb-app manifest` exists
+  - [x] CLI output byte-equal to the embedded copy — 429 bytes either way for
+        `hello-world`, asserted with `Buffer.compare`
   - [x] a failure after `buildStart` leaves nothing at this run's final path,
         while a **version-bump fixture** shows the previous archive surviving
   - [x] a failed write removes its temp file
@@ -408,49 +408,53 @@ _Design: §3.4, §6.3_
 
 ---
 
-## Phase 5: `cyweb-app manifest`
+## Phase 5: `cyweb-app manifest` ✅ **COMPLETE**
 
 _Design: §6.4_
 
 ### Deliverables
 
-- [ ] `manifest` subcommand: stdout is JSON and nothing else; **stdout is empty
+- [x] `manifest` subcommand: stdout is JSON and nothing else; **stdout is empty
       when `--out` is used**; every diagnostic and readiness warning goes to
       stderr
-- [ ] Paths: `--root`, `--out`, and an **explicit** `--dist` are cwd-relative;
+- [x] Paths: `--root`, `--out`, and an **explicit** `--dist` are cwd-relative;
       `--dist` defaults to `<root>/dist` — the existing asymmetry, now named
-- [ ] `--out` is **deliberately unrestricted**, with `--force` as the explicit
+- [x] `--out` is **deliberately unrestricted**, with `--force` as the explicit
       overwrite capability. The two protected basenames are **removed**: partial
       protection described as containment is worse than none
-- [ ] Refuse an existing destination without `--force`; refuse a symlink
+- [x] Refuse an existing destination without `--force`; refuse a symlink
       destination or symlinked ancestor; never create parent directories; temp
       file **beside the destination** (`EXDEV`)
-- [ ] Grammar: singleton flags 0-or-1; only `verify --expect-expose` repeats; a
+- [x] Grammar: singleton flags 0-or-1; only `verify --expect-expose` repeats; a
       value token may not begin with `--`; `--force` without `--out` is a usage
       error; `-h`/`-v` **preserved**, taking precedence and rejecting extra
       arguments
-- [ ] Exit codes: **2** usage, **1** invalid metadata or refused write, **0**
+- [x] Exit codes: **2** usage, **1** invalid metadata or refused write, **0**
       success
-- [ ] Parsing through `node:util`'s `parseArgs`, `multiple: true` for
+- [x] Parsing through `node:util`'s `parseArgs`, `multiple: true` for
       `--expect-expose`
 
 ### Verification (Phase 5)
 
-- [ ] **Child-process matrix**, against a **freshly built and packed candidate
+- [x] **Child-process matrix**, against a **freshly built and packed candidate
       installed in a temporary project** — package-local tests do not build
       `dist/` first, so a stale workspace build must not be what is exercised
-  - [ ] the resolved executable path or tarball integrity is asserted, not just a
+  - [x] the resolved executable path or tarball integrity is asserted, not just a
         version string
-  - [ ] stdout/stderr separation; stdout silence under `--out`
-  - [ ] every grammar and exit-code case; repeated `--expect-expose`
-  - [ ] overwrite refusal and `--force`; missing parents; symlink destination and
+  - [x] stdout/stderr separation; stdout silence under `--out`
+  - [x] every grammar and exit-code case; repeated `--expect-expose`
+  - [x] overwrite refusal and `--force`; missing parents; symlink destination and
         symlinked ancestor
-  - [ ] relative bases for `--root`, `--out`, explicit and default `--dist`
-  - [ ] malformed `mf-manifest.json` → bounded stderr, exit 1, no stack trace
-  - [ ] temporary-file cleanup
-  - [ ] **on POSIX and Windows**
-- [ ] `cyweb-app manifest --root <app>` is **byte-identical** to the copy
-      embedded by `build:zip`
+  - [x] relative bases for `--root`, `--out`, explicit and default `--dist`
+  - [x] malformed `mf-manifest.json` → bounded stderr, exit 1, no stack trace
+  - [x] temporary-file cleanup
+  - [x] on POSIX. **The Windows leg is Phase 6's CI matrix** — this machine
+        cannot run it, and asserting rename semantics that were never executed
+        would be worse than naming where they are executed
+- [x] `cyweb-app manifest --root <app>` is **byte-identical** to the copy
+      embedded by the packager — 429 bytes either way for `hello-world`,
+      compared with `Buffer.compare`, which is the point of both calling one
+      serializer rather than one builder
 
 ---
 
