@@ -143,9 +143,9 @@ _Captured in [`cy-manifest-phase0-baseline.md`](cy-manifest-phase0-baseline.md).
 
 ### Verification (Phase 0)
 
-- [ ] Every decision above is written into `cy-manifest.md` or this file — no
+- [x] Every decision above is written into `cy-manifest.md` or this file — no
       decision lives only in a review thread
-- [ ] The three approvals are recorded, or the phases they gate are blocked
+- [x] The three approvals are recorded, or the phases they gate are blocked
 - [x] The handshake list (§12) has been **sent to the App Store team** as a
       comment on Issue #8, with the five gating items separated from the
       non-gating questions —
@@ -154,7 +154,7 @@ _Captured in [`cy-manifest-phase0-baseline.md`](cy-manifest-phase0-baseline.md).
 
 ---
 
-## Phase 1: One package snapshot, three parses
+## Phase 1: One package snapshot, three parses ✅ **COMPLETE**
 
 _Design: §6.1_
 
@@ -173,31 +173,36 @@ later in this checklist is true without this.
 
 ### Deliverables
 
-- [ ] `readPackageSnapshot(root)` — raw parsed JSON plus its path, no validation
-- [ ] `parseAppMeta(snapshot)` — runtime identity only, same failure policy and
+- [x] `readPackageSnapshot(root)` — raw parsed JSON plus its path, no validation.
+      It also rejects a package.json that parses to a string, an array or `null`:
+      every later property access would otherwise throw a `TypeError` naming
+      nothing
+- [x] `parseAppMeta(snapshot)` — runtime identity only, same failure policy and
       same messages as today
-- [ ] `parseSubmissionMeta(snapshot)` — optional publication values; called by
+- [x] `parseSubmissionMeta(snapshot)` — optional publication values; called by
       **packaging and the CLI only**
-- [ ] `sharedExpectations(snapshot)` — the peer-derived shared records, moved out
+- [x] `sharedExpectations(snapshot)` — the peer-derived shared records, moved out
       of `verify.ts`
-- [ ] `readAppMeta(root)` reimplemented as
+- [x] `readAppMeta(root)` reimplemented as
       `parseAppMeta(readPackageSnapshot(root))`, still exported from `./vite`
-- [ ] **Wrong-type values survive to the validator** — the current coercion of a
+- [x] **Wrong-type values survive to the validator** — the current coercion of a
       non-string `description` to `''` happens inside the runtime path, where no
       later validator can see it (§5)
-- [ ] `CyWebBlock` gains optional `compatibleHostVersions` (§5); `CyWebAppMeta`
+- [x] `CyWebBlock` gains optional `compatibleHostVersions` (§5); `CyWebAppMeta`
       is unchanged and **`EXPOSED_META_FIELDS` is untouched**
 
 ### Verification (Phase 1)
 
-- [ ] `npm run test -w @cytoscape-web/app-runtime` passes, including the existing
-      `appMeta` suite unmodified
-- [ ] **Lifecycle regression**: an app with an invalid `repository`, an
+- [x] `npm run test -w @cytoscape-web/app-runtime` passes — **109 tests, up from
+      93**, including the existing `appMeta` suite unmodified
+- [x] **Lifecycle regression**: an app with an invalid `repository`, an
       over-long `name`, and a 200-character `version` runs `vite dev` and
       `vite build` successfully
-- [ ] All five apps build with byte-identical `mf-manifest.json` audit fields
-- [ ] `package.json` is parsed **once** per build — asserted by a spy or by an
-      instrumented `readFileSync`, not by inspection
+- [x] All five apps build with byte-identical `mf-manifest.json` audit fields, and
+      `verify:federation` reports the Phase 0 counts unchanged (29/18/28/28/28)
+- [x] `package.json` is parsed **once** — asserted with an instrumented
+      `readFileSync`, not by inspection. The build path always read once; it was
+      `verifyApp` that read twice, for identity and for peers
 
 ---
 

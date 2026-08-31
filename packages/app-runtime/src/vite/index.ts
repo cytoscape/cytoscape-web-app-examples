@@ -10,7 +10,7 @@ import {
 } from 'vite'
 
 import { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
-import { readAppMeta } from './appMeta.js'
+import { parseAppMeta, readPackageSnapshot } from './appMeta.js'
 import { resolveDevHost } from './devHost.js'
 import { cywebDevInstall } from './devInstall.js'
 import { noSharedPayload } from './noSharedPayload.js'
@@ -29,7 +29,19 @@ export {
 export { noSharedPayload } from './noSharedPayload.js'
 export { zipForAppStore } from './zipForAppStore.js'
 export { cywebAppMeta } from './virtualMeta.js'
-export { readAppMeta } from './appMeta.js'
+export {
+  parseAppMeta,
+  parseSubmissionMeta,
+  readAppMeta,
+  readPackageSnapshot,
+  sharedExpectations,
+} from './appMeta.js'
+export type {
+  CyWebSubmissionMeta,
+  PackageSnapshot,
+  RawPackageJson,
+  ShareRecord,
+} from './appMeta.js'
 export { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
 export type { CyWebAppMeta, CyWebBlock } from '../meta/index.js'
 
@@ -168,7 +180,11 @@ export interface CyWebAppOptions {
  */
 export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions = {}) => {
   const root = fileURLToPath(new URL('.', configFileUrl))
-  const meta = readAppMeta(root)
+  // Read once, here. The packaging plugin takes its submission metadata from
+  // this same snapshot, so what the archive claims and what the build produced
+  // cannot come from two different reads of package.json.
+  const snapshot = readPackageSnapshot(root)
+  const meta = parseAppMeta(snapshot)
 
   const {
     react: withReact = true,

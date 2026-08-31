@@ -25,7 +25,12 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-import { readAppMeta } from '../vite/appMeta.js'
+import {
+  parseAppMeta,
+  readPackageSnapshot,
+  sharedExpectations,
+  type ShareRecord,
+} from '../vite/appMeta.js'
 import { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
 
 const HOST_REMOTE_NAME = 'cyweb'
@@ -91,36 +96,11 @@ const listFilesRecursive = (dir: string, prefix = ''): string[] => {
   return out
 }
 
-interface ShareRecord {
-  singleton?: boolean
-  import?: boolean | string
-  requiredVersion?: string
-}
-
 const sameShareRecord = (a: ShareRecord | undefined, b: ShareRecord): boolean =>
   a !== undefined &&
   a.singleton === b.singleton &&
   a.import === b.import &&
   a.requiredVersion === b.requiredVersion
-
-/**
- * What this app declares the host provides, derived from `peerDependencies`.
- *
- * The same expansion the build performs, from the same source, so the two can be
- * compared. An app with no peers — the non-React case — legitimately shares
- * nothing.
- */
-const sharedFromPeers = (root: string): Record<string, ShareRecord> => {
-  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
-    peerDependencies?: Record<string, string>
-  }
-  return Object.fromEntries(
-    Object.entries(pkg.peerDependencies ?? {}).map(([name, range]) => [
-      name,
-      { singleton: true, import: false, requiredVersion: range },
-    ]),
-  )
-}
 
 export const verifyApp = (options: VerifyOptions): VerifyResult => {
   const root = resolve(options.root)
@@ -134,13 +114,18 @@ export const verifyApp = (options: VerifyOptions): VerifyResult => {
     else failures.push(detail === '' ? label : `${label} — ${detail}`)
   }
 
+  // ONE read of package.json. The identity asserted below, and the peers the
+  // share block is compared against, have to come from the same bytes — two
+  // independent reads could disagree if the file changed mid-build.
   let meta
+  let expectedShared: Record<string, ShareRecord>
   try {
-    meta = readAppMeta(root)
+    const snapshot = readPackageSnapshot(root)
+    meta = parseAppMeta(snapshot)
+    expectedShared = sharedExpectations(snapshot)
   } catch (cause) {
     return { checks, failures: [(cause as Error).message], notes }
   }
-  const expectedShared = sharedFromPeers(root)
 
   if (!existsSync(distDir) || !statSync(distDir).isDirectory()) {
     return { checks, failures: [`no build output at ${distDir} — run the build first`], notes }
