@@ -456,17 +456,20 @@ test imports the wrapper and proves parity with the primitive.
 
 `verifyApp()` moves from `src/cli/verify.ts` to a neutral module that performs **no
 package reads at all**. Its input is an aggregate: app metadata and peer-derived shared
-expectations from **one** `readPackageSnapshot`, the configured shared records, the
-configured and expected exposes, and the **absolute resolved** `distDir`.
+expectations from **one** `readPackageSnapshot`, the expected exposes, and the **absolute
+resolved** `distDir`. Both callers assemble it — the CLI from a snapshot it takes itself,
+the packaging plugin from the snapshot it already holds.
 
-The Vite plugin passes both its package snapshot and its build-configuration snapshot —
-it has them. **The standalone CLI does not**: it runs against an already-built `dist/`
-whose Vite configuration is gone. It is therefore specified as validating **what is
-observable from the artifact**: `mf-manifest.json` carries `configuredShared`,
-`configuredRemote`, and `configuredRuntimePlugins`, which this SDK embeds through
-`manifest.additionalData` precisely so the build's own intent is auditable after the fact.
-The CLI reads the package once for identity and peers, and reads everything else from the
-artifact. It does not claim to have captured a build configuration it never saw.
+**The configured share block, remote and runtime plugins are NOT among those inputs**, and
+that is the one place this differs from what earlier revisions described. They are read
+from `mf-manifest.json`, where this SDK embeds them through `manifest.additionalData`
+precisely so a build's own intent stays auditable afterwards. Accepting them from the
+caller instead would let the plugin hand the verifier the configuration it was built with
+and have that compared against itself — which is exactly what "verifies on payload, not on
+config" exists to prevent. The asymmetry the review was right about survives intact: **the
+standalone CLI has no build configuration to capture**, because it runs against an
+already-built `dist/` whose Vite config is gone, and it does not pretend otherwise. It
+reads the package once for identity and peers, and reads everything else from the artifact.
 
 **Malformed artifact metadata is a controlled failure, not an exception.** Today's
 `JSON.parse` of `mf-manifest.json` is unguarded, so invalid JSON escapes as an uncaught

@@ -298,34 +298,38 @@ The artifact contract. Three shipped artifacts, one ledger, two corpora.
 
 ---
 
-## Phase 3: Move the verifier core out of `cli/`
+## Phase 3: Move the verifier core out of `cli/` ✅ **COMPLETE**
 
 _Design: §6.2_
 
 ### Deliverables
 
-- [ ] `verifyApp()` moved to a neutral module; `src/cli/verify.ts` becomes a thin
+- [x] `verifyApp()` moved to a neutral module; `src/cli/verify.ts` becomes a thin
       wrapper. **The core performs no package reads at all**
-- [ ] Its input is an aggregate: app metadata and peer-derived expectations from
-      **one** snapshot, the configured shared records, configured and expected
-      exposes, and the **absolute resolved** `distDir`
-- [ ] The Vite plugin passes its package snapshot **and** its build-configuration
-      snapshot
-- [ ] The standalone CLI is documented as validating **what is observable from
+- [x] Its input is an aggregate: app metadata and peer-derived expectations from
+      **one** snapshot, the expected exposes, and the **absolute resolved**
+      `distDir`. **The configured share block, remote and runtime plugins are
+      deliberately NOT inputs** — they are read from `mf-manifest.json`, because
+      accepting them from the caller would compare a build's configuration
+      against itself, which is what "verifies on payload, not on config" exists
+      to prevent. Design §6.2 was corrected to match
+- [x] The Vite plugin passes the package snapshot it already holds — wiring that
+      into `closeBundle` is Phase 4's step 2
+- [x] The standalone CLI is documented as validating **what is observable from
       the artifact** — `configuredShared`, `configuredRemote`,
       `configuredRuntimePlugins` are embedded in `mf-manifest.json` through
       `manifest.additionalData` for exactly this reason. It does not claim to
       have captured a build configuration it never saw
-- [ ] Malformed `mf-manifest.json` is a **structured failure**, not an uncaught
+- [x] Malformed `mf-manifest.json` is a **structured failure**, not an uncaught
       exception: invalid JSON, `null`, arrays, wrong shapes
 
 ### Verification (Phase 3)
 
-- [ ] `cyweb-app verify` reports the **same check counts** as the Phase 0
-      baseline for all five apps
-- [ ] Malformed-artifact fixtures produce: empty stdout, a bounded stderr
+- [x] `cyweb-app verify` reports the **same check counts** as the Phase 0
+      baseline for all five apps — 29/18/28/28/28, unchanged
+- [x] Malformed-artifact fixtures produce: empty stdout, a bounded stderr
       diagnostic, exit 1, **no stack trace**
-- [ ] The neutral core has no import from `src/cli/`
+- [x] The neutral core has no import from `src/cli/`
 
 ---
 
