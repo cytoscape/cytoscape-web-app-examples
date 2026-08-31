@@ -254,6 +254,37 @@ to un-link the repository.
 
 ---
 
+## 3b. What changed for the cy-manifest release (0.4.0)
+
+Added when the submission manifest landed. Everything below is in addition to
+the checks that were already here.
+
+- **Three shipped artifacts, pinned by digest.** `schema/cy-manifest-v1.schema.json`,
+  `schema/cy-manifest-v1.predicates.json` and the conformance corpora under
+  `schema/corpus/` are in `files` and reachable through the `./schema/*` export.
+  `schema/ledger.json` maps each `$id` to a SHA-256 over the file's exact raw
+  bytes, and a test re-hashes them **from the packed tarball** — the workspace
+  copy proves nothing about the copy the App Store pins.
+- **Preview identities.** Until the §12 handshake in
+  [`cy-manifest.md`](cy-manifest.md) closes, the schema and predicate `$id`s
+  carry `/draft/<version>/` and `formatVersion: 1` is NOT stable. Issuing the
+  stable identity freezes the envelope: after it, any change to the official
+  field set, a limit, a pattern or a predicate costs a new `formatVersion`.
+- **Pin style follows the version.** A prerelease runtime is pinned EXACTLY by
+  generated projects (`0.4.0-next.1`); a stable one is pinned `^x.y.z`. A caret
+  over a prerelease admits only prereleases of the same major.minor.patch, which
+  is neither. `SDK_VERSION`'s test encodes both rules and fails if the pin and
+  the runtime disagree.
+- **One breaking change in 0.4.0**: `zipForAppStore` is no longer exported from
+  `./vite`. A direct caller would bypass the reader and validation lifecycle the
+  package snapshot exists to enforce.
+- **Pre-publish CI installs the candidate, always.** It used to install the
+  registry copy whenever the generated range already resolved, so an ordinary
+  SDK change could pass while exercising previously published code.
+- **Post-publish smoke follows the `tag` input**, not a hard-coded `next`: it
+  asserts `dist-tags[tag]` moved to the published version, installs through
+  `@<tag>`, scaffolds, builds an archive, and reads the manifest back out of it.
+
 ## 4. Pre-flight
 
 The workflow runs all of this itself. Doing it locally first is still worth the

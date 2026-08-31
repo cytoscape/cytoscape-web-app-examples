@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:zip": "cross-env CYWEB_APP_ZIP=1 vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run"
@@ -15,7 +16,7 @@
   },
   "//cyweb": [
     "This app's identity, written ONCE. The federation container name, the",
-    "CyApp.id and the dev install manifest all read from here — before this",
+    "CyApp.id and the dev install manifest all read from here \u2014 before this",
     "block they were three hand-synced string literals with no import between",
     "them, and nothing noticed a mismatch until the host refused to load."
   ],
@@ -25,7 +26,7 @@
     "port": 7000
   },
   "//peerDependencies": [
-    "Provided by the HOST as Module Federation singletons — the share block",
+    "Provided by the HOST as Module Federation singletons \u2014 the share block",
     "uses `import: false`, so no fallback copy is bundled. The ranges must",
     "match configuredShared in ../apps.manifest.json; scripts/manifest.mjs",
     "cross-checks them."
@@ -48,6 +49,8 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "adm-zip": "^0.5.10",
+    "cross-env": "^10.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "typescript": "^5.6.2",

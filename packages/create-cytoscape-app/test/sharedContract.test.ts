@@ -12,7 +12,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { RESERVED_APP_IDS, SEMVER, validateSpec } from '../src/scaffold.js'
+import { RESERVED_APP_IDS, SEMVER, validateSpec, warnSpec } from '../src/scaffold.js'
 
 const artifact = JSON.parse(
   readFileSync(
@@ -32,7 +32,7 @@ const corpus = JSON.parse(
     join(import.meta.dirname, '../../app-runtime/schema/corpus/semver-profile.json'),
     'utf8',
   ),
-) as { cases: { version: string; grammarValid: boolean }[] }
+) as { cases: { version: string; grammarValid: boolean; submissionProfileValid: boolean }[] }
 
 const specWith = (over: Record<string, unknown>) => ({
   targetDir: 'my-app',
@@ -78,5 +78,30 @@ describe('reserved app ids', () => {
 
   it('still accepts an ordinary id', () => {
     expect(validateSpec(specWith({}))).toEqual([])
+  })
+})
+
+describe('the submission profile is a warning, never a refusal', () => {
+  const profileCases = corpus.cases.filter((c) => c.grammarValid && !c.submissionProfileValid)
+
+  it('has cases to check — otherwise this file proves nothing', () => {
+    expect(profileCases.length).toBeGreaterThan(0)
+  })
+
+  it.each(profileCases.map((c) => [c.version.slice(0, 40), c] as [string, (typeof profileCases)[0]]))(
+    'warns about %s without refusing to scaffold',
+    (_label, testCase) => {
+      const spec = specWith({ version: testCase.version })
+      // Nothing to fix in the project itself: it builds and runs. The rule is
+      // about a ZIP filename and a URL path segment, so it is said, not enforced.
+      expect(validateSpec(spec)).toEqual([])
+      expect(warnSpec(spec).join('\n')).toContain('App Store submission rejects')
+    },
+  )
+
+  it('says nothing about a version that satisfies the profile', () => {
+    for (const testCase of corpus.cases.filter((c) => c.submissionProfileValid)) {
+      expect(warnSpec(specWith({ version: testCase.version })), testCase.version).toEqual([])
+    }
   })
 })

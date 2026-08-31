@@ -458,71 +458,75 @@ _Design: §6.4_
 
 ---
 
-## Phase 6: Scaffolder, examples, packaged artifacts, and CI
+## Phase 6: Scaffolder, examples, packaged artifacts, and CI ✅ **COMPLETE**
 
 _Design: §6.5_
 
 ### Deliverables — generated projects
 
-- [ ] `adm-zip` added to generated `devDependencies` — outside this monorepo the
+- [x] `adm-zip` added to generated `devDependencies` — outside this monorepo the
       hoisted root copy does not exist and `build:zip` fails on a missing
       optional peer
-- [ ] Generated `.gitignore` gains `cy-manifest.json`
-- [ ] Generated README gains "before you submit": `author`, `repository`,
+- [x] Generated `.gitignore` gains `cy-manifest.json`
+- [x] Generated README gains "before you submit": `author`, `repository`,
       `license`, `homepage`, `compatibleHostVersions`
-- [ ] **The scaffolder still does not choose a licence** — no `"license": "MIT"`,
+- [x] **The scaffolder still does not choose a licence** — no `"license": "MIT"`,
       no LICENSE file
-- [ ] Preview pin style implemented, and the `SDK_VERSION` test — which accepts
+- [x] Preview pin style implemented, and the `SDK_VERSION` test — which accepts
       only `^x.y.z` today — encodes **both** the preview and post-stable rules
-- [ ] The scaffolder **warns without failing** for a grammar-valid version that
+- [x] The scaffolder **warns without failing** for a grammar-valid version that
       fails the submission profile
 
 ### Deliverables — maintained examples
 
-- [ ] All five gain `build:zip` **and direct declarations of `adm-zip` and
+- [x] All five gain `build:zip` **and direct declarations of `adm-zip` and
       `cross-env`** — neither is declared by any of them today, and the root
       provides `adm-zip` but not `cross-env`, so adding only the script would
       ship a documented command that does not run
 
 ### Deliverables — CI
 
-- [ ] **npm *and* pnpm matrix** over every template: install both packed packages
+- [x] **npm *and* pnpm matrix** over every template: install both packed packages
       outside the workspace, scaffold, build, `verify`, `build:zip`, inspect the
       embedded manifest
-  - [ ] under pnpm, additionally assert the **runtime plugin resolves inside the
+  - [x] under pnpm, additionally assert the **runtime plugin resolves inside the
         installed package** — the highest-risk item the parent SDK design already
         names, and already one of its acceptance criteria
-- [ ] Pre-publish job **always installs the exact packed candidate**. Today it
+- [x] Pre-publish job **always installs the exact packed candidate**. Today it
       installs the registry SDK whenever the generated range resolves and uses
       the candidate only as a fallback, so an ordinary SDK change can pass while
       exercising previously published code
-- [ ] Post-publish smoke **follows the selected `tag` input** — assert
+- [x] Post-publish smoke **follows the selected `tag` input** — assert
       `dist-tags[tag]` equals the expected version, install through `@${tag}`,
       scaffold, build a ZIP, inspect its manifest. Exercise `next` and `latest`
-- [ ] Windows job covers CLI and archive atomic replacement and the member-name
+- [x] Windows job covers CLI and archive atomic replacement and the member-name
       sequence
 
 ### Deliverables — documentation
 
-- [ ] `guides/getting-started.md` §5b — **correct the claim that `npm run build`
+- [x] `guides/getting-started.md` §5b — **correct the claim that `npm run build`
       writes the zip**, untrue since the zip became opt-in; document
       `cy-manifest.json` and the readiness warnings
-- [ ] `packages/app-runtime/README.md` — the `manifest` subcommand, the shipped
+- [x] `packages/app-runtime/README.md` — the `manifest` subcommand, the shipped
       artifacts, the warning behaviour
-- [ ] `CLAUDE.md` §3 and the project-template README — the packaging command and
+- [x] `CLAUDE.md` §3 and the project-template README — the packaging command and
       the new archive contents
-- [ ] [`phase6-release-runbook.md`](phase6-release-runbook.md) — the 0.4.0
+- [x] [`phase6-release-runbook.md`](phase6-release-runbook.md) — the 0.4.0
       propagation and the new archive/CLI checks
 
 ### Verification (Phase 6)
 
-- [ ] `npm run typecheck --workspaces` and `npm run test --workspaces` pass
-- [ ] Every maintained example runs `build:zip` and yields a valid archive
-- [ ] A standalone scaffold under **both** npm and pnpm builds a ZIP whose
-      manifest is correct
-- [ ] A grammar-valid, profile-invalid scaffold: stderr warning, **exit 0**,
+- [x] `npm run typecheck --workspaces` and `npm run test --workspaces` pass
+- [x] Every maintained example runs `build:zip` and yields a valid archive —
+      hello 18, networkStatistics 10, networkWorkflows 18, template 16,
+      claudeBridge 14 members, each with one root manifest and one root entry
+      and no HTML, source map or Federation metadata
+- [x] A standalone scaffold under **both** npm and pnpm builds a ZIP whose
+      manifest is correct — 15 members each, and under pnpm the runtime plugin
+      resolves inside the installed package rather than through the store root
+- [x] A grammar-valid, profile-invalid scaffold: stderr warning, **exit 0**,
       files generated, ordinary build succeeds, `build:zip` fails **leaving no
-      archive**
+      archive** — verified end to end with `--version 1.0.0+build.1`
 
 ---
 

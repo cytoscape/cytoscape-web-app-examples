@@ -209,7 +209,29 @@ describe('SDK_VERSION', () => {
   // described CYWEB_DEV_HOST while scaffolded apps still resolved a runtime
   // that ignored it. No error, no warning — only a dev-server banner naming
   // the wrong host, which nobody compares against a document.
-  it('admits the app-runtime in this workspace', () => {
+  //
+  // TWO pin styles are legal, and which one applies depends on whether the
+  // runtime is a prerelease:
+  //
+  //   preview  an EXACT version — `0.4.0-next.1`. A caret over a prerelease
+  //            admits only prereleases of the same [major, minor, patch], which
+  //            is neither the stability an exact pin gives nor the breadth a
+  //            caret suggests. Pinning exactly says what it means.
+  //   stable   `^x.y.z`, so a patch release reaches new projects without a
+  //            scaffolder change.
+  it('pins the app-runtime in this workspace, in the style its version calls for', () => {
+    const isPrerelease = runtimeVersion.includes('-')
+
+    if (isPrerelease) {
+      expect(
+        SDK_VERSION,
+        `app-runtime is the prerelease ${runtimeVersion}, so scaffolds must pin it ` +
+          `exactly — a caret over a prerelease admits only prereleases of the same ` +
+          `major.minor.patch`,
+      ).toBe(runtimeVersion)
+      return
+    }
+
     const range = SDK_VERSION.match(/^\^(\d+)\.(\d+)\.(\d+)$/)
     expect(range, `SDK_VERSION must look like ^x.y.z, got ${SDK_VERSION}`).not.toBeNull()
     const actual = runtimeVersion.match(/^(\d+)\.(\d+)\.(\d+)/)

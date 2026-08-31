@@ -255,22 +255,20 @@ copy to keep in step.
 
 ## 5b. Package for the App Store
 
-`npm run build` writes **`<appId>-<version>.zip`** next to your `package.json`
-— e.g. `myApp-0.1.0.zip`. That is the file the App Store submission page takes;
-no separate packaging step.
+```bash
+npm run build:zip
+```
 
-It contains the browser publish set rather than all of `dist/`, so the build
-machine's absolute paths (`mf-manifest.json`), build metadata (`mf-stats.json`)
-and the Node-only SSR artifacts stay out of a public upload. The list is an
-allowlist in `@cytoscape-web/app-runtime`, and an unrecognised file fails the
-build instead of being shipped.
+writes **`<appId>-<version>.zip`** next to your `package.json` — e.g.
+`myApp-0.1.0.zip`. That is the file the App Store submission page takes.
 
-The zip is **off by default** — it used to run on every build, which left stale
-archives next to every package.json. Three ways to ask for one, in order of how
-often you will want them:
+**`npm run build` does not write it.** The zip used to run on every build, which
+left stale archives beside every package.json; it has been opt-in since, and
+this section said otherwise for longer than it should have. Three ways to ask
+for one:
 
 ```bash
-npm run build:zip                    # the script your project already ships
+npm run build:zip                    # the script your project ships
 CYWEB_APP_ZIP=1 npm run build        # the same thing, for CI
 ```
 
@@ -279,8 +277,67 @@ defineCyWebApp(import.meta.url, { appStoreZip: true })   // every build
 ```
 
 `CYWEB_APP_ZIP` overrides the config field in **both** directions, so an app
-that has it on can still skip the zip for a quick build with
-`CYWEB_APP_ZIP=0`.
+that has it on can still skip the zip for a quick build with `CYWEB_APP_ZIP=0`.
+
+### What is in it
+
+The browser publish set, not all of `dist/`: the build machine's absolute paths
+(`mf-manifest.json`), build metadata (`mf-stats.json`), the Node-only SSR
+artifacts, HTML and source maps all stay out of a public upload. The allowlist
+lives in `@cytoscape-web/app-runtime`, and **an unrecognised file fails the
+build** instead of being shipped — so a new file class is never uploaded by
+accident.
+
+Packaging also **verifies the build first**, with the same checks
+`cyweb-app verify` runs. A build that does not satisfy the federation contract
+is not packaged at all.
+
+### `cy-manifest.json`
+
+At the root of the archive, generated from your `package.json`:
+
+```json
+{
+  "formatVersion": 1,
+  "id": "myApp",
+  "name": "My App",
+  "version": "0.1.0",
+  "type": "client",
+  "entry": "remoteEntry.js",
+  "description": "Colors nodes by degree",
+  "author": "Jane Doe",
+  "license": "MIT",
+  "generator": "@cytoscape-web/app-runtime@0.4.0-next.1"
+}
+```
+
+It exists because the App Store's submission form has **no application id field**
+— it derives one from the display name, and `My App` becomes `myapp`, which can
+never equal a `cyweb.id` of `myApp`. The host registers a remote under the
+catalog id and rejects an app whose exported `CyApp.id` differs, so the mismatch
+surfaces in the user's browser at install time.
+
+**Never edit it, and never commit one.** It is derived; `cyweb-app manifest`
+prints the same bytes if you want to look at it without building an archive.
+
+### Fill these in before you submit
+
+None of them is needed to build or run, and packaging warns about each one it
+does not find:
+
+| `package.json` | Becomes |
+| --- | --- |
+| `author` | the public author name — a display name only. An email is never published, and an author that IS an email is omitted with a warning |
+| `license` | the licence on the listing. SPDX identifiers, SPDX expressions and `UNLICENSED` all pass through as written |
+| `repository` | the source link. `git@…`, `github:owner/repo` and a `.git` suffix are all accepted and normalized; the object form's `directory` is kept for monorepos |
+| `homepage` | the project's own page |
+| `cyweb.compatibleHostVersions` | the host versions this app declares itself compatible with |
+
+Two rules are worth knowing before they surprise you. **A malformed value fails
+packaging rather than going missing** — a `homepage` of `ftp://…`, a repository
+with a query string, a non-string `description`. And **an explicit port, query
+or fragment in `repository` is rejected rather than stripped**, because dropping
+part of a URL changes what it addresses.
 
 ---
 
