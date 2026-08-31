@@ -313,7 +313,25 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
 
   // ── 8. No developer host URL survived into the artifact ───────────────────
   const jsFiles = listFilesRecursive(distDir).filter((f) => f.endsWith('.js'))
-  const readFile = (f: string): string => readFileSync(join(distDir, f), 'utf8')
+
+  // A file that cannot be read is a corrupt build output, not an exception. A
+  // dangling symlink in dist/ used to throw ENOENT from here, which reached the
+  // caller as a stack trace naming a path and no reason. It is reported as a
+  // failure and the remaining checks still run — and deliberately adds no new
+  // passing check, so a healthy build's count is unchanged.
+  const unreadable = new Set<string>()
+  const readFile = (f: string): string => {
+    try {
+      return readFileSync(join(distDir, f), 'utf8')
+    } catch (cause) {
+      // Once per file, however many checks go on to ask for it.
+      if (!unreadable.has(f)) {
+        unreadable.add(f)
+        failures.push(`${f} could not be read — ${(cause as Error).message}`)
+      }
+      return ''
+    }
+  }
 
   const localhostHits = jsFiles.filter((f) => /localhost:\d+\/remoteEntry\.js/.test(readFile(f)))
   check(

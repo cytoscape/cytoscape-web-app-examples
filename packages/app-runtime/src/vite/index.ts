@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { federation } from '@module-federation/vite'
@@ -10,7 +11,12 @@ import {
 } from 'vite'
 
 import { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
-import { parseAppMeta, readPackageSnapshot } from './appMeta.js'
+import {
+  parseAppMeta,
+  parseSubmissionMeta,
+  readPackageSnapshot,
+  sharedExpectations,
+} from './appMeta.js'
 import { resolveDevHost } from './devHost.js'
 import { cywebDevInstall } from './devInstall.js'
 import { noSharedPayload } from './noSharedPayload.js'
@@ -27,7 +33,6 @@ export {
   DEV_MANIFEST_PATH,
 } from './devInstall.js'
 export { noSharedPayload } from './noSharedPayload.js'
-export { zipForAppStore } from './zipForAppStore.js'
 export { cywebAppMeta } from './virtualMeta.js'
 export {
   parseAppMeta,
@@ -69,6 +74,20 @@ export type { CyWebAppMeta, CyWebBlock } from '../meta/index.js'
 const RUNTIME_PLUGIN_PATH = normalizePath(
   fileURLToPath(new URL('../runtime/mfRuntimePlugin.js', import.meta.url)),
 )
+
+/**
+ * This package's own version, for the manifest's `generator` field.
+ *
+ * READ, not imported, for the same reason app metadata is: `resolveJsonModule`
+ * is off in the config that type-checks a vite.config.ts, and `generator` is a
+ * self-reported diagnostic — it should say which SDK actually ran, not which
+ * one a bundler inlined at some earlier point.
+ */
+const SDK_VERSION: string = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+  ) as { version: string }
+).version
 
 /** The one expose the host loads an app through. Not negotiable. */
 const APP_CONFIG_EXPOSE = './AppConfig'
@@ -271,8 +290,19 @@ export const defineCyWebApp = (configFileUrl: string, options: CyWebAppOptions =
       // AFTER federation() — it inspects the graph that plugin produces.
       noSharedPayload(),
     )
-    if (resolveAppStoreZip(appStoreZip))
-      plugins.push(zipForAppStore(meta.id, meta.version))
+    // The packager gets its submission metadata from the SAME snapshot the
+    // identity came from, so what the archive claims and what the build
+    // produced cannot come from two different reads of package.json.
+    if (resolveAppStoreZip(appStoreZip)) {
+      plugins.push(
+        zipForAppStore({
+          appMeta: meta,
+          submissionMeta: parseSubmissionMeta(snapshot),
+          expectedShared: sharedExpectations(snapshot),
+          sdkVersion: SDK_VERSION,
+        }),
+      )
+    }
 
     // NOTE: `base` is intentionally NOT set. The MF plugin then resolves
     // publicPath to 'auto', so chunks resolve relative to remoteEntry.js

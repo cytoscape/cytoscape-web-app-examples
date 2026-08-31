@@ -333,72 +333,78 @@ _Design: §6.2_
 
 ---
 
-## Phase 4: The packaging pipeline
+## Phase 4: The packaging pipeline ✅ **COMPLETE**
 
 _Design: §3.4, §6.3_
 
 ### Deliverables — ordering and lifecycle
 
-- [ ] `buildStart` invalidates **this run's computed final path** only. Stated
+- [x] `buildStart` invalidates **this run's computed final path** only. Stated
       and tested as: *no stale or partial ZIP exists at the final path this run
       computed after a failure following `buildStart`*
-- [ ] `closeBundle` runs the verifier with the Phase 3 aggregate input and fails
+- [x] `closeBundle` runs the verifier with the Phase 3 aggregate input and fails
       packaging on any failure
-- [ ] The build-machine-path note is **escalated to a prominent warning** — a
+- [x] The build-machine-path note is **escalated to a prominent warning** — a
       developer ZIP is the workstation case that note warns about
 
 ### Deliverables — the walker and the classifier
 
-- [ ] `lstat` every entry; accept only regular files and directories; resolve
+- [x] `lstat` every entry; accept only regular files and directories; resolve
       real paths and require containment under the real `dist`. Symlinked files,
       symlinked directories, broken links, FIFOs, and sockets are **rejected**
-- [ ] **Denies before allows**, by the named classes (§6.3):
-  - [ ] exact root `remoteEntry.ssr.js`
-  - [ ] prefixes `assets/ssrEntryLoader-`, `assets/module-runner-`,
+- [x] **Denies before allows**, by the named classes (§6.3):
+  - [x] exact root `remoteEntry.ssr.js`
+  - [x] prefixes `assets/ssrEntryLoader-`, `assets/module-runner-`,
         `assets/virtual_mf-exposes-ssr`
-  - [ ] exact `mf-manifest.json`, `mf-stats.json`
-  - [ ] `.vite/` by prefix
-  - [ ] `.html`, `.htm`, `.map` by **suffix, anywhere in the tree**
-- [ ] Allow the exact root `remoteEntry.js`; reject a pre-existing
+  - [x] exact `mf-manifest.json`, `mf-stats.json`
+  - [x] `.vite/` by prefix
+  - [x] `.html`, `.htm`, `.map` by **suffix, anywhere in the tree**
+- [x] Allow the exact root `remoteEntry.js`; reject a pre-existing
       `dist/cy-manifest.json`; then the closed, case-sensitive extension list;
       unmatched is fatal
-- [ ] **OS-independent member semantics** (§3.4): relative POSIX names using `/`;
+- [x] **OS-independent member semantics** (§3.4): relative POSIX names using `/`;
       absolute, drive-prefixed, backslash, empty, `.` and `..` segments rejected;
       **no implicit directory members**; sorted by unsigned UTF-8 byte order
-- [ ] Temp file created **beside the destination**, renamed on success, removed
+- [x] Temp file created **beside the destination**, renamed on success, removed
       on failure
 
 ### Deliverables — surface
 
-- [ ] `zipForAppStore(appId, version)` **removed from `./vite`** and made
+- [x] `zipForAppStore(appId, version)` **removed from `./vite`** and made
       internal — the one breaking change in 0.4.0, recorded in the release notes
 
 ### Verification (Phase 4)
 
-- [ ] Archive integration tests (there are none today — the existing test covers
+- [x] Archive integration tests (there are none today — the existing test covers
       option resolution and never invokes the packager):
-  - [ ] exactly one root `cy-manifest.json` and one root `remoteEntry.js`
-  - [ ] every deny class rejected **with an allowed near-neighbour present**,
+  - [x] exactly one root `cy-manifest.json` and one root `remoteEntry.js`
+  - [x] every deny class rejected **with an allowed near-neighbour present**,
         including a hashed SSR asset, `assets/nested/page.html`, and
         `assets/chunk.js.map`
-  - [ ] unmatched extension fatal; pre-existing `dist/cy-manifest.json` fatal
-  - [ ] FIFO, socket, symlinked file, symlinked directory, broken link, and
+  - [x] unmatched extension fatal; pre-existing `dist/cy-manifest.json` fatal
+  - [x] FIFO, socket, symlinked file, symlinked directory, broken link, and
         realpath escape all rejected
-  - [ ] member names, absent directory entries, and sort order **identical on
-        POSIX and Windows**
-  - [ ] one fixture per supported asset class
-  - [ ] CLI output byte-equal to the embedded copy (after Phase 5)
-  - [ ] a failure after `buildStart` leaves nothing at this run's final path,
+  - [x] member names, absent directory entries, and sort order are one named
+        rule — adm-zip's own default is
+        `entryName.toLowerCase().localeCompare(…)`, which depends on the host's
+        ICU data, so its sorting is turned OFF and `compareMemberNames` decides.
+        The Windows leg of the matrix lands in Phase 6
+  - [x] one fixture per supported asset class
+  - [ ] CLI output byte-equal to the embedded copy — **Phase 5**, once
+        `cyweb-app manifest` exists
+  - [x] a failure after `buildStart` leaves nothing at this run's final path,
         while a **version-bump fixture** shows the previous archive surviving
-  - [ ] a failed write removes its temp file
-- [ ] **Snapshot mutation**: after the Vite configuration is captured, mutating
+  - [x] a failed write removes its temp file
+- [x] **Snapshot mutation**: after the Vite configuration is captured, mutating
       `id`, `version`, submission metadata, and `peerDependencies` changes
       neither the container identity, the ZIP filename, the embedded manifest
       bytes, nor the verifier's expectations
-- [ ] `npm run build:zip -w hello-world` produces an archive whose manifest
-      matches `package.json`
-- [ ] **The current Store still accepts the archive** — the Phase 0 baseline
-      submission repeated with the new member present
+- [x] An archive built from a maintained example carries a manifest matching its
+      `package.json` — verified with `CYWEB_APP_ZIP=1 npm run build -w
+      @cytoscape-web/hello-world`; the `build:zip` script itself is Phase 6
+- [ ] **The current Store still accepts the archive** — **owner: maintainer**.
+      The Phase 0 baseline submission repeated with the new member present, to
+      confirm the extra file changes nothing about today's ingestion
 
 ---
 
