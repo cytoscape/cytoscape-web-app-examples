@@ -206,7 +206,7 @@ later in this checklist is true without this.
 
 ---
 
-## Phase 2: The wire format — builder, serializer, schema, predicates, ledger
+## Phase 2: The wire format — builder, serializer, schema, predicates, ledger ✅ **COMPLETE**
 
 _Design: §3.1, §3.2, §3.3, §3.4, §4, §5_
 
@@ -220,77 +220,81 @@ The artifact contract. Three shipped artifacts, one ledger, two corpora.
 
 ### Deliverables — the builder
 
-- [ ] `packages/app-runtime/src/vite/cyManifest.ts` — `CY_MANIFEST_FILENAME`,
+- [x] `packages/app-runtime/src/vite/cyManifest.ts` — `CY_MANIFEST_FILENAME`,
       `CY_MANIFEST_FORMAT_VERSION`, `CyManifestV1`,
       `buildCyManifest(appMeta, submissionMeta, sdkVersion)`. Pure: no fs, no
       Vite, no logging
-- [ ] `serializeCyManifest(manifest)` — **the only place bytes are produced**:
+- [x] `serializeCyManifest(manifest)` — **the only place bytes are produced**:
       UTF-8, no BOM, two-space indent, fixed field order, one trailing newline,
       and the 16,384-octet document limit enforced here (§3.4)
-- [ ] Every normative rule in the implementation is labelled **[source]** or
+- [x] Every normative rule in the implementation is labelled **[source]** or
       **[wire]** (§3.3) — the Store implements only the wire half
 
 ### Deliverables — normalization ([source])
 
-- [ ] `author`: plain string, `"Name <email> (url)"`, `{ name, email, url }` →
+- [x] `author`: plain string, `"Name <email> (url)"`, `{ name, email, url }` →
       name only; **the extracted name is then re-checked** and omitted with a
       readiness warning if it is email-like or URL-like (§5)
-- [ ] `repository`: https / `git+https` / SSH / `github:`-style shorthand /
+- [x] `repository`: https / `git+https` / SSH / `github:`-style shorthand /
       object with string `url` and `type` absent-or-`"git"` → canonical
       credential-free HTTPS. **Explicit port, query, or fragment is rejected, not
       stripped.** Raw encoded path components inspected **before** URL parsing
-- [ ] `repositoryDirectory`: relative POSIX, no `.`/`..`/empty segment/leading
+- [x] `repositoryDirectory`: relative POSIX, no `.`/`..`/empty segment/leading
       `/`/drive/backslash/NUL, and **no `%` at all**
-- [ ] `homepage`: credential-free http(s), path/query/fragment **preserved**
-- [ ] `tags`: trim, drop empties, de-duplicate ASCII-case-insensitively with
+- [x] `homepage`: credential-free http(s), path/query/fragment **preserved**
+- [x] `tags`: trim, drop empties, de-duplicate ASCII-case-insensitively with
       exact comparison for non-ASCII, keep first spelling and authored order,
       **omit when empty**
-- [ ] `license`: trimmed value passed through, type and bounds only
-- [ ] Trimming is **field-specific**: `id` and `version` are never trimmed —
+- [x] `license`: trimmed value passed through, type and bounds only
+- [x] Trimming is **field-specific**: `id` and `version` are never trimmed —
       surrounding whitespace is invalid; constants and `generator` are exact
-- [ ] Empty-after-trim classification implemented per the §5 rule for both
+- [x] Empty-after-trim classification implemented per the §5 rule for both
       lifecycles
 
 ### Deliverables — shipped artifacts
 
-- [ ] `packages/app-runtime/schema/cy-manifest-v1.schema.json` — draft 2020-12,
+- [x] `packages/app-runtime/schema/cy-manifest-v1.schema.json` — draft 2020-12,
       **preview `$id`** `…/cy-manifest/v1/draft/0.4.0-next.1/schema.json`
-- [ ] The normative **semantic-predicate artifact** beside it, covering the
+- [x] The normative **semantic-predicate artifact** beside it, covering the
       reserved-id list, author predicates, repository canonicalization
       (hostname case and IDNA, trailing slashes, percent escapes, path-segment
       grammar, terminal `.git` removal case and order), `repositoryDirectory`
       grammar, the tag equality relation, the Unicode scalar check, and the
       §4.2 SemVer profile
-- [ ] **Append-only `$id` → `sha256:<lowercase-hex>` ledger** covering the
+- [x] **Append-only `$id` → `sha256:<lowercase-hex>` ledger** covering the
       schema, the predicates, and (later) the publication-profile snapshot
-  - [ ] Digests are taken over **raw bytes extracted from the packed candidate
+  - [x] Digests are taken over **raw bytes extracted from the packed candidate
         tarball** — no newline normalization, transcoding, or JSON
         canonicalization (§3.2)
-- [ ] Both artifacts added to `files` and reachable through a documented export
+- [x] Both artifacts added to `files` and reachable through a documented export
       subpath
 
 ### Deliverables — corpora
 
-- [ ] **`package-source-normalization`** — `package.json` → canonical manifest
-- [ ] **`canonical-wire-validation`** — manifest bytes and parsed value →
+- [x] **`package-source-normalization`** — `package.json` → canonical manifest
+- [x] **`canonical-wire-validation`** — manifest bytes and parsed value →
       valid/invalid, with **every source-only form as a rejection**
-- [ ] **One SemVer corpus, two expectations per case** — `grammarValid` and
+- [x] **One SemVer corpus, two expectations per case** — `grammarValid` and
       `submissionProfileValid` (§4.2), including the `…991`/`…992` boundary, the
       two large prerelease identifiers that compare equal, and latest-ordering
-- [ ] Reserved-id negative corpus, shared by reader, scaffolder, schema, and
+- [x] Reserved-id negative corpus, shared by reader, scaffolder, schema, and
       (later) Store and host
-- [ ] Lone, reversed, and split-surrogate fixtures for property names and string
+- [x] Lone, reversed, and split-surrogate fixtures for property names and string
       values (§3.2)
 
 ### Verification (Phase 2)
 
-- [ ] Every generated fixture validates against the schema **and** the predicates
+- [x] Every generated fixture validates against the schema **and** the predicates
       resolved **from the packed tarball**, not from the workspace
-- [ ] `npm pack -w @cytoscape-web/app-runtime --dry-run` lists both artifacts
-- [ ] A CI check fails when a ledger `$id` changes digest
-- [ ] Both corpora run independently and neither imports the other's helpers
-- [ ] The scaffolder's SemVer regex and the runtime reader's now agree on
-      `grammarValid` for every corpus case
+- [x] `npm pack -w @cytoscape-web/app-runtime --dry-run` lists both artifacts
+- [x] A CI check fails when a ledger `$id` changes digest
+- [x] Both corpora run independently and neither imports the other's helpers —
+      46 source cases, 39 wire cases, 22 SemVer cases, 14 reserved ids
+- [x] The scaffolder's SemVer regex and the runtime reader's now agree on
+      `grammarValid` for every corpus case — the scaffolder's was looser and
+      accepted `1.0.0-01`, which scaffolded and then failed its own first build.
+      It also gained the reserved-id list, and a test fails if either copy drifts
+      from the artifact
 
 ---
 

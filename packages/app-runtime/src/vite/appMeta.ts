@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { CyWebAppMeta } from '../meta/index.js'
+import { isReservedId } from './manifestPredicates.js'
 
 /**
  * Everything derived from an app's package.json, over ONE read of it.
@@ -32,9 +33,6 @@ import type { CyWebAppMeta } from '../meta/index.js'
  * both worlds.
  */
 const JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
-
-/** The host's own federation name. An app taking it would collide with the host. */
-const RESERVED_IDS = new Set(['cyweb'])
 
 /** npm's own grammar, not a loose "has dots" check. */
 const SEMVER =
@@ -128,8 +126,19 @@ export const parseAppMeta = (snapshot: PackageSnapshot): CyWebAppMeta => {
         `registry id at once, and the host rejects anything else on install.`,
     )
   }
-  if (RESERVED_IDS.has(id)) {
-    return fail(`cyweb.id "${id}" is reserved — it is the host's own federation name.`)
+  // `cyweb` is the host's own federation name; the rest are own keys of
+  // Object.prototype. This is a RUNTIME rule, not a submission-profile one: the
+  // host indexes installed apps in ordinary prototype-bearing records, so
+  // `state.apps['toString']` reads as an installed app and assigning to
+  // `__proto__` mutates a record's prototype. A length bound belongs to the
+  // submission profile and is applied where the manifest is built; a key that
+  // breaks the host does not.
+  if (isReservedId(id)) {
+    return fail(
+      `cyweb.id "${id}" is reserved — the host indexes apps in ordinary objects, ` +
+        `where this name collides with an inherited property or with the host's ` +
+        `own federation name.`,
+    )
   }
   if (typeof displayName !== 'string' || displayName.trim() === '') {
     return fail(`cyweb.displayName must be a non-empty string.`)

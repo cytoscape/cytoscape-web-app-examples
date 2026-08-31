@@ -80,7 +80,39 @@ export const BROWSER_BLOCKED_PORTS = [
 ]
 
 const JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
-const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+// The SAME grammar the runtime reader applies, not a looser one that lets a
+// project scaffold and then fail its first build. The canonical source is
+// `cy-manifest-v1.predicates.json` in @cytoscape-web/app-runtime; a test asserts
+// this copy still matches it, because the scaffolder cannot import from a
+// package it does not depend on.
+export const SEMVER =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
+/**
+ * `cyweb`, plus every own key of `Object.prototype`.
+ *
+ * A legal JavaScript identifier is not automatically a safe object key: the host
+ * indexes installed apps in ordinary prototype-bearing records, so an app called
+ * `toString` reads as already installed and one called `__proto__` mutates a
+ * record's prototype. Scaffolding such a project would produce something that
+ * cannot be published — better to say so at `npm create` time.
+ */
+export const RESERVED_APP_IDS = [
+  'cyweb',
+  '__proto__',
+  'constructor',
+  'prototype',
+  '__defineGetter__',
+  '__defineSetter__',
+  'hasOwnProperty',
+  '__lookupGetter__',
+  '__lookupSetter__',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf',
+]
 /** npm's rules, reduced to what a generated name can be. */
 const PACKAGE_NAME = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/
 
@@ -129,8 +161,12 @@ export const validateSpec = (spec: ScaffoldSpec): string[] => {
         `Federation container name, and the host rejects anything else on install`,
     )
   }
-  if (spec.id === 'cyweb') {
-    problems.push(`--id "cyweb" is reserved — it is the host's own federation name`)
+  if (RESERVED_APP_IDS.includes(spec.id)) {
+    problems.push(
+      `--id "${spec.id}" is reserved — the host indexes apps in ordinary objects, ` +
+        `where this name collides with an inherited property or with the host's ` +
+        `own federation name`,
+    )
   }
   if (spec.displayName.trim() === '') problems.push('--display-name must not be empty')
   if (!SEMVER.test(spec.version)) {

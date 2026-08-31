@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json",
+  "title": "cy-manifest v1",
+  "description": "The App Store submission manifest carried at the root of a Cytoscape Web app archive. One JSON object describing exactly one app. This is a PREVIEW identity: it may change until the first stable identity is issued, after which the official property set and validation envelope are frozen and any change — in either direction — requires a new formatVersion. Canonical validity is this schema PLUS strict raw-JSON validation PLUS the semantic predicates pinned beside it; see cy-manifest-v1.predicates.json.",
+  "type": "object",
+  "required": ["formatVersion", "id", "name", "version", "type", "entry", "generator"],
+  "additionalProperties": true,
+  "properties": {
+    "formatVersion": {
+      "const": 1,
+      "description": "The wire-compatibility major. Rejected before any other property is interpreted."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z_$][a-zA-Z0-9_$]*$",
+      "maxLength": 64,
+      "description": "The Module Federation container name, the exported CyApp.id and the registry id at once. Never trimmed. The reserved-id list is a predicate, not a schema keyword."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Display name. Trimmed by the producer; a present untrimmed or empty value is noncanonical."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$",
+      "description": "Canonical SemVer 2.0.0 without build metadata. Never trimmed. The numeric-identifier magnitude bound is a predicate."
+    },
+    "type": {
+      "const": "client",
+      "description": "v1 describes client-side apps only."
+    },
+    "entry": {
+      "const": "remoteEntry.js",
+      "description": "The federation entry, relative to the archive root. There is deliberately no url: the Store assigns one when it hosts the bundle."
+    },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Public display name only. An email address never appears here."
+    },
+    "license": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Canonical credential-free https URL. Shorthands, SSH forms, objects and .git suffixes are source-only and rejected on the wire."
+    },
+    "repositoryDirectory": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Relative POSIX path within the repository. Material for monorepo builds."
+    },
+    "homepage": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https?://",
+      "description": "Credential-free http(s). Plain http passes the producer boundary because a local development URL is a legitimate package value; the Store's publication profile requires https."
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "description": "Omitted rather than emitted empty."
+    },
+    "compatibleHostVersions": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "An npm semver range, opaque to the SDK. Range validity is checked where a canonical implementation lives: the Store, and the host."
+    },
+    "generator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Self-reported diagnostic. Never provenance: the file is generated from developer-controlled input inside an archive the developer can edit afterwards."
+    }
+  }
+}

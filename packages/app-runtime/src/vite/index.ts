@@ -42,6 +42,15 @@ export type {
   RawPackageJson,
   ShareRecord,
 } from './appMeta.js'
+export {
+  buildCyManifest,
+  CY_MANIFEST_FILENAME,
+  CY_MANIFEST_FORMAT_VERSION,
+  serializeCyManifest,
+  validateCyManifestWire,
+} from './cyManifest.js'
+export type { BuildCyManifestResult, CyManifestV1 } from './cyManifest.js'
+export { PREDICATES } from './manifestPredicates.js'
 export { CYWEB_HOST_REQUIRED } from '../runtime/cywebHostSentinel.js'
 export type { CyWebAppMeta, CyWebBlock } from '../meta/index.js'
 

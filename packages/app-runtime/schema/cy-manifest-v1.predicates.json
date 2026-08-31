@@ -1,0 +1,205 @@
+{
+  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/predicates.json",
+  "title": "cy-manifest v1 semantic predicates",
+  "formatVersion": 1,
+  "status": "preview",
+  "//": [
+    "NORMATIVE. Canonical wire validity is strict raw-JSON validation, plus the",
+    "pinned JSON Schema, plus the predicates in this file. JSON Schema cannot",
+    "express email-like author detection, canonical URL serialization, encoded",
+    "path inspection before URL parsing, or SemVer semantics; finite fixtures",
+    "cannot define an answer for every input. The algorithms and patterns here",
+    "are the definition. The corpora under corpus/ are conformance examples.",
+    "",
+    "This artifact is pinned by $id and SHA-256 digest in ledger.json, and after",
+    "the first stable identity is issued a change here requires a new",
+    "formatVersion — otherwise it recreates the unselectable same-version",
+    "validator problem the schema identity split exists to solve.",
+    "",
+    "The SDK reads this file rather than restating it, so the artifact is the",
+    "single source rather than a parallel copy that can drift."
+  ],
+
+  "reservedIds": {
+    "//": [
+      "A legal JavaScript identifier is not automatically a safe object key. The",
+      "host indexes installed apps and catalog entries in ordinary",
+      "prototype-bearing records, so `state.apps['toString'] !== undefined` is",
+      "true for an app that was never installed, and assigning to `__proto__`",
+      "mutates a record's prototype instead of creating an own property.",
+      "`cyweb` is the host's own federation name."
+    ],
+    "values": [
+      "cyweb",
+      "__proto__",
+      "constructor",
+      "prototype",
+      "__defineGetter__",
+      "__defineSetter__",
+      "hasOwnProperty",
+      "__lookupGetter__",
+      "__lookupSetter__",
+      "isPrototypeOf",
+      "propertyIsEnumerable",
+      "toLocaleString",
+      "toString",
+      "valueOf"
+    ]
+  },
+
+  "id": {
+    "pattern": "^[a-zA-Z_$][a-zA-Z0-9_$]*$",
+    "maxCodePoints": 64,
+    "trimmed": false,
+    "//": "Never trimmed: surrounding whitespace makes it invalid, because trimming would silently accept a value that disagrees with the federation container name."
+  },
+
+  "version": {
+    "grammarPattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+    "submissionPattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$",
+    "maxCodePoints": 128,
+    "buildMetadata": "rejected",
+    "maxNumericIdentifier": 9007199254740991,
+    "trimmed": false,
+    "//": [
+      "Two expectations per case, not one. `grammarPattern` is what the runtime",
+      "reader applies on every dev server and build; the rest is the submission",
+      "profile, applied only where a manifest is produced.",
+      "",
+      "Build metadata is rejected because SemVer excludes it from precedence:",
+      "1.0.0+a and 1.0.0+b are distinct identities that tie for a latest",
+      "endpoint, and `+` in a URL path is an encoding hazard besides.",
+      "",
+      "maxNumericIdentifier is not theoretical. Against node-semver@7.8.5,",
+      "9007199254740991.0.0 is accepted and 9007199254740992.0.0 is rejected, and",
+      "1.0.0-99999999999999999999 and 1.0.0-100000000000000000000 compare EQUAL.",
+      "The alternative is an arbitrary-precision comparator in the SDK, the Store",
+      "and the host."
+    ]
+  },
+
+  "limits": {
+    "//": "Code points, measured after the trim and normalization each field defines. The document limit is UTF-8 octets, which JSON Schema cannot express — the serializer enforces it.",
+    "name": 128,
+    "description": 1024,
+    "author": 128,
+    "license": 64,
+    "repository": 512,
+    "repositoryDirectory": 256,
+    "homepage": 512,
+    "compatibleHostVersions": 64,
+    "generator": 128,
+    "tagsMaxEntries": 20,
+    "tagMaxCodePoints": 32,
+    "documentMaxUtf8Octets": 16384
+  },
+
+  "unicode": {
+    "scalarValuesOnly": true,
+    "//": [
+      "Every property name and every string value must be a valid Unicode scalar",
+      "sequence, checked AFTER parsing. Strict UTF-8 validation of the raw bytes",
+      "does not catch this: the bytes of \"\\uDEAD\" are plain ASCII. RFC 8259 §8.2",
+      "permits the escape and warns that consumer behaviour is unpredictable."
+    ]
+  },
+
+  "author": {
+    "sourceForms": ["string", "\"Name <email> (url)\"", "{ name, email, url }"],
+    "wireForm": "trimmed display string",
+    "emailLikePattern": "\\S+@\\S+",
+    "urlLikePattern": "(^|\\s)([a-z][a-z0-9+.\\-]*://|www\\.)",
+    "//": [
+      "The name is extracted first, then re-checked. Taking `name` out of",
+      "{\"name\": \"jane@example.org\"} and publishing it would break the promise",
+      "that an author never carries an email address, so a name matching either",
+      "pattern omits the field with a readiness warning rather than publishing it."
+    ]
+  },
+
+  "repository": {
+    "acceptedSourceForms": [
+      "https://host/owner/repo",
+      "https://host/owner/repo.git",
+      "http://host/owner/repo (normalized to https)",
+      "git+https://host/owner/repo.git",
+      "git@host:owner/repo.git",
+      "ssh://git@host/owner/repo.git",
+      "github:owner/repo",
+      "gitlab:owner/repo",
+      "bitbucket:owner/repo",
+      "{ \"type\": \"git\" | absent, \"url\": <one of the above>, \"directory\": <path> }"
+    ],
+    "shorthandHosts": {
+      "github": "github.com",
+      "gitlab": "gitlab.com",
+      "bitbucket": "bitbucket.org"
+    },
+    "wireForm": "https://host/path — no userinfo, no port, no query, no fragment, no trailing .git, no trailing slash",
+    "rejects": [
+      "userinfo other than the conventional `git` of an SSH form",
+      "an explicit port",
+      "a query string",
+      "a fragment",
+      "any percent escape in the path"
+    ],
+    "//": [
+      "An explicit port, query or fragment is REJECTED, not silently stripped:",
+      "dropping part of a URL changes what it addresses, and a developer who",
+      "wrote one deserves to be told. The `git@` of an SSH form is transport",
+      "syntax rather than a credential, which is the one userinfo exception.",
+      "",
+      "Percent escapes are inspected on the RAW string, before any URL parser",
+      "normalizes them, and rejected outright — the same rule as",
+      "repositoryDirectory, for the same reason."
+    ]
+  },
+
+  "repositoryDirectory": {
+    "wireForm": "relative POSIX path",
+    "rejects": [
+      "an absolute path or a leading /",
+      "a drive letter",
+      "a backslash",
+      "an empty segment",
+      "a . or .. segment",
+      "NUL",
+      "any % at all"
+    ],
+    "//": "Banning the escape character outright is simpler than specifying recursive, case-insensitive percent-decoding that two implementations must match, and no legitimate monorepo path needs one."
+  },
+
+  "homepage": {
+    "schemes": ["https", "http"],
+    "wireForm": "credential-free http(s) URL with path, query and fragment preserved",
+    "rejects": ["userinfo", "any scheme other than http or https"],
+    "//": [
+      "A port IS allowed, unlike repository: a local development URL is a",
+      "legitimate package value, which is also why plain http passes the producer",
+      "boundary. The Store's publication profile requires https for a public",
+      "listing; that is a Store rule, not a producer rule."
+    ]
+  },
+
+  "tags": {
+    "equality": "ascii-case-insensitive",
+    "//": [
+      "Trim, drop empties, de-duplicate, keep the first spelling and the authored",
+      "order, then apply the limits. Equality folds A-Z to a-z and compares every",
+      "other code point exactly — a portable rule two implementations can agree",
+      "on, unlike locale-aware case folding. When nothing survives, the field is",
+      "omitted rather than emitted empty."
+    ]
+  },
+
+  "emptyAfterTrim": {
+    "source": "A missing optional scalar, or a direct string empty after field-specific trimming, is absent and omitted. A supplied composite whose required member becomes empty — a repository object with a blank url — is invalid. A required name empty after trimming is invalid. Wrong types are always invalid.",
+    "wire": "A present empty or untrimmed value is noncanonical and rejected. The Store never trims it and never omits it."
+  },
+
+  "readinessWarnings": {
+    "fields": ["author", "license", "repository", "homepage", "compatibleHostVersions"],
+    "status": "policy-pending",
+    "//": "During the preview these are recommended, not required. The publication profile that decides which are mandatory is owned and versioned by the App Store; until it exists, a warning cannot cite a decision that has not been made."
+  }
+}
