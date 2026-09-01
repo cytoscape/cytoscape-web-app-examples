@@ -41,9 +41,12 @@ describe('commands', () => {
     expect(kindOf('manifest')).toBe('manifest')
   })
 
-  it.each([['build'], ['package'], ['--root'], ['']])('rejects %j as a command', (command) => {
-    expect(kindOf(command)).toBe('usage')
-  })
+  it.each([['build'], ['package'], ['--root'], ['']])(
+    'rejects %j as a command',
+    (command) => {
+      expect(kindOf(command)).toBe('usage')
+    },
+  )
 })
 
 describe('flag grammar', () => {
@@ -54,16 +57,31 @@ describe('flag grammar', () => {
   it('rejects a singleton flag given twice', () => {
     // parseArgs silently keeps the last one, so `--out a --out b` would write
     // one of them and say nothing about the other.
-    const result = parseCommandLine(['manifest', '--out', 'a.json', '--out', 'b.json'])
+    const result = parseCommandLine([
+      'manifest',
+      '--out',
+      'a.json',
+      '--out',
+      'b.json',
+    ])
     expect(result.kind).toBe('usage')
-    expect(result.kind === 'usage' && result.message).toContain('more than once')
+    expect(result.kind === 'usage' && result.message).toContain(
+      'more than once',
+    )
   })
 
   it('allows the one repeatable flag, which is existing public behaviour', () => {
     const result = parseCommandLine([
-      'verify', '--expect-expose', './AppConfig', '--expect-expose', './Menu',
+      'verify',
+      '--expect-expose',
+      './AppConfig',
+      '--expect-expose',
+      './Menu',
     ])
-    expect(result.kind === 'verify' && result.expectExposes).toEqual(['./AppConfig', './Menu'])
+    expect(result.kind === 'verify' && result.expectExposes).toEqual([
+      './AppConfig',
+      './Menu',
+    ])
   })
 
   it('rejects a value that is really the next flag', () => {
@@ -86,7 +104,9 @@ describe('flag grammar', () => {
   it('rejects --force without --out, which would do nothing', () => {
     const result = parseCommandLine(['manifest', '--force'])
     expect(result.kind).toBe('usage')
-    expect(result.kind === 'usage' && result.message).toContain('does nothing without --out')
+    expect(result.kind === 'usage' && result.message).toContain(
+      'does nothing without --out',
+    )
   })
 
   it('rejects a positional argument', () => {
@@ -99,15 +119,70 @@ describe('what each command carries', () => {
     // The default for --dist is <root>/dist and belongs to verifyApp, which
     // knows the root. Defaulting here would lose that.
     const result = parseCommandLine(['verify'])
-    expect(result).toEqual({ kind: 'verify', root: undefined, dist: undefined, expectExposes: [] })
+    expect(result).toEqual({
+      kind: 'verify',
+      root: undefined,
+      dist: undefined,
+      expectExposes: [],
+    })
   })
 
   it('carries manifest options through', () => {
-    expect(parseCommandLine(['manifest', '--root', 'app', '--out', 'm.json', '--force'])).toEqual({
+    expect(
+      parseCommandLine([
+        'manifest',
+        '--root',
+        'app',
+        '--out',
+        'm.json',
+        '--force',
+      ]),
+    ).toEqual({
       kind: 'manifest',
       root: 'app',
       out: 'm.json',
       force: true,
     })
+  })
+})
+
+describe('equals-form flags are the same flags', () => {
+  // Compared as whole tokens, `--out=a --out=b` looked like two different flags
+  // and slipped past the duplicate check; parseArgs then kept `b` and said
+  // nothing about `a`. In the other direction, two identical
+  // `--expect-expose=./A` tokens looked like a duplicate of a flag that is
+  // explicitly repeatable.
+  it('catches a singleton repeated in equals form', () => {
+    const result = parseCommandLine([
+      'manifest',
+      '--out=a.json',
+      '--out=b.json',
+    ])
+    expect(result.kind).toBe('usage')
+    expect(result.kind === 'usage' && result.message).toContain(
+      'more than once',
+    )
+  })
+
+  it('catches a singleton repeated in mixed forms', () => {
+    expect(kindOf('manifest', '--out=a.json', '--out', 'b.json')).toBe('usage')
+  })
+
+  it('still allows the repeatable flag in equals form', () => {
+    const result = parseCommandLine([
+      'verify',
+      '--expect-expose=./AppConfig',
+      '--expect-expose=./Menu',
+    ])
+    expect(result.kind === 'verify' && result.expectExposes).toEqual([
+      './AppConfig',
+      './Menu',
+    ])
+  })
+
+  it('allows the repeatable flag with the same value twice', () => {
+    expect(kindOf('verify', '--expect-expose=./A', '--expect-expose=./A')).toBe(
+      'verify',
+    )
   })
 })

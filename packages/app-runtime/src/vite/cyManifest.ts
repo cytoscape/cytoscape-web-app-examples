@@ -143,10 +143,11 @@ export const buildCyManifest = (
     PREDICATES.limits.name,
   )
   if (name.kind === 'invalid') problems.push(name.message)
-  else if (name.kind === 'absent') problems.push(`cyweb.displayName is empty after trimming`)
+  else if (name.kind === 'absent')
+    problems.push(`cyweb.displayName is empty after trimming`)
 
   // ── optional publication metadata ──────────────────────────────────────────
-  const take = <T,>(outcome: FieldOutcome<T>): T | undefined => {
+  const take = <T>(outcome: FieldOutcome<T>): T | undefined => {
     if (outcome.kind === 'invalid') {
       problems.push(outcome.message)
       return undefined
@@ -156,11 +157,19 @@ export const buildCyManifest = (
   }
 
   const description = take(
-    normalizeOptionalString('description', submission.description, PREDICATES.limits.description),
+    normalizeOptionalString(
+      'description',
+      submission.description,
+      PREDICATES.limits.description,
+    ),
   )
   const author = take(normalizeAuthor(submission.author))
   const license = take(
-    normalizeOptionalString('license', submission.license, PREDICATES.limits.license),
+    normalizeOptionalString(
+      'license',
+      submission.license,
+      PREDICATES.limits.license,
+    ),
   )
 
   // The object form carries `directory` too, so both come out of one read of it.
@@ -170,25 +179,38 @@ export const buildCyManifest = (
   if (rawRepository !== undefined && rawRepository !== null) {
     if (typeof rawRepository === 'string') {
       repository = take(normalizeRepositoryUrl(rawRepository))
-    } else if (typeof rawRepository === 'object' && !Array.isArray(rawRepository)) {
-      const object = rawRepository as { type?: unknown; url?: unknown; directory?: unknown }
+    } else if (
+      typeof rawRepository === 'object' &&
+      !Array.isArray(rawRepository)
+    ) {
+      const object = rawRepository as {
+        type?: unknown
+        url?: unknown
+        directory?: unknown
+      }
       if (object.type !== undefined && object.type !== 'git') {
         problems.push(
           `repository.type must be absent or exactly "git" (got ${JSON.stringify(object.type)})`,
         )
       }
       if (typeof object.url !== 'string') {
-        problems.push(`repository.url must be a string (got ${JSON.stringify(object.url)})`)
+        problems.push(
+          `repository.url must be a string (got ${JSON.stringify(object.url)})`,
+        )
       } else {
         // A supplied composite whose required member trims away is invalid —
         // unlike a direct string, which is simply absent.
         const outcome = normalizeRepositoryUrl(object.url)
         repository =
-          outcome.kind === 'absent' ? (problems.push(`repository.url is empty`), undefined) : take(outcome)
+          outcome.kind === 'absent'
+            ? (problems.push(`repository.url is empty`), undefined)
+            : take(outcome)
       }
       repositoryDirectory = take(normalizeRepositoryDirectory(object.directory))
     } else {
-      problems.push(`repository must be a string or an object (got ${JSON.stringify(rawRepository)})`)
+      problems.push(
+        `repository must be a string or an object (got ${JSON.stringify(rawRepository)})`,
+      )
     }
   }
 
@@ -204,7 +226,9 @@ export const buildCyManifest = (
 
   const generator = `@cytoscape-web/app-runtime@${sdkVersion}`
   if (codePoints(generator) > PREDICATES.limits.generator) {
-    problems.push(`generator is longer than ${PREDICATES.limits.generator} characters`)
+    problems.push(
+      `generator is longer than ${PREDICATES.limits.generator} characters`,
+    )
   }
   if (hasLoneSurrogate(appMeta.id) || hasLoneSurrogate(appMeta.version)) {
     problems.push(`identity contains an unpaired surrogate`)
@@ -218,7 +242,8 @@ export const buildCyManifest = (
       (field === 'license' && license === undefined) ||
       (field === 'repository' && repository === undefined) ||
       (field === 'homepage' && homepage === undefined) ||
-      (field === 'compatibleHostVersions' && compatibleHostVersions === undefined)
+      (field === 'compatibleHostVersions' &&
+        compatibleHostVersions === undefined)
     if (missing) {
       warnings.push(
         `${field} is not declared in package.json — recommended for an App Store submission (the required set is policy-pending)`,
@@ -242,6 +267,29 @@ export const buildCyManifest = (
     ...(tags !== undefined && { tags }),
     ...(compatibleHostVersions !== undefined && { compatibleHostVersions }),
     generator,
+  }
+
+  // The producer must never emit what the agreed wire rules reject.
+  //
+  // Every `[source]` normalizer above returns a `[wire]` value, and nothing
+  // checked that claim until three separate bugs made it false at once: an SSH
+  // password dropped rather than refused, `…/repo.git/` keeping its suffix
+  // because `.git$` does not match a trailing slash, and a homepage growing
+  // past its limit when the URL parser percent-encoded it. Each was a different
+  // mistake; all three produced the same class of defect, so the invariant is
+  // asserted here rather than trusted three times.
+  //
+  // Reaching this is a defect in THIS file, not in the developer's package.json,
+  // and the message says so — anything caused by their input was already
+  // collected above.
+  const contradictions = validateCyManifestWire(manifest)
+  if (contradictions.length > 0) {
+    throw new Error(
+      `[cyweb] internal: generated a ${CY_MANIFEST_FILENAME} that canonical wire ` +
+        `validation rejects. This is an SDK bug — please report it with your ` +
+        `package.json.\n` +
+        contradictions.map((c) => `    - ${c}`).join('\n'),
+    )
   }
 
   return { manifest, warnings }
@@ -291,7 +339,11 @@ export const serializeCyManifest = (manifest: CyManifestV1): string => {
  */
 export const validateCyManifestWire = (document: unknown): string[] => {
   const problems: string[] = []
-  if (typeof document !== 'object' || document === null || Array.isArray(document)) {
+  if (
+    typeof document !== 'object' ||
+    document === null ||
+    Array.isArray(document)
+  ) {
     return ['the manifest must be a single JSON object']
   }
   const doc = document as Record<string, unknown>
@@ -303,19 +355,25 @@ export const validateCyManifestWire = (document: unknown): string[] => {
 
   const scalars = (node: unknown, path: string): void => {
     if (typeof node === 'string') {
-      if (hasLoneSurrogate(node)) problems.push(`${path} contains an unpaired surrogate`)
+      if (hasLoneSurrogate(node))
+        problems.push(`${path} contains an unpaired surrogate`)
     } else if (Array.isArray(node)) {
       node.forEach((item, i) => scalars(item, `${path}[${i}]`))
     } else if (typeof node === 'object' && node !== null) {
       for (const [key, item] of Object.entries(node)) {
-        if (hasLoneSurrogate(key)) problems.push(`a property name contains an unpaired surrogate`)
+        if (hasLoneSurrogate(key))
+          problems.push(`a property name contains an unpaired surrogate`)
         scalars(item, `${path}.${key}`)
       }
     }
   }
   scalars(doc, 'manifest')
 
-  const requiredString = (field: string, limit: number, trimmed = true): string | undefined => {
+  const requiredString = (
+    field: string,
+    limit: number,
+    trimmed = true,
+  ): string | undefined => {
     const raw = doc[field]
     if (typeof raw !== 'string') {
       problems.push(`${field} must be a string`)
@@ -323,21 +381,32 @@ export const validateCyManifestWire = (document: unknown): string[] => {
     }
     if (raw === '') problems.push(`${field} must not be empty`)
     if (trimmed && raw !== raw.trim()) problems.push(`${field} is not trimmed`)
-    if (codePoints(raw) > limit) problems.push(`${field} is longer than ${limit} characters`)
+    if (codePoints(raw) > limit)
+      problems.push(`${field} is longer than ${limit} characters`)
     return raw
   }
 
   const id = requiredString('id', PREDICATES.id.maxCodePoints, false)
   if (id !== undefined) {
-    if (!isValidIdShape(id)) problems.push(`id is not a JavaScript identifier within the limit`)
+    if (!isValidIdShape(id))
+      problems.push(`id is not a JavaScript identifier within the limit`)
     if (isReservedId(id)) problems.push(`id "${id}" is reserved`)
-    if (id !== id.trim()) problems.push(`id is not trimmed — whitespace makes it invalid, not trimmable`)
+    if (id !== id.trim())
+      problems.push(
+        `id is not trimmed — whitespace makes it invalid, not trimmable`,
+      )
   }
   requiredString('name', PREDICATES.limits.name)
-  const version = requiredString('version', PREDICATES.version.maxCodePoints, false)
+  const version = requiredString(
+    'version',
+    PREDICATES.version.maxCodePoints,
+    false,
+  )
   if (version !== undefined) {
     if (version !== version.trim()) {
-      problems.push(`version is not trimmed — whitespace makes it invalid, not trimmable`)
+      problems.push(
+        `version is not trimmed — whitespace makes it invalid, not trimmable`,
+      )
     }
     const failure = versionProfileFailure(version.trim())
     if (failure !== undefined) problems.push(`version ${failure}`)
@@ -351,22 +420,31 @@ export const validateCyManifestWire = (document: unknown): string[] => {
     const raw = doc[field]
     if (raw === undefined) return undefined
     if (typeof raw !== 'string') {
-      problems.push(`${field} must be a string — an object or array is a package.json form, not a wire form`)
+      problems.push(
+        `${field} must be a string — an object or array is a package.json form, not a wire form`,
+      )
       return undefined
     }
-    if (raw === '') problems.push(`${field} is present but empty — omit it instead`)
+    if (raw === '')
+      problems.push(`${field} is present but empty — omit it instead`)
     if (raw !== raw.trim()) problems.push(`${field} is not trimmed`)
-    if (codePoints(raw) > limit) problems.push(`${field} is longer than ${limit} characters`)
+    if (codePoints(raw) > limit)
+      problems.push(`${field} is longer than ${limit} characters`)
     return raw
   }
 
   optionalString('description', PREDICATES.limits.description)
   optionalString('license', PREDICATES.limits.license)
-  optionalString('compatibleHostVersions', PREDICATES.limits.compatibleHostVersions)
+  optionalString(
+    'compatibleHostVersions',
+    PREDICATES.limits.compatibleHostVersions,
+  )
 
   const author = optionalString('author', PREDICATES.limits.author)
   if (author !== undefined && (isEmailLike(author) || isUrlLike(author))) {
-    problems.push(`author "${author}" looks like an email address or a URL, not a display name`)
+    problems.push(
+      `author "${author}" looks like an email address or a URL, not a display name`,
+    )
   }
 
   const repository = optionalString('repository', PREDICATES.limits.repository)
@@ -381,11 +459,16 @@ export const validateCyManifestWire = (document: unknown): string[] => {
     }
   }
 
-  const directory = optionalString('repositoryDirectory', PREDICATES.limits.repositoryDirectory)
+  const directory = optionalString(
+    'repositoryDirectory',
+    PREDICATES.limits.repositoryDirectory,
+  )
   if (directory !== undefined) {
     const outcome = normalizeRepositoryDirectory(directory)
     if (outcome.kind !== 'value' || outcome.value !== directory) {
-      problems.push(`repositoryDirectory "${directory}" is not a canonical relative POSIX path`)
+      problems.push(
+        `repositoryDirectory "${directory}" is not a canonical relative POSIX path`,
+      )
     }
   }
 
@@ -393,7 +476,9 @@ export const validateCyManifestWire = (document: unknown): string[] => {
   if (homepage !== undefined) {
     const outcome = normalizeHomepage(homepage)
     if (outcome.kind !== 'value' || outcome.value !== homepage) {
-      problems.push(`homepage "${homepage}" is not a canonical credential-free http(s) URL`)
+      problems.push(
+        `homepage "${homepage}" is not a canonical credential-free http(s) URL`,
+      )
     }
   }
 
@@ -401,9 +486,12 @@ export const validateCyManifestWire = (document: unknown): string[] => {
   if (tags !== undefined) {
     if (!Array.isArray(tags)) problems.push(`tags must be an array`)
     else {
-      if (tags.length === 0) problems.push(`tags is present but empty — omit it instead`)
+      if (tags.length === 0)
+        problems.push(`tags is present but empty — omit it instead`)
       if (tags.length > PREDICATES.limits.tagsMaxEntries) {
-        problems.push(`tags has more than ${PREDICATES.limits.tagsMaxEntries} entries`)
+        problems.push(
+          `tags has more than ${PREDICATES.limits.tagsMaxEntries} entries`,
+        )
       }
       const seen = new Set<string>()
       for (const tag of tags) {
@@ -411,12 +499,16 @@ export const validateCyManifestWire = (document: unknown): string[] => {
           problems.push(`every tag must be a string`)
           continue
         }
-        if (tag === '' || tag !== tag.trim()) problems.push(`tag ${JSON.stringify(tag)} is empty or untrimmed`)
+        if (tag === '' || tag !== tag.trim())
+          problems.push(`tag ${JSON.stringify(tag)} is empty or untrimmed`)
         if (codePoints(tag) > PREDICATES.limits.tagMaxCodePoints) {
-          problems.push(`tag "${tag}" is longer than ${PREDICATES.limits.tagMaxCodePoints} characters`)
+          problems.push(
+            `tag "${tag}" is longer than ${PREDICATES.limits.tagMaxCodePoints} characters`,
+          )
         }
         const key = foldAsciiCase(tag)
-        if (seen.has(key)) problems.push(`tag "${tag}" duplicates an earlier tag`)
+        if (seen.has(key))
+          problems.push(`tag "${tag}" duplicates an earlier tag`)
         seen.add(key)
       }
     }

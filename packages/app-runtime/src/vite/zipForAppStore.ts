@@ -1,4 +1,10 @@
-import { readFileSync, readdirSync, realpathSync, renameSync, rmSync } from 'node:fs'
+import {
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+} from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 
 import type { Plugin } from 'vite'
@@ -10,7 +16,11 @@ import {
   classifyArchiveMember,
   compareMemberNames,
 } from './archiveMembers.js'
-import { buildCyManifest, CY_MANIFEST_FILENAME, serializeCyManifest } from './cyManifest.js'
+import {
+  buildCyManifest,
+  CY_MANIFEST_FILENAME,
+  serializeCyManifest,
+} from './cyManifest.js'
 import { verifyBuild } from '../verify/verifyBuild.js'
 
 /** Turns the App Store zip on or off for one build, from the command line. */
@@ -64,7 +74,11 @@ interface CollectedMember {
  * Store unable to tell that a regular-looking file came from outside the build.
  * The realpath check catches the same escape through a symlinked directory.
  */
-const collectMembers = (dir: string, realDistDir: string, prefix = ''): CollectedMember[] => {
+const collectMembers = (
+  dir: string,
+  realDistDir: string,
+  prefix = '',
+): CollectedMember[] => {
   const out: CollectedMember[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const name = prefix === '' ? entry.name : `${prefix}/${entry.name}`
@@ -128,7 +142,8 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
   // being built.
   let root = process.cwd()
   let outDir = 'dist'
-  const finalPath = (): string => resolve(root, `${appMeta.id}-${appMeta.version}.zip`)
+  const finalPath = (): string =>
+    resolve(root, `${appMeta.id}-${appMeta.version}.zip`)
 
   return {
     name: 'zip-for-app-store',
@@ -164,27 +179,12 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
       const distDir = resolve(root, outDir)
       const zipPath = finalPath()
 
-      // ── 2. Verify before packaging ──────────────────────────────────────────
-      const verified = verifyBuild({ appMeta, expectedShared, distDir })
-      if (verified.failures.length > 0) {
-        this.error(
-          `[zip-for-app-store] the build does not satisfy the federation contract, ` +
-            `so it was not packaged:\n` +
-            verified.failures.map((f) => `    ✗ ${f}`).join('\n'),
-        )
-      }
-
-      // ── 3. The workstation case the verifier's note is really about ─────────
-      for (const note of verified.notes) {
-        if (note.includes('absolute build-machine path')) {
-          this.warn(
-            `[zip-for-app-store] this archive may disclose your username and ` +
-              `directory layout — ${note}. Prefer a Store-owned build for a public release.`,
-          )
-        }
-      }
-
-      // ── 4. Walk ────────────────────────────────────────────────────────────
+      // ── 2. Walk FIRST ──────────────────────────────────────────────────────
+      // Before verification, not after. The verifier reads every .js file in the
+      // output, and `readFileSync` on a FIFO blocks until a writer appears — so
+      // a build output containing `assets/pipe.js` would hang the build rather
+      // than reach the rejection this promises. Establishing that every member
+      // is a plain file inside dist/ is what makes reading them safe.
       const realDistDir = realpathSync(distDir)
       let members: CollectedMember[]
       try {
@@ -195,6 +195,26 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
             `file inside it: ${(cause as Error).message}`,
         )
         return
+      }
+
+      // ── 3. Verify before packaging ──────────────────────────────────────────
+      const verified = verifyBuild({ appMeta, expectedShared, distDir })
+      if (verified.failures.length > 0) {
+        this.error(
+          `[zip-for-app-store] the build does not satisfy the federation contract, ` +
+            `so it was not packaged:\n` +
+            verified.failures.map((f) => `    ✗ ${f}`).join('\n'),
+        )
+      }
+
+      // ── 4. The workstation case the verifier's note is really about ─────────
+      for (const note of verified.notes) {
+        if (note.includes('absolute build-machine path')) {
+          this.warn(
+            `[zip-for-app-store] this archive may disclose your username and ` +
+              `directory layout — ${note}. Prefer a Store-owned build for a public release.`,
+          )
+        }
       }
 
       // ── 5. Classify ────────────────────────────────────────────────────────
@@ -249,7 +269,8 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
         this.error(`[zip-for-app-store] ${(cause as Error).message}`)
         return
       }
-      for (const warning of warnings) this.warn(`[zip-for-app-store] ${warning}`)
+      for (const warning of warnings)
+        this.warn(`[zip-for-app-store] ${warning}`)
 
       // ── 6. Write, deterministically, through a temp file beside the target ──
       // noSort, because adm-zip's default is
@@ -262,7 +283,10 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
         name: m.name,
         bytes: readFileSync(m.absolutePath),
       }))
-      named.push({ name: CY_MANIFEST_FILENAME, bytes: Buffer.from(manifestBytes, 'utf8') })
+      named.push({
+        name: CY_MANIFEST_FILENAME,
+        bytes: Buffer.from(manifestBytes, 'utf8'),
+      })
       named.sort((a, b) => compareMemberNames(a.name, b.name))
 
       // addFile, not addLocalFile: the member NAME is ours to decide, and
@@ -277,7 +301,9 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
         renameSync(tempPath, zipPath)
       } catch (cause) {
         rmSync(tempPath, { force: true })
-        this.error(`[zip-for-app-store] could not write ${zipPath} — ${(cause as Error).message}`)
+        this.error(
+          `[zip-for-app-store] could not write ${zipPath} — ${(cause as Error).message}`,
+        )
         return
       }
 

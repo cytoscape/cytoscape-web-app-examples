@@ -64,12 +64,25 @@ const GLOBAL = new Set(['--help', '-h', '--version', '-v'])
 /** Repeatable by design; every other flag is a singleton. */
 const REPEATABLE = new Set(['--expect-expose'])
 
+/**
+ * `--out=a` and `--out` are the same flag, and neither the duplicate check nor
+ * the repeatable exemption works on raw tokens.
+ *
+ * Compared as whole strings, `--out=a --out=b` looks like two different flags
+ * and slips past — parseArgs then keeps `b` and says nothing about `a`. In the
+ * other direction, two identical `--expect-expose=./A` tokens looked like a
+ * duplicate of a flag that is explicitly repeatable.
+ */
+const flagName = (token: string): string => token.split('=')[0]
+
 const duplicateFlag = (argv: readonly string[]): string | undefined => {
   const seen = new Set<string>()
   for (const token of argv) {
-    if (!token.startsWith('-') || REPEATABLE.has(token)) continue
-    if (seen.has(token)) return token
-    seen.add(token)
+    if (!token.startsWith('-')) continue
+    const name = flagName(token)
+    if (REPEATABLE.has(name)) continue
+    if (seen.has(name)) return name
+    seen.add(name)
   }
   return undefined
 }
@@ -95,7 +108,10 @@ export const parseCommandLine = (argv: readonly string[]): Invocation => {
   const globals = argv.filter((token) => GLOBAL.has(token))
   if (globals.length > 0) {
     if (argv.length > 1) {
-      return { kind: 'usage', message: `${globals[0]} takes no other arguments` }
+      return {
+        kind: 'usage',
+        message: `${globals[0]} takes no other arguments`,
+      }
     }
     return globals[0] === '--version' || globals[0] === '-v'
       ? { kind: 'version' }
@@ -114,7 +130,10 @@ export const parseCommandLine = (argv: readonly string[]): Invocation => {
     return { kind: 'usage', message: `${duplicate} was given more than once` }
   }
 
-  const config: Record<string, { type: 'string' | 'boolean'; multiple?: boolean }> =
+  const config: Record<
+    string,
+    { type: 'string' | 'boolean'; multiple?: boolean }
+  > =
     command === 'verify'
       ? {
           root: { type: 'string' as const },
@@ -127,10 +146,20 @@ export const parseCommandLine = (argv: readonly string[]): Invocation => {
           force: { type: 'boolean' as const },
         }
 
-  let values: Record<string, string | boolean | (string | boolean)[] | undefined>
+  let values: Record<
+    string,
+    string | boolean | (string | boolean)[] | undefined
+  >
   try {
-    ;({ values } = parseArgs({ args: [...rest], options: config, strict: true }) as {
-      values: Record<string, string | boolean | (string | boolean)[] | undefined>
+    ;({ values } = parseArgs({
+      args: [...rest],
+      options: config,
+      strict: true,
+    }) as {
+      values: Record<
+        string,
+        string | boolean | (string | boolean)[] | undefined
+      >
     })
   } catch (cause) {
     return { kind: 'usage', message: (cause as Error).message }
@@ -155,5 +184,10 @@ export const parseCommandLine = (argv: readonly string[]): Invocation => {
   if (force && out === undefined) {
     return { kind: 'usage', message: `--force does nothing without --out` }
   }
-  return { kind: 'manifest', root: values.root as string | undefined, out, force }
+  return {
+    kind: 'manifest',
+    root: values.root as string | undefined,
+    out,
+    force,
+  }
 }

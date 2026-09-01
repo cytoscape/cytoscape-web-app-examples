@@ -97,7 +97,8 @@ export const hasLoneSurrogate = (value: string): boolean => {
 export const foldAsciiCase = (value: string): string =>
   value.replace(/[A-Z]/g, (c) => c.toLowerCase())
 
-export const isEmailLike = (value: string): boolean => AUTHOR_EMAIL_LIKE.test(value)
+export const isEmailLike = (value: string): boolean =>
+  AUTHOR_EMAIL_LIKE.test(value)
 export const isUrlLike = (value: string): boolean => AUTHOR_URL_LIKE.test(value)
 
 export const isValidIdShape = (id: string): boolean =>
@@ -140,9 +141,19 @@ export type FieldOutcome<T> =
   | { readonly kind: 'value'; readonly value: T; readonly warning?: string }
   | { readonly kind: 'invalid'; readonly message: string }
 
-const absent = <T,>(warning?: string): FieldOutcome<T> => ({ kind: 'absent', warning })
-const value = <T,>(v: T, warning?: string): FieldOutcome<T> => ({ kind: 'value', value: v, warning })
-const invalid = <T,>(message: string): FieldOutcome<T> => ({ kind: 'invalid', message })
+const absent = <T>(warning?: string): FieldOutcome<T> => ({
+  kind: 'absent',
+  warning,
+})
+const value = <T>(v: T, warning?: string): FieldOutcome<T> => ({
+  kind: 'value',
+  value: v,
+  warning,
+})
+const invalid = <T>(message: string): FieldOutcome<T> => ({
+  kind: 'invalid',
+  message,
+})
 
 /**
  * A plain optional string: trimmed, bounded, and absent when it trims away.
@@ -162,7 +173,8 @@ export const normalizeOptionalString = (
   }
   const trimmed = raw.trim()
   if (trimmed === '') return absent()
-  if (hasLoneSurrogate(trimmed)) return invalid(`${field} contains an unpaired surrogate`)
+  if (hasLoneSurrogate(trimmed))
+    return invalid(`${field} contains an unpaired surrogate`)
   if (codePoints(trimmed) > limit) {
     return invalid(`${field} is longer than ${limit} characters`)
   }
@@ -185,13 +197,18 @@ export const normalizeAuthor = (raw: unknown): FieldOutcome<string> => {
   let candidate: unknown = raw
 
   if (raw !== undefined && raw !== null && typeof raw === 'object') {
-    if (Array.isArray(raw)) return invalid(`author must be a string or an object`)
+    if (Array.isArray(raw))
+      return invalid(`author must be a string or an object`)
     const named = (raw as AuthorObject).name
     if (named === undefined) {
-      return absent(`author has no name — only contact details, which are never published`)
+      return absent(
+        `author has no name — only contact details, which are never published`,
+      )
     }
     if (typeof named !== 'string') {
-      return invalid(`author.name must be a string (got ${JSON.stringify(named)})`)
+      return invalid(
+        `author.name must be a string (got ${JSON.stringify(named)})`,
+      )
     }
     candidate = named
   } else if (typeof candidate === 'string') {
@@ -200,7 +217,11 @@ export const normalizeAuthor = (raw: unknown): FieldOutcome<string> => {
     candidate = cut === -1 ? candidate : candidate.slice(0, cut)
   }
 
-  const outcome = normalizeOptionalString('author', candidate, PREDICATES.limits.author)
+  const outcome = normalizeOptionalString(
+    'author',
+    candidate,
+    PREDICATES.limits.author,
+  )
   if (outcome.kind !== 'value') return outcome
 
   if (isEmailLike(outcome.value) || isUrlLike(outcome.value)) {
@@ -250,7 +271,8 @@ export const normalizeRepositoryUrl = (raw: string): FieldOutcome<string> => {
   let candidate = source
   const shorthand = SHORTHAND.exec(source)
   if (shorthand !== null) {
-    const host = PREDICATES.repository.shorthandHosts[shorthand[1].toLowerCase()]
+    const host =
+      PREDICATES.repository.shorthandHosts[shorthand[1].toLowerCase()]
     candidate = `https://${host}/${shorthand[2]}`
   } else {
     candidate = candidate.replace(/^git\+/, '')
@@ -269,7 +291,13 @@ export const normalizeRepositoryUrl = (raw: string): FieldOutcome<string> => {
 
   const scheme = url.protocol.replace(/:$/, '')
   if (scheme === 'ssh') {
-    if (url.username !== '' && url.username !== 'git') {
+    // The conventional `git` USER is transport syntax. A password never is —
+    // and dropping one silently is how a credential committed to package.json
+    // reaches a public manifest as if it had never been there.
+    if (
+      (url.username !== '' && url.username !== 'git') ||
+      url.password !== ''
+    ) {
       return invalid(`repository "${source}" carries credentials`)
     }
   } else if (scheme !== 'https' && scheme !== 'http') {
@@ -283,21 +311,42 @@ export const normalizeRepositoryUrl = (raw: string): FieldOutcome<string> => {
   if (url.port !== '' || authorityHasPort(candidate)) {
     return invalid(`repository "${source}" names an explicit port`)
   }
-  if (url.search !== '') return invalid(`repository "${source}" carries a query string`)
-  if (url.hash !== '') return invalid(`repository "${source}" carries a fragment`)
+  if (url.search !== '')
+    return invalid(`repository "${source}" carries a query string`)
+  if (url.hash !== '')
+    return invalid(`repository "${source}" carries a fragment`)
 
-  const path = url.pathname.replace(/\.git$/, '').replace(/\/+$/, '')
-  if (path === '') return invalid(`repository "${source}" names no repository path`)
+  // Trailing slashes FIRST: `…/repo.git/` would otherwise keep its suffix,
+  // because `.git$` does not match a path that ends in a slash — and the result
+  // is a value this SDK's own wire rules reject.
+  const path = url.pathname
+    .replace(/\/+$/, '')
+    .replace(/\.git$/, '')
+    .replace(/\/+$/, '')
+  if (path === '')
+    return invalid(`repository "${source}" names no repository path`)
 
   const canonical = `https://${url.hostname}${path}`
+  // The raw check above catches an escape the developer wrote. This one catches
+  // an escape the URL PARSER introduced: a space or a non-ASCII character in the
+  // path comes back percent-encoded, and canonical repository paths have no `%`.
+  if (canonical.includes('%')) {
+    return invalid(
+      `repository "${source}" contains a character that must be percent-encoded in a URL — write a plain https URL with an unencoded path`,
+    )
+  }
   if (codePoints(canonical) > PREDICATES.limits.repository) {
-    return invalid(`repository is longer than ${PREDICATES.limits.repository} characters`)
+    return invalid(
+      `repository is longer than ${PREDICATES.limits.repository} characters`,
+    )
   }
   return value(canonical)
 }
 
 /** `[source]` A relative POSIX path inside the repository. `%` is banned outright. */
-export const normalizeRepositoryDirectory = (raw: unknown): FieldOutcome<string> => {
+export const normalizeRepositoryDirectory = (
+  raw: unknown,
+): FieldOutcome<string> => {
   const outcome = normalizeOptionalString(
     'repository.directory',
     raw,
@@ -306,23 +355,33 @@ export const normalizeRepositoryDirectory = (raw: unknown): FieldOutcome<string>
   if (outcome.kind !== 'value') return outcome
 
   const path = outcome.value
-  const reason =
-    path.includes('%') ? 'contains a percent escape'
-    : path.includes('\\') ? 'contains a backslash'
-    : path.includes('\0') ? 'contains NUL'
-    : /^[a-zA-Z]:/.test(path) ? 'names a drive letter'
-    : path.startsWith('/') ? 'is absolute'
-    : path.split('/').some((s) => s === '' || s === '.' || s === '..')
-      ? 'has an empty, "." or ".." segment'
-      : undefined
+  const reason = path.includes('%')
+    ? 'contains a percent escape'
+    : path.includes('\\')
+      ? 'contains a backslash'
+      : path.includes('\0')
+        ? 'contains NUL'
+        : /^[a-zA-Z]:/.test(path)
+          ? 'names a drive letter'
+          : path.startsWith('/')
+            ? 'is absolute'
+            : path.split('/').some((s) => s === '' || s === '.' || s === '..')
+              ? 'has an empty, "." or ".." segment'
+              : undefined
   return reason === undefined
     ? outcome
-    : invalid(`repository.directory "${path}" ${reason} — it must be a relative POSIX path`)
+    : invalid(
+        `repository.directory "${path}" ${reason} — it must be a relative POSIX path`,
+      )
 }
 
 /** `[source]` Credential-free http(s), with path, query and fragment preserved. */
 export const normalizeHomepage = (raw: unknown): FieldOutcome<string> => {
-  const outcome = normalizeOptionalString('homepage', raw, PREDICATES.limits.homepage)
+  const outcome = normalizeOptionalString(
+    'homepage',
+    raw,
+    PREDICATES.limits.homepage,
+  )
   if (outcome.kind !== 'value') return outcome
 
   let url: URL
@@ -340,6 +399,14 @@ export const normalizeHomepage = (raw: unknown): FieldOutcome<string> => {
   if (url.username !== '' || url.password !== '') {
     return invalid(`homepage "${outcome.value}" carries credentials`)
   }
+  // Re-checked on what is actually emitted: `URL` percent-encodes a non-ASCII
+  // path, so a value inside the limit going in can be well outside it coming
+  // out — and the producer would emit something its own wire rules reject.
+  if (codePoints(url.href) > PREDICATES.limits.homepage) {
+    return invalid(
+      `homepage "${outcome.value}" is ${codePoints(url.href)} characters once percent-encoded, over the ${PREDICATES.limits.homepage}-character limit`,
+    )
+  }
   return value(url.href)
 }
 
@@ -347,21 +414,28 @@ export const normalizeHomepage = (raw: unknown): FieldOutcome<string> => {
  * `[source]` Keywords become tags: trimmed, de-duplicated, bounded, and omitted
  * rather than emitted empty.
  */
-export const normalizeTags = (raw: unknown): FieldOutcome<readonly string[]> => {
+export const normalizeTags = (
+  raw: unknown,
+): FieldOutcome<readonly string[]> => {
   if (raw === undefined || raw === null) return absent()
   if (!Array.isArray(raw)) {
-    return invalid(`keywords must be an array of strings (got ${JSON.stringify(raw)})`)
+    return invalid(
+      `keywords must be an array of strings (got ${JSON.stringify(raw)})`,
+    )
   }
 
   const tags: string[] = []
   const seen = new Set<string>()
   for (const entry of raw) {
     if (typeof entry !== 'string') {
-      return invalid(`every keyword must be a string (got ${JSON.stringify(entry)})`)
+      return invalid(
+        `every keyword must be a string (got ${JSON.stringify(entry)})`,
+      )
     }
     const trimmed = entry.trim()
     if (trimmed === '') continue
-    if (hasLoneSurrogate(trimmed)) return invalid(`a keyword contains an unpaired surrogate`)
+    if (hasLoneSurrogate(trimmed))
+      return invalid(`a keyword contains an unpaired surrogate`)
     if (codePoints(trimmed) > PREDICATES.limits.tagMaxCodePoints) {
       return invalid(
         `keyword "${trimmed}" is longer than ${PREDICATES.limits.tagMaxCodePoints} characters`,

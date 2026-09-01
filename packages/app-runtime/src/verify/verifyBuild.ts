@@ -99,12 +99,24 @@ export interface VerifyResult {
   readonly notes: string[]
 }
 
+/**
+ * Regular files only.
+ *
+ * Everything below reads what this returns, and `readFileSync` on a FIFO blocks
+ * until a writer appears — a build output containing `assets/pipe.js` would hang
+ * the verifier, and therefore packaging, forever. A symlink is skipped for the
+ * same reason a broken one used to throw: what it points at is not this build's
+ * output. The packager rejects both explicitly; this makes the verifier survive
+ * meeting one first.
+ */
 const listFilesRecursive = (dir: string, prefix = ''): string[] => {
   const out: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`
-    if (entry.isDirectory()) out.push(...listFilesRecursive(join(dir, entry.name), rel))
-    else out.push(rel)
+    if (entry.isSymbolicLink()) continue
+    if (entry.isDirectory())
+      out.push(...listFilesRecursive(join(dir, entry.name), rel))
+    else if (entry.isFile()) out.push(rel)
   }
   return out
 }
@@ -127,13 +139,21 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   }
 
   if (!existsSync(distDir) || !statSync(distDir).isDirectory()) {
-    return { checks, failures: [`no build output at ${distDir} — run the build first`], notes }
+    return {
+      checks,
+      failures: [`no build output at ${distDir} — run the build first`],
+      notes,
+    }
   }
 
   // ── 1. remoteEntry.js is an ES module exposing the container contract ──────
   const remoteEntryPath = join(distDir, 'remoteEntry.js')
   if (!existsSync(remoteEntryPath)) {
-    return { checks, failures: ['remoteEntry.js missing from the build output'], notes }
+    return {
+      checks,
+      failures: ['remoteEntry.js missing from the build output'],
+      notes,
+    }
   }
   const remoteEntrySrc = readFileSync(remoteEntryPath, 'utf8')
 
@@ -151,7 +171,9 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // ── 2. mf-manifest.json, and it agrees with package.json ──────────────────
   const manifestPath = join(distDir, 'mf-manifest.json')
   if (!existsSync(manifestPath)) {
-    failures.push('mf-manifest.json missing — the build did not emit a manifest')
+    failures.push(
+      'mf-manifest.json missing — the build did not emit a manifest',
+    )
     return { checks, failures, notes }
   }
   // A malformed artifact is a RESULT, not an exception. An uncaught SyntaxError
@@ -160,13 +182,21 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   let mf: Record<string, any>
   try {
     const parsed: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      failures.push(`mf-manifest.json is not a JSON object — the build output is corrupt`)
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      failures.push(
+        `mf-manifest.json is not a JSON object — the build output is corrupt`,
+      )
       return { checks, failures, notes }
     }
     mf = parsed as Record<string, any>
   } catch (cause) {
-    failures.push(`mf-manifest.json is not valid JSON — ${(cause as Error).message}`)
+    failures.push(
+      `mf-manifest.json is not valid JSON — ${(cause as Error).message}`,
+    )
     return { checks, failures, notes }
   }
 
@@ -181,8 +211,43 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     `metaData.remoteEntry.type = ${JSON.stringify(mf.metaData?.remoteEntry?.type)}`,
   )
 
+  // A corrupt artifact is a RESULT, not an exception — and `typeof x === object`
+  // is not enough for that promise: `{ "exposes": {} }` reaches `.map` and
+  // throws a TypeError out of a function whose contract says it returns
+  // failures. The packager calls this core WITHOUT the CLI wrapper's catch, so
+  // the exception would surface as a build crash naming nothing.
+  const collection = (field: string): unknown[] | undefined => {
+    const raw = mf[field]
+    if (raw === undefined || raw === null) return []
+    if (!Array.isArray(raw)) {
+      failures.push(
+        `mf-manifest.json "${field}" is not an array — the build output is corrupt`,
+      )
+      return undefined
+    }
+    return raw
+  }
+  const exposes = collection('exposes')
+  const sharedList = collection('shared')
+  const remotesList = collection('remotes')
+  if (
+    exposes === undefined ||
+    sharedList === undefined ||
+    remotesList === undefined
+  ) {
+    return { checks, failures, notes }
+  }
+
   // ── 3. Exposes ────────────────────────────────────────────────────────────
-  const exposedPaths = new Set<string>((mf.exposes ?? []).map((e: { path: string }) => e.path))
+  const exposedPaths = new Set<string>(
+    exposes.flatMap((e) =>
+      typeof e === 'object' &&
+      e !== null &&
+      typeof (e as { path?: unknown }).path === 'string'
+        ? [(e as { path: string }).path]
+        : [],
+    ),
+  )
   check(`expose present: ${REQUIRED_EXPOSE}`, exposedPaths.has(REQUIRED_EXPOSE))
 
   if (input.expectExposes === undefined) {
@@ -190,9 +255,12 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     if (extra.length > 0) notes.push(`also exposes ${extra.join(', ')}`)
   } else {
     for (const expected of input.expectExposes) {
-      if (expected !== REQUIRED_EXPOSE) check(`expose present: ${expected}`, exposedPaths.has(expected))
+      if (expected !== REQUIRED_EXPOSE)
+        check(`expose present: ${expected}`, exposedPaths.has(expected))
     }
-    const undeclared = [...exposedPaths].filter((p) => !input.expectExposes!.includes(p))
+    const undeclared = [...exposedPaths].filter(
+      (p) => !input.expectExposes!.includes(p),
+    )
     check(
       'no undeclared exposes',
       undeclared.length === 0,
@@ -203,9 +271,12 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // ── 4. Shared: configured exactly, effective a superset ───────────────────
   // Two different things, and conflating them fails a CORRECT build: the plugin
   // derives keys the config never named (see DERIVED_SHARED_ALLOWLIST).
-  const configured = mf.configuredShared as Record<string, ShareRecord> | undefined
+  const configured = mf.configuredShared as
+    Record<string, ShareRecord> | undefined
   if (configured === undefined) {
-    failures.push('mf-manifest.json has no configuredShared — additionalData is not wired')
+    failures.push(
+      'mf-manifest.json has no configuredShared — additionalData is not wired',
+    )
   } else {
     for (const [pkg, expected] of Object.entries(expectedShared)) {
       const built = configured[pkg]
@@ -219,14 +290,16 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
         sameShareRecord(built, expected),
         onlyVersion
           ? `the build declares "${built.requiredVersion}" and package.json ` +
-            `declares "${expected.requiredVersion}". The SDK owns the range the ` +
-            `host provides — set peerDependencies["${pkg}"] to ` +
-            `"${built.requiredVersion}". (npm install writes the version it ` +
-            `resolved, which is how these drift apart.)`
+              `declares "${expected.requiredVersion}". The SDK owns the range the ` +
+              `host provides — set peerDependencies["${pkg}"] to ` +
+              `"${built.requiredVersion}". (npm install writes the version it ` +
+              `resolved, which is how these drift apart.)`
           : `built ${JSON.stringify(built)} != peerDependencies ${JSON.stringify(expected)}`,
       )
     }
-    const extraConfigured = Object.keys(configured).filter((k) => !(k in expectedShared))
+    const extraConfigured = Object.keys(configured).filter(
+      (k) => !(k in expectedShared),
+    )
     check(
       'no unexpected configured shares',
       extraConfigured.length === 0,
@@ -234,12 +307,19 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     )
   }
 
-  const effective: string[] = (mf.shared ?? []).map((s: { name: string }) => s.name)
+  const effective: string[] = sharedList.flatMap((entry) =>
+    typeof entry === 'object' &&
+    entry !== null &&
+    typeof (entry as { name?: unknown }).name === 'string'
+      ? [(entry as { name: string }).name]
+      : [],
+  )
   for (const pkg of Object.keys(expectedShared)) {
     check(`effective share present: ${pkg}`, effective.includes(pkg))
   }
   const unexplained = effective.filter(
-    (name) => !(name in expectedShared) && !DERIVED_SHARED_ALLOWLIST.includes(name),
+    (name) =>
+      !(name in expectedShared) && !DERIVED_SHARED_ALLOWLIST.includes(name),
   )
   check(
     'no unexplained effective shares',
@@ -252,12 +332,17 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // string under `federationContainerName` and carries no `type` at all, so it
   // cannot answer the question that matters most here.
   const remote = mf.configuredRemote as
-    | { name?: string; type?: string; entry?: string }
-    | undefined
+    { name?: string; type?: string; entry?: string } | undefined
   if (remote === undefined) {
-    failures.push('mf-manifest.json has no configuredRemote — additionalData is not wired')
+    failures.push(
+      'mf-manifest.json has no configuredRemote — additionalData is not wired',
+    )
   } else {
-    check('cyweb remote name', remote.name === HOST_REMOTE_NAME, JSON.stringify(remote.name))
+    check(
+      'cyweb remote name',
+      remote.name === HOST_REMOTE_NAME,
+      JSON.stringify(remote.name),
+    )
     check(
       "cyweb remote is type: 'module'",
       remote.type === 'module',
@@ -272,7 +357,12 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   }
   check(
     'cyweb declared as a remote in the manifest',
-    (mf.remotes ?? []).some((r: { alias?: string }) => r.alias === HOST_REMOTE_NAME),
+    remotesList.some(
+      (r) =>
+        typeof r === 'object' &&
+        r !== null &&
+        (r as { alias?: unknown }).alias === HOST_REMOTE_NAME,
+    ),
   )
 
   // ── 6. The runtime plugin is REGISTERED, not merely present on disk ───────
@@ -296,7 +386,9 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // post-hoc scan cannot do the same job: module paths do not survive
   // minification, so grepping output text would miss a genuinely bundled MUI
   // while matching the dead absolute-path literals of check 10.
-  const sharedWithAssets = (mf.shared ?? []).filter((s: { assets?: Record<string, Record<string, unknown[]>> }) => {
+  const sharedWithAssets = (
+    sharedList as { name: string; assets?: any }[]
+  ).filter((s: { assets?: Record<string, Record<string, unknown[]>> }) => {
     const a = s.assets ?? {}
     return (
       (a.js?.sync?.length ?? 0) > 0 ||
@@ -333,7 +425,9 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     }
   }
 
-  const localhostHits = jsFiles.filter((f) => /localhost:\d+\/remoteEntry\.js/.test(readFile(f)))
+  const localhostHits = jsFiles.filter((f) =>
+    /localhost:\d+\/remoteEntry\.js/.test(readFile(f)),
+  )
   check(
     'no developer host URL in the artifact',
     localhostHits.length === 0,
@@ -343,7 +437,9 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // ── 9. package.json did not end up in the browser bundle ──────────────────
   // Importing it for one field pulls the WHOLE file in — dependency lists,
   // scripts, anything private. Use virtual:cyweb-app-meta instead.
-  const pkgLeaks = jsFiles.filter((f) => /"?(devDependencies|peerDependencies)"?\s*:/.test(readFile(f)))
+  const pkgLeaks = jsFiles.filter((f) =>
+    /"?(devDependencies|peerDependencies)"?\s*:/.test(readFile(f)),
+  )
   check(
     'package.json is not bundled into the artifact',
     pkgLeaks.length === 0,
@@ -368,7 +464,8 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     strayPathFiles.length === 0,
     `${strayPathFiles.join(', ')} also carry absolute paths`,
   )
-  const inEntry = readFile('remoteEntry.js').match(ABSOLUTE_NODE_MODULES)?.length ?? 0
+  const inEntry =
+    readFile('remoteEntry.js').match(ABSOLUTE_NODE_MODULES)?.length ?? 0
   if (inEntry > 0) {
     notes.push(
       `remoteEntry.js embeds ${inEntry} absolute build-machine path(s) — expected ` +

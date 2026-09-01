@@ -13,7 +13,11 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { parseAppMeta, readPackageSnapshot, sharedExpectations } from '../src/vite/appMeta.js'
+import {
+  parseAppMeta,
+  readPackageSnapshot,
+  sharedExpectations,
+} from '../src/vite/appMeta.js'
 import { verifyApp } from '../src/cli/verify.js'
 import { verifyBuild } from '../src/verify/verifyBuild.js'
 
@@ -28,7 +32,11 @@ const rootWithManifest = (manifestBody: string): string => {
   const dir = mkdtempSync(join(tmpdir(), 'cyweb-verify-'))
   writeFileSync(join(dir, 'package.json'), JSON.stringify(PKG))
   mkdirSync(join(dir, 'dist'))
-  writeFileSync(join(dir, 'dist', 'remoteEntry.js'), 'export { x as init, y as get }\n')
+  mkdirSync(join(dir, 'dist', 'assets'), { recursive: true })
+  writeFileSync(
+    join(dir, 'dist', 'remoteEntry.js'),
+    'export { x as init, y as get }\n',
+  )
   writeFileSync(join(dir, 'dist', 'mf-manifest.json'), manifestBody)
   return dir
 }
@@ -44,11 +52,15 @@ describe('a corrupt build artifact is a result, not an exception', () => {
     // offset, which tells a developer nothing about which file is wrong.
     const result = verifyApp({ root: rootWithManifest(body) })
     expect(result.failures.length).toBeGreaterThan(0)
-    expect(result.failures.join('\n')).toMatch(/mf-manifest\.json is not (valid JSON|a JSON object)/)
+    expect(result.failures.join('\n')).toMatch(
+      /mf-manifest\.json is not (valid JSON|a JSON object)/,
+    )
   })
 
   it('reports a well-formed manifest that is missing its audit fields', () => {
-    const result = verifyApp({ root: rootWithManifest(JSON.stringify({ name: 'myApp' })) })
+    const result = verifyApp({
+      root: rootWithManifest(JSON.stringify({ name: 'myApp' })),
+    })
     expect(result.failures.join('\n')).toContain('additionalData is not wired')
   })
 })
@@ -59,8 +71,14 @@ describe('the core takes identity as input', () => {
     // package.json at all: identity came from the caller.
     const dir = mkdtempSync(join(tmpdir(), 'cyweb-core-'))
     mkdirSync(join(dir, 'out'))
-    writeFileSync(join(dir, 'out', 'remoteEntry.js'), 'export { x as init, y as get }\n')
-    writeFileSync(join(dir, 'out', 'mf-manifest.json'), JSON.stringify({ name: 'myApp' }))
+    writeFileSync(
+      join(dir, 'out', 'remoteEntry.js'),
+      'export { x as init, y as get }\n',
+    )
+    writeFileSync(
+      join(dir, 'out', 'mf-manifest.json'),
+      JSON.stringify({ name: 'myApp' }),
+    )
 
     const result = verifyBuild({
       appMeta: {
@@ -90,7 +108,10 @@ describe('the core takes identity as input', () => {
   it('does not import from the CLI layer', () => {
     // A build plugin that imported the verifier used to drag src/cli/ into a
     // Vite config. The dependency now runs the other way.
-    const core = readFileSync(join(import.meta.dirname, '../src/verify/verifyBuild.ts'), 'utf8')
+    const core = readFileSync(
+      join(import.meta.dirname, '../src/verify/verifyBuild.ts'),
+      'utf8',
+    )
     expect(core).not.toMatch(/from '\.\.\/cli\//)
   })
 })
@@ -109,7 +130,11 @@ describe('the CLI surfaces a corrupt artifact without a stack trace', () => {
         stdio: ['ignore', 'pipe', 'pipe'],
       })
     } catch (error) {
-      const failure = error as { status: number; stdout: string; stderr: string }
+      const failure = error as {
+        status: number
+        stdout: string
+        stderr: string
+      }
       status = failure.status
       stdout = failure.stdout
       stderr = failure.stderr
@@ -121,4 +146,51 @@ describe('the CLI surfaces a corrupt artifact without a stack trace', () => {
     expect(stderr).not.toMatch(/\n\s+at /)
     expect(stderr.length).toBeLessThan(2000)
   }, 30_000)
+})
+
+describe('a corrupt collection is a result too', () => {
+  // `typeof x === "object"` was not enough for the promise this file makes:
+  // `{ "exposes": {} }` reached `.map` and threw a TypeError out of a function
+  // whose contract is to RETURN failures. The packager calls the core without
+  // the CLI wrapper's catch, so it surfaced as a build crash naming nothing.
+  it.each([['exposes'], ['shared'], ['remotes']])(
+    'reports a non-array %s instead of throwing',
+    (field) => {
+      const root = rootWithManifest(
+        JSON.stringify({ name: 'myApp', [field]: {} }),
+      )
+      const result = verifyApp({ root })
+      expect(result.failures.join('\n')).toContain(`"${field}" is not an array`)
+    },
+  )
+
+  it('survives entries that are not objects', () => {
+    const root = rootWithManifest(
+      JSON.stringify({
+        name: 'myApp',
+        exposes: [null, 42],
+        shared: ['x'],
+        remotes: [null],
+      }),
+    )
+    expect(() => verifyApp({ root })).not.toThrow()
+  })
+})
+
+describe('a FIFO in the build output does not hang the verifier', () => {
+  it('skips anything that is not a regular file', () => {
+    // readFileSync on a FIFO blocks until a writer appears. The verifier reads
+    // every .js file in the output, so `assets/pipe.js` would hang the build
+    // forever instead of reaching the packager's rejection.
+    const root = rootWithManifest(JSON.stringify({ name: 'myApp' }))
+    try {
+      execFileSync('mkfifo', [join(root, 'dist', 'assets-pipe.js')])
+    } catch {
+      return // no mkfifo on this platform
+    }
+    const started = Date.now()
+    const result = verifyApp({ root })
+    expect(Date.now() - started).toBeLessThan(5000)
+    expect(result.failures.length).toBeGreaterThan(0)
+  }, 15_000)
 })

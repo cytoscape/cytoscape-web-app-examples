@@ -187,7 +187,15 @@ const submissionProfileWarning = (version: string): string | undefined => {
     return `--version "${version}" is longer than 128 characters, which an App ` +
       `Store submission rejects — it becomes a ZIP filename and a URL path segment`
   }
-  const numeric = version.replace(/\+.*$/, '').split(/[.-]/).filter((p) => /^\d+$/.test(p))
+  // From the SemVer capture groups, not a split on every separator: a prerelease
+  // identifier may CONTAIN hyphens, so `1.0.0-alpha-9007199254740992` has one
+  // alphanumeric identifier rather than a numeric one — and splitting on `-`
+  // would warn about a version the runtime profile accepts.
+  const match = SEMVER.exec(version)
+  if (match === null) return undefined
+  const numeric = [match[1], match[2], match[3]].concat(
+    (match[4] ?? '').split('.').filter((part) => part !== '' && /^\d+$/.test(part)),
+  )
   for (const identifier of numeric) {
     if (Number(identifier) > Number.MAX_SAFE_INTEGER) {
       return `--version "${version}" has a numeric identifier above ` +

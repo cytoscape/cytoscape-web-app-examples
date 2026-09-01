@@ -154,10 +154,10 @@ describe('what it refuses to package', () => {
     expect((await runPackager(root)).error).toContain('symbolic link')
   })
 
-  it('rejects a broken link', async () => {
-    // Verification reaches it first — it reads every .js file in the output —
-    // so the message names the unreadable file rather than the link. What
-    // matters is that nothing is packaged and the file is named.
+  it('rejects a broken link, by name, before anything reads it', async () => {
+    // The walk runs before verification now. It used to run after, so a
+    // dangling link reached the verifier's file reads first and came back as
+    // ENOENT — true, but naming the symptom instead of the cause.
     const root = appRoot()
     symlinkSync(
       join(root, 'nothing-here.js'),
@@ -165,9 +165,25 @@ describe('what it refuses to package', () => {
     )
     const { error } = await runPackager(root)
     expect(error).toContain('assets/dangling.js')
-    expect(error).toContain('could not be read')
+    expect(error).toContain('symbolic link')
     expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
   })
+
+  it('rejects a FIFO with a .js name, which would otherwise hang the build', async () => {
+    // The earlier FIFO case used an extensionless name and so never exercised
+    // this: the verifier reads every .js file, and readFileSync on a FIFO blocks
+    // until a writer appears. Walking first is what bounds it.
+    const root = appRoot()
+    try {
+      execFileSync('mkfifo', [join(root, 'dist', 'assets', 'pipe.js')])
+    } catch {
+      return
+    }
+    const started = Date.now()
+    const { error } = await runPackager(root)
+    expect(Date.now() - started).toBeLessThan(5000)
+    expect(error).toContain('not a regular file')
+  }, 15_000)
 
   it('rejects a FIFO, which is not a regular file', async () => {
     const root = appRoot()

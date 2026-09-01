@@ -378,3 +378,104 @@ describe('the artifacts as they ship, not as they sit in the workspace', () => {
     }
   }, 120_000)
 })
+
+describe('the producer never emits what the wire rules reject', () => {
+  // Three separate bugs made this false at once — an SSH password dropped
+  // rather than refused, `…/repo.git/` keeping its suffix because `.git$` does
+  // not match a trailing slash, and a homepage growing past its limit when the
+  // URL parser percent-encoded it. Each was a different mistake producing the
+  // same class of defect, which is why the invariant is now asserted rather
+  // than trusted once per normalizer.
+  const hostile = [
+    {
+      name: 'an SSH URL with a password',
+      pkg: { repository: 'ssh://git:secret@github.com/e/a.git' },
+    },
+    {
+      name: 'a repository with a trailing slash after .git',
+      pkg: { repository: 'https://github.com/e/a.git/' },
+    },
+    {
+      name: 'a repository path needing percent-encoding',
+      pkg: { repository: 'https://github.com/e/repo name' },
+    },
+    {
+      name: 'a repository path with a non-ASCII segment',
+      pkg: { repository: 'https://github.com/e/リポジトリ' },
+    },
+    {
+      name: 'a homepage that grows past its limit when encoded',
+      pkg: { homepage: `https://example.org/${'あ'.repeat(200)}` },
+    },
+    {
+      name: 'a homepage with a trailing-dot host',
+      pkg: { homepage: 'https://example.org./x' },
+    },
+    {
+      name: 'an author that is only an email',
+      pkg: { author: 'jane@example.org' },
+    },
+    {
+      name: 'keywords that differ only by ASCII case',
+      pkg: { keywords: ['Layout', 'layout'] },
+    },
+    {
+      name: 'a repository shorthand',
+      pkg: { repository: 'github:example/app' },
+    },
+  ]
+
+  it.each(hostile)(
+    '$name either fails, or produces a canonical manifest',
+    ({ pkg }) => {
+      let manifest
+      try {
+        manifest = buildFrom({ ...SOURCE_CORPUS.base, ...pkg }).manifest
+      } catch (error) {
+        // Rejecting the input is fine. Emitting something invalid is not.
+        expect((error as Error).message).not.toContain('internal:')
+        return
+      }
+      expect(validateCyManifestWire(manifest)).toEqual([])
+      expect(validateSchema(manifest)).toBe(true)
+    },
+  )
+
+  it('refuses an SSH password rather than dropping it', () => {
+    // Silently discarding it is how a credential committed to package.json
+    // reaches a public manifest as if it had never been there.
+    expect(() =>
+      buildFrom({
+        ...SOURCE_CORPUS.base,
+        repository: 'ssh://git:secret@github.com/e/a.git',
+      }),
+    ).toThrow(/carries credentials/)
+  })
+
+  it('strips a trailing slash before the .git suffix, not after', () => {
+    expect(
+      buildFrom({
+        ...SOURCE_CORPUS.base,
+        repository: 'https://github.com/e/a.git/',
+      }).manifest.repository,
+    ).toBe('https://github.com/e/a')
+  })
+
+  it('rejects a repository path the URL parser would percent-encode', () => {
+    expect(() =>
+      buildFrom({
+        ...SOURCE_CORPUS.base,
+        repository: 'https://github.com/e/repo name',
+      }),
+    ).toThrow(/percent-encoded/)
+  })
+
+  it('measures the homepage limit on what it emits, not on what it read', () => {
+    expect(() =>
+      buildFrom({
+        ...SOURCE_CORPUS.base,
+        homepage: `https://example.org/${'あ'.repeat(200)}`,
+      }),
+    ).toThrow(/once percent-encoded/)
+  })
+})

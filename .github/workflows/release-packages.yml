@@ -195,7 +195,11 @@ jobs:
       - name: Read back the registry, and assert the tag moved
         if: ${{ !inputs.dry_run }}
         run: |
-          set -uo pipefail
+          # -e, deliberately. Without it a `process.exit(1)` inside the loop only
+          # ends that iteration, and a successful SECOND package would leave the
+          # step green — letting a mis-tagged runtime release through the one
+          # check that exists to catch it.
+          set -euo pipefail
           for dir in packages/app-runtime packages/create-cytoscape-app; do
             name=$(node -p "require('./$dir/package.json').name")
             version=$(node -p "require('./$dir/package.json').version")

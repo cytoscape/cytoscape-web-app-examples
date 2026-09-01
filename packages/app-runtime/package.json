@@ -46,10 +46,12 @@
     "in tsconfig.json to pick up the virtual:cyweb-app-meta declaration, the",
     "same way vite/client works.",
     "",
-    "./schema/* is data, not API: the JSON Schema, the normative predicate",
-    "artifact and the conformance corpora. The App Store pins them by $id and",
-    "SHA-256 digest, so they have to be resolvable from the installed package",
-    "rather than fetched from a URL that could change under it."
+    "./schema/* is data, not API. The JSON Schema and the normative predicate",
+    "artifact are pinned by $id and SHA-256 digest in schema/ledger.json, so they",
+    "have to be resolvable from the installed package rather than fetched from a",
+    "URL that could change under it. The corpora beside them are conformance",
+    "EXAMPLES \u2014 shipped so the App Store can run the same cases, carrying no $id",
+    "and not in the ledger, because a fixture is not part of the contract."
   ],
   "exports": {
     "./vite": {
