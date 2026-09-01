@@ -171,18 +171,24 @@ jobs:
             # registry copy whenever the generated range already resolved, so an
             # ordinary SDK change could pass this job while exercising code
             # published weeks ago — the one thing a pre-publish gate must not do.
-            # `pnpm install` takes no package argument — adding one is `pnpm
-            # add` — and with --silent it fails with NO output at all, which is
-            # exactly how this first went unnoticed: the job ended right after
-            # the scaffolder's banner with a bare exit 1.
+            # Point the manifest at the candidate BEFORE installing anything.
+            #
+            # A generated project pins the SDK exactly during the preview, and
+            # that version is not on the registry until this candidate is
+            # published — so any command that resolves the manifest first goes
+            # looking for it and fails. `pnpm add <tarball>` does exactly that:
+            # it resolves the whole manifest before applying the argument, so no
+            # form of `add` can work here. Rewriting the spec and running a
+            # plain install is the one shape that works for both managers, and
+            # it leaves package.json saying which file was installed.
             RUNTIME_TGZ=$(ls /tmp/cytoscape-web-app-runtime-*.tgz)
-            if [ "$PM" = pnpm ]; then
-              pnpm add -D "$RUNTIME_TGZ"
-              pnpm install
-            else
-              npm install --silent "$RUNTIME_TGZ"
-              npm install --silent
-            fi
+            node -e "
+              const fs = require('fs')
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+              pkg.devDependencies['@cytoscape-web/app-runtime'] = 'file:$RUNTIME_TGZ'
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+            "
+            $PM install
 
             # A version string can be printed by anything. Assert the binary
             # that runs is the one inside this project's node_modules.

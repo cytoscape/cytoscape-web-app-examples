@@ -26,12 +26,8 @@ import { parseAppMeta, parseSubmissionMeta, readPackageSnapshot } from '../src/v
 import { runManifest } from '../src/cli/manifest.js'
 import { zipForAppStore } from '../src/vite/zipForAppStore.js'
 import { appRootFixture } from './fixtures/appRoot.js'
+import { packTarball } from './fixtures/packTarball.js'
 
-/**
- * `npm` is `npm.cmd` on Windows, and `execFileSync` cannot launch a command
- * script directly — it fails with ENOENT before npm ever runs.
- */
-const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 
 const PKG = {
@@ -178,13 +174,7 @@ describe('the packed candidate, as a real process', () => {
     // whatever happens to be sitting in the workspace dist/.
     const packageRoot = join(import.meta.dirname, '..')
     extracted = mkdtempSync(join(tmpdir(), 'cyweb-cli-pack-'))
-    const tarball = execFileSync(NPM, ['pack', '--pack-destination', extracted, '--silent'], {
-      cwd: packageRoot,
-      encoding: 'utf8',
-    })
-      .trim()
-      .split('\n')
-      .at(-1) as string
+    const tarball = packTarball(packageRoot, extracted)
     execFileSync('tar', ['-xzf', join(extracted, tarball), '-C', extracted])
     cli = join(extracted, 'package', 'dist', 'cli', 'cyweb-app.js')
   }, 120_000)

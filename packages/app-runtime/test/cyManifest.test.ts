@@ -28,12 +28,8 @@ import {
   type CyManifestV1,
 } from '../src/vite/cyManifest.js'
 import { PREDICATES } from '../src/vite/manifestPredicates.js'
+import { packTarball } from './fixtures/packTarball.js'
 
-/**
- * `npm` is `npm.cmd` on Windows, and `execFileSync` cannot launch a command
- * script directly — it fails with ENOENT before npm ever runs.
- */
-const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 
 const schemaAt = (name: string): string =>
@@ -345,17 +341,7 @@ describe('the artifacts as they ship, not as they sit in the workspace', () => {
     const packageRoot = join(import.meta.dirname, '..')
     const out = mkdtempSync(join(tmpdir(), 'cyweb-pack-'))
 
-    const tarball = execFileSync(
-      'npm',
-      ['pack', '--pack-destination', out, '--silent'],
-      {
-        cwd: packageRoot,
-        encoding: 'utf8',
-      },
-    )
-      .trim()
-      .split('\n')
-      .at(-1) as string
+    const tarball = packTarball(packageRoot, out)
     execFileSync('tar', ['-xzf', join(out, tarball), '-C', out])
 
     const packed = (name: string): string =>
