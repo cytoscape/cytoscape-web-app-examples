@@ -245,8 +245,12 @@ export const buildCyManifest = (
       (field === 'compatibleHostVersions' &&
         compatibleHostVersions === undefined)
     if (missing) {
+      // "does not appear in the generated manifest", not "is not declared":
+      // normalization can DROP a declared field — an email-only author, a
+      // whitespace-only licence — and the old wording then contradicted the
+      // specific warning that had just explained the omission.
       warnings.push(
-        `${field} is not declared in package.json — recommended for an App Store submission (the required set is policy-pending)`,
+        `${field} does not appear in the generated manifest — recommended for an App Store submission (the required set is policy-pending)`,
       )
     }
   }

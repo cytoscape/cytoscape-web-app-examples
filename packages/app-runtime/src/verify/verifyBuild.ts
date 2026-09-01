@@ -29,7 +29,13 @@
 //                                 embeds configuredRemote via additionalData
 //   configuredShared / configuredRemote / configuredRuntimePlugins  (top level)
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import {
+  existsSync,
+  lstatSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from 'node:fs'
 import { join } from 'node:path'
 
 import type { CyWebAppMeta } from '../meta/index.js'
@@ -65,8 +71,22 @@ const DERIVED_SHARED_ALLOWLIST = [
  * username. See the note on check 10 for why their presence is not fatal
  * everywhere.
  */
-const ABSOLUTE_NODE_MODULES =
-  /(?:[A-Za-z]:[\\/]|\/)[^\s"'`,)]*[\\/]node_modules[\\/]/g
+const ABSOLUTE_NODE_MODULES_SOURCE =
+  /(?:[A-Za-z]:[\\/]|\/)[^\s"'`,)]*[\\/]node_modules[\\/]/.source
+
+/** For COUNTING, with `g`. Only used with `String.match`, which ignores `lastIndex`. */
+const ABSOLUTE_NODE_MODULES_ALL = new RegExp(ABSOLUTE_NODE_MODULES_SOURCE, 'g')
+
+/**
+ * For TESTING, without `g` — and this is not a style choice.
+ *
+ * `RegExp.prototype.test` on a global regex advances and keeps `lastIndex`
+ * between calls, so testing several files with one shared object makes the
+ * answer depend on the previous file: three chunks that all carry an absolute
+ * path come back as the first and the third. The check that build-machine paths
+ * stay confined to remoteEntry.js was passing while chunks carried them.
+ */
+const ABSOLUTE_NODE_MODULES_TEST = new RegExp(ABSOLUTE_NODE_MODULES_SOURCE)
 
 /**
  * Everything the core needs, and nothing it could read for itself.
@@ -146,8 +166,34 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     }
   }
 
+  /**
+   * A path this function is about to READ must be a regular file first.
+   *
+   * `listFilesRecursive` skips anything else, but these two are read directly
+   * and reached that protection too late: a FIFO named `remoteEntry.js` blocks
+   * `cyweb-app verify` forever, because `readFileSync` on one waits for a
+   * writer, and a symlink would have the verifier reading content from outside
+   * the build it is meant to be checking.
+   */
+  const notARegularFile = (path: string, label: string): string | undefined => {
+    let stat
+    try {
+      stat = lstatSync(path)
+    } catch {
+      return undefined // absent is the caller's own case, with its own message
+    }
+    if (stat.isSymbolicLink())
+      return `${label} is a symbolic link, not part of this build`
+    if (!stat.isFile()) return `${label} is not a regular file`
+    return undefined
+  }
+
   // ── 1. remoteEntry.js is an ES module exposing the container contract ──────
   const remoteEntryPath = join(distDir, 'remoteEntry.js')
+  const remoteEntryProblem = notARegularFile(remoteEntryPath, 'remoteEntry.js')
+  if (remoteEntryProblem !== undefined) {
+    return { checks, failures: [remoteEntryProblem], notes }
+  }
   if (!existsSync(remoteEntryPath)) {
     return {
       checks,
@@ -170,6 +216,11 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
 
   // ── 2. mf-manifest.json, and it agrees with package.json ──────────────────
   const manifestPath = join(distDir, 'mf-manifest.json')
+  const manifestProblem = notARegularFile(manifestPath, 'mf-manifest.json')
+  if (manifestProblem !== undefined) {
+    failures.push(manifestProblem)
+    return { checks, failures, notes }
+  }
   if (!existsSync(manifestPath)) {
     failures.push(
       'mf-manifest.json missing — the build did not emit a manifest',
@@ -271,7 +322,14 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // ── 4. Shared: configured exactly, effective a superset ───────────────────
   // Two different things, and conflating them fails a CORRECT build: the plugin
   // derives keys the config never named (see DERIVED_SHARED_ALLOWLIST).
-  const configured = mf.configuredShared as
+  // `=== undefined` lets `null` through, and `null[pkg]` throws out of a
+  // function whose contract is to RETURN failures.
+  const asRecord = (raw: unknown): Record<string, unknown> | undefined =>
+    typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : undefined
+
+  const configured = asRecord(mf.configuredShared) as
     Record<string, ShareRecord> | undefined
   if (configured === undefined) {
     failures.push(
@@ -331,7 +389,7 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // Asserted against configuredRemote: the native `remotes[]` records the entry
   // string under `federationContainerName` and carries no `type` at all, so it
   // cannot answer the question that matters most here.
-  const remote = mf.configuredRemote as
+  const remote = asRecord(mf.configuredRemote) as
     { name?: string; type?: string; entry?: string } | undefined
   if (remote === undefined) {
     failures.push(
@@ -457,7 +515,7 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
   // Anywhere ELSE is a regression: it means a path escaped into a chunk that had
   // no business carrying one.
   const strayPathFiles = jsFiles.filter(
-    (f) => f !== 'remoteEntry.js' && ABSOLUTE_NODE_MODULES.test(readFile(f)),
+    (f) => f !== 'remoteEntry.js' && ABSOLUTE_NODE_MODULES_TEST.test(readFile(f)),
   )
   check(
     'build-machine paths confined to remoteEntry.js',
@@ -465,7 +523,7 @@ export const verifyBuild = (input: VerifyBuildInput): VerifyResult => {
     `${strayPathFiles.join(', ')} also carry absolute paths`,
   )
   const inEntry =
-    readFile('remoteEntry.js').match(ABSOLUTE_NODE_MODULES)?.length ?? 0
+    readFile('remoteEntry.js').match(ABSOLUTE_NODE_MODULES_ALL)?.length ?? 0
   if (inEntry > 0) {
     notes.push(
       `remoteEntry.js embeds ${inEntry} absolute build-machine path(s) — expected ` +

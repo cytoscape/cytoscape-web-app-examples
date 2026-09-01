@@ -142,7 +142,11 @@ jobs:
           CREATE=$(ls /tmp/create-cytoscape-app-*.tgz)
           WORK=$(mktemp -d)
           cd "$WORK"
-          ${{ matrix.pm }} install --silent "$CREATE"
+          if [ "${{ matrix.pm }}" = pnpm ]; then
+            pnpm add "$CREATE"
+          else
+            npm install --silent "$CREATE"
+          fi
           PM=${{ matrix.pm }}
           for T in panel menu context-menu non-react full; do
             echo "── $T ──"
@@ -167,9 +171,18 @@ jobs:
             # registry copy whenever the generated range already resolved, so an
             # ordinary SDK change could pass this job while exercising code
             # published weeks ago — the one thing a pre-publish gate must not do.
+            # `pnpm install` takes no package argument — adding one is `pnpm
+            # add` — and with --silent it fails with NO output at all, which is
+            # exactly how this first went unnoticed: the job ended right after
+            # the scaffolder's banner with a bare exit 1.
             RUNTIME_TGZ=$(ls /tmp/cytoscape-web-app-runtime-*.tgz)
-            $PM install --silent "$RUNTIME_TGZ"
-            $PM install --silent
+            if [ "$PM" = pnpm ]; then
+              pnpm add -D "$RUNTIME_TGZ"
+              pnpm install
+            else
+              npm install --silent "$RUNTIME_TGZ"
+              npm install --silent
+            fi
 
             # A version string can be printed by anything. Assert the binary
             # that runs is the one inside this project's node_modules.

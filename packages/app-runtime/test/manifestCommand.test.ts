@@ -27,6 +27,13 @@ import { runManifest } from '../src/cli/manifest.js'
 import { zipForAppStore } from '../src/vite/zipForAppStore.js'
 import { appRootFixture } from './fixtures/appRoot.js'
 
+/**
+ * `npm` is `npm.cmd` on Windows, and `execFileSync` cannot launch a command
+ * script directly — it fails with ENOENT before npm ever runs.
+ */
+const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
+
 const PKG = {
   name: '@example/my-app',
   version: '1.0.0',
@@ -49,7 +56,7 @@ describe('where the output goes', () => {
     expect(exitCode).toBe(0)
     expect(JSON.parse(stdout).id).toBe('myApp')
     expect(stdout).not.toContain('·')
-    expect(stderr).toContain('repository is not declared')
+    expect(stderr).toContain('repository does not appear in the generated manifest')
   })
 
   it('leaves stdout empty when writing to --out', () => {
@@ -171,7 +178,7 @@ describe('the packed candidate, as a real process', () => {
     // whatever happens to be sitting in the workspace dist/.
     const packageRoot = join(import.meta.dirname, '..')
     extracted = mkdtempSync(join(tmpdir(), 'cyweb-cli-pack-'))
-    const tarball = execFileSync('npm', ['pack', '--pack-destination', extracted, '--silent'], {
+    const tarball = execFileSync(NPM, ['pack', '--pack-destination', extracted, '--silent'], {
       cwd: packageRoot,
       encoding: 'utf8',
     })
@@ -202,7 +209,7 @@ describe('the packed candidate, as a real process', () => {
     const { status, stdout, stderr } = run(['manifest', '--root', appRoot()])
     expect(status).toBe(0)
     expect(() => JSON.parse(stdout)).not.toThrow()
-    expect(stderr).toContain('repository is not declared')
+    expect(stderr).toContain('repository does not appear in the generated manifest')
   })
 
   it('exits 2 on a usage error and 1 on work that failed', () => {

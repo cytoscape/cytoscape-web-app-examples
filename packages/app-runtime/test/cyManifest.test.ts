@@ -29,6 +29,13 @@ import {
 } from '../src/vite/cyManifest.js'
 import { PREDICATES } from '../src/vite/manifestPredicates.js'
 
+/**
+ * `npm` is `npm.cmd` on Windows, and `execFileSync` cannot launch a command
+ * script directly — it fails with ENOENT before npm ever runs.
+ */
+const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
+
 const schemaAt = (name: string): string =>
   join(import.meta.dirname, '..', 'schema', name)
 const readJson = (path: string): any => JSON.parse(readFileSync(path, 'utf8'))

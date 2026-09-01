@@ -153,9 +153,13 @@ jobs:
 
       - name: Publish @cytoscape-web/app-runtime
         if: ${{ steps.todo.outputs.runtime == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           npm publish -w @cytoscape-web/app-runtime \
-            --provenance --access public --tag "${{ inputs.tag }}" \
+            --provenance --access public --tag "$TAG" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
       # Second, deliberately. The scaffolder does not depend on the SDK, but
@@ -163,9 +167,13 @@ jobs:
       # installs cleanly rather than racing the registry.
       - name: Publish create-cytoscape-app
         if: ${{ steps.todo.outputs.scaffolder == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           npm publish -w create-cytoscape-app \
-            --provenance --access public --tag "${{ inputs.tag }}" \
+            --provenance --access public --tag "$TAG" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
       # No deprecation step, deliberately.
@@ -194,6 +202,12 @@ jobs:
       # landed under the wrong tag looked identical to one that landed right.
       - name: Read back the registry, and assert the tag moved
         if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           # -e, deliberately. Without it a `process.exit(1)` inside the loop only
           # ends that iteration, and a successful SECOND package would leave the
@@ -220,7 +234,7 @@ jobs:
                 console.error("::error::" + tag + " points at " + tagged + ", not " + version)
                 process.exit(1)
               }
-            ' "$version" "$name" "${{ inputs.tag }}"
+            ' "$version" "$name" "$TAG"
           done
 
       # Install THROUGH the selected tag, scaffold, and read a manifest out of a
@@ -229,9 +243,14 @@ jobs:
       # hard-coded `next` — this workflow can publish `latest`.
       - name: Smoke-test the published packages through their dist-tag
         if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          TAG=${{ inputs.tag }}
           WORK=$(mktemp -d)
           cd "$WORK"
           npm install --silent "create-cytoscape-app@$TAG"

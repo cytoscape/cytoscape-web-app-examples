@@ -183,6 +183,14 @@ changes. **Every digest is taken over the exact raw bytes extracted from the can
 tarball** — no newline normalization, no transcoding, no JSON canonicalization — because a
 digest over "the same content, reformatted" pins nothing.
 
+That last sentence has to be enforced against **Git itself**, which is where it first
+failed. With no `.gitattributes`, a Windows checkout applies `core.autocrlf` and rewrites
+every LF in these files, so the Windows CI job computed `c4ac157f…` for a schema the ledger
+records as `67777152…` — exactly the CRLF hash of the same content. A digest that depends
+on which platform checked the repository out pins nothing either. `schema/**` is therefore
+declared `-text` and the tree `eol=lf`, so the bytes a contributor commits are the bytes
+the tarball ships and the bytes the Store pins.
+
 The schema lives at `packages/app-runtime/schema/`, JSON Schema **draft 2020-12**, is
 listed in the package's `files` and reachable through a documented export subpath, and is
 validated in CI from the packed tarball. The Store pins the exact `$id` and digest and

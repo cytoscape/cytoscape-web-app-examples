@@ -27,6 +27,7 @@ import {
 import { zipForAppStore } from '../src/vite/zipForAppStore.js'
 
 import { APP_CYWEB, appRootFixture } from './fixtures/appRoot.js'
+import { madeAFifo } from './fixtures/fifo.js'
 
 const appRoot = appRootFixture
 
@@ -127,7 +128,7 @@ describe('the archive it writes', () => {
 
   it('warns for each recommended field the package does not declare', async () => {
     const { recorded } = await runPackager(appRoot())
-    expect(recorded.warnings.join('\n')).toContain('author is not declared')
+    expect(recorded.warnings.join('\n')).toContain('author does not appear in the generated manifest')
     expect(recorded.warnings.join('\n')).toContain('policy-pending')
   })
 })
@@ -174,11 +175,8 @@ describe('what it refuses to package', () => {
     // this: the verifier reads every .js file, and readFileSync on a FIFO blocks
     // until a writer appears. Walking first is what bounds it.
     const root = appRoot()
-    try {
-      execFileSync('mkfifo', [join(root, 'dist', 'assets', 'pipe.js')])
-    } catch {
-      return
-    }
+    const fifo = join(root, 'dist', 'assets', 'pipe.js')
+    if (!madeAFifo(fifo)) return
     const started = Date.now()
     const { error } = await runPackager(root)
     expect(Date.now() - started).toBeLessThan(5000)
@@ -187,11 +185,7 @@ describe('what it refuses to package', () => {
 
   it('rejects a FIFO, which is not a regular file', async () => {
     const root = appRoot()
-    try {
-      execFileSync('mkfifo', [join(root, 'dist', 'assets', 'pipe')])
-    } catch {
-      return // no mkfifo on this platform; the rule is still asserted above
-    }
+    if (!madeAFifo(join(root, 'dist', 'assets', 'pipe'))) return
     expect((await runPackager(root)).error).toContain('not a regular file')
   })
 
@@ -303,5 +297,19 @@ describe('the captured snapshot is what gets packaged', () => {
     expect(manifest.version).toBe('1.0.0')
     expect(manifest.description).toBe('Colors nodes by degree')
     expect(manifest.author).toBeUndefined()
+  })
+})
+
+describe('a name that cannot exist is not acted on', () => {
+  it('does not fail with ENAMETOOLONG before it can say why', async () => {
+    // A 300-character prerelease is legal SemVer, so the runtime reader accepts
+    // it and `buildStart` used to try to remove a path that long — reporting a
+    // filesystem error instead of the submission-profile violation that is the
+    // actual problem, and the reason the profile bounds the version at all.
+    const root = appRoot({ version: `1.0.0-${'a'.repeat(300)}` })
+    const { error } = await runPackager(root)
+    expect(error).toBeDefined()
+    expect(error).toContain('longer than 128 characters')
+    expect(error).not.toContain('ENAMETOOLONG')
   })
 })

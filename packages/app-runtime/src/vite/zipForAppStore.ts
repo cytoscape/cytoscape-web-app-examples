@@ -11,6 +11,7 @@ import type { Plugin } from 'vite'
 
 import type { CyWebAppMeta } from '../meta/index.js'
 import type { CyWebSubmissionMeta, ShareRecord } from './appMeta.js'
+import { isValidIdShape, versionProfileFailure } from './manifestPredicates.js'
 import {
   archiveMemberProblem,
   classifyArchiveMember,
@@ -154,6 +155,15 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
     },
 
     buildStart() {
+      // The submission profile — a bounded id and version — is enforced in
+      // `closeBundle`, where a violation is reported as the metadata error it
+      // is. Acting on the name here first would surface it as ENAMETOOLONG from
+      // `rmSync` instead: a 300-character prerelease is legal SemVer, so the
+      // runtime reader accepts it and this path becomes unusable before
+      // anything can say why. A name that cannot exist has no stale archive to
+      // remove, so there is nothing lost by skipping it.
+      if (!isValidIdShape(appMeta.id)) return
+      if (versionProfileFailure(appMeta.version) !== undefined) return
       rmSync(finalPath(), { force: true })
     },
 
