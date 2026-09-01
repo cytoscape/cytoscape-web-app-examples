@@ -285,6 +285,38 @@ the checks that were already here.
   asserts `dist-tags[tag]` moved to the published version, installs through
   `@<tag>`, scaffolds, builds an archive, and reads the manifest back out of it.
 
+## 3c. The 0.4.0-next.1 release, and what its smoke step got wrong
+
+Published 2026-09-01. Both packages went out under `next` and the read-back
+asserted the tag; the run then failed on its own final step.
+
+**The two halves of that step read the registry by different routes.** The
+read-back asks `registry.npmjs.org` directly with a cache buster and saw the new
+tag. The smoke test ran `npm install create-cytoscape-app@next`, which resolves
+through a CDN edge and npm's own cache — and got the PREVIOUS `next`, 0.3.1. That
+scaffolder pins `^0.3.0`, so the project built with the old SDK, produced an
+archive with no `cy-manifest.json`, and the step died on `JSON.parse` with
+"Unexpected end of JSON input": a symptom three commands away from the cause.
+The giveaway was in the build log, where the packager printed "15 files, ready
+to upload" — the message 0.3.1 emits — rather than "including cy-manifest.json".
+
+The published artifacts were fine, and still are: installing them by hand
+produces a correct archive. Nothing needed republishing.
+
+Two changes, both inside the step:
+
+- **wait on the path that matters.** Poll `npm view --prefer-online` for the tag
+  AND for the runtime version until they match what was published, then install.
+  Asserting on one path and installing on another is the actual defect.
+- **assert what landed.** Check the installed scaffolder, the runtime the
+  scaffolded project resolved, and that the archive contains `cy-manifest.json`,
+  so a stale resolve fails by name instead of as a parse error after a build
+  that quietly used an old SDK.
+
+The general form, for this runbook: **a post-publish check is the one step whose
+code has never run before it runs for real.** Budget for it failing, and make it
+fail legibly.
+
 ## 4. Pre-flight
 
 The workflow runs all of this itself. Doing it locally first is still worth the

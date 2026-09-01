@@ -251,19 +251,64 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          SCAFFOLDER=$(node -p "require('./packages/create-cytoscape-app/package.json').version")
+          RUNTIME=$(node -p "require('./packages/app-runtime/package.json').version")
+
+          # WAIT, through the path npm actually uses.
+          #
+          # The read-back above asks registry.npmjs.org directly with a cache
+          # buster; `npm install` resolves through a CDN edge and npm's own
+          # cache, and the two disagreed for long enough that the first run of
+          # this step installed the PREVIOUS `next`. It then built an archive
+          # with no manifest and failed here as "Unexpected end of JSON input" —
+          # a symptom three commands away from the cause. Asserting the tag on
+          # one path and installing on another is the mistake; this waits on the
+          # path that matters.
+          for _ in $(seq 1 30); do
+            SEEN=$(npm view --prefer-online "create-cytoscape-app@$TAG" version 2>/dev/null || true)
+            SEEN_RUNTIME=$(npm view --prefer-online "@cytoscape-web/app-runtime@$RUNTIME" version 2>/dev/null || true)
+            if [ "$SEEN" = "$SCAFFOLDER" ] && [ "$SEEN_RUNTIME" = "$RUNTIME" ]; then break; fi
+            echo "waiting for npm: $TAG sees ${SEEN:-nothing} (want $SCAFFOLDER), runtime sees ${SEEN_RUNTIME:-nothing}"
+            sleep 10
+          done
+          if [ "$SEEN" != "$SCAFFOLDER" ] || [ "$SEEN_RUNTIME" != "$RUNTIME" ]; then
+            echo "::error::npm still resolves $TAG to ${SEEN:-nothing} and the runtime to ${SEEN_RUNTIME:-nothing}"
+            exit 1
+          fi
+
           WORK=$(mktemp -d)
           cd "$WORK"
           npm install --silent "create-cytoscape-app@$TAG"
+
+          # What actually landed. A stale resolve now fails by NAME here, rather
+          # than as a parse error after a build that quietly used an old SDK.
+          GOT=$(node -p "require('./node_modules/create-cytoscape-app/package.json').version")
+          if [ "$GOT" != "$SCAFFOLDER" ]; then
+            echo "::error::installed create-cytoscape-app@$GOT through $TAG, expected $SCAFFOLDER"
+            exit 1
+          fi
+
           node node_modules/create-cytoscape-app/dist/index.js smoke --yes \
             --id smokeApp --template panel --port 6499 --no-install
           cd smoke
           npm install --silent
+          GOT_RUNTIME=$(node -p "require('./node_modules/@cytoscape-web/app-runtime/package.json').version")
+          if [ "$GOT_RUNTIME" != "$RUNTIME" ]; then
+            echo "::error::scaffolded project installed app-runtime@$GOT_RUNTIME, expected $RUNTIME"
+            exit 1
+          fi
+
           npm run build:zip
           node -e '
             const AdmZip = require("adm-zip")
             const fs = require("fs")
             const zip = fs.readdirSync(".").find((f) => f.endsWith(".zip"))
             if (!zip) { console.error("::error::no archive"); process.exit(1) }
+            const names = new AdmZip(zip).getEntries().map((e) => e.entryName)
+            if (!names.includes("cy-manifest.json")) {
+              console.error("::error::archive has no cy-manifest.json: " + names.join(", "))
+              process.exit(1)
+            }
             const manifest = JSON.parse(new AdmZip(zip).readAsText("cy-manifest.json"))
             if (manifest.id !== "smokeApp") {
               console.error("::error::manifest id " + manifest.id); process.exit(1)
