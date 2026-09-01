@@ -153,9 +153,13 @@ jobs:
 
       - name: Publish @cytoscape-web/app-runtime
         if: ${{ steps.todo.outputs.runtime == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           npm publish -w @cytoscape-web/app-runtime \
-            --provenance --access public --tag "${{ inputs.tag }}" \
+            --provenance --access public --tag "$TAG" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
       # Second, deliberately. The scaffolder does not depend on the SDK, but
@@ -163,9 +167,13 @@ jobs:
       # installs cleanly rather than racing the registry.
       - name: Publish create-cytoscape-app
         if: ${{ steps.todo.outputs.scaffolder == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           npm publish -w create-cytoscape-app \
-            --provenance --access public --tag "${{ inputs.tag }}" \
+            --provenance --access public --tag "$TAG" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
       # No deprecation step, deliberately.
@@ -188,10 +196,24 @@ jobs:
       # (which npm renders on the package page) and the guides.
       #
       # What the registry actually has, read back after publishing.
-      - name: Read back the registry
+      # What the registry actually has, read back after publishing — and
+      # asserted, not merely printed. The previous version checked that the
+      # version EXISTED and printed the dist-tags beside it, so a publish that
+      # landed under the wrong tag looked identical to one that landed right.
+      - name: Read back the registry, and assert the tag moved
         if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
-          set -uo pipefail
+          # -e, deliberately. Without it a `process.exit(1)` inside the loop only
+          # ends that iteration, and a successful SECOND package would leave the
+          # step green — letting a mis-tagged runtime release through the one
+          # check that exists to catch it.
+          set -euo pipefail
           for dir in packages/app-runtime packages/create-cytoscape-app; do
             name=$(node -p "require('./$dir/package.json').name")
             version=$(node -p "require('./$dir/package.json').version")
@@ -199,11 +221,52 @@ jobs:
             curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json
             node -e '
               const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
-              const v = d.versions[process.argv[1]]
-              console.log("  " + process.argv[2] + "@" + process.argv[1])
+              const [version, name, tag] = process.argv.slice(1)
+              const v = d.versions[version]
+              const tagged = d["dist-tags"][tag]
+              console.log("  " + name + "@" + version)
               console.log("    published:  " + (v ? "yes" : "NO"))
               console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
+              console.log("    " + tag + " points at: " + tagged)
               console.log("    deprecated: " + (v?.deprecated ?? "no"))
               if (!v) process.exit(1)
-            ' "$version" "$name"
+              if (tagged !== version) {
+                console.error("::error::" + tag + " points at " + tagged + ", not " + version)
+                process.exit(1)
+              }
+            ' "$version" "$name" "$TAG"
           done
+
+      # Install THROUGH the selected tag, scaffold, and read a manifest out of a
+      # real archive. Everything before this proves the tarball was built; only
+      # this proves the published one works. The tag is the input's, not a
+      # hard-coded `next` — this workflow can publish `latest`.
+      - name: Smoke-test the published packages through their dist-tag
+        if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          npm install --silent "create-cytoscape-app@$TAG"
+          node node_modules/create-cytoscape-app/dist/index.js smoke --yes \
+            --id smokeApp --template panel --port 6499 --no-install
+          cd smoke
+          npm install --silent
+          npm run build:zip
+          node -e '
+            const AdmZip = require("adm-zip")
+            const fs = require("fs")
+            const zip = fs.readdirSync(".").find((f) => f.endsWith(".zip"))
+            if (!zip) { console.error("::error::no archive"); process.exit(1) }
+            const manifest = JSON.parse(new AdmZip(zip).readAsText("cy-manifest.json"))
+            if (manifest.id !== "smokeApp") {
+              console.error("::error::manifest id " + manifest.id); process.exit(1)
+            }
+            console.log("published smoke ok: " + zip + ", generator " + manifest.generator)
+          '

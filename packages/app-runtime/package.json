@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/app-runtime",
-  "version": "0.3.1",
+  "version": "0.4.0-next.1",
   "description": "Build-time SDK for Cytoscape Web apps: one call configures Module Federation correctly.",
   "license": "MIT",
   "//repository": [
@@ -23,6 +23,7 @@
   },
   "files": [
     "dist",
+    "schema",
     "README.md"
   ],
   "//publishConfig": [
@@ -43,7 +44,14 @@
     "A subpath export is what lets an app write",
     "  \"types\": [\"@cytoscape-web/app-runtime/meta\"]",
     "in tsconfig.json to pick up the virtual:cyweb-app-meta declaration, the",
-    "same way vite/client works."
+    "same way vite/client works.",
+    "",
+    "./schema/* is data, not API. The JSON Schema and the normative predicate",
+    "artifact are pinned by $id and SHA-256 digest in schema/ledger.json, so they",
+    "have to be resolvable from the installed package rather than fetched from a",
+    "URL that could change under it. The corpora beside them are conformance",
+    "EXAMPLES \u2014 shipped so the App Store can run the same cases, carrying no $id",
+    "and not in the ledger, because a fixture is not part of the contract."
   ],
   "exports": {
     "./vite": {
@@ -54,6 +62,7 @@
       "types": "./dist/meta/index.d.ts",
       "default": "./dist/meta/index.js"
     },
+    "./schema/*": "./schema/*",
     "./package.json": "./package.json"
   },
   "bin": {
@@ -99,6 +108,8 @@
     "@types/adm-zip": "^0.5.5",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "adm-zip": "^0.5.10",
+    "ajv": "^8.17.1",
     "typescript": "^5.6.2",
     "vite": "8.0.13",
     "vitest": "^4.1.8"

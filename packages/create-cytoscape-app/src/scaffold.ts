@@ -40,7 +40,12 @@ export const HOST_SINGLETONS: Readonly<Record<string, string>> = {
  * runtime that ignored it, with no error and only a banner naming the wrong
  * host to give it away.
  */
-export const SDK_VERSION = '^0.3.0'
+// EXACT during the preview, `^x.y.z` once a stable version exists. A caret over
+// a prerelease admits only prereleases of the same major.minor.patch — neither
+// the stability an exact pin gives nor the breadth a caret suggests — so a
+// preview says what it means. `SDK_VERSION`'s test enforces whichever rule the
+// runtime's own version calls for.
+export const SDK_VERSION = '0.4.0-next.1'
 
 /**
  * Sets `CYWEB_APP_ZIP` for the `build:zip` script.
@@ -50,6 +55,17 @@ export const SDK_VERSION = '^0.3.0'
  * two of the three platforms — which is worse than not shipping the script.
  */
 export const CROSS_ENV_VERSION = '^10.1.0'
+
+/**
+ * `adm-zip` is declared by generated projects, not left to chance.
+ *
+ * It is an OPTIONAL peer of the SDK, so the SDK does not install it — and in
+ * this monorepo `build:zip` works anyway, because the Module Federation plugin
+ * happens to bring adm-zip in transitively. A standalone project that relied on
+ * that would break the day that plugin stopped needing it, so the script's own
+ * dependency is declared where the script lives.
+ */
+export const ADM_ZIP_VERSION = '^0.5.10'
 export const TEMPLATES = ['panel', 'menu', 'context-menu', 'non-react', 'full'] as const
 export type Template = (typeof TEMPLATES)[number]
 
@@ -80,7 +96,39 @@ export const BROWSER_BLOCKED_PORTS = [
 ]
 
 const JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
-const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+// The SAME grammar the runtime reader applies, not a looser one that lets a
+// project scaffold and then fail its first build. The canonical source is
+// `cy-manifest-v1.predicates.json` in @cytoscape-web/app-runtime; a test asserts
+// this copy still matches it, because the scaffolder cannot import from a
+// package it does not depend on.
+export const SEMVER =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
+/**
+ * `cyweb`, plus every own key of `Object.prototype`.
+ *
+ * A legal JavaScript identifier is not automatically a safe object key: the host
+ * indexes installed apps in ordinary prototype-bearing records, so an app called
+ * `toString` reads as already installed and one called `__proto__` mutates a
+ * record's prototype. Scaffolding such a project would produce something that
+ * cannot be published — better to say so at `npm create` time.
+ */
+export const RESERVED_APP_IDS = [
+  'cyweb',
+  '__proto__',
+  'constructor',
+  'prototype',
+  '__defineGetter__',
+  '__defineSetter__',
+  'hasOwnProperty',
+  '__lookupGetter__',
+  '__lookupSetter__',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf',
+]
 /** npm's rules, reduced to what a generated name can be. */
 const PACKAGE_NAME = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/
 
@@ -117,6 +165,63 @@ export const displayNameFromId = (id: string): string =>
  * one is a bad trade for whoever is waiting — and for an agent, which would
  * otherwise need a round trip per mistake.
  */
+/**
+ * Reasons a version is legal SemVer but cannot be SUBMITTED.
+ *
+ * A warning, never a failure. The grammar is what the runtime reader enforces
+ * and what a project needs to build at all; the submission profile is about a
+ * ZIP filename and a URL path segment, and refusing to scaffold over it would
+ * block someone who is not submitting anything today.
+ *
+ * The canonical source is `cy-manifest-v1.predicates.json` in
+ * `@cytoscape-web/app-runtime`; a test asserts this copy still agrees with it,
+ * because the scaffolder cannot import from a package it does not depend on.
+ */
+const submissionProfileWarning = (version: string): string | undefined => {
+  if (version.includes('+')) {
+    return `--version "${version}" carries build metadata, which an App Store ` +
+      `submission rejects — SemVer excludes it from precedence, so two such ` +
+      `versions tie for a "latest" endpoint`
+  }
+  if ([...version].length > 128) {
+    return `--version "${version}" is longer than 128 characters, which an App ` +
+      `Store submission rejects — it becomes a ZIP filename and a URL path segment`
+  }
+  // From the SemVer capture groups, not a split on every separator: a prerelease
+  // identifier may CONTAIN hyphens, so `1.0.0-alpha-9007199254740992` has one
+  // alphanumeric identifier rather than a numeric one — and splitting on `-`
+  // would warn about a version the runtime profile accepts.
+  const match = SEMVER.exec(version)
+  if (match === null) return undefined
+  const numeric = [match[1], match[2], match[3]].concat(
+    (match[4] ?? '').split('.').filter((part) => part !== '' && /^\d+$/.test(part)),
+  )
+  for (const identifier of numeric) {
+    if (Number(identifier) > Number.MAX_SAFE_INTEGER) {
+      return `--version "${version}" has a numeric identifier above ` +
+        `Number.MAX_SAFE_INTEGER, which an App Store submission rejects — ` +
+        `node-semver compares two such values as equal`
+    }
+  }
+  return undefined
+}
+
+/**
+ * Things worth saying that are not reasons to refuse.
+ *
+ * Kept apart from `validateSpec` on purpose: a warning that exits non-zero is a
+ * failure with a friendly message, and a project that scaffolds, builds and
+ * runs should not exit non-zero because of a rule about submitting it.
+ */
+export const warnSpec = (spec: ScaffoldSpec): string[] => {
+  const warnings: string[] = []
+  if (SEMVER.test(spec.version)) {
+    const profile = submissionProfileWarning(spec.version)
+    if (profile !== undefined) warnings.push(profile)
+  }
+  return warnings
+}
+
 export const validateSpec = (spec: ScaffoldSpec): string[] => {
   const problems: string[] = []
 
@@ -129,8 +234,12 @@ export const validateSpec = (spec: ScaffoldSpec): string[] => {
         `Federation container name, and the host rejects anything else on install`,
     )
   }
-  if (spec.id === 'cyweb') {
-    problems.push(`--id "cyweb" is reserved — it is the host's own federation name`)
+  if (RESERVED_APP_IDS.includes(spec.id)) {
+    problems.push(
+      `--id "${spec.id}" is reserved — the host indexes apps in ordinary objects, ` +
+        `where this name collides with an inherited property or with the host's ` +
+        `own federation name`,
+    )
   }
   if (spec.displayName.trim() === '') problems.push('--display-name must not be empty')
   if (!SEMVER.test(spec.version)) {
@@ -235,6 +344,7 @@ const packageJsonFor = (spec: ScaffoldSpec): string => {
       devDependencies: {
         '@cytoscape-web/api-types': API_TYPES_VERSION,
         '@cytoscape-web/app-runtime': SDK_VERSION,
+        'adm-zip': ADM_ZIP_VERSION,
         'cross-env': CROSS_ENV_VERSION,
         ...(react ? HOST_SINGLETONS : {}),
         '@module-federation/vite': '1.16.8',
@@ -290,6 +400,32 @@ the ESM remote shape, the production sentinel, the registered runtime plugin and
 the shared singletons. Every one of them looks correct in a config file when it
 is wrong, which is why it checks the artifact instead.
 
+## Before you submit to the App Store
+
+\`\`\`bash
+npm run build:zip
+\`\`\`
+
+writes \`${spec.id}-<version>.zip\` next to \`package.json\`, with a generated
+\`cy-manifest.json\` at its root carrying this app's identity and publication
+metadata. That file is derived from \`package.json\` — never edit it, and never
+commit one.
+
+The Store reads what \`package.json\` declares, so fill these in before you
+submit. Packaging warns about each one it does not find, and none of them is
+required to build or run:
+
+| \`package.json\` field | Becomes |
+| --- | --- |
+| \`author\` | the public author name — a display name only, never an email |
+| \`license\` | the licence shown on the listing |
+| \`repository\` | the source link; the object form's \`directory\` is kept for monorepos |
+| \`homepage\` | the project's own page |
+| \`cyweb.compatibleHostVersions\` | the host versions this app declares itself compatible with |
+
+\`npx cyweb-app manifest\` prints the same manifest without building an archive,
+if you want to see what the Store will read.
+
 ## Before you ask anyone to install this
 
 This app runs in the host's own browser context: same origin, DOM, storage and
@@ -323,7 +459,13 @@ export const scaffold = (spec: ScaffoldSpec, templatesRoot?: string): string[] =
   // .gitignore, not "gitignore": npm refuses to publish a file named
   // .gitignore inside a package, so it ships under a safe name and is renamed
   // on the way out.
-  writeFileSync(join(target, '.gitignore'), 'node_modules\ndist\n*.zip\n')
+  // cy-manifest.json is GENERATED — from package.json, into the archive, or by
+  // `cyweb-app manifest --out`. A copy committed next to the source it is
+  // derived from becomes a second source of truth that nothing keeps in step.
+  writeFileSync(
+    join(target, '.gitignore'),
+    'node_modules\ndist\n*.zip\ncy-manifest.json\n',
+  )
 
   const listing = (dir: string, prefix = ''): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

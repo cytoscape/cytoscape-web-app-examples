@@ -97,15 +97,29 @@ jobs:
       - run: npm run verify:federation
 
   scaffold:
-    name: Scaffold & verify a generated app
+    name: Scaffold & verify a generated app (${{ matrix.pm }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    # BOTH package managers. `--pm npm|pnpm` is a formally supported option and
+    # packed-tarball acceptance under both is already one of the SDK design's
+    # criteria — but only npm was ever exercised here. pnpm's layout is the
+    # highest-risk part of runtime-plugin resolution: the path is interpolated
+    # into a generated `import "<path>"`, and a store layout that resolved it
+    # outside the installed package would fail silently at load time.
+    strategy:
+      fail-fast: false
+      matrix:
+        pm: [npm, pnpm]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
+      - if: matrix.pm == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: npm ci
       - run: npm run build:sdk
       # From PACKED TARBALLS, into a directory outside the repository. Running
@@ -128,11 +142,17 @@ jobs:
           CREATE=$(ls /tmp/create-cytoscape-app-*.tgz)
           WORK=$(mktemp -d)
           cd "$WORK"
-          npm install --silent "$CREATE"
+          if [ "${{ matrix.pm }}" = pnpm ]; then
+            pnpm add "$CREATE"
+          else
+            npm install --silent "$CREATE"
+          fi
+          PM=${{ matrix.pm }}
           for T in panel menu context-menu non-react full; do
             echo "── $T ──"
             node node_modules/create-cytoscape-app/dist/index.js "app-$T" --yes \
-              --id "app${T//-/}" --template "$T" --port "$((6400 + RANDOM % 100))" --no-install
+              --id "app${T//-/}" --template "$T" --port "$((6400 + RANDOM % 100))" \
+              --pm "${{ matrix.pm }}" --no-install
             cd "app-$T"
             # Resolve @cytoscape-web/app-runtime from npm, because that is
             # what a generated project actually depends on.
@@ -146,24 +166,135 @@ jobs:
             #
             # Loud on purpose. A silent fallback would also hide a publish that
             # simply failed, which looks identical from here.
-            PINNED=$(node -p "require('./package.json').devDependencies['@cytoscape-web/app-runtime']")
-            if npm view "@cytoscape-web/app-runtime@$PINNED" version >/dev/null 2>&1; then
-              npm install --silent
-            else
-              echo "::notice::app-runtime@$PINNED is not on the registry yet — installing the tarball built in this job. Expected only on a version-bump commit."
-              npm install --silent "$(ls /tmp/cytoscape-web-app-runtime-*.tgz)"
-              npm install --silent
-            fi
+            # ALWAYS the candidate built in this job, never whatever the
+            # registry happens to have. The previous version installed the
+            # registry copy whenever the generated range already resolved, so an
+            # ordinary SDK change could pass this job while exercising code
+            # published weeks ago — the one thing a pre-publish gate must not do.
+            # Point the manifest at the candidate BEFORE installing anything.
+            #
+            # A generated project pins the SDK exactly during the preview, and
+            # that version is not on the registry until this candidate is
+            # published — so any command that resolves the manifest first goes
+            # looking for it and fails. `pnpm add <tarball>` does exactly that:
+            # it resolves the whole manifest before applying the argument, so no
+            # form of `add` can work here. Rewriting the spec and running a
+            # plain install is the one shape that works for both managers, and
+            # it leaves package.json saying which file was installed.
+            RUNTIME_TGZ=$(ls /tmp/cytoscape-web-app-runtime-*.tgz)
+            node -e "
+              const fs = require('fs')
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+              pkg.devDependencies['@cytoscape-web/app-runtime'] = 'file:$RUNTIME_TGZ'
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+            "
+            $PM install
+
+            # A version string can be printed by anything. Assert the binary
+            # that runs is the one inside this project's node_modules.
+            RESOLVED=$(node -p "require.resolve('@cytoscape-web/app-runtime/package.json')")
+            case "$RESOLVED" in
+              "$PWD"/node_modules/*) ;;
+              *) echo "::error::app-runtime resolved to $RESOLVED, outside the generated project"; exit 1 ;;
+            esac
+            EXPECTED=$(node -p "require('$RESOLVED').version")
+            ACTUAL=$(npx cyweb-app --version)
+            [ "$EXPECTED" = "$ACTUAL" ] || {
+              echo "::error::cyweb-app reports $ACTUAL, installed runtime is $EXPECTED"; exit 1
+            }
+
+            # pnpm keeps real packages under a store and links them in. The
+            # runtime plugin path is interpolated into a generated import, so it
+            # has to resolve INSIDE the installed package — a path that escaped
+            # it would fail silently at load time, which is why this is asserted
+            # rather than assumed.
+            npm run build
+            node -e "
+              const m = require('fs').readFileSync('dist/mf-manifest.json', 'utf8')
+              const plugin = JSON.parse(m).configuredRuntimePlugins[0]
+              if (!plugin.includes('app-runtime')) {
+                console.error('::error::runtime plugin resolved to ' + plugin)
+                process.exit(1)
+              }
+            "
 
             # Note the asymmetry that remains, deliberately: the SCAFFOLDER is
             # installed from its tarball above, because a change to it in this
             # PR is exactly what this job exists to test.
-            npm run build
             npx cyweb-app verify
             npm run typecheck
             npm test
+
+            # The submission path, end to end: build the archive and read the
+            # manifest back out of it. A standalone project is where adm-zip
+            # being an optional peer actually bites.
+            npm run build:zip
+            node -e "
+              const AdmZip = require('adm-zip')
+              const fs = require('fs')
+              const zip = fs.readdirSync('.').find((f) => f.endsWith('.zip'))
+              if (!zip) { console.error('::error::build:zip wrote no archive'); process.exit(1) }
+              const names = new AdmZip(zip).getEntries().map((e) => e.entryName)
+              const manifest = JSON.parse(new AdmZip(zip).readAsText('cy-manifest.json'))
+              const id = require('./package.json').cyweb.id
+              if (manifest.id !== id) {
+                console.error('::error::manifest id ' + manifest.id + ' != ' + id); process.exit(1)
+              }
+              if (names.filter((n) => n === 'remoteEntry.js').length !== 1) {
+                console.error('::error::archive has no single root remoteEntry.js'); process.exit(1)
+              }
+              if (names.some((n) => n.endsWith('.html') || n.endsWith('.map'))) {
+                console.error('::error::archive carries HTML or a source map'); process.exit(1)
+              }
+              console.log('archive ok: ' + names.length + ' members, id ' + manifest.id)
+            "
             cd ..
           done
+
+  windows:
+    name: CLI and archive on Windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+    # Everything this covers differs from POSIX in a way no amount of Linux
+    # testing reveals: `rename` over an existing file, path separators in
+    # archive member names, and the order those members come out in. The
+    # packager turns adm-zip's own sorting off and uses one named comparator
+    # precisely so the answer is the same here as it is on Linux — which is
+    # only worth claiming if it is executed here.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:sdk
+      - name: Unit tests, including the CLI and archive suites
+        run: npm run test -w @cytoscape-web/app-runtime
+      - name: Build an archive and read its member order back
+        run: npm run build:zip -w @cytoscape-web/hello-world
+      - name: Members are POSIX paths in unsigned UTF-8 byte order
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "
+            const AdmZip = require('adm-zip')
+            const fs = require('fs')
+            const zip = fs.readdirSync('hello-world').find((f) => f.endsWith('.zip'))
+            const names = new AdmZip('hello-world/' + zip, { noSort: true })
+              .getEntries().map((e) => e.entryName)
+            if (names.some((n) => n.includes('\\\\'))) {
+              console.error('::error::a member name carries a backslash'); process.exit(1)
+            }
+            const sorted = [...names].sort((a, b) =>
+              Buffer.compare(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8')))
+            if (JSON.stringify(names) !== JSON.stringify(sorted)) {
+              console.error('::error::members are not in unsigned UTF-8 byte order')
+              console.error(JSON.stringify(names, null, 2))
+              process.exit(1)
+            }
+            console.log('windows archive ok: ' + names.length + ' members')
+          "
 
   test:
     name: Test

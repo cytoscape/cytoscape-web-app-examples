@@ -137,8 +137,16 @@ every one of them looks correct in the config when it is wrong.
 The config also carries two build-time gates, both deliberately fatal:
 `noSharedPayload` (a shared package's implementation must not end up in the
 remote's own chunks) and `zipForAppStore`, which writes
-`<appId>-<version>.zip` for App Store submission from an allowlist — a file
-class the list does not name fails the build rather than being uploaded.
+`<appId>-<version>.zip` for App Store submission — off by default, and reached
+through `npm run build:zip`.
+
+Packaging verifies the build before it packages it, classifies members with
+denies before allows (a file class the allowlist does not name fails the build
+rather than being uploaded), and injects a generated **`cy-manifest.json`** at
+the archive root. That manifest is derived from `package.json` and never edited
+or committed; `npx cyweb-app manifest` prints the same bytes without building an
+archive. See `design/specifications/app-sdk/cy-manifest.md` for the wire format
+and `guides/getting-started.md` §5b for what to fill in before submitting.
 
 ---
 

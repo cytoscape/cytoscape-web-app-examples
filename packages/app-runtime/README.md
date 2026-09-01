@@ -87,10 +87,45 @@ well as the option: an app that commits `{ appStoreZip: true }` can still skip
 the zip while iterating (`CYWEB_APP_ZIP=0`), without editing its config back and
 forth. Any other value turns it on.
 
-The zip needs `adm-zip`, an **optional** peer dependency — npm installs it for
-you, and if it is ever missing the build stops and says so rather than skipping
-the archive silently. It is optional so that the builds which never produce a
-zip do not carry it, or its advisories, for a feature they never enabled.
+The zip needs `adm-zip`, an **optional** peer dependency, which generated
+projects declare for themselves. It is optional so that builds which never
+produce a zip do not carry it, or its advisories, for a feature they never
+enabled — and declared by the project because a standalone one that relied on
+another package bringing it in transitively would break the day that package
+stopped needing it.
+
+The archive contains the browser publish set: HTML, source maps, Federation
+build metadata and the Node-only SSR artifacts stay out, and **an unrecognised
+file fails the build** rather than being uploaded. Packaging **verifies the
+build first**, with the same checks `cyweb-app verify` runs, and member names
+are POSIX paths in unsigned UTF-8 byte order — adm-zip's own ordering is
+`toLowerCase().localeCompare(…)`, which depends on the host's ICU data, so it is
+turned off.
+
+### `cy-manifest.json`
+
+Every archive carries one at its root, generated from `package.json`:
+identity (`id`, `name`, `version`), the publication metadata the App Store would
+otherwise collect by hand (`author`, `license`, `repository`,
+`repositoryDirectory`, `homepage`, `tags`, `compatibleHostVersions`), and a
+self-reported `generator`. There is deliberately **no `url`** — the Store assigns
+one when it hosts the bundle — so the archive carries `entry`, the federation
+entry relative to its own root.
+
+```bash
+npx cyweb-app manifest              # the same bytes, without building an archive
+npx cyweb-app manifest --out m.json
+```
+
+stdout carries JSON and nothing else; readiness warnings go to stderr. The two
+paths share one serializer, so the printed copy and the embedded copy are
+byte-identical rather than merely equivalent.
+
+A malformed value **fails packaging** instead of going missing, and an explicit
+port, query or fragment in `repository` is rejected rather than stripped —
+dropping part of a URL changes what it addresses. The wire format, the normative
+predicates and the conformance corpora ship with this package under `schema/`
+and are pinned by `$id` and SHA-256 digest in `schema/ledger.json`.
 
 The `vite` option is the escape hatch — plugins, aliases, `define`, test
 settings. Setting a field the SDK owns fails the build and names the path,

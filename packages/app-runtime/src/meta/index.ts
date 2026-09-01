@@ -37,6 +37,18 @@ export interface CyWebBlock {
 
   /** Dev server port. Bound with `strictPort`, so a clash fails rather than moves. */
   readonly port: number
+
+  /**
+   * Host versions this app declares itself compatible with, as an npm `semver`
+   * range.
+   *
+   * Optional, and opaque to this package: the SDK checks only that it is a
+   * non-empty string, because range VALIDITY is checked where a canonical
+   * implementation already lives — the App Store, and the host's own
+   * `installGate.ts`. It reaches the App Store through `cy-manifest.json`; it is
+   * not part of the runtime metadata the browser bundle receives.
+   */
+  readonly compatibleHostVersions?: string
 }
 
 /**

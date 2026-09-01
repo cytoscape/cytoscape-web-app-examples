@@ -1,0 +1,17 @@
+# Line endings are part of the contract, not a local preference.
+#
+# `schema/` carries artifacts the App Store pins by SHA-256 over their exact raw
+# bytes. Git's own autocrlf would rewrite those bytes on a Windows checkout —
+# and did: the Windows CI job computed c4ac157f… for a schema the ledger records
+# as 67777152…, which is precisely the CRLF hash of the same file. A digest that
+# depends on who checked the repository out pins nothing.
+#
+# Declared for the whole tree rather than just schema/, because the same is true
+# of anything else whose bytes are compared: fixtures, corpora, and the archives
+# built from them.
+* text=auto eol=lf
+
+# Never touched at all: their bytes ARE the artifact.
+packages/app-runtime/schema/** -text
+*.zip -text
+*.tgz -text

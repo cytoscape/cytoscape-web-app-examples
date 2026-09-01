@@ -25,6 +25,7 @@ import {
   pickPort,
   scaffold,
   validateSpec,
+  warnSpec,
 } from './scaffold.js'
 
 const USAGE = `create-cytoscape-app — scaffold a Cytoscape Web app
@@ -180,6 +181,12 @@ if (problems.length > 0) {
       problems.map((p) => `  ✗ ${p}\n`).join(''),
   )
   process.exit(1)
+}
+
+// Warnings, not problems: stderr, and the project is still written. A warning
+// that exited non-zero would be a failure with a friendly message.
+for (const warning of warnSpec(spec)) {
+  process.stderr.write(`create-cytoscape-app: ${warning}\n`)
 }
 
 const files = scaffold(spec)

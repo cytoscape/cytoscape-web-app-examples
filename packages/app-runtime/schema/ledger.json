@@ -1,0 +1,29 @@
+{
+  "//": [
+    "APPEND-ONLY. One $id never names two byte sequences.",
+    "",
+    "Validating fixtures against whatever schema is packed today cannot detect",
+    "that a later commit reused an identity for different bytes, so the mapping",
+    "is recorded here and asserted in CI. Preview identities may be superseded by",
+    "a new preview identity; they are never edited in place.",
+    "",
+    "Digests are over the exact raw bytes of the file — no newline",
+    "normalization, no transcoding, no JSON canonicalization. A digest over the",
+    "same content reformatted pins nothing. Phase 6 asserts the repository bytes",
+    "and the packed-tarball bytes are the same bytes."
+  ],
+  "entries": [
+    {
+      "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json",
+      "file": "cy-manifest-v1.schema.json",
+      "sha256": "sha256:67777152b1564434e1ae43e87805eb2c2f8add2a32ea4bd459860dd523d0ee65",
+      "status": "preview"
+    },
+    {
+      "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/predicates.json",
+      "file": "cy-manifest-v1.predicates.json",
+      "sha256": "sha256:8fbcfaa64ab6c11a7df33239b100e53be704e79bb989e1177a67de401a418913",
+      "status": "preview"
+    }
+  ]
+}

@@ -9,7 +9,7 @@
   },
   "//cyweb": [
     "This app's identity, written ONCE. The federation container name, the",
-    "CyApp.id and the dev install manifest all read from here — before this",
+    "CyApp.id and the dev install manifest all read from here \u2014 before this",
     "block they were three hand-synced string literals with no import between",
     "them, and nothing noticed a mismatch until the host refused to load."
   ],
@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "build:zip": "cross-env CYWEB_APP_ZIP=1 vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run"
@@ -37,10 +38,12 @@
   ],
   "devDependencies": {
     "@cytoscape-web/api-types": "^1.0.0-beta.3",
-    "@cytoscape-web/app-runtime": "^0.3.0",
+    "@cytoscape-web/app-runtime": "0.4.0-next.1",
     "@module-federation/vite": "1.16.8",
     "@types/node": "^24.0.0",
     "@types/react": "^18.3.5",
+    "adm-zip": "^0.5.10",
+    "cross-env": "^10.1.0",
     "typescript": "^5.6.2",
     "vite": "8.0.13",
     "vitest": "^4.1.8"

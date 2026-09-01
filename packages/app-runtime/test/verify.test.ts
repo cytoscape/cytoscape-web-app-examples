@@ -212,3 +212,33 @@ describe('verifyApp', () => {
     expect(failuresOf(root)).toMatch(/run the build first/)
   })
 })
+
+describe('build-machine paths are found in every file that has one', () => {
+  it('does not miss every other one', () => {
+    // `RegExp.prototype.test` on a global regex keeps `lastIndex` between
+    // calls, so one shared object testing several files answered for the
+    // previous file: three chunks that all carried an absolute path came back
+    // as the first and the third, and the check passed while chunks carried
+    // them.
+    const dir = mkdtempSync(join(tmpdir(), 'cyweb-stray-'))
+    mkdirSync(join(dir, 'dist', 'assets'), { recursive: true })
+    writeFileSync(join(dir, 'package.json'), JSON.stringify(PKG))
+    writeFileSync(
+      join(dir, 'dist', 'remoteEntry.js'),
+      'export { a as init, b as get }\nregister("cyweb-host-resolver")\n',
+    )
+    writeFileSync(join(dir, 'dist', 'mf-manifest.json'), JSON.stringify({ name: 'myApp' }))
+    const leak = 'const p = "/home/someone/project/node_modules/x"\n'
+    for (const name of ['a.js', 'b.js', 'c.js']) {
+      writeFileSync(join(dir, 'dist', 'assets', name), leak)
+    }
+
+    const failure = verifyApp({ root: dir }).failures.find((f) =>
+      f.includes('build-machine paths confined'),
+    )
+    expect(failure).toBeDefined()
+    for (const name of ['a.js', 'b.js', 'c.js']) {
+      expect(failure, `${name} was missed`).toContain(name)
+    }
+  })
+})
