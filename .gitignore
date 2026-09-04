@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# AI agent settings
+.agents/
+.codex/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -40,3 +44,6 @@ dist-ssr
 # Not committed: it would be a second copy of files that already live in
 # project-template/ and network-statistics/, which is the drift this avoids.
 packages/create-cytoscape-app/templates/
+
+# Generated codebase graph, reports, and caches.
+/graphify-out/
