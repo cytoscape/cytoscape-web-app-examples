@@ -13,7 +13,8 @@ design/
 │   │   ├── vite-migration.md            ← The plan: design, decisions, measurements
 │   │   └── vite-migration-checklist.md  ← Phase-by-phase implementation checklist
 │   ├── developer-onboarding/            ← Lowering the barrier to entry
-│   │   └── developer-onboarding-roadmap.md  ← Umbrella: prioritized proposals, host-dependency split
+│   │   ├── developer-onboarding-roadmap.md  ← Umbrella: prioritized proposals, host-dependency split
+│   │   └── entry-point-checklist.md     ← README + guides vs reality; fixes the contract first
 │   ├── app-sdk/                         ← Carved out of the roadmap: SDK + scaffolding
 │   │   ├── app-sdk-design.md            ← app-runtime, create-cytoscape-app, app identity
 │   │   ├── app-sdk-checklist.md         ← Phase-by-phase implementation checklist

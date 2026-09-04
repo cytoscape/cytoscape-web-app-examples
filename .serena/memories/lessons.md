@@ -24,6 +24,9 @@ Shared lessons learned across agent sessions. Update this file after corrections
 - **No `console.log`:** Remove before committing. Use `debug` logger if in the host; for plugin code just remove the log.
 - **`npm run dev` starts all apps:** It uses `concurrently`. Individual apps can be run with `npm run dev:<app-name>`.
 - **Build output goes to `dist/`:** The `npm run deploy` script copies `dist/` to `docs/<app-name>/` for GitHub Pages.
+- **Do not assume local formatter binaries are installed:** Check for `node_modules/.bin/prettier` before using it for documentation-only validation; when dependencies are absent, use repository-independent structural checks rather than installing packages just to validate Markdown.
+- **Keep sibling-repository searches separate:** `cytoscape-web-app-examples` has package-local tests and scripts, while host types and tests live under the sibling `cytoscape-web` repository. Set the matching worktree for each `rg` command instead of passing paths from both layouts to one search.
+- **Validate orchestration JavaScript delimiters:** when wrapping a single tool call in `functions.exec`, check the closing `});` before execution; an extra parenthesis can fail an otherwise completed plan update.
 
 ## File Update Checklist (when host API changes)
 
