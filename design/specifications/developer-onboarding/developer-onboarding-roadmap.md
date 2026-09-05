@@ -62,8 +62,11 @@ legible). Several others were assumed to need the host and do not.
   `preflight:apps`), which exist because of the 8/5/2026 Jekyll incident. **These turn
   out to be the lever that makes several "needs the host" items host-independent** — see §2.0.
 - `guides/` (5 documents, 1,595 lines) and the 13 worked examples in `hello-world`.
-- `claude-bridge/mcp-server` — **57 MCP tools over CDP**. The most differentiated asset
-  in the repo, currently `published: false` and excluded from the public site.
+- ~~`claude-bridge/mcp-server` — **57 MCP tools over CDP**~~. **Moved out** (9/4/2026) to
+  [`keiono/cy-agent-bridge`](https://github.com/keiono/cy-agent-bridge), with its history.
+  It was a product with its own MCP server rather than a readable example, and the
+  exception showed: `published: false`, excluded from the public site, and called an
+  "internal tool" in the README.
 
 ### 1.3 What the host constrains, verified
 
@@ -142,7 +145,7 @@ Same suite, two backends, no host change.
 
 #### A-1. New package: `@cytoscape-web/app-runtime` 【examples】
 
-Package the load-bearing code currently copied into five apps.
+Package the load-bearing code currently copied into four apps.
 
 ```ts
 // vite.config.ts: 322 lines becomes 3
@@ -425,10 +428,14 @@ Three consumers: the source for `llms-full.txt`, the source for MCP tool definit
 **dev-mode "did you mean"** — which `app-runtime` can implement app-side by proxying the API
 objects in development, so even this does not need the host.
 
-#### E-4. Turn `claude-bridge` into a public product 【examples】
+#### E-4. Turn `claude-bridge` into a public product 【moved out — `cy-agent-bridge`】
 
-An MCP server with 57 tools over a live Cytoscape Web, currently `published: false` and hidden.
-Two distinct audiences:
+> **Not this repository's work any more.** Split out on 9/4/2026 into
+> [`keiono/cy-agent-bridge`](https://github.com/keiono/cy-agent-bridge), which owns the
+> items below. Kept here because E-5 builds on it and because the second audience is the
+> reason several items in Theme E are worth doing at all.
+
+An MCP server with 57 tools over a live Cytoscape Web. Two distinct audiences:
 
 1. **End users** — "load this network and color the nodes by degree", in natural language.
 2. **App developers' agents** — **drive the host to verify the app they just wrote**: click the
@@ -445,7 +452,10 @@ The work:
   `get_app_load_errors`. The last one ideally reads C-2's diagnostics API — but **it works
   today without C-2**, because the MCP server speaks CDP and can read the console directly,
   where `logApp.warn` is enabled in dev builds.
-- Rename to match its purpose, clear `published: false`, and list it as an example.
+- ~~Rename to match its purpose, clear `published: false`, and list it as an example.~~
+  Superseded by the split: the repository is named for its purpose, and it is no longer
+  one of this repository's apps. The federation id, the port and the package names were
+  deliberately left unchanged by the move, so renaming those remains open over there.
 
 #### E-5. Distribute a Claude Code skill 【examples】
 
@@ -742,9 +752,8 @@ developers.
 **Modified (this repository)**
 - `scripts/preflight-apps.mjs` — count → assertion (P-1); new drift check script (P-3)
 - Every `*/vite.config.ts` (322 lines → a handful); delete every `*/src/mfRuntimePlugin.ts`
-  and `*/src/cywebHostSentinel.ts`; `apps.manifest.json` (publish `claude-bridge`)
+  and `*/src/cywebHostSentinel.ts`
 - `README.md`, `guides/*.md` — registration path, how to test, drift fixes
-- `claude-bridge/mcp-server/` — publishable package plus app-development tools
 - `CLAUDE.md`, `.serena/memories/*` — purge, then reduce to a stub
 
 **Modified (host `cytoscape-web`)** — the complete list

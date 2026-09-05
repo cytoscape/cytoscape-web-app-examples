@@ -10,7 +10,7 @@ Reference implementation and template repository for Cytoscape Web plugin apps b
 - **Build:** Vite 8 + @module-federation/vite (matching the host)
 - **UI:** @mui/material (singleton, provided by host)
 - **Types:** @cytoscape-web/types (model types), @cytoscape-web/api-types (App API)
-- **Workspace:** npm workspaces (5 sub-packages)
+- **Workspace:** npm workspaces (4 apps + 2 SDK packages)
 
 ## Repository Structure
 
@@ -20,7 +20,6 @@ cytoscape-web-app-examples/
 ├── network-statistics/ # Port 3333, federation name: networkStatistics (non-React)
 ├── network-workflows/  # Port 7000, federation name: networkWorkflows
 ├── project-template/   # Port 5555, federation name: template
-├── claude-bridge/      # Port 6100, federation name: claudeBridge (not published)
 ├── design/             # Design docs (specifications + per-app)
 ├── docs/               # GitHub Pages target (compiled JS bundles — do not add docs here)
 ├── CLAUDE.md           # Agent context — read first

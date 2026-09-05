@@ -203,17 +203,20 @@ establishes.
       non-interactive form (D-5)
 - [ ] One sentence of scope: this repository is about Client Module Federation
       apps (D-4)
-- [ ] Maintainer commands — `deploy`, `preflight:*`, claude-bridge — move to
-      `CONTRIBUTING.md`. They are noise for the audience the README is for, and
-      the roadmap already lists a missing CONTRIBUTING under Theme F
+- [ ] Maintainer commands — `deploy`, `preflight:*` — move to `CONTRIBUTING.md`.
+      They are noise for the audience the README is for, and the roadmap already
+      lists a missing CONTRIBUTING under Theme F. (`claude-bridge` was the third
+      such command; it left with the app on 9/4/2026)
 
 ### B-4. Bring the guides with it
 
 - [ ] `getting-started.md`, `architecture-overview.md`, `troubleshooting.md`,
       and the published `docs/index.html`. Fixing the README alone relocates the
       contradiction rather than removing it
-- [ ] Classify the examples accurately: **four published, one internal**
-      (`claude-bridge` is `published: false` in `apps.manifest.json`)
+- [ ] Classify the examples accurately: **four apps, all published**. The one
+      internal example is gone — `claude-bridge` moved to `cy-agent-bridge`
+      (9/4/2026), so `apps.manifest.json` no longer carries a `published: false`
+      entry
 
 **Verification (Phase B)**
 - [ ] Every internal link and anchor resolves

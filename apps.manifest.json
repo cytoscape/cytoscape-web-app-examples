@@ -9,7 +9,7 @@
     "",
     "`bundler` gated every check that presumed the migrated shape while the",
     "migration was in progress; an app joined those checks by flipping this one",
-    "field in its own migration commit. All five are 'vite' now. The field stays",
+    "field in its own migration commit. All four are 'vite' now. The field stays",
     "because Phase 8's release check asserts on it.",
     "",
     "`configuredShared` is the share block each app's vite.config.ts declares.",
@@ -86,15 +86,6 @@
         ],
         "selector": "[data-testid='template-panel']"
       }
-    },
-    {
-      "workspaceDir": "claude-bridge",
-      "publishPath": "claude-bridge",
-      "bundler": "vite",
-      "published": false,
-      "exposes": [
-        "./AppConfig"
-      ]
     }
   ]
 }
