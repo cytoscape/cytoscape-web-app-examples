@@ -145,7 +145,7 @@ Same suite, two backends, no host change.
 
 #### A-1. New package: `@cytoscape-web/app-runtime` 【examples】
 
-Package the load-bearing code currently copied into five apps.
+Package the load-bearing code currently copied into four apps.
 
 ```ts
 // vite.config.ts: 322 lines becomes 3
