@@ -91,13 +91,13 @@ request, and the host has accepted `?installApp=` all along.
 
 ### Working on this repository instead
 
-If you want to run the five example apps rather than build your own:
+If you want to run the four example apps rather than build your own:
 
 ```bash
 git clone https://github.com/cytoscape/cytoscape-web.git
 git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
 
-cd cytoscape-web-app-examples && npm install && npm run dev   # all five apps
+cd cytoscape-web-app-examples && npm install && npm run dev   # all four apps
 cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
 ```
 
@@ -357,7 +357,6 @@ npm run dev:hello-world         # run one app
 npm run dev:network-statistics
 npm run dev:network-workflows
 npm run dev:project-template
-npm run dev:claude-bridge       # MCP bridge (optional, internal tool)
 npm run build                   # build all workspaces
 npm run deploy                  # build and copy each workspace's dist/ into docs/
 ```

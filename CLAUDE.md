@@ -308,7 +308,7 @@ a feature branch — the `cyweb/*Api` hooks, the event bus and app resource
 registration are all on `development`, and `@cytoscape-web/api-types` publishes
 their declarations to npm.
 
-**All five apps build with Vite** (repository release `1.1.0`; the apps
+**All four apps build with Vite** (repository release `1.1.0`; the apps
 themselves are independently versioned). The Webpack toolchain is gone; see
 `design/specifications/vite-migration/` for the plan, the measurements and the
 decisions that changed under measurement.
