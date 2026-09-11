@@ -9,6 +9,11 @@
 
 ## What this publishes, and what it does not
 
+> **Current state (2026-09-10): `0.4.0` under `latest` — see §3d.** The text
+> below was written for the first `0.1.0` Preview and is kept as the record of
+> why the workflow is shaped the way it is; where it says `latest` is refused or
+> withheld, §2 and §3d supersede it.
+
 Two packages at `0.1.0`, under the **`next`** dist-tag only.
 
 Every published version also carries an npm **deprecation notice** naming the
@@ -106,8 +111,11 @@ it, at the moment they do.
 
 **And `--tag next` still buys something real:** publishing with it leaves
 `latest` pointing where it already pointed, so a later Preview cannot silently
-become the default install. The workflow refuses a `tag: latest` dispatch for
-that reason.
+become the default install. The workflow used to refuse a `tag: latest` dispatch
+for that reason; it no longer does (see the comment at the top of its job — a
+Preview under `latest` has the same security properties as one under `next`,
+so withholding the tag protected nothing), and 0.4.0 moves `latest` on purpose
+(§3d).
 
 `npm create cytoscape-app` will therefore work without `@next` once
 `create-cytoscape-app` is published. Documentation that says otherwise is wrong.
@@ -135,9 +143,10 @@ Three supporting reasons:
 - A workflow is written once and serves every release. The manual path is paid
   again each time, OTP and all.
 
-The workflow also **refuses `latest` outright**, as its first step. A dist-tag
-input is the single easiest way to bypass the release gate by accident; removing
-that check is now a visible diff.
+The workflow also refused `latest` outright, as its first step, on the reasoning
+that a dist-tag input is the easiest way to bypass the release gate by accident.
+**That check is gone** — §2 explains why the gate it protected was not one — and
+`tag: latest` is the normal input for a stable release (§3d).
 
 #### Trusted publishing has a bootstrap problem — read this before setting it up
 

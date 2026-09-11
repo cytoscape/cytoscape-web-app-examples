@@ -728,17 +728,21 @@ with privacy-filtered reporting retained, and **never counts as satisfying this 
 
 ## 9. Release posture and rollout
 
-**The stable v1 wire format waits for the §12 handshake; the code does not.** The SDK
-ships as `0.4.0-next.N` on the `next` dist-tag — the Developer Preview mechanism
-[`app-sdk-design.md`](./app-sdk-design.md) §3 already defines — with **preview schema and
-predicate identities** (§3.2) that can iterate. `formatVersion: 1` is declared stable, the
-first stable identities and digests are issued, and `0.4.0` is promoted, when **every item
-in §12** closes.
+**Current posture: stable v1, `0.4.0`, `latest`.** How it got there, in order:
+
+**Preview (2026-09-01).** The stable v1 wire format waited for the §12 handshake; the
+code did not. The SDK shipped as `0.4.0-next.1` on the `next` dist-tag — the Developer
+Preview mechanism [`app-sdk-design.md`](./app-sdk-design.md) §3 defines — with **preview
+schema and predicate identities** (§3.2) that could iterate. The rule was that
+`formatVersion: 1` is declared stable, the first stable identities and digests are
+issued, and `0.4.0` is promoted, when **every item in §12** closes.
 
 **Promotion record (2026-09-10).** The App Store team confirmed that a stable
 release, not a further preview, is what they will build Gate 2
 ([#11](https://github.com/cytoscape/cytoscape-web-app-examples/issues/11))
-against. `0.4.0` is therefore promoted under `latest`, with the first stable identities
+against. `0.4.0` is therefore released under `latest` — the publish itself runs
+from the release workflow after the change set merges, and is tracked in the
+checklist's Phase 8 — with the first stable identities
 (`…/cy-manifest/v1/1.0/schema.json`, `…/v1/1.0/predicates.json`) issued and the
 v1 envelope frozen from this point (§3.1). Two consequences are recorded so they
 are not rediscovered:
@@ -753,10 +757,11 @@ are not rediscovered:
   the predicate artifact; when a profile exists it ships as a separate pinned
   artifact and does not reopen the v1 envelope.
 
-A `0.x` caret range does not cross a minor bump: every maintained example and the
-scaffolder pin `^0.3.0` and would silently stay on the old SDK. One change set moves
+**Why each release is one change set.** A `0.x` caret range does not cross a minor
+bump: before 0.4.0 every maintained example and the scaffolder pinned `^0.3.0` and would
+silently have stayed on the old SDK. One change set therefore moves
 `packages/app-runtime`, `packages/create-cytoscape-app` and the `SDK_VERSION` it writes,
-all five examples, the lockfile and generated snapshots, and the documentation —
+the maintained examples, the lockfile and generated snapshots, and the documentation —
 `packages/app-runtime/README.md`, `guides/getting-started.md` §5b (which still says
 `npm run build` writes the zip, untrue since the zip became opt-in), the project-template
 README, `CLAUDE.md` §3, and [`phase6-release-runbook.md`](./phase6-release-runbook.md).

@@ -101,8 +101,9 @@ network identity, with no sandbox and no signature verification. An app can read
 the user's credentials. Install only apps you trust, and understand that
 publishing one asks the same of your users.
 
-Withholding `latest` is what keeps the short, discoverable form of this command
-from working while that is still true.
+There is no dist-tag gate: `npm create cytoscape-app` installs the current
+release. The `0.x` version and this section are how the Preview status is
+carried.
 
 ## License
 
