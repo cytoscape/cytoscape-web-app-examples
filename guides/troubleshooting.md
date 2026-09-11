@@ -286,7 +286,7 @@ version.
 The tell is a line that is *absent*. On a fresh fetch npm prints:
 
 ```
-npm warn exec The following package was not found and will be installed: create-cytoscape-app@0.3.1
+npm warn exec The following package was not found and will be installed: create-cytoscape-app@0.4.0
 ```
 
 No such line means it came from the cache.
@@ -304,7 +304,7 @@ npm view create-cytoscape-app version     # what the registry has
 ```bash
 npm create cytoscape-app@latest my-app      # name the tag
 npm create --prefer-online cytoscape-app my-app
-npm create cytoscape-app@0.3.1 my-app       # or an exact version
+npm create cytoscape-app@0.4.0 my-app       # or an exact version
 ```
 
 To clear it outright: `npx clear-npx-cache`, or `npm cache clean --force`.

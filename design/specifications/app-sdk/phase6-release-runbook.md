@@ -317,6 +317,31 @@ The general form, for this runbook: **a post-publish check is the one step whose
 code has never run before it runs for real.** Budget for it failing, and make it
 fail legibly.
 
+## 3d. The 0.4.0 stable release — `latest`
+
+Prepared 2026-09-10, on the Store team's confirmation that they will build Gate 2
+against a stable release. What is different from the preview run, and why:
+
+- **`tag` is `latest`.** This is the first release that MOVES `latest` on
+  purpose: `npm create cytoscape-app` with no tag must scaffold against the SDK
+  that writes a manifest. `next` still points at `0.4.0-next.1` and is left
+  alone — nothing is published under it, and nothing needs to be.
+- **The identities are stable.** Both `$id`s are `…/cy-manifest/v1/1.0/…`, the
+  ledger carries them AFTER the two preview entries, and the v1 envelope is
+  frozen from this release (design §3.1, §9). A schema or predicate change is a
+  `formatVersion: 2` from here — the tarball-digest test enforces the bytes, not
+  the intent, so read a schema diff in a future PR as a format change.
+- **The pin is a caret again.** `SDK_VERSION` is `^0.4.0`; `SDK_VERSION`'s test
+  switched rule when the runtime stopped being a prerelease. The smoke step's
+  `GOT_RUNTIME` check therefore proves that `^0.4.0` resolved to the version just
+  published — a prerelease does not satisfy a caret, so a stale resolve now
+  fails on the runtime version rather than on a missing manifest.
+- **The four examples** pin `^0.4.0` (the fifth moved out with claude-bridge).
+
+Run order is unchanged: dry run, read the tarball listings, real run, approve,
+then §6 through `latest` — `npm view create-cytoscape-app dist-tags` must show
+`latest: 0.4.0`, and the scaffold in §6 must run with **no tag at all**.
+
 ## 4. Pre-flight
 
 The workflow runs all of this itself. Doing it locally first is still worth the
@@ -372,8 +397,8 @@ npm pack -w create-cytoscape-app --dry-run
 Then rehearse the whole publish without publishing:
 
 ```bash
-npm publish -w @cytoscape-web/app-runtime --tag next --dry-run
-npm publish -w create-cytoscape-app --tag next --dry-run
+npm publish -w @cytoscape-web/app-runtime --tag latest --dry-run   # `next` for a preview
+npm publish -w create-cytoscape-app --tag latest --dry-run
 ```
 
 ---
@@ -384,7 +409,7 @@ npm publish -w create-cytoscape-app --tag next --dry-run
 
 | Input | Value |
 | --- | --- |
-| `tag` | `next` — `latest` is refused by the workflow's first step |
+| `tag` | `latest` for a stable release (0.4.0 onward); `next` for a preview |
 | `dry_run` | **`true` first.** Then `false` |
 
 Run it once with `dry_run: true`. That exercises the whole path — the build, the

@@ -307,7 +307,7 @@ At the root of the archive, generated from your `package.json`:
   "description": "Colors nodes by degree",
   "author": "Jane Doe",
   "license": "MIT",
-  "generator": "@cytoscape-web/app-runtime@0.4.0-next.1"
+  "generator": "@cytoscape-web/app-runtime@0.4.0"
 }
 ```
 

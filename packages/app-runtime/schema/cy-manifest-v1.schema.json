@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json",
+  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/schema.json",
   "title": "cy-manifest v1",
-  "description": "The App Store submission manifest carried at the root of a Cytoscape Web app archive. One JSON object describing exactly one app. This is a PREVIEW identity: it may change until the first stable identity is issued, after which the official property set and validation envelope are frozen and any change — in either direction — requires a new formatVersion. Canonical validity is this schema PLUS strict raw-JSON validation PLUS the semantic predicates pinned beside it; see cy-manifest-v1.predicates.json.",
+  "description": "The App Store submission manifest carried at the root of a Cytoscape Web app archive. One JSON object describing exactly one app. This is the first STABLE v1 identity: the official property set and validation envelope are frozen, unknown properties are ignored and never promoted, and any change — in either direction — requires a new formatVersion. Canonical validity is this schema PLUS strict raw-JSON validation PLUS the semantic predicates pinned beside it; see cy-manifest-v1.predicates.json.",
   "type": "object",
   "required": ["formatVersion", "id", "name", "version", "type", "entry", "generator"],
   "additionalProperties": true,

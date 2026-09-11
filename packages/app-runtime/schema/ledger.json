@@ -4,8 +4,13 @@
     "",
     "Validating fixtures against whatever schema is packed today cannot detect",
     "that a later commit reused an identity for different bytes, so the mapping",
-    "is recorded here and asserted in CI. Preview identities may be superseded by",
-    "a new preview identity; they are never edited in place.",
+    "is recorded here and asserted in CI. Entries are never edited in place: an",
+    "identity is superseded by APPENDING a later entry for the same file, and the",
+    "last entry per file is the one the shipped bytes must match. Preview",
+    "identities (status \"preview\") could iterate; the first stable identity",
+    "(status \"stable\") froze the v1 envelope, and any change to the schema or",
+    "the predicates from that point on is a new formatVersion, not a new entry",
+    "for this one.",
     "",
     "Digests are over the exact raw bytes of the file — no newline",
     "normalization, no transcoding, no JSON canonicalization. A digest over the",
@@ -24,6 +29,18 @@
       "file": "cy-manifest-v1.predicates.json",
       "sha256": "sha256:8fbcfaa64ab6c11a7df33239b100e53be704e79bb989e1177a67de401a418913",
       "status": "preview"
+    },
+    {
+      "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/schema.json",
+      "file": "cy-manifest-v1.schema.json",
+      "sha256": "sha256:d83e8d67e057ead71e23fad1ae5e750c806bbdf71440a267fdf47e9759f173b9",
+      "status": "stable"
+    },
+    {
+      "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/predicates.json",
+      "file": "cy-manifest-v1.predicates.json",
+      "sha256": "sha256:8c37dbd123a154ad7424d3025e7da2256bcb27366f4e1abf80e6f3a3d92f0c6a",
+      "status": "stable"
     }
   ]
 }

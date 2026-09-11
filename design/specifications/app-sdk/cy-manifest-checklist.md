@@ -23,6 +23,8 @@
 > **preview** schema and predicate identities that may still change. The first
 > **stable** identity is issued only when every handshake item in §12 closes —
 > after which the v1 envelope is frozen and a change costs a `formatVersion`.
+> **Closed 2026-09-10**: the Store team asked for a stable release, and Phase 8
+> issues the stable identity and promotes `0.4.0`.
 
 _Design: [cy-manifest.md](cy-manifest.md) — full rationale and the reasoning behind every decision below. Section references (§) point into it._
 
@@ -541,12 +543,12 @@ _Design: §9_
       examples, the lockfile and generated snapshots, and every document in
       Phase 6 — a `0.x` caret range does **not** cross a minor bump, so a partial
       bump silently leaves projects on the old SDK
-- [ ] Publish `0.4.0-next.1` under `next`, with the **preview** schema and
-      predicate identities — **prepared, not published**. The change set is on
-      `docs/cy-manifest`; publishing runs from the `release` workflow after the
-      branch merges, so the published artifact and its provenance attest to a
-      commit on the main line rather than to a feature branch. Rehearsed locally
-      with `npm publish --tag next --dry-run` for both packages
+- [x] Publish `0.4.0-next.1` under `next`, with the **preview** schema and
+      predicate identities — published 2026-09-01 from the `release` workflow
+      after PR #9 merged, so the artifact and its provenance attest to a commit
+      on the main line. The run's smoke step failed on a CDN propagation race
+      ([runbook §3c](phase6-release-runbook.md)); the artifacts were verified
+      correct by hand and the step was fixed in PR #10
 - [x] Release notes record the one breaking change (`zipForAppStore` removed
       from `./vite`) and the Preview status — [`phase6-release-runbook.md`](phase6-release-runbook.md)
       §3b
@@ -556,16 +558,65 @@ _Design: §9_
 
 ### Verification (Phase 7)
 
-- [ ] The published preview installs from `next` and scaffolds a project that
-      builds a valid submission ZIP — the release workflow's own post-publish
-      step does this. Verified locally against the packed candidates under both
-      npm and pnpm (Phase 6)
+- [x] The published preview installs from `next` and scaffolds a project that
+      builds a valid submission ZIP — verified by hand after the 2026-09-01 run
+      (`storeTest-0.1.0.zip`, 15 files including `cy-manifest.json`; the
+      commands are in [#11](https://github.com/cytoscape/cytoscape-web-app-examples/issues/11))
 - [x] The ledger contains the preview identities and their digests, taken from
       the packed tarball — both entries are `…/v1/draft/0.4.0-next.1/…`, and a
       test re-hashes them from inside the tarball rather than from the workspace
 - [x] No document claims `formatVersion: 1` is stable — the schema and
       predicate `$id`s carry `/draft/`, and §3.1 states the envelope freezes only
       when the first stable identity is issued
+
+---
+
+## Phase 8: Stable promotion — `0.4.0`
+
+_Design: §3.1, §3.2, §9 (promotion record), §12_
+
+The Store team confirmed on 2026-09-10 that a stable release is what they will
+build Gate 2 against, closing the §12 handshake by **accepting the contract as
+shipped in `0.4.0-next.1`**. Everything below is one change set, for the same
+reason Phase 7 was: a `0.x` caret does not cross a minor bump.
+
+### Deliverables
+
+- [x] Stable identities issued: `…/cy-manifest/v1/1.0/schema.json` and
+      `…/v1/1.0/predicates.json`; the predicate artifact's `status` is `stable`
+      and the schema's description no longer calls itself a preview
+- [x] Ledger **appended**, never edited: the two preview entries stay, the two
+      stable entries follow them, and the test treats the last entry per file as
+      the one the shipped bytes must match. One `$id` never names two byte
+      sequences, and one byte sequence is never re-recorded under a second `$id`
+- [x] `formatVersion: 1` frozen (§3.1) — from here any change to the official
+      field set, a limit, a pattern or a predicate is a `formatVersion: 2`
+- [x] `compatibleHostVersions` stays (§10, first branch): the Store requested no
+      change to it, the limits or the version profile
+- [x] No publication-profile snapshot bundled — the Store has not published a
+      profile (§12.4); readiness warnings remain the advisory default and the
+      predicate artifact says so in words that survive the freeze
+- [x] `packages/app-runtime` and `packages/create-cytoscape-app` at `0.4.0`;
+      `SDK_VERSION` is `^0.4.0` (the stable pin style — the test switches rule
+      with the runtime's version); the four maintained examples pin `^0.4.0`;
+      the lockfile follows
+- [x] Every `generator` example and corpus base says `@0.4.0`; the runbook gains
+      §3d for the stable release and its `tag` is `latest`
+- [ ] Published under **`latest`** from the `release` workflow (dry run first),
+      so `npm create cytoscape-app` with no tag scaffolds against the stable SDK
+
+### Verification (Phase 8)
+
+- [x] 412 app-runtime and 96 scaffolder tests pass; `typecheck --workspaces`
+      clean; `build:zip -w hello-world` embeds a manifest byte-identical to
+      `cyweb-app manifest` with `generator` `@cytoscape-web/app-runtime@0.4.0`
+- [x] Both candidates packed and installed **outside the workspace**: the
+      scaffolder writes `^0.4.0`, the project builds `relTest-0.1.0.zip` with
+      `cy-manifest.json` at its root
+- [ ] The workflow's post-publish smoke step passes through `latest`, and
+      `npm view create-cytoscape-app dist-tags` shows `latest: 0.4.0`
+- [ ] Store team notified on [#11](https://github.com/cytoscape/cytoscape-web-app-examples/issues/11)
+      that the identities to pin are now the stable ones
 
 ---
 
@@ -614,8 +665,9 @@ state must not close it.
       §10's structural omission applies
 - [ ] **[store]/[host]** Revocation policy and two-path (ZIP vs GitHub build)
       authority resolved — part of this gate, not follow-up work
-- [ ] All five §12 handshake items closed → **stable schema and predicate
-      identities issued, `formatVersion: 1` frozen, `0.4.0` promoted**
+- [x] All five §12 handshake items closed → **stable schema and predicate
+      identities issued, `formatVersion: 1` frozen, `0.4.0` promoted** — Phase 8,
+      2026-09-10, by the Store team accepting the contract as shipped
 
 ---
 
