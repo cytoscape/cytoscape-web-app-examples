@@ -1,8 +1,8 @@
 {
-  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/predicates.json",
+  "$id": "https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/predicates.json",
   "title": "cy-manifest v1 semantic predicates",
   "formatVersion": 1,
-  "status": "preview",
+  "status": "stable",
   "//": [
     "NORMATIVE. Canonical wire validity is strict raw-JSON validation, plus the",
     "pinned JSON Schema, plus the predicates in this file. JSON Schema cannot",
@@ -11,8 +11,8 @@
     "cannot define an answer for every input. The algorithms and patterns here",
     "are the definition. The corpora under corpus/ are conformance examples.",
     "",
-    "This artifact is pinned by $id and SHA-256 digest in ledger.json, and after",
-    "the first stable identity is issued a change here requires a new",
+    "This artifact is pinned by $id and SHA-256 digest in ledger.json. This is",
+    "the first stable v1 identity, so a change here requires a new",
     "formatVersion — otherwise it recreates the unselectable same-version",
     "validator problem the schema identity split exists to solve.",
     "",
@@ -200,6 +200,6 @@
   "readinessWarnings": {
     "fields": ["author", "license", "repository", "homepage", "compatibleHostVersions"],
     "status": "policy-pending",
-    "//": "During the preview these are recommended, not required. The publication profile that decides which are mandatory is owned and versioned by the App Store; until it exists, a warning cannot cite a decision that has not been made."
+    "//": "Recommended, not required. The publication profile that decides which are mandatory is owned and versioned by the App Store and ships beside this file as a separate pinned snapshot once it exists; this list is the advisory default the SDK warns on in its absence, and it is not part of wire validity."
   }
 }

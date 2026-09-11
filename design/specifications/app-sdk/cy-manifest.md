@@ -4,6 +4,9 @@
 > [`cy-manifest-review.md`](./cy-manifest-review.md) (§1–16, §17, §18, §19, §20).
 > §13 records what was accepted, declined, and deferred, and why.
 >
+> **Stable v1 issued 2026-09-10** with `@cytoscape-web/app-runtime@0.4.0` — see §9
+> for what closed the handshake and what it froze.
+>
 > Answers [cytoscape-web-app-examples#8](https://github.com/cytoscape/cytoscape-web-app-examples/issues/8).
 >
 > **Scope: the producer side and the wire format.** Store ingestion, CDN publication,
@@ -92,7 +95,7 @@ JSON object** — not an array. A submission bundle describes exactly one app.
   "homepage": "https://example.org/my-app",
   "tags": ["layout", "analysis"],
   "compatibleHostVersions": ">=1.1.0-0",
-  "generator": "@cytoscape-web/app-runtime@0.4.0-next.1"
+  "generator": "@cytoscape-web/app-runtime@0.4.0"
 }
 ```
 
@@ -166,9 +169,13 @@ split-surrogate fixtures.
 Schema documents are versioned independently of the wire format:
 
 ```text
-preview  https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json
-stable   https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/schema.json
+preview  https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json   (superseded)
+stable   https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/schema.json                  (issued 2026-09-10)
 ```
+
+The stable identity — and the matching `…/v1/1.0/predicates.json` — is what
+`0.4.0` ships and what the Store pins. The preview entries stay in the ledger,
+because superseding an identity is done by appending, never by editing.
 
 The namespace is the path this repository actually serves through GitHub Pages,
 not a shorter one on a domain it does not control. A JSON Schema `$id` is an
@@ -721,17 +728,40 @@ with privacy-filtered reporting retained, and **never counts as satisfying this 
 
 ## 9. Release posture and rollout
 
-**The stable v1 wire format waits for the §12 handshake; the code does not.** The SDK
-ships as `0.4.0-next.N` on the `next` dist-tag — the Developer Preview mechanism
-[`app-sdk-design.md`](./app-sdk-design.md) §3 already defines — with **preview schema and
-predicate identities** (§3.2) that can iterate. `formatVersion: 1` is declared stable, the
-first stable identities and digests are issued, and `0.4.0` is promoted, when **every item
-in §12** closes.
+**Current posture: stable v1, `0.4.0`, `latest`.** How it got there, in order:
 
-A `0.x` caret range does not cross a minor bump: every maintained example and the
-scaffolder pin `^0.3.0` and would silently stay on the old SDK. One change set moves
+**Preview (2026-09-01).** The stable v1 wire format waited for the §12 handshake; the
+code did not. The SDK shipped as `0.4.0-next.1` on the `next` dist-tag — the Developer
+Preview mechanism [`app-sdk-design.md`](./app-sdk-design.md) §3 defines — with **preview
+schema and predicate identities** (§3.2) that could iterate. The rule was that
+`formatVersion: 1` is declared stable, the first stable identities and digests are
+issued, and `0.4.0` is promoted, when **every item in §12** closes.
+
+**Promotion record (2026-09-10).** The App Store team confirmed that a stable
+release, not a further preview, is what they will build Gate 2
+([#11](https://github.com/cytoscape/cytoscape-web-app-examples/issues/11))
+against. `0.4.0` is therefore released under `latest` — the publish itself runs
+from the release workflow after the change set merges, and is tracked in the
+checklist's Phase 8 — with the first stable identities
+(`…/cy-manifest/v1/1.0/schema.json`, `…/v1/1.0/predicates.json`) issued and the
+v1 envelope frozen from this point (§3.1). Two consequences are recorded so they
+are not rediscovered:
+
+- The §12 items were closed by **accepting the contract as shipped in
+  `0.4.0-next.1`** — no change was requested to the envelope, the limits, the
+  version profile, or `compatibleHostVersions`, so the field stays (§10, first
+  branch). Anything the Store later wants changed in the schema or the predicates
+  is a `formatVersion: 2`.
+- **No publication-profile snapshot is bundled.** The Store has not published a
+  profile (§12.4), so the readiness warnings remain the advisory default named in
+  the predicate artifact; when a profile exists it ships as a separate pinned
+  artifact and does not reopen the v1 envelope.
+
+**Why each release is one change set.** A `0.x` caret range does not cross a minor
+bump: before 0.4.0 every maintained example and the scaffolder pinned `^0.3.0` and would
+silently have stayed on the old SDK. One change set therefore moves
 `packages/app-runtime`, `packages/create-cytoscape-app` and the `SDK_VERSION` it writes,
-all five examples, the lockfile and generated snapshots, and the documentation —
+the maintained examples, the lockfile and generated snapshots, and the documentation —
 `packages/app-runtime/README.md`, `guides/getting-started.md` §5b (which still says
 `npm run build` writes the zip, untrue since the zip became opt-in), the project-template
 README, `CLAUDE.md` §3, and [`phase6-release-runbook.md`](./phase6-release-runbook.md).

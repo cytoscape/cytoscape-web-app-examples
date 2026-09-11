@@ -43,7 +43,55 @@ const SOURCE_CORPUS = readJson(
 )
 const WIRE_CORPUS = readJson(schemaAt('corpus/canonical-wire-validation.json'))
 
-const SDK_VERSION = '0.4.0-next.1'
+const SDK_VERSION = '0.4.0'
+
+type LedgerEntry = { $id: string; file: string; sha256: string; status: string }
+
+// Every identity a published tarball has carried, verbatim and in ledger order.
+// Comparing the ledger's own entries against each other cannot tell an appended
+// entry from an edited one, so the published history is restated HERE, where a
+// change is a diff to this file rather than to the record it is meant to guard.
+// A release appends to this list; nothing ever changes an existing element.
+const PUBLISHED: readonly LedgerEntry[] = [
+  {
+    $id: 'https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/schema.json',
+    file: 'cy-manifest-v1.schema.json',
+    sha256:
+      'sha256:67777152b1564434e1ae43e87805eb2c2f8add2a32ea4bd459860dd523d0ee65',
+    status: 'preview',
+  },
+  {
+    $id: 'https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/draft/0.4.0-next.1/predicates.json',
+    file: 'cy-manifest-v1.predicates.json',
+    sha256:
+      'sha256:8fbcfaa64ab6c11a7df33239b100e53be704e79bb989e1177a67de401a418913',
+    status: 'preview',
+  },
+  {
+    $id: 'https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/schema.json',
+    file: 'cy-manifest-v1.schema.json',
+    sha256:
+      'sha256:d83e8d67e057ead71e23fad1ae5e750c806bbdf71440a267fdf47e9759f173b9',
+    status: 'stable',
+  },
+  {
+    $id: 'https://cytoscape.org/cytoscape-web-app-examples/schema/cy-manifest/v1/1.0/predicates.json',
+    file: 'cy-manifest-v1.predicates.json',
+    sha256:
+      'sha256:8c37dbd123a154ad7424d3025e7da2256bcb27366f4e1abf80e6f3a3d92f0c6a',
+    status: 'stable',
+  },
+]
+
+// The ledger is append-only, so a superseded identity stays in it beside the
+// bytes that replaced it. The entry the shipped file must match is the LAST one
+// recorded for that file.
+const currentEntries = (ledger: { entries: LedgerEntry[] }): LedgerEntry[] =>
+  Array.from(
+    ledger.entries
+      .reduce((m, e) => m.set(e.file, e), new Map<string, LedgerEntry>())
+      .values(),
+  )
 
 const validateSchema = new Ajv2020({ strict: false, allErrors: true }).compile(
   SCHEMA,
@@ -65,22 +113,46 @@ describe('shipped artifacts', () => {
   it('records every artifact in the ledger under its own $id and digest', () => {
     // Validating fixtures against whatever is packed today cannot detect that a
     // later commit reused an identity for different bytes. The ledger can.
-    expect(LEDGER.entries.length).toBeGreaterThan(0)
-    for (const entry of LEDGER.entries) {
+    const current = currentEntries(LEDGER)
+    expect(current.length).toBeGreaterThan(0)
+    for (const entry of current) {
       const bytes = readFileSync(schemaAt(entry.file))
       expect(`sha256:${createHash('sha256').update(bytes).digest('hex')}`).toBe(
         entry.sha256,
       )
       expect(JSON.parse(bytes.toString('utf8')).$id).toBe(entry.$id)
     }
-    const ids = LEDGER.entries.map((e: { $id: string }) => e.$id)
+    // Append-only: one $id never names two byte sequences, and one byte
+    // sequence is never re-recorded under a second $id.
+    const ids = LEDGER.entries.map((e: LedgerEntry) => e.$id)
     expect(new Set(ids).size).toBe(ids.length)
+    const digests = LEDGER.entries.map((e: LedgerEntry) => e.sha256)
+    expect(new Set(digests).size).toBe(digests.length)
   })
 
-  it('ships a preview identity, not a stable one', () => {
-    // The stable identity is issued only when the handshake closes, because
-    // after it the envelope is frozen and a change costs a formatVersion.
-    for (const entry of LEDGER.entries) expect(entry.$id).toContain('/draft/')
+  it('never edits an identity a published tarball has carried', () => {
+    // A superseded entry is not what the shipped bytes match any more, so the
+    // digest check above cannot see it change. This can: the published history
+    // is restated literally, and the ledger must begin with exactly it — same
+    // entries, same order, same fields. A Store that pinned a preview digest
+    // is relying on that record staying what it was.
+    expect(LEDGER.entries.slice(0, PUBLISHED.length)).toEqual(PUBLISHED)
+  })
+
+  it('ships the stable v1 identity, and keeps the preview it superseded', () => {
+    // Issuing the stable identity froze the envelope: from here a change to the
+    // schema or the predicates is a new formatVersion, not a new entry. The
+    // preview entries stay because the ledger is append-only — a Store that
+    // pinned a preview digest can still tell it was superseded, not reused.
+    for (const entry of currentEntries(LEDGER)) {
+      expect(entry.status).toBe('stable')
+      expect(entry.$id).toContain('/cy-manifest/v1/1.0/')
+      expect(entry.$id).not.toContain('/draft/')
+    }
+    expect(
+      LEDGER.entries.filter((e: LedgerEntry) => e.status === 'preview'),
+    ).toHaveLength(2)
+    expect(PREDICATES.status).toBe('stable')
   })
 
   it('reads its constants from the predicate artifact rather than restating them', () => {
@@ -347,7 +419,7 @@ describe('the artifacts as they ship, not as they sit in the workspace', () => {
     const packed = (name: string): string =>
       join(out, 'package', 'schema', name)
 
-    for (const entry of LEDGER.entries) {
+    for (const entry of currentEntries(LEDGER)) {
       const bytes = readFileSync(packed(entry.file))
       expect(
         `sha256:${createHash('sha256').update(bytes).digest('hex')}`,

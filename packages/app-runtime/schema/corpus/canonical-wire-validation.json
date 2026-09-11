@@ -28,7 +28,7 @@
     "homepage": "https://example.org/my-app",
     "tags": ["layout", "analysis"],
     "compatibleHostVersions": ">=1.1.0-0",
-    "generator": "@cytoscape-web/app-runtime@0.4.0-next.1"
+    "generator": "@cytoscape-web/app-runtime@0.4.0"
   },
   "cases": [
     { "name": "the fully populated document is valid", "patch": {}, "valid": true },

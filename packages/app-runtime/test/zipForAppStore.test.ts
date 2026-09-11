@@ -45,7 +45,7 @@ const runPackager = async (
     appMeta: parseAppMeta(snapshot),
     submissionMeta: parseSubmissionMeta(snapshot),
     expectedShared: {},
-    sdkVersion: '0.4.0-next.1',
+    sdkVersion: '0.4.0',
   }) as any
 
   const recorded: Recorded = { warnings: [], infos: [] }
@@ -260,7 +260,7 @@ describe('the captured snapshot is what gets packaged', () => {
       appMeta: parseAppMeta(snapshot),
       submissionMeta: parseSubmissionMeta(snapshot),
       expectedShared: {},
-      sdkVersion: '0.4.0-next.1',
+      sdkVersion: '0.4.0',
     }) as any
 
     // Everything the manifest and the filename come from, changed underneath.
