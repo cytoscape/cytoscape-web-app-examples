@@ -602,8 +602,11 @@ reason Phase 7 was: a `0.x` caret does not cross a minor bump.
       the lockfile follows
 - [x] Every `generator` example and corpus base says `@0.4.0`; the runbook gains
       §3d for the stable release and its `tag` is `latest`
-- [ ] Published under **`latest`** from the `release` workflow (dry run first),
+- [x] Published under **`latest`** from the `release` workflow (dry run first),
       so `npm create cytoscape-app` with no tag scaffolds against the stable SDK
+      — 2026-09-11, both packages with provenance. The run's read-back step
+      failed on a read-after-write race ([runbook §3e](phase6-release-runbook.md));
+      the artifacts were verified correct by hand and the step was fixed
 
 ### Verification (Phase 8)
 
@@ -613,8 +616,12 @@ reason Phase 7 was: a `0.x` caret does not cross a minor bump.
 - [x] Both candidates packed and installed **outside the workspace**: the
       scaffolder writes `^0.4.0`, the project builds `relTest-0.1.0.zip` with
       `cy-manifest.json` at its root
-- [ ] The workflow's post-publish smoke step passes through `latest`, and
-      `npm view create-cytoscape-app dist-tags` shows `latest: 0.4.0`
+- [x] The post-publish smoke passes through `latest` — run by hand after the
+      read-back failure skipped the workflow's own step: `npm create
+      cytoscape-app@latest` → 0.4.0, pin `^0.4.0` → runtime 0.4.0,
+      `smokeApp-0.1.0.zip` with `cy-manifest.json`, `generator @0.4.0`;
+      `npm view create-cytoscape-app dist-tags` shows `latest: 0.4.0`, and the
+      published tarball's schema digests match the ledger's stable entries
 - [ ] Store team notified on [#11](https://github.com/cytoscape/cytoscape-web-app-examples/issues/11)
       that the identities to pin are now the stable ones
 

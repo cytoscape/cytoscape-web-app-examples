@@ -351,6 +351,45 @@ Run order is unchanged: dry run, read the tarball listings, real run, approve,
 then §6 through `latest` — `npm view create-cytoscape-app dist-tags` must show
 `latest: 0.4.0`, and the scaffold in §6 must run with **no tag at all**.
 
+## 3e. The 0.4.0 release, and what its read-back step got wrong
+
+Published 2026-09-11. Both packages went out under `latest` with provenance;
+the run then failed on the read-back step — the one §3c's fix sits *after*.
+
+**The read-back ran 0.5 s after the scaffolder's publish and read a packument
+that did not have it yet.** `npm publish` returns when the upload is accepted,
+not when the document is rewritten: the runtime was read back 5.7 s after its
+publish and was there; the scaffolder was read back 0.5 s after its publish and
+was not — the registry's own `time` field puts that version at 06:08:45, 54 s
+after npm printed `+ create-cytoscape-app@0.4.0`. §3c waited on the install
+path and left the read-back reading once. Same class of defect, one step
+earlier.
+
+The published artifacts were fine, and the smoke step that was skipped as a
+consequence was run by hand: `npm create cytoscape-app@latest` resolved 0.4.0,
+the scaffold pinned `^0.4.0` and installed runtime 0.4.0, `build:zip` produced
+`smokeApp-0.1.0.zip` with `cy-manifest.json` at its root and `generator`
+`@0.4.0`, and the schema and predicate digests inside the published tarball
+match the ledger's stable entries. Nothing needed republishing.
+
+One change, inside the step: **poll for the version before asserting the
+tag.** Only the version's *existence* is waited for; a tag that points elsewhere
+once the version is there is a real failure and still fails immediately.
+
+Also seen in this run, and harmless: npm 11.19 prints
+`"bin[create-cytoscape-app]" script name dist/index.js was invalid and removed`
+when a `bin` path starts with `./`. It normalizes the path and keeps the entry
+— the published manifest carries `dist/index.js` and the bin works — but the
+wording says otherwise, so both `bin` fields now omit the `./`. The runtime's
+`"//prepack"` note inside `scripts` drew a second `auto-corrected` warning
+(npm strips non-string script values); it moved to a top-level `"//scripts"`
+key. A dry-run publish of either package now prints no `auto-corrected` line,
+which is what makes a real one worth reading.
+
+The general form, again: **every step that reads the registry after a publish
+is a read-after-write, and every one of them waits.** There are two such steps;
+each has now failed once.
+
 ## 4. Pre-flight
 
 The workflow runs all of this itself. Doing it locally first is still worth the
