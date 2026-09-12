@@ -66,15 +66,17 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "cyweb-app": "./dist/cli/cyweb-app.js"
+    "cyweb-app": "dist/cli/cyweb-app.js"
   },
+  "//scripts": [
+    "prepack: `npm publish` does not run `build`. Without it, publishing from a",
+    "clean clone ships whatever happens to be in dist/ \u2014 stale, or nothing at",
+    "all \u2014 and the tarball looks plausible either way. The note lives up here",
+    "because npm strips a non-string value out of `scripts` at publish time and",
+    "warns about it on every release."
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
-    "//prepack": [
-      "`npm publish` does not run `build`. Without this, publishing from a",
-      "clean clone ships whatever happens to be in dist/ \u2014 stale, or nothing at",
-      "all \u2014 and the tarball looks plausible either way."
-    ],
     "prepack": "npm run build",
     "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",

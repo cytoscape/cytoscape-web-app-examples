@@ -27,7 +27,7 @@
     "README.md"
   ],
   "bin": {
-    "create-cytoscape-app": "./dist/index.js"
+    "create-cytoscape-app": "dist/index.js"
   },
   "//scripts": [
     "sync-templates copies the template sources OUT of the working example apps",

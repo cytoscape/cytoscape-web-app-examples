@@ -195,11 +195,16 @@ jobs:
       # The Preview status is carried by 0.x versioning, the package READMEs
       # (which npm renders on the package page) and the guides.
       #
-      # What the registry actually has, read back after publishing.
       # What the registry actually has, read back after publishing — and
       # asserted, not merely printed. The previous version checked that the
       # version EXISTED and printed the dist-tags beside it, so a publish that
       # landed under the wrong tag looked identical to one that landed right.
+      #
+      # WAITED FOR, not read once. `npm publish` returns before the packument
+      # shows the new version: the 0.4.0 release read the runtime back 5.7 s
+      # after its publish and saw it, then read the scaffolder back 0.5 s after
+      # its publish and saw 0.3.1 — the registry recorded that version 54 s
+      # later. Same defect class as the smoke step's, one step earlier.
       - name: Read back the registry, and assert the tag moved
         if: ${{ !inputs.dry_run }}
         # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
@@ -218,7 +223,21 @@ jobs:
             name=$(node -p "require('./$dir/package.json').name")
             version=$(node -p "require('./$dir/package.json').version")
             encoded=$(node -p "encodeURIComponent('$name')")
-            curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json
+
+            # Poll until the version is in the packument, then assert the tag.
+            # Only the version's EXISTENCE is waited for: a tag that points
+            # elsewhere once the version is there is a real failure, not a
+            # propagation delay.
+            for _ in $(seq 1 30); do
+              curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json || true
+              if node -e '
+                const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
+                process.exit(d.versions?.[process.argv[1]] ? 0 : 1)
+              ' "$version" 2>/dev/null; then break; fi
+              echo "  waiting for the registry to show $name@$version"
+              sleep 10
+            done
+
             node -e '
               const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
               const [version, name, tag] = process.argv.slice(1)
@@ -229,7 +248,10 @@ jobs:
               console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
               console.log("    " + tag + " points at: " + tagged)
               console.log("    deprecated: " + (v?.deprecated ?? "no"))
-              if (!v) process.exit(1)
+              if (!v) {
+                console.error("::error::" + name + "@" + version + " is still not in the packument after 5 minutes")
+                process.exit(1)
+              }
               if (tagged !== version) {
                 console.error("::error::" + tag + " points at " + tagged + ", not " + version)
                 process.exit(1)
