@@ -98,7 +98,8 @@ hello-world/
 │       ├── ExportSection.tsx          ← Example 10: CX2 export via ExportApi
 │       ├── NetworkSection.tsx         ← Example 11: Network create/delete via NetworkApi
 │       ├── TsvDownloadSection.tsx     ← Example 12: TSV table download via TableApi
-│       └── NetworkSummaryMenuItem.tsx ← apps-menu item registered in HelloApp.tsx
+│       └── NetworkSummaryDialog.tsx   ← body of the dialog opened by the apps-menu action
+├── src/menuActions.tsx                ← Example 5: the apps-menu action (opens the dialog)
 ├── vite.config.ts                     ← Module Federation config
 ├── index.html                         ← remote-only stub (Vite needs an HTML entry)
 ├── src/cywebHostSentinel.ts           ← entry a production build ships when no host is known
@@ -135,8 +136,8 @@ export const HelloApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'NetworkSummaryMenuItem',
-      title: 'Network Summary',
-      component: lazy(() => import('./components/NetworkSummaryMenuItem')),
+      label: 'Network Summary',
+      onClick: showNetworkSummary, // menuActions.tsx — opens a dialog via apis.dialog.open
     },
   ],
 
@@ -399,10 +400,11 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 
 ---
 
-### Example 5 — Menu component pattern (`MenuSection.tsx`)
+### Example 5 — Apps-menu entry (`MenuSection.tsx`)
 
-Explains how `ComponentType.Menu` items (now via `resources` with
-`slot: 'apps-menu'`) work and the `handleClose` prop contract.
+Explains how `'apps-menu'` entries work: plain data with `label` and
+`onClick(apis)`, rendered by the host, with any UI opened from the action
+through `apis.dialog.open({ title, render })`.
 
 ---
 

@@ -24,7 +24,7 @@ Config: `.eslintrc.json` at repo root
 
 - Functional components only
 - Panel components receive `{ message: string }` prop
-- Menu components receive `{ handleClose: () => void }` prop
+- Apps-menu entries are plain data (`label`, `onClick(apis)`); no component, no `handleClose`. UI goes in `apis.dialog.open` (api-types ≥ 1.0.0-beta.4)
 - No `console.log` in committed code
 
 ## Module Federation Conventions

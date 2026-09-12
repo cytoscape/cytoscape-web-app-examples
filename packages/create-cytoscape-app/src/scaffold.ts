@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
  * the published declarations did not have. A generated project gets the version
  * this SDK was tested against, and moves when someone decides to move it.
  */
-export const API_TYPES_VERSION = '1.0.0-beta.3'
+export const API_TYPES_VERSION = '1.0.0-beta.4'
 
 /**
  * peerDependencies for a React app, and the reason they are written rather than

@@ -28,6 +28,7 @@ import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 import { registerSelectNeighbors } from './contextMenus'
+import { createExampleNetwork } from './menuActions'
 
 // TODO: Rename this export and update src/index.ts accordingly.
 export const TemplateApp: CyAppWithLifecycle = {
@@ -50,12 +51,14 @@ export const TemplateApp: CyAppWithLifecycle = {
       title: 'Template', // TODO: Tab title shown in the right panel.
       component: lazy(() => import('./components/TemplatePanel')),
     },
+    // An 'apps-menu' entry is plain data — the host renders the row and
+    // closes the dropdown; you supply the label and the action. See
+    // src/menuActions.ts for how to open a dialog from one.
     {
       slot: 'apps-menu',
       id: 'TemplateMenuItem',
-      title: 'Template Action', // TODO: Label shown in the Apps dropdown.
-      component: lazy(() => import('./components/TemplateMenuItem')),
-      closeOnAction: true, // Auto-close the dropdown after action.
+      label: 'Template Action', // TODO: Label shown in the Apps dropdown.
+      onClick: createExampleNetwork,
     },
   ],
 

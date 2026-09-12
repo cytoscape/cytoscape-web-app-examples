@@ -9,8 +9,6 @@
 // loads as `./AppConfig`, so a broken re-export fails here rather than in a
 // browser.
 
-import { existsSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
 import { readAppMeta } from '@cytoscape-web/app-runtime/vite'
@@ -47,23 +45,25 @@ describe('hello-world', () => {
     }
   })
 
-  it('still has the source for its second federated module', () => {
-    // `./NetworkSummaryMenuItem` is exposed separately so the host renders it
-    // inside its OWN React tree — the strongest available check that React is a
-    // single shared instance across the boundary.
+  it('declares its Apps-menu entry as plain data, not a component', async () => {
+    // Since api-types 1.0.0-beta.4 the host renders 'apps-menu' rows itself
+    // and rejects a `component` with APP9. This app used to expose its menu
+    // component as a second federated module so the host could mount it; that
+    // expose is gone with the component, and this is what stands in its place.
     //
-    // Only its EXISTENCE is asserted here. Importing it does not work: it calls
-    // useWorkspaceApi from 'cyweb/WorkspaceApi', a federated module that
-    // resolves at runtime inside the host and not at all under vitest. That gap
-    // is what @cytoscape-web/app-test (roadmap C-1) exists to close, and until
-    // it does, no component touching a cyweb/* API can be unit-tested.
-    //
-    // The expose itself is covered where it can be: `verify:federation` asserts
-    // every declared expose is present in the built output — which is why this
-    // app reports 27 checks and the others 26 — and the in-host load exercises
-    // it for real.
-    expect(
-      existsSync(new URL('../src/components/NetworkSummaryMenuItem.tsx', import.meta.url)),
-    ).toBe(true)
+    // The action itself (menuActions.tsx) is not imported here: it opens a
+    // dialog through apis.dialog and reads apis.workspace, neither of which
+    // exists outside a running host. That gap is what @cytoscape-web/app-test
+    // (roadmap C-1) exists to close.
+    const { default: app } = await import('../src/index')
+    const menu = (app.resources ?? []).filter((r) => r.slot === 'apps-menu')
+
+    expect(menu).toHaveLength(1)
+    expect(menu[0]).toMatchObject({
+      id: 'NetworkSummaryMenuItem',
+      label: 'Network Summary',
+    })
+    expect(typeof (menu[0] as { onClick?: unknown }).onClick).toBe('function')
+    expect(menu[0]).not.toHaveProperty('component')
   })
 })

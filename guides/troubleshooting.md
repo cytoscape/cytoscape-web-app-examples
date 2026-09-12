@@ -249,24 +249,30 @@ resources: [
 3. **Empty label** — `addContextMenuItem` returns `fail(InvalidInput)` if
    the label is empty. Check the return value.
 
-### Menu item does not close the dropdown
+### Menu item registration fails with `APP9`
 
-**Fix:** Either set `closeOnAction: true` on the resource declaration,
-or call `handleClose()` manually:
+**Cause:** The entry passes a `component` (or `title`, `closeOnAction`,
+`errorFallback`). Since api-types 1.0.0-beta.4 an `'apps-menu'` entry is plain
+data — the host renders the row and closes the dropdown itself.
+
+**Fix:** Replace the component with `label` and `onClick(apis)`. Move the
+component's action into `onClick`; move any UI it rendered into
+`apis.dialog.open({ title, render })` called from there:
 
 ```typescript
-// Option A: Declarative
-{ slot: 'apps-menu', closeOnAction: true, ... }
-
-// Option B: Manual
-const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
-  const onClick = () => {
-    doSomething()
-    handleClose()  // close the dropdown
-  }
-  return <li onClick={onClick}>Action</li>
+{
+  slot: 'apps-menu',
+  id: 'MyAction',
+  label: 'My Action',
+  onClick: (apis) => {
+    doSomething(apis)
+    // or, for UI: apis.dialog.open({ title: 'My Action', render: ({ close }) => <MyForm onDone={close} /> })
+  },
 }
 ```
+
+There is no dropdown to close manually any more; the host does it after
+`onClick` returns.
 
 ---
 
