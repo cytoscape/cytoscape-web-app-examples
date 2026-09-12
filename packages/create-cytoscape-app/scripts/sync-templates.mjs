@@ -225,7 +225,10 @@ someone to install YOURS asks the same of them.
   never \`'@mui/material/Box'\`. The subpath form bundles a second copy of MUI
   instead of using the host's, and the build gate will stop you.
 - **Panels and menu items are declared** in \`resources\`, not registered by hand.
-  Use \`lazy(() => import(...))\` so they load on demand.
+  A panel is a component — use \`lazy(() => import(...))\` so it loads on demand.
+  An \`apps-menu\` entry is plain data: \`label\` plus \`onClick(apis)\`, no
+  component. The host renders the row itself and rejects a \`component\` there
+  with APP9; put any UI behind it in \`apis.dialog.open(...)\`.
 - **\`unmount()\` cleans up only what you added manually** — event listeners,
   timers. Resources and context menu items are the host's to clean up.
 

@@ -400,7 +400,7 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 
 ---
 
-### Example 5 — Menu component pattern (`MenuSection.tsx`)
+### Example 5 — Apps-menu entry (`MenuSection.tsx`)
 
 Explains how `'apps-menu'` entries work: plain data with `label` and
 `onClick(apis)`, rendered by the host, with any UI opened from the action

@@ -31,9 +31,8 @@ network-workflows/
 ├── src/
 │   ├── index.ts                          ← exposed as ./AppConfig; re-exports the app config
 │   ├── NetworkWorkflowsApp.tsx           ← app config + resource declarations
+│   ├── menuActions.ts                    ← apps-menu actions: build a sample network, import remote CX2
 │   └── components/
-│       ├── CreateNetworkMenu.tsx         ← apps-menu: build a sample network
-│       ├── CreateNetworkFromCx2Menu.tsx  ← apps-menu: import remote CX2
 │       └── JupyterConnectorPanel.tsx     ← right-panel: receive CX2 via postMessage
 ├── vite.config.ts                        ← Module Federation config
 ├── tsconfig.json

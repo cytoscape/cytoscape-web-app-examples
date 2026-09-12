@@ -104,9 +104,9 @@ arrive from `virtual:cyweb-app-meta`, which the build fills in from
 `package.json`. Do not import `package.json` directly — that pulls the whole
 file, `devDependencies` included, into your browser bundle to read one string.
 
-### 4. `src/components/`
+### 4. `src/components/` and `src/menuActions.ts`
 
-- `TemplatePanel.tsx` → replace with your panel UI
+- `components/TemplatePanel.tsx` → replace with your panel UI
 - `menuActions.ts` → replace with your menu action
 
 ---
@@ -119,9 +119,9 @@ project-template/
 │   ├── index.ts                  ← re-exports app config as default
 │   ├── TemplateApp.tsx           ← app config: resources and lifecycle
 │   ├── contextMenus.ts           ← context menu registration (Graph Traversal example)
+│   ├── menuActions.ts            ← apps-menu action (NetworkApi example)
 │   └── components/
-│       ├── TemplatePanel.tsx     ← right-panel component (WorkspaceApi example)
-│   └── menuActions.ts        ← apps-menu action (NetworkApi example)
+│       └── TemplatePanel.tsx     ← right-panel component (WorkspaceApi example)
 ├── vite.config.ts                ← three lines: defineCyWebApp(import.meta.url)
 ├── index.html                    ← remote-only stub (Vite needs an HTML entry)
 ├── test/appConfig.test.ts        ← identity, and the shape of what ./AppConfig exports

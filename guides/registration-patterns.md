@@ -162,7 +162,7 @@ but do not block other entries:
 ```typescript
 const result = apis.resource.registerAll([
   { slot: 'right-panel', id: 'Panel1', component: Panel1 },
-  { slot: 'apps-menu', id: 'Menu1', component: Menu1 },
+  { slot: 'apps-menu', id: 'Menu1', label: 'Menu 1', onClick: menu1Action },
 ])
 
 if (result.success && result.data.errors.length > 0) {
