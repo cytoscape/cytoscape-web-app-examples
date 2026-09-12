@@ -305,15 +305,26 @@ find ~/.npm/_npx -path '*create-cytoscape-app/package.json' \
 npm view create-cytoscape-app version     # what the registry has
 ```
 
-**Fixes**, any of which work:
+**Fixes**, either of which works:
 
 ```bash
 npm create cytoscape-app@latest my-app      # name the tag
-npm create --prefer-online cytoscape-app my-app
 npm create cytoscape-app@<version> my-app   # or the exact version `npm view` printed
 ```
 
 To clear it outright: `npx clear-npx-cache`, or `npm cache clean --force`.
+
+`npm create --prefer-online cytoscape-app my-app` does **not** help, and the
+reason is not that npm skips the registry. A bare initializer is resolved as
+`create-cytoscape-app@*`; npm does fetch the current manifest (an
+`npm http fetch GET … /create-cytoscape-app` line appears at `--loglevel=http`),
+then checks the npx cache with that `*` range, which any cached version
+satisfies — so the fresh result is discarded and the cached copy runs, without
+the "will be installed" line. Measured on npm 11.19 with 0.4.0 cached and
+0.4.1 published. `--prefer-online` only affects the fetch, which already
+happens. Naming a tag makes npm compare the cached copy against the tag's
+resolved tarball, and naming a version requires an exact match; both replace a
+stale copy.
 
 > **When comparing versions, watch the ports.** `pickPort` returns the first
 > *free* port, so an occupied 6000 is skipped by every version — including ones

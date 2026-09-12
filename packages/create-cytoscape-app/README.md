@@ -8,8 +8,10 @@ npm create cytoscape-app my-app
 
 > `npm create` may run a **cached** copy of this package rather than fetching
 > the current one, so a version you ran before is what you keep getting. Name
-> the tag — `npm create cytoscape-app@latest my-app` — or pass
-> `--prefer-online`.
+> the tag — `npm create cytoscape-app@latest my-app` — or clear the cache with
+> `npx clear-npx-cache`. (`--prefer-online` does not help: npm resolves the
+> bare name as `create-cytoscape-app@*`, and any cached version satisfies `*`,
+> so the manifest it fetches is discarded.)
 
 > **Developer Preview**, published at `0.x`. Read
 > [Developer Preview](#developer-preview) before you build anything you intend
