@@ -200,12 +200,16 @@ export const MyApp: CyAppWithLifecycle = {
       title: 'My Panel',
       component: lazy(() => import('./components/MyPanel')),
     },
+    // An 'apps-menu' entry is plain data: the host renders the row and
+    // closes the dropdown itself. Put any UI behind it in a dialog opened
+    // from onClick via apis.dialog.open({ title, render }).
     {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      closeOnAction: true,
+      label: 'My Action',
+      onClick: (apis) => {
+        apis.network.createNetworkFromEdgeList({ name: 'Example', edgeList: [['A', 'B']] })
+      },
     },
   ],
 

@@ -9,7 +9,7 @@
   },
   "//cyweb": [
     "This app's identity, written ONCE. The federation container name, the",
-    "CyApp.id and the dev install manifest all read from here \u2014 before this",
+    "CyApp.id and the dev install manifest all read from here — before this",
     "block they were three hand-synced string literals with no import between",
     "them, and nothing noticed a mismatch until the host refused to load."
   ],
@@ -26,7 +26,7 @@
     "test": "vitest run"
   },
   "//peerDependencies": [
-    "Provided by the HOST as Module Federation singletons \u2014 the share block",
+    "Provided by the HOST as Module Federation singletons — the share block",
     "uses `import: false`, so no fallback copy is bundled. The ranges must",
     "match configuredShared in ../apps.manifest.json; scripts/manifest.mjs",
     "cross-checks them, because nothing else would notice them diverging."
@@ -39,7 +39,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@cytoscape-web/api-types": "^1.0.0-beta.4",
     "@cytoscape-web/app-runtime": "^0.4.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",

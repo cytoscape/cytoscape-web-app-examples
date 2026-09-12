@@ -140,9 +140,8 @@ export const MyApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      closeOnAction: true,  // auto-close the dropdown after click
+      label: 'My Action',
+      onClick: myAction,    // src/menuActions.ts — the host renders the row
     },
   ],
 
@@ -196,27 +195,38 @@ const MainPanel = () => {
 export default MainPanel
 ```
 
-### Menu Item Component (`src/components/MyMenuItem.tsx`)
+### Menu Action (`src/menuActions.ts`)
+
+An `'apps-menu'` entry is plain data, not a component. The host renders the
+row from `label` and closes the dropdown itself after calling `onClick(apis)`
+— there is nothing to mount and no `handleClose` to manage.
+
+```typescript
+import type { AppContextApis } from 'cyweb/ApiTypes'
+
+export const myAction = (apis: AppContextApis): void => {
+  console.info('Menu action triggered!')
+  // `apis` is the same per-app API object your panels get from useAppContext().
+}
+```
+
+Need a form, a table, or any other UI behind the item? Open a dialog from the
+action. The host owns the frame (title bar, Close "X", dismissal rules); you
+render only the body, and `render` receives `close`:
 
 ```tsx
-import type { MenuItemHostProps } from 'cyweb/ApiTypes'
-
-const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
-  const handleClick = () => {
-    console.info('Menu action triggered!')
-    // If closeOnAction: true was set, the dropdown closes automatically.
-    // Otherwise, call handleClose() manually.
-  }
-
-  return (
-    <li onClick={handleClick} style={{ padding: '8px 16px', cursor: 'pointer' }}>
-      My Action
-    </li>
-  )
+export const myAction = (apis: AppContextApis): void => {
+  apis.dialog.open({
+    title: 'My Action',
+    render: ({ close }) => <MyForm onDone={close} />,
+  })
 }
-
-export default MyMenuItem
 ```
+
+Import it in `MyApp.tsx` — `import { myAction } from './menuActions'` — and
+reference it as `onClick`. Optional fields: `tooltip`, `icon` (an image URI;
+an SVG is painted in the row's text color), `isEnabled(apis)`, `order`,
+`group`, `requires`.
 
 ---
 

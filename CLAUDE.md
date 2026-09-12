@@ -32,7 +32,7 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 | hello-world        | `hello`              | 2222 | HelloApp, HelloPanel                                                                    |
 | network-statistics | `networkStatistics`  | 3333 | NetworkStatisticsApp (non-React — no UI components)                                     |
 | network-workflows  | `networkWorkflows`   | 7000 | NetworkWorkflowsApp, CreateNetworkMenu, CreateNetworkFromCx2Menu, JupyterConnectorPanel |
-| project-template   | `template`           | 5555 | TemplateApp, TemplatePanel, TemplateMenuItem + context menu                             |
+| project-template   | `template`           | 5555 | TemplateApp, TemplatePanel, menuActions + context menu                                    |
 
 ---
 
@@ -60,8 +60,8 @@ export const MyApp: CyAppWithLifecycle = {
   resources: [
     { slot: 'right-panel', id: 'MyPanel', title: 'My Panel',
       component: lazy(() => import('./components/MyPanel')) },
-    { slot: 'apps-menu', id: 'MyMenu', title: 'My Action',
-      component: lazy(() => import('./components/MyMenu')), closeOnAction: true },
+    { slot: 'apps-menu', id: 'MyMenu', label: 'My Action',
+      onClick: (apis) => { /* apis.network..., or apis.dialog.open(...) for UI */ } },
   ],
 
   // Optional: context menus, event listeners, etc.
@@ -278,7 +278,7 @@ Shared config files at repo root apply to all apps:
 | -------------------------------- | -------------------------------------------------------- |
 | App config (resources + lifecycle) | `hello-world/src/HelloApp.tsx`                          |
 | Panel component (12 API examples) | `hello-world/src/components/HelloPanel.tsx`              |
-| Menu component (closeOnAction)    | `project-template/src/components/TemplateMenuItem.tsx`   |
+| Apps-menu action (plain data)     | `project-template/src/menuActions.ts`                     |
 | MF config (canonical, commented)  | `project-template/vite.config.ts`                       |
 | Template for new apps             | `project-template/`                                     |
 | App Developer Guide               | `guides/`                                               |

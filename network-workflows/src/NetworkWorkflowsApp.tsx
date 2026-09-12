@@ -8,6 +8,7 @@ import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 // be: that pulls the WHOLE file into the browser bundle — devDependencies,
 // scripts, every private field — to read one string.
 import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
+import { createExampleNetwork, createNetworkFromSampleCx2 } from './menuActions'
 
 export const NetworkWorkflowsApp: CyAppWithLifecycle = {
   // Identity comes from package.json — change it there, not here. `id` is the
@@ -19,19 +20,20 @@ export const NetworkWorkflowsApp: CyAppWithLifecycle = {
   version,
   apiVersion: '1.0',
   resources: [
+    // 'apps-menu' entries are plain data since api-types 1.0.0-beta.4: the
+    // host renders the row and closes the menu itself, and hands the app's
+    // API to onClick. There is no component and no closeOnAction any more.
     {
       slot: 'apps-menu',
       id: 'CreateNetworkMenu',
-      title: 'Create Example Network',
-      component: lazy(() => import('./components/CreateNetworkMenu')),
-      closeOnAction: true,
+      label: 'Create Example Network',
+      onClick: createExampleNetwork,
     },
     {
       slot: 'apps-menu',
       id: 'CreateNetworkFromCx2Menu',
-      title: 'Create Network from CX2',
-      component: lazy(() => import('./components/CreateNetworkFromCx2Menu')),
-      closeOnAction: true,
+      label: 'Create Network from CX2',
+      onClick: createNetworkFromSampleCx2,
     },
     {
       slot: 'right-panel',

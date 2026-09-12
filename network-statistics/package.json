@@ -9,7 +9,7 @@
   },
   "//cyweb": [
     "This app's identity, written ONCE. The federation container name, the",
-    "CyApp.id and the dev install manifest all read from here \u2014 before this",
+    "CyApp.id and the dev install manifest all read from here — before this",
     "block they were three hand-synced string literals with no import between",
     "them, and nothing noticed a mismatch until the host refused to load."
   ],
@@ -37,7 +37,7 @@
     "typecheck."
   ],
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@cytoscape-web/api-types": "^1.0.0-beta.4",
     "@cytoscape-web/app-runtime": "^0.4.0",
     "@module-federation/vite": "1.16.8",
     "@types/node": "^24.0.0",

@@ -9,7 +9,7 @@
   },
   "//cyweb": [
     "This app's identity, written ONCE. The federation container name, the",
-    "CyApp.id and the dev install manifest all read from here \u2014 before this",
+    "CyApp.id and the dev install manifest all read from here — before this",
     "block they were three hand-synced string literals with no import between",
     "them, and nothing noticed a mismatch until the host refused to load."
   ],
@@ -28,13 +28,13 @@
   "//dependencies": [
     "Everything this app needs is declared HERE, not inherited from the",
     "monorepo root. Copying this directory out is the documented way to start",
-    "an app, and the previous package.json had scripts and nothing else \u2014 so a",
+    "an app, and the previous package.json had scripts and nothing else — so a",
     "copy did not install. React, MUI, TypeScript and the API types all",
     "resolved by hoisting, which works in exactly one place."
   ],
   "//peerDependencies": [
     "react, react-dom, @mui/material and both Emotion packages are provided by",
-    "the HOST as Module Federation singletons \u2014 the share block uses",
+    "the HOST as Module Federation singletons — the share block uses",
     "`import: false`, so no fallback copy is bundled. They are peers rather",
     "than dependencies to say that. The version ranges must match",
     "configuredShared in ../apps.manifest.json; scripts/manifest.mjs",
@@ -54,10 +54,10 @@
     "runtime-plugin test both moved into the package.",
     "",
     "vite, @module-federation/vite and @vitejs/plugin-react stay, as the SDK's",
-    "peers \u2014 one copy of each, resolved from the app."
+    "peers — one copy of each, resolved from the app."
   ],
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.3",
+    "@cytoscape-web/api-types": "^1.0.0-beta.4",
     "@cytoscape-web/app-runtime": "^0.4.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",

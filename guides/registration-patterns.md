@@ -46,9 +46,10 @@ export const MyApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'ExportAction',
-      title: 'Export via My App',
-      component: lazy(() => import('./components/ExportMenuItem')),
-      closeOnAction: true,       // Auto-close the dropdown after click
+      label: 'Export via My App',
+      tooltip: 'Download the current network as CX2',
+      onClick: exportViaMyApp,   // plain function — the host renders the row
+      isEnabled: (apis) => apis.workspace.getCurrentNetworkId().success,
     },
   ],
 }
@@ -56,22 +57,57 @@ export const MyApp: CyAppWithLifecycle = {
 
 ### ResourceDeclaration Fields
 
+The two slots take different shapes. A panel is a component the host mounts;
+an Apps-menu entry is **plain data** the host renders as a standard menu row.
+
+**`slot: 'right-panel'`**
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `slot` | `'right-panel' \| 'apps-menu'` | Yes | Host rendering slot |
 | `id` | `string` | Yes | Unique ID within `(appId, slot)` |
 | `component` | `React.ComponentType<any>` | Yes | Lazy-loaded component |
-| `title` | `string` | No | Display label (defaults to `id`) |
+| `title` | `string` | No | Tab label (defaults to `id`) |
 | `order` | `number` | No | Sort order (ascending, `undefined` = last) |
 | `group` | `string` | No | Grouping key (future use) |
 | `requires.network` | `boolean` | No | Hide when no network is loaded |
 | `requires.selection` | `boolean` | No | Hide when nothing is selected |
-| `closeOnAction` | `boolean` | No | Auto-close Apps dropdown (menu items only) |
 | `errorFallback` | `React.ComponentType` | No | Custom error boundary fallback |
 
-### Host Props
+**`slot: 'apps-menu'`**
 
-The host passes props to your component depending on the slot:
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes | Unique ID within `(appId, slot)` |
+| `label` | `string` | Yes | Row text |
+| `onClick` | `(apis: AppContextApis) => void \| Promise<void>` | Yes | The action; receives the app's API object |
+| `tooltip` | `string` | No | Hover text |
+| `icon` | `string` | No | Image URI — http(s), `data:image`, or a root-relative host asset. An SVG is painted in the row's text color; a raster image is shown as-is |
+| `isEnabled` | `(apis: AppContextApis) => boolean` | No | Grey the row out when false |
+| `order` / `group` / `requires` | as above | No | |
+
+There is no `component`, `title`, `closeOnAction` or `errorFallback` on a menu
+entry: the host draws every row itself, so no app can change the shared
+dropdown's size, font or colors, and it closes the dropdown after `onClick`.
+Passing a `component` fails registration with `APP9`.
+
+### UI behind a menu item
+
+Open a dialog from the action. The host owns the frame — title bar, Close "X",
+dismissal rules, error and Suspense boundaries — and the app renders the body:
+
+```tsx
+export const exportViaMyApp = (apis: AppContextApis): void => {
+  apis.dialog.open({
+    title: 'Export via My App',
+    maxWidth: 'sm',
+    render: ({ close }) => <ExportForm apis={apis} onDone={close} />,
+  })
+}
+```
+
+Dialogs are closed automatically when the app is disabled.
+
+### Host Props
 
 **Panel components** receive `PanelHostProps`:
 
@@ -80,18 +116,6 @@ interface PanelHostProps {
   // Currently empty — reserved for future host-injected props
 }
 ```
-
-**Menu item components** receive `MenuItemHostProps`:
-
-```typescript
-interface MenuItemHostProps {
-  /** Call this to close the Apps dropdown. */
-  handleClose: () => void
-}
-```
-
-> When `closeOnAction: true`, the host wraps your component and calls
-> `handleClose()` for you. You do not need to call it manually.
 
 ---
 

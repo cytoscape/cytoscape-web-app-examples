@@ -10,6 +10,7 @@ import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 import { getLifecycleSnapshot, setLifecycleState } from './lifecycleState'
+import { showNetworkSummary } from './menuActions'
 
 // ── Module-level variable ─────────────────────────────────────────────────────
 //
@@ -60,11 +61,15 @@ export const HelloApp: CyAppWithLifecycle = {
       title: 'Hello World',
       component: lazy(() => import('./components/HelloPanel')),
     },
+    // Example 5: an 'apps-menu' entry is plain data since api-types
+    // 1.0.0-beta.4 — the host renders the row; the action opens a dialog
+    // through apis.dialog.open. See menuActions.tsx.
     {
       slot: 'apps-menu',
       id: 'NetworkSummaryMenuItem',
-      title: 'Network Summary',
-      component: lazy(() => import('./components/NetworkSummaryMenuItem')),
+      label: 'Network Summary',
+      tooltip: 'Show name, id, size and modified state of the current network',
+      onClick: showNetworkSummary,
     },
   ],
 

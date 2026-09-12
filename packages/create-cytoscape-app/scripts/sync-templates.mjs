@@ -63,9 +63,9 @@ const copy = (variant, rel, source) => {
 // project should not ship instructions to edit something the generator already
 // filled in.
 
-const APP_HEADER = `import { lazy } from 'react'
-
-import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
+const appHeader = ({
+  lazy,
+}) => `${lazy ? "import { lazy } from 'react'\n\n" : ''}import { AppContext, CyAppWithLifecycle } from 'cyweb/ApiTypes'
 // This app's identity, from the \`cyweb\` block and the standard fields in
 // package.json — the one place it is written. The build supplies it here.
 //
@@ -81,19 +81,22 @@ const PANEL_RESOURCE = `    {
       component: lazy(() => import('./components/MyPanel')),
     },`
 
+// An 'apps-menu' entry is plain data: the host renders the row from \`label\`
+// and closes the dropdown itself after calling \`onClick(apis)\`. There is no
+// component behind it — see src/menuActions.ts, copied from project-template.
 const MENU_RESOURCE = `    {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      // Close the Apps dropdown once the action runs.
-      closeOnAction: true,
+      label: 'My Action',
+      onClick: createExampleNetwork,
     },`
 
-const buildAppFile = ({ resources, contextMenu }) => {
-  const imports = contextMenu
-    ? `${APP_HEADER}\nimport { registerSelectNeighbors } from './contextMenus'\n`
-    : APP_HEADER
+const buildAppFile = ({ resources, contextMenu, menu, components }) => {
+  let imports = appHeader({ lazy: components.length > 0 })
+  if (contextMenu)
+    imports += `\nimport { registerSelectNeighbors } from './contextMenus'`
+  if (menu) imports += `\nimport { createExampleNetwork } from './menuActions'`
+  if (contextMenu || menu) imports += '\n'
 
   const mountBody = contextMenu
     ? `    // Context menu items are registered here because their handlers need
@@ -136,7 +139,9 @@ ${mountBody}
 // No literals: it asserts the app agrees with its own package.json rather than
 // with values copied into the test, so renaming the app cannot make it fail.
 
-const smokeTest = (resourceCount) => `// Smoke test: this app still exports a CyApp the host can load.
+const smokeTest = (
+  resourceCount,
+) => `// Smoke test: this app still exports a CyApp the host can load.
 //
 // It reaches the config through src/index.ts — the exact module the host loads
 // as \`./AppConfig\` — so a broken re-export fails here rather than in a browser.
@@ -236,23 +241,34 @@ npm run build && npx cyweb-app verify
 // ── Variants ───────────────────────────────────────────────────────────────
 
 const VARIANTS = {
-  panel: { resources: [PANEL_RESOURCE], contextMenu: false, components: ['MyPanel'] },
-  menu: { resources: [MENU_RESOURCE], contextMenu: false, components: ['MyMenuItem'] },
+  panel: {
+    resources: [PANEL_RESOURCE],
+    contextMenu: false,
+    menu: false,
+    components: ['MyPanel'],
+  },
+  menu: {
+    resources: [MENU_RESOURCE],
+    contextMenu: false,
+    menu: true,
+    components: [],
+  },
   'context-menu': {
     resources: [PANEL_RESOURCE],
     contextMenu: true,
+    menu: false,
     components: ['MyPanel'],
   },
   full: {
     resources: [PANEL_RESOURCE, MENU_RESOURCE],
     contextMenu: true,
-    components: ['MyPanel', 'MyMenuItem'],
+    menu: true,
+    components: ['MyPanel'],
   },
 }
 
 const COMPONENT_SOURCE = {
   MyPanel: 'TemplatePanel.tsx',
-  MyMenuItem: 'TemplateMenuItem.tsx',
 }
 
 rmSync(OUT, { recursive: true, force: true })
@@ -271,22 +287,34 @@ for (const [variant, spec] of Object.entries(VARIANTS)) {
       `src/components/${component}.tsx`,
       rename(join(REACT_SRC, 'src/components', COMPONENT_SOURCE[component]), [
         ['TemplatePanel', 'MyPanel'],
-        ['TemplateMenuItem', 'MyMenuItem'],
       ]),
     )
   }
-  if (spec.contextMenu) copy(variant, 'src/contextMenus.ts', join(REACT_SRC, 'src/contextMenus.ts'))
+  if (spec.contextMenu)
+    copy(variant, 'src/contextMenus.ts', join(REACT_SRC, 'src/contextMenus.ts'))
+  if (spec.menu)
+    copy(variant, 'src/menuActions.ts', join(REACT_SRC, 'src/menuActions.ts'))
 }
 
 // ── non-react ──────────────────────────────────────────────────────────────
 // A whole working app rather than a trimmed one: it is the example that proves
 // a Cytoscape Web app does not have to render anything, and cutting it down
 // would leave a template that demonstrates nothing.
-for (const file of ['index.html', 'vite.config.ts', 'tsconfig.json', 'tsconfig.node.json', 'tsconfig.test.json']) {
+for (const file of [
+  'index.html',
+  'vite.config.ts',
+  'tsconfig.json',
+  'tsconfig.node.json',
+  'tsconfig.test.json',
+]) {
   copy('non-react', file, join(NON_REACT_SRC, file))
 }
 copy('non-react', 'src/statistics.ts', join(NON_REACT_SRC, 'src/statistics.ts'))
-write('non-react', 'src/index.ts', "export { MyApp as default } from './MyApp'\n")
+write(
+  'non-react',
+  'src/index.ts',
+  "export { MyApp as default } from './MyApp'\n",
+)
 write(
   'non-react',
   'src/MyApp.ts',
@@ -297,4 +325,6 @@ write(
 write('non-react', 'test/appConfig.test.ts', smokeTest(0))
 write('non-react', 'AGENTS.md', AGENTS_PLACEHOLDER)
 
-console.log(`sync-templates: wrote ${Object.keys(VARIANTS).length + 1} templates to templates/`)
+console.log(
+  `sync-templates: wrote ${Object.keys(VARIANTS).length + 1} templates to templates/`,
+)
