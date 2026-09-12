@@ -305,15 +305,21 @@ find ~/.npm/_npx -path '*create-cytoscape-app/package.json' \
 npm view create-cytoscape-app version     # what the registry has
 ```
 
-**Fixes**, any of which work:
+**Fixes**, either of which works:
 
 ```bash
 npm create cytoscape-app@latest my-app      # name the tag
-npm create --prefer-online cytoscape-app my-app
 npm create cytoscape-app@<version> my-app   # or the exact version `npm view` printed
 ```
 
 To clear it outright: `npx clear-npx-cache`, or `npm cache clean --force`.
+
+`npm create --prefer-online cytoscape-app my-app` does **not** help. The flag
+governs how npm talks to the registry, but a bare `create-cytoscape-app` spec
+is looked up in the npx cache first, and a hit there never reaches the
+registry at all — measured on npm 11.19 with 0.4.0 cached and 0.4.1
+published: the cached copy ran, without the "will be installed" line. Naming
+a tag or a version changes the spec, which is what defeats the cache.
 
 > **When comparing versions, watch the ports.** `pickPort` returns the first
 > *free* port, so an occupied 6000 is skipped by every version — including ones
