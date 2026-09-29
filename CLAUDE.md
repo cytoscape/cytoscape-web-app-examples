@@ -22,14 +22,14 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 **Plugin apps** in this repo:
 
 - Import host stores and APIs via `cyweb/<ModuleName>` imports
-- Export React components (menus, panels) via their own `remoteEntry.js`
+- Expose one module, `./AppConfig`, via their own `remoteEntry.js`; panels are React components, Apps-menu entries are plain data
 - Are registered in the host's `src/assets/apps.json` (production) or `src/assets/apps.local.json` (local dev)
 
 ### App Registry
 
 | App                | Federation Name      | Port | Components                                                                              |
 | ------------------ | -------------------- | ---- | --------------------------------------------------------------------------------------- |
-| hello-world        | `hello`              | 2222 | HelloApp, HelloPanel                                                                    |
+| hello-world        | `hello`              | 2222 | HelloApp, HelloPanel (13 examples), menuActions (one apps-menu action that opens a dialog) |
 | network-statistics | `networkStatistics`  | 3333 | NetworkStatisticsApp (non-React — no UI components)                                     |
 | network-workflows  | `networkWorkflows`   | 7000 | NetworkWorkflowsApp, menuActions (two apps-menu actions), JupyterConnectorPanel          |
 | project-template   | `template`           | 5555 | TemplateApp, TemplatePanel, menuActions + context menu                                    |
@@ -46,13 +46,15 @@ Every plugin exports a `CyAppWithLifecycle` object that declares its identity, r
 // src/<AppName>.tsx
 import { lazy } from 'react'
 import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'
-const { version } = packageJson
+// Identity comes from the `cyweb` block and the standard fields in
+// package.json. Do NOT `import packageJson from '../package.json'`: that pulls
+// the whole file into the browser bundle to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
-  id: 'myApp', // must match the Module Federation name in vite.config.ts
-  name: 'My App',
-  description: '...',
+  id, // the Module Federation name, the CyApp id and the registry id at once
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 
@@ -71,8 +73,14 @@ export const MyApp: CyAppWithLifecycle = {
 ```
 
 - `slot: 'right-panel'` → rendered in the right-side App Panel
-- `slot: 'apps-menu'` → rendered under the Apps dropdown
+- `slot: 'apps-menu'` → a row the HOST renders under the Apps dropdown, from
+  `label`, `tooltip`, `icon` and `onClick(apis)`. It takes no `component`, and
+  nothing an app renders lives inside the menu: an action that needs UI opens it
+  with `apis.dialog.open(...)`
 - Context menus → registered in `mount()` via `context.apis.contextMenu`
+
+The legacy `CyApp.components` field (`ComponentType.Menu` / `ComponentType.Panel`)
+is deprecated and no app in this repository uses it. Do not introduce it.
 
 ### Entry Point Pattern
 
@@ -88,8 +96,21 @@ API hooks. The package provides ambient module declarations for all `cyweb/*` re
 
 ### vite.config.ts Pattern
 
-All plugin apps share the same federation block. Four things in it are load-bearing
-and each fails in a way that is hard to read, so do not simplify them away.
+Every app's `vite.config.ts` is the same three lines:
+
+```typescript
+import { defineCyWebApp } from '@cytoscape-web/app-runtime/vite'
+
+export default defineCyWebApp(import.meta.url)
+```
+
+Identity (`id`, `displayName`, `port`) lives in the `cyweb` block of the app's
+`package.json`. Extra Vite options go in `defineCyWebApp(import.meta.url, { vite: { … } })`;
+touching a field the SDK owns fails the build with the path named.
+
+`defineCyWebApp` (`packages/app-runtime/src/vite/`) generates the federation
+block below. Four things in it are load-bearing and each fails in a way that is
+hard to read, so do not simplify them away when working on the SDK.
 
 ```typescript
 federation({
@@ -119,8 +140,8 @@ federation({
    which resolves **no exports** against an ESM host and fails *silently*: the
    remote appears to load and exports nothing.
 2. **The production entry is a sentinel, not a URL.** The host publishes its own
-   entry URL on `window.__CYWEB_HOST__` at boot and `src/mfRuntimePlugin.ts`
-   swaps it in, so one build works against any deployment. Shipping
+   entry URL on `window.__CYWEB_HOST__` at boot and the SDK's
+   `runtime/mfRuntimePlugin.ts` swaps it in, so one build works against any deployment. Shipping
    `localhost:5500` instead would point a deployed app at the *end user's* own
    loopback address.
 3. **`runtimePlugins` is the load-bearing half of (2).** The resolver file on
@@ -198,10 +219,11 @@ New apps should use `cyweb/*Api` hooks instead.
 
 ```bash
 # In this repo root:
-npm run dev   # starts all 3 apps concurrently
+npm run dev   # starts all 4 apps concurrently
 
 # Or individually:
 npm run dev:hello-world
+npm run dev:network-statistics
 npm run dev:network-workflows
 npm run dev:project-template
 ```
@@ -210,13 +232,15 @@ npm run dev:project-template
 
 The host app (`cytoscape-web`) must be running on `localhost:5500`.
 
-To load local plugins in the host, copy `src/assets/apps.local.json` over `src/assets/apps.json` in the host repo. The `apps.local.json` points to `localhost:XXXX` dev server URLs.
+The host's dev server serves `src/assets/apps.local.json` as its app catalog, and that file already lists the four apps here at their `localhost:XXXX` dev server URLs — nothing in the host repo is edited or copied. Enable an app under **Apps → Manage Apps...**. Reload the host page after changing an app: HMR does not cross the federation boundary.
+
+An app that is not in `apps.local.json` installs through the link its own `npm run dev` prints (`http://localhost:5500/?installApp=…`).
 
 ### When Host API Changes
 
 When `cytoscape-web` adds or changes exposed modules:
 
-1. Update `remotes.d.ts` in affected apps to declare new `cyweb/*` modules
+1. Bump `@cytoscape-web/api-types` in the affected apps — it declares every `cyweb/*` module, so there is no `remotes.d.ts` to maintain. This changes `package.json`, so ask first (§1)
 2. No config change is needed for a host URL change — it is resolved at runtime (§3)
 3. Update component imports and usage to match new API signatures
 4. Run `npm run build` to verify no TypeScript errors
@@ -277,9 +301,10 @@ Shared config files at repo root apply to all apps:
 | Purpose                          | Path                                                     |
 | -------------------------------- | -------------------------------------------------------- |
 | App config (resources + lifecycle) | `hello-world/src/HelloApp.tsx`                          |
-| Panel component (12 API examples) | `hello-world/src/components/HelloPanel.tsx`              |
+| Panel component (13 API examples) | `hello-world/src/components/HelloPanel.tsx`              |
 | Apps-menu action (plain data)     | `project-template/src/menuActions.ts`                     |
-| MF config (canonical, commented)  | `project-template/vite.config.ts`                       |
+| Build config (what the SDK sets up) | `project-template/vite.config.ts`                     |
+| Federation block (generated)      | `packages/app-runtime/src/vite/`                        |
 | Template for new apps             | `project-template/`                                     |
 | App Developer Guide               | `guides/`                                               |
 | Host API types (source of truth)  | `../cytoscape-web/src/app-api/types/index.ts`           |
@@ -290,12 +315,14 @@ Shared config files at repo root apply to all apps:
 
 ## 8. Creating a New App
 
-1. Copy `project-template/` and rename it
-2. Update `package.json`: `name`, `version`
-3. Update `vite.config.ts`: `DEV_SERVER_PORT`, `name` in `federation()`
-4. Update `src/TemplateApp.tsx`: `id` (must match MF name), `name`, `resources`
-5. Replace panel/menu components in `src/components/`
-6. Register your app in the host's `src/assets/apps.local.json`
+1. Run `npm create cytoscape-app my-app`, or copy `project-template/` and rename it
+2. Update `package.json`: `name`, `version`, `description`, and the `cyweb`
+   block (`id`, `displayName`, `port`)
+3. Leave `vite.config.ts` as it is — it reads the `cyweb` block
+4. Update `src/TemplateApp.tsx`: the export name and `resources`
+5. Replace the panel in `src/components/`, the action in `src/menuActions.ts`
+   and the item in `src/contextMenus.ts`
+6. Run `npm run dev` and open the install link it prints
 
 See `guides/getting-started.md` for the full walkthrough.
 
@@ -312,5 +339,3 @@ their declarations to npm.
 themselves are independently versioned). The Webpack toolchain is gone; see
 `design/specifications/vite-migration/` for the plan, the measurements and the
 decisions that changed under measurement.
-
-See the parent workspace `CLAUDE.md` at `../CLAUDE.md` for the full phase roadmap.
