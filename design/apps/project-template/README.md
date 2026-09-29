@@ -64,5 +64,6 @@ cyweb/WorkspaceApi  // useWorkspaceApi() in TemplatePanel
 - [ ] Replace the action in `src/menuActions.ts` and the item in `src/contextMenus.ts`, or remove them
 - [ ] Leave `vite.config.ts` as it is
 - [ ] (No `remotes.d.ts` needed — `@cytoscape-web/api-types` declares every `cyweb/*` module)
+- [ ] Run `npm install` in the copy
 - [ ] Run `npm run dev` and open the install link it prints; nothing in the host repository is edited
 - [ ] Add a design doc in `design/apps/<your-app-name>/README.md`

@@ -140,10 +140,10 @@ federation({
    which resolves **no exports** against an ESM host and fails *silently*: the
    remote appears to load and exports nothing.
 2. **The production entry is a sentinel, not a URL.** The host publishes its own
-   entry URL on `window.__CYWEB_HOST__` at boot and the SDK's
-   `runtime/mfRuntimePlugin.ts` swaps it in, so one build works against any deployment. Shipping
-   `localhost:5500` instead would point a deployed app at the *end user's* own
-   loopback address.
+   entry URL on `window.__CYWEB_HOST__` at boot and
+   `packages/app-runtime/src/runtime/mfRuntimePlugin.ts` swaps it in, so one
+   build works against any deployment. Shipping `localhost:5500` instead would
+   point a deployed app at the *end user's* own loopback address.
 3. **`runtimePlugins` is the load-bearing half of (2).** The resolver file on
    its own is inert; without this line the app silently keeps its compiled-in
    entry.
@@ -322,7 +322,9 @@ Shared config files at repo root apply to all apps:
 4. Update `src/TemplateApp.tsx`: the export name and `resources`
 5. Replace the panel in `src/components/`, the action in `src/menuActions.ts`
    and the item in `src/contextMenus.ts`
-6. Run `npm run dev` and open the install link it prints
+6. If you copied `project-template/`, run `npm install` in the copy; the
+   generator has already installed the dependencies
+7. Run `npm run dev` and open the install link it prints
 
 See `guides/getting-started.md` for the full walkthrough.
 
