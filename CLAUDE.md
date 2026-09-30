@@ -79,8 +79,12 @@ export const MyApp: CyAppWithLifecycle = {
   with `apis.dialog.open(...)`
 - Context menus → registered in `mount()` via `context.apis.contextMenu`
 
-The legacy `CyApp.components` field (`ComponentType.Menu` / `ComponentType.Panel`)
-is deprecated and no app in this repository uses it. Do not introduce it.
+`CyApp.components` (`ComponentType.Menu` / `ComponentType.Panel`) was removed
+from the App API in `1.0.0-beta.5` (cytoscape/cytoscape-web#786). The host
+ignores the field, and `cyweb/ApiTypes` no longer exports `ComponentType`, so an
+app that references it does not load. The beta.4 types this repository still
+depends on declare both, so the type checker will not stop you: do not
+introduce it.
 
 ### Entry Point Pattern
 
