@@ -168,9 +168,11 @@ defineCyWebApp(import.meta.url, {
 ```
 
 `react: false` exists because `network-statistics` is a non-React app that legitimately
-declares `configuredShared: {}` and no peer dependencies. `exposes` exists because
-`hello-world` exposes a second module (`./NetworkSummaryMenuItem`) as its strongest test of
-the shared-React singleton.
+declares `configuredShared: {}` and no peer dependencies. `exposes` was added because
+`hello-world` exposed a second module (`./NetworkSummaryMenuItem`) as its strongest test of
+the shared-React singleton. That expose went away in the beta.4 migration, and since App API
+`1.0.0-beta.5` (cytoscape/cytoscape-web#786) the host loads only `./AppConfig`, so no example
+uses the option and the host never loads an extra expose.
 
 **Removed relative to revision 1:** an `id` override (identity has exactly one source — §4.3)
 and wholesale `shared` replacement (it would defeat the centralization that P-1 depends on).
