@@ -18,7 +18,7 @@ Reference implementation and template repository for Cytoscape Web plugin apps b
 cytoscape-web-app-examples/
 ├── hello-world/        # Port 2222, federation name: hello
 ├── network-statistics/ # Port 3333, federation name: networkStatistics (non-React)
-├── network-workflows/  # Port 7000, federation name: networkWorkflows
+├── network-workflows/  # Port 7001, federation name: networkWorkflows
 ├── project-template/   # Port 5555, federation name: template
 ├── design/             # Design docs (specifications + per-app)
 ├── docs/               # GitHub Pages target (compiled JS bundles — do not add docs here)

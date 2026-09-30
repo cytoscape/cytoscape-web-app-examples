@@ -196,7 +196,7 @@ describe('scaffold', () => {
 describe('port defaults', () => {
   it('reserves the ports the examples and the host already bind', () => {
     expect(RESERVED_PORTS).toContain(5500)
-    for (const p of [2222, 3333, 5555, 6100, 7000]) expect(RESERVED_PORTS).toContain(p)
+    for (const p of [2222, 3333, 5555, 6100, 7001]) expect(RESERVED_PORTS).toContain(p)
   })
 })
 

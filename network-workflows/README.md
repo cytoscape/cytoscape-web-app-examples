@@ -7,8 +7,8 @@ events combine into a single user-facing feature.
 | Field | Value |
 |---|---|
 | Federation name | `networkWorkflows` |
-| Dev server port | `7000` |
-| Entry point (local dev) | `networkWorkflows@http://localhost:7000/remoteEntry.js` |
+| Dev server port | `7001` (7000 is macOS's AirPlay Receiver) |
+| Entry point (local dev) | `networkWorkflows@http://localhost:7001/remoteEntry.js` |
 
 ---
 
@@ -52,7 +52,7 @@ npm run dev:local           # → http://localhost:5500
 # Terminal 2 — start this plugin
 cd cytoscape-web-app-examples/network-workflows
 npm install
-npm run dev                  # → http://localhost:7000
+npm run dev                  # → http://localhost:7001
 ```
 
 Open `http://localhost:5500`, then **Apps → App Settings** to enable

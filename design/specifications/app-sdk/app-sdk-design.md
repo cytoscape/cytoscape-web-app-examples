@@ -313,7 +313,7 @@ npm create cytoscape-app@latest my-app -- \
 | `--package-name` | derived from the directory name |
 | `--id` | derived from the directory name, camelCased and validated |
 | `--display-name` | derived from `--id` |
-| `--port` | first free port from 6000, skipping 5500 and the examples' 2222/3333/5555/6100/7000 |
+| `--port` | first free port from 6000, skipping 5500 and the examples' 2222/3333/5555/6100/7001 |
 | `--template` | `panel` · `menu` · `context-menu` · `non-react` · `full` |
 | `--yes` | accept every default, never prompt |
 | `--pm` | `npm` or `pnpm`, both formally supported |

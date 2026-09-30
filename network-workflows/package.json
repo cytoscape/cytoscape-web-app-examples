@@ -23,7 +23,7 @@
   "cyweb": {
     "id": "networkWorkflows",
     "displayName": "Network Workflow Examples",
-    "port": 7000
+    "port": 7001
   },
   "//peerDependencies": [
     "Provided by the HOST as Module Federation singletons — the share block",
