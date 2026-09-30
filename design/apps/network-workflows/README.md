@@ -10,39 +10,43 @@ external web app integration via `postMessage`.
 | Federation name | `networkWorkflows` |
 | Dev port | 7000 |
 | App config file | `network-workflows/src/NetworkWorkflowsApp.tsx` |
-| Host API phase | Phase 0 + Phase 1 (planned migration) |
+| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.4` |
 
-## Components
+## Resources
 
-### Menu Components
+Everything the app contributes is declared in the `resources` array of
+`NetworkWorkflowsApp.tsx`. The app has no `mount()` or `unmount()`.
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `CreateNetworkMenu` | `src/components/CreateNetworkMenu.tsx` | Creates a sample network via `cyweb/CreateNetwork` |
-| `CreateNetworkFromCx2Menu` | `src/components/CreateNetworkFromCx2Menu.tsx` | Creates a network by loading a CX2 file |
+### Apps-menu entries
 
-### Panel Components
+An `'apps-menu'` entry is plain data: a `label` and an `onClick(apis)`. The host
+renders the row and closes the dropdown itself, so there is no menu component.
 
-| Component | File | Purpose |
-|-----------|------|---------|
+| Resource id | Label | Action (`src/menuActions.ts`) | Purpose |
+|-------------|-------|-------------------------------|---------|
+| `CreateNetworkMenu` | Create Example Network | `createExampleNetwork` | Creates a three-node network from an edge list via `apis.network.createNetworkFromEdgeList` |
+| `CreateNetworkFromCx2Menu` | Create Network from CX2 | `createNetworkFromSampleCx2` | Fetches a sample CX2 file and creates a network via `apis.network.createNetworkFromCx2` |
+
+### Panel components
+
+| Resource id | File | Purpose |
+|-------------|------|---------|
 | `JupyterConnectorPanel` | `src/components/JupyterConnectorPanel.tsx` | Receives CX2 data from Jupyter via `postMessage` and creates a network |
 
 ## Key Design Decisions
 
-- **Separated from `hello-world`** — keeps the starter example minimal while preserving richer workflows elsewhere.
-- **Two menu items + one panel** — covers both `ComponentType.Menu` and `ComponentType.Panel` with realistic actions.
+- **Separated from `hello-world`** — keeps the API tour in one app and the richer workflows in another.
+- **Two menu entries + one panel** — covers both the `'apps-menu'` and the `'right-panel'` slot with realistic actions.
+- **Menu actions in their own file** — `menuActions.ts` holds plain functions that take `apis`, so each can be unit tested with a stub and read without scrolling past the registration.
 - **Jupyter integration** — demonstrates the parent-child `postMessage` pattern using CX2 payloads.
 
 ## Host Modules Used
 
 ```typescript
-cyweb/WorkspaceStore
-cyweb/CreateNetwork
-cyweb/CreateNetworkFromCx2
+cyweb/ApiTypes    // types only: CyAppWithLifecycle, AppContextApis, Cx2
+cyweb/NetworkApi  // useNetworkApi() in JupyterConnectorPanel
 ```
 
-## Planned Updates
-
-- [ ] Migrate menu actions to `cyweb/NetworkApi`
-- [ ] Replace raw store access with `cyweb/WorkspaceApi`
-- [ ] Add `ApiResult<T>` handling examples after the migration
+The menu actions import no host module at runtime: the API arrives as the
+`onClick` argument. Every call returns an `ApiResult<T>` and is checked with
+`result.success`.

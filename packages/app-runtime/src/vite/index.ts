@@ -125,9 +125,11 @@ export interface CyWebAppOptions {
   /**
    * Extra federated modules, merged with the mandatory `./AppConfig`.
    *
-   * Only needed when the host must load something in addition to the app
-   * config — `hello-world` exposes a second menu item this way, as its test
-   * that React really is a single shared instance across the boundary.
+   * The host never loads one: since App API 1.0.0-beta.5
+   * (cytoscape/cytoscape-web#786) it loads only `./AppConfig`, so an extra
+   * expose serves some other consumer of this remote. No example app uses it;
+   * `hello-world` exposed a second menu item this way until its beta.4
+   * migration.
    */
   readonly exposes?: Readonly<Record<string, string>>
 
