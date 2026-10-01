@@ -585,7 +585,7 @@ _Design: §4.6_
 - [x] **Every prompt has a flag equivalent.** A prompt without one is a bug: it
       makes the agent path unusable
 - [x] Port picker takes the first free port from 6000, skipping 5500 and the
-      examples' 2222 / 3333 / 5555 / 6100 / 7000
+      examples' 2222 / 3333 / 5555 / 6100 / 7001
 - [x] **All validation before any filesystem side effect** — non-empty or
       symlinked target, unknown flag, reserved or malformed id, occupied port,
       invalid SemVer, `./AppConfig` expose collision

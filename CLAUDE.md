@@ -31,7 +31,7 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 | ------------------ | -------------------- | ---- | --------------------------------------------------------------------------------------- |
 | hello-world        | `hello`              | 2222 | HelloApp, HelloPanel (13 examples), menuActions (one apps-menu action that opens a dialog) |
 | network-statistics | `networkStatistics`  | 3333 | NetworkStatisticsApp (non-React — no UI components)                                     |
-| network-workflows  | `networkWorkflows`   | 7000 | NetworkWorkflowsApp, menuActions (two apps-menu actions), JupyterConnectorPanel          |
+| network-workflows  | `networkWorkflows`   | 7001 | NetworkWorkflowsApp, menuActions (two apps-menu actions), JupyterConnectorPanel          |
 | project-template   | `template`           | 5555 | TemplateApp, TemplatePanel, menuActions + context menu                                    |
 
 ---

@@ -70,7 +70,7 @@ export const TEMPLATES = ['panel', 'menu', 'context-menu', 'non-react', 'full'] 
 export type Template = (typeof TEMPLATES)[number]
 
 /** Ports the example apps bind, plus the host's. A new app should avoid them. */
-export const RESERVED_PORTS = [5500, 2222, 3333, 5555, 6100, 7000]
+export const RESERVED_PORTS = [5500, 2222, 3333, 5555, 6100, 7001]
 
 /**
  * Ports Chrome and Firefox refuse to load over http, whatever is listening.

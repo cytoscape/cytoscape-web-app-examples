@@ -72,7 +72,7 @@ all at the same time — before this block those were three separate strings tha
 had to be kept in agreement by hand.
 
 Pick a port nothing else uses. The examples occupy 2222, 3333, 5555, 6100 and
-7000, and the host takes 5500.
+7001, and the host takes 5500.
 
 ### 2. `vite.config.ts`
 
