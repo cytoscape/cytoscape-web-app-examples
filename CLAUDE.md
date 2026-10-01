@@ -82,8 +82,10 @@ export const MyApp: CyAppWithLifecycle = {
 `CyApp.components` (`ComponentType.Menu` / `ComponentType.Panel`) was removed
 from the App API in `1.0.0-beta.5` (cytoscape/cytoscape-web#786). The host
 ignores the field, and `cyweb/ApiTypes` no longer exports `ComponentType`, so an
-app that references it does not load. The beta.4 types this repository still
-depends on declare both, so the type checker will not stop you: do not
+app that references it does not load. The published beta.4 types that
+`package.json` still names declare both, so on a plain `npm install` the type
+checker will not stop you; with the local beta.5 types (see "Developing
+against an unpublished api-types" below) it does. Either way: do not
 introduce it.
 
 ### Entry Point Pattern
@@ -248,6 +250,30 @@ When `cytoscape-web` adds or changes exposed modules:
 2. No config change is needed for a host URL change — it is resolved at runtime (§3)
 3. Update component imports and usage to match new API signatures
 4. Run `npm run build` to verify no TypeScript errors
+
+### Developing against an unpublished api-types
+
+When the host's `development` is ahead of npm (`1.0.0-beta.5` until it is
+published), install the host's types from a local tarball without touching
+`package.json` or the lockfile:
+
+```bash
+# in cytoscape-web
+npm run build:api-types
+npm pack -w packages/api-types --ignore-scripts --pack-destination /tmp
+
+# in this repository
+npm install --no-save /tmp/cytoscape-web-api-types-<version>.tgz
+npm ls @cytoscape-web/api-types   # every workspace should show <version>
+```
+
+Not `npm link` or a symlink: the declarations `import('react')`, and through
+a link TypeScript resolves that from the host's `node_modules`, a different
+`@types/react` from this repository's — under `skipLibCheck: false` the two
+collide. Not a `file:` range either: it would commit a path outside the
+repository. Any later `npm install` / `npm ci` restores the published version,
+and a change to the host's types needs a fresh pack — re-run both halves.
+Bump the ranges (step 1 above) only once the version is on npm.
 
 ### Publishing
 
