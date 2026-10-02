@@ -3,8 +3,8 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: PLANNING (2026-10-01).** The design is at revision 4, after three reviews. No
-> implementation has started. Work happens on the `cookbook` branch of this repository.
+> **Status: PLANNING (2026-10-01).** The design is at revision 5: three reviews, then a
+> catalog of 25 recipes with a backlog for later additions. No implementation has started. Work happens on the `cookbook` branch of this repository.
 >
 > **Release gate.** Nothing merges into `development` until
 > `@cytoscape-web/api-types@1.0.0-beta.5` is on npm (design D-4). Until then, every
@@ -184,22 +184,38 @@ catalog grows.
 
 _Design: §4.7, §4.10_
 
-The remaining host-wide recipes, and the generation path for `llms.txt` and `llms-full.txt`.
+The other 17 host-wide recipes, and the generation path for `llms.txt` and
+`llms-full.txt`.
+
+### Pre-read files
+
+| File | Purpose |
+| ---- | ------- |
+| `cytoscape-web/src/app-api/core/networkApi.ts` | `createNetworkFromEdgeList` takes only `[source, target, interaction]`; `createNetworkFromCx2` and its `navigate` / `addToWorkspace` |
+| `cytoscape-web/src/app-api/core/exportApi.ts` | `exportToCx2`, the first step of `subnetwork-from-selection` |
+| `cytoscape-web/src/app-api/core/tableApi.ts` | `importTableFromTsv` and its `keyColumn` (default `id`) |
+| `cytoscape-web/src/models/VisualStyleModel/VisualPropertyName.ts` | `NodeBorderWidth`, `NodeBorderColor`, `NodeVisibility`, `EdgeVisibility` |
 
 ### Deliverables — recipes (§4.10)
 
 Each recipe has a complete header, covers the pitfall topics for its kind, and has a case
 (see the Recipe status table below).
 
+- [ ] `network/create-network-from-table`
+- [ ] `network/subnetwork-from-selection`
 - [ ] `elements/add-edges-between-selected`
 - [ ] `elements/delete-selected`
-- [ ] `data/add-computed-column`
+- [ ] `data/add-computed-column`, with degree as its example
 - [ ] `data/read-column-values-safely`
+- [ ] `data/join-table-by-key`
 - [ ] `style/size-nodes-by-degree`
 - [ ] `style/color-by-category`
 - [ ] `style/label-from-column`
 - [ ] `style/highlight-with-bypass`
-- [ ] `selection/select-neighbors`
+- [ ] `style/set-style-defaults`, whose "Don't" covers a bypass on every node
+- [ ] `style/emphasize-by-threshold`
+- [ ] `style/hide-by-threshold`
+- [ ] `selection/select-neighbors`, taking a hop count
 - [ ] `selection/select-by-attribute`
 - [ ] `layout/run-layout-and-wait`
 
@@ -223,7 +239,7 @@ Each recipe has a complete header, covers the pitfall topics for its kind, and h
 
 ### Verification (Phase 2)
 
-- [ ] 14 recipes, and all their cases pass
+- [ ] 20 recipes (Phases 1 and 2), and all their cases pass
 - [ ] Deploy mode refuses the current, local-tarball `verified.json`, and is **seen failing**
 - [ ] The structure check fails on a fixture with a missing recipe, and on one with a link to
       a nonexistent path
@@ -256,7 +272,7 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 
 - [ ] † `layout/register-app-layout`
 - [ ] † `ui/menu-action-with-dialog`
-- [ ] † `ui/node-context-menu`
+- [ ] † `ui/link-out-from-node` (formerly `node-context-menu`)
 - [ ] † `ui/open-own-panel-after-action`
 - [ ] † `ui/persist-results-per-network`
 
@@ -268,7 +284,7 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 
 ### Verification (Phase 3)
 
-- [ ] All 19 recipes have a case, and every case passes. There are no exemptions (D-9)
+- [ ] All 25 recipes have a case, and every case passes. There are no exemptions (D-9)
 - [ ] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, and one that
       destructures `apis`
 - [ ] `verified.json` is refreshed; its digest now covers `runner/app`
@@ -366,29 +382,36 @@ _Design: D-2, §5_
 
 ## Recipe status
 
-The kind decides the required pitfall topics (§4.2). The kinds below are an initial
-assignment; `WRITING-RECIPES.md` is authoritative. "Runner" means the minimal runner; "App"
-means the Phase 3 verification app.
+The kind decides the required pitfall topics (§4.2); a recipe may have more than one. The
+kinds below are an initial assignment; `WRITING-RECIPES.md` is authoritative. "Runner" means
+the minimal runner; "App" means the Phase 3 verification app. Recipes still in the backlog
+(design §4.12) are not listed here until they enter the catalog (D-11).
 
 | Recipe | Kind | Verified by | Phase | Types | Case passes |
 |---|---|---|---|---|---|
 | ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [ ] | [ ] |
 | ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [ ] | [ ] |
 | `events/follow-current-network` | Events and async | Runner | 1 | [ ] | [ ] |
+| `network/create-network-from-table` | Mutation | Runner | 2 | [ ] | [ ] |
+| `network/subnetwork-from-selection` | Mutation | Runner | 2 | [ ] | [ ] |
 | `elements/add-edges-between-selected` | Mutation | Runner | 2 | [ ] | [ ] |
 | `elements/delete-selected` | Mutation | Runner | 2 | [ ] | [ ] |
 | `data/add-computed-column` | Mutation | Runner | 2 | [ ] | [ ] |
 | `data/read-column-values-safely` | Numeric mapping | Runner | 2 | [ ] | [ ] |
+| `data/join-table-by-key` | Mutation | Runner | 2 | [ ] | [ ] |
 | `style/size-nodes-by-degree` | Numeric mapping | Runner | 2 | [ ] | [ ] |
 | `style/color-by-category` | — | Runner | 2 | [ ] | [ ] |
 | `style/label-from-column` | — | Runner | 2 | [ ] | [ ] |
 | `style/highlight-with-bypass` | Mutation | Runner | 2 | [ ] | [ ] |
+| `style/set-style-defaults` | Mutation | Runner | 2 | [ ] | [ ] |
+| `style/emphasize-by-threshold` | Numeric mapping | Runner | 2 | [ ] | [ ] |
+| `style/hide-by-threshold` | Numeric mapping, Mutation | Runner | 2 | [ ] | [ ] |
 | `selection/select-neighbors` | — | Runner | 2 | [ ] | [ ] |
 | `selection/select-by-attribute` | — | Runner | 2 | [ ] | [ ] |
 | `layout/run-layout-and-wait` | Events and async | Runner | 2 | [ ] | [ ] |
 | † `layout/register-app-layout` | — | App | 3 | [ ] | [ ] |
 | † `ui/menu-action-with-dialog` | — | App | 3 | [ ] | [ ] |
-| † `ui/node-context-menu` | — | App | 3 | [ ] | [ ] |
+| † `ui/link-out-from-node` | — | App | 3 | [ ] | [ ] |
 | † `ui/open-own-panel-after-action` | — | App | 3 | [ ] | [ ] |
 | † `ui/persist-results-per-network` | Persistence | App | 3 | [ ] | [ ] |
 
@@ -442,6 +465,11 @@ Not yet written. Copy the record here each time it is refreshed.
 - [ ] **Recipes inside an npm package** (D-3) — revisited after the API reaches GA
 - [ ] **The runner in CI** (O-2) — needs a deployed beta.5 host
 - [ ] **The public Cookbook app** — Phase 6
+- [ ] **The backlog** (design §4.12): seven planned recipes and four that need a feasibility
+      check, added one at a time once Phase 3 is complete (D-11, O-1). Each addition adds a
+      row to the Recipe status table
+- [ ] **The API gaps** in design §4.12 (image export, zoom to selection, laying out only the
+      selection, groups, annotations, legends) — host-side work, not recipes
 - [ ] **`AGENTS.md` content (E-1b, E-1c), `api-surface.json` (E-3), a full E-1a sweep** —
       outside this project (D-1)
 

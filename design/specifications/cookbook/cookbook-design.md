@@ -1,7 +1,8 @@
 # Cookbook — Design
 
-> Status: **Draft, revision 4.** Revisions 2–4 incorporate three design reviews; §8 records
-> how each point was handled, and §9 lists what is settled and what is still open.
+> Status: **Draft, revision 5.** Revisions 2–4 incorporate three design reviews; §8 records
+> how each point was handled. Revision 5 extends the catalog (§4.10) and adds a backlog
+> (§4.12). §9 lists what is settled and what is still open.
 >
 > Scope carved out of [`../developer-onboarding/developer-onboarding-roadmap.md`](../developer-onboarding/developer-onboarding-roadmap.md)
 > (items **B-2** recipes and **E-2** `llms.txt`). This document is self-contained and
@@ -414,19 +415,40 @@ skips any version already on npm, so the scaffolder needs a version bump of its 
 
 ### 4.10 Initial catalog
 
-There are 19 recipes. ★ marks the two motivating tasks. † marks recipes that use
-owner-bound domains, which are verified by the Phase 3 app. Phase 1 builds the two ★
-recipes and `follow-current-network`.
+There are 25 recipes. ★ marks the two motivating tasks. † marks recipes that use
+owner-bound domains, which are verified by the Phase 3 app.
+
+- **Phase 1** builds the two ★ recipes and `follow-current-network`.
+- **Phase 2** builds the other 17 host-wide recipes.
+- **Phase 3** builds the five † recipes.
 
 | Category | Recipes |
 |---|---|
+| network | `create-network-from-table`, `subnetwork-from-selection` |
 | elements | ★ `add-nodes-to-network`, `add-edges-between-selected`, `delete-selected` |
-| data | `add-computed-column`, `read-column-values-safely` |
-| style | ★ `color-nodes-by-numeric-column`, `size-nodes-by-degree`, `color-by-category`, `label-from-column`, `highlight-with-bypass` |
+| data | `add-computed-column`, `read-column-values-safely`, `join-table-by-key` |
+| style | ★ `color-nodes-by-numeric-column`, `size-nodes-by-degree`, `color-by-category`, `label-from-column`, `highlight-with-bypass`, `set-style-defaults`, `emphasize-by-threshold`, `hide-by-threshold` |
 | selection | `select-neighbors`, `select-by-attribute` |
 | layout | `run-layout-and-wait`, † `register-app-layout` |
 | events | `follow-current-network` |
-| ui | † `menu-action-with-dialog`, † `node-context-menu`, † `open-own-panel-after-action`, † `persist-results-per-network` |
+| ui | † `menu-action-with-dialog`, † `link-out-from-node`, † `open-own-panel-after-action`, † `persist-results-per-network` |
+
+Notes on scope:
+
+- **The six recipes added in revision 5 follow the Cytoscape Desktop tutorials.** "Importing
+  Network From Table", "Importing Data From Tables", "Filtering by Selection" and "Basic Data
+  Visualization" walk through these steps: build a network from a table, join data by a key
+  column, set defaults, emphasize the nodes past a threshold, hide what fails a filter, and
+  extract a subnetwork from the selection.
+- **`set-style-defaults` exists mainly for its "Don't".** Agents asked to "make every node
+  red" set a bypass on every node. The recipe shows the precedence of default, mapping and
+  bypass.
+- **`select-neighbors` takes a hop count**, for first and second neighbors as in "Basic Data
+  Visualization".
+- **`add-computed-column` uses degree as its example.** Other centralities belong in
+  `analysis/` (§4.12).
+- **`link-out-from-node`** (formerly `node-context-menu`) opens an external database page for
+  a node from its context menu, the task the tutorial performs.
 
 ### 4.11 Documents
 
@@ -436,6 +458,45 @@ recipes and `follow-current-network`.
 | `cookbook/WRITING-RECIPES.md` | Anatomy and tags, required pitfall topics, import rules, error propagation, preconditions, side effects, unsubscribing, and the generator checks |
 | `cookbook/runner/README.md` | Starting a host (including from a standalone clone), running one case, fixture isolation and cleanup, reading a failure, and refreshing `verified.json` |
 | `cookbook-checklist.md` (here) | Per-recipe status of the type check and the real-host case, the current `verified.json`, the release-order checks, and the agent acceptance prompts with their results |
+
+### 4.12 Backlog
+
+These recipes are not in the catalog yet. They will be implemented later, one at a time. A
+backlog recipe enters §4.10 only with a passing real-host case (D-9). The same change updates
+§4.10 and the checklist's status table.
+
+**Planned** — feasible with the current API:
+
+| Recipe | Source | Main APIs | Distinct pitfalls |
+|---|---|---|---|
+| `network/load-cx2-from-url` | "Loading Networks"; NDEx | `fetch` → `network.createNetworkFromCx2` | CORS; CX2 validation failures; `navigate` and `addToWorkspace` |
+| `export/download-network-or-table` | "Saving Results" | `export.exportToCx2`, `table.exportTableToTsv` | The browser download; file names |
+| `analysis/select-shortest-path` | A common graph operation | `element` traversal, `selection` | Directed versus undirected; no path; selecting the path's edges |
+| `analysis/find-connected-components` | NetworkAnalyzer and clusterMaker basics | `element` traversal, `table` | Isolated nodes; selecting the largest component versus coloring every component |
+| `analysis/call-web-service` | App Cookbook "Web Services"; the enrichment tutorials | `fetch`, `table.setValues` | Results that arrive after a switch; partial writes; CORS |
+| † `ui/long-running-task-with-progress` | App Cookbook "task monitor" | `dialog.open` | Cancel; the app disabled during a run; never awaiting inside `mount()` |
+| `layout/arrange-nodes-programmatically` | App Cookbook node positions; "Advanced Visualization" | `viewport.getNodePositions`, `updateNodePositions` | Nodes without positions (`missing`); arranging only the selection |
+
+**Needs a feasibility check first:**
+
+- `style/node-charts-from-columns` ("Custom Graphics and Labels"): the visual properties
+  `NodeImageChart1`–`9` exist, but the format of a chart value has not been checked.
+- † `style/custom-node-graphics`: `nodeGraphics.setRenderHook`. It overlaps the previous
+  recipe; keep one of the two.
+- `style/apply-style-from-another-network`: `visualStyle.applyVisualStyle` and `switchStyle`.
+- `style/edge-width-by-weight`: the same mapping as `size-nodes-by-degree`, on the edge
+  table. Decide whether it is a recipe of its own or a variant of that one.
+
+**API gaps — not recipes.** These operations are frequent in the Cytoscape tutorials, but the
+current App API has no way to perform them. They are recorded for the host, outside this
+project's scope (§2):
+
+- **Image export (PNG, SVG, PDF).** `ExportApi` has only `exportToCx2`.
+- **Zooming to the selection, or setting a zoom level.** `viewport.fit(networkId)` fits the
+  whole network only.
+- **Laying out only the selected nodes.** `ApplyLayoutOptions` has only `algorithmName` and
+  `fitAfterLayout`.
+- **Groups (collapse and expand), annotations and legends.**
 
 ## 5. Implementation phases
 
@@ -457,7 +518,7 @@ typecheck wiring, `wiring/`, `USING-RECIPES.md` and `WRITING-RECIPES.md`, the ge
 `finally` cleanup, `verified.json`, and the README link. Problems with imports and
 readiness surface here, before the catalog grows.
 
-**Phase 2 — Catalog.** The remaining host-wide recipes with their cases, deploy-time
+**Phase 2 — Catalog.** The other 17 host-wide recipes with their cases, deploy-time
 `llms.txt` / `llms-full.txt` generation, and the CI jobs for `--check` and the
 generated-file structure.
 
@@ -521,7 +582,7 @@ mechanism chosen differs from the review's wording, the last column says so.
 | 6 | Run the runner earlier; verify owner-bound APIs without the public app; every recipe needs a case | Accepted. Minimal runner in Phase 1, verification app in Phase 3 |
 | 7 | Say where `llms.txt` links point; Pages publishes from `main`; narrow O-1 | Accepted. §4.7. To pin the revision, the files are generated at deploy time rather than committed |
 | 8 | Fix the contradictions before linking | Accepted as Phase 0, limited to those found so far and those on linked pages; a full E-1a sweep stays out of scope |
-| — | Pitfall topics per kind of recipe; the 15-versus-19 mismatch; the README recipe table missing from the generated outputs | Accepted. §4.2 table; §4.10 states 19; Goal 7 no longer promises a README recipe table, since the README links to the index |
+| — | Pitfall topics per kind of recipe; the 15-versus-19 mismatch; the README recipe table missing from the generated outputs | Accepted. §4.2 table; §4.10 states 19 (25 since revision 5); Goal 7 no longer promises a README recipe table, since the README links to the index |
 
 ### Review of revision 2 (2026-09-30)
 
@@ -566,9 +627,11 @@ mechanism chosen differs from the review's wording, the last column says so.
   API reference.**
 - **D-9. No exemptions.** A recipe without a passing real-host case is not in the catalog.
 - **D-10. The cookbook is live before the scaffolder points at it** (§4.8).
+- **D-11. The catalog grows from the backlog.** §4.10 is what is committed to, and §4.12
+  records the rest. A recipe moves from the backlog to the catalog only with a passing case.
 
 **Open**
 
-- **O-1. The final category and recipe list.** §4.10 is a starting point.
+- **O-1. Which backlog recipes (§4.12) to add next, and in what order.**
 - **O-2. Which host the runner uses in CI** once a beta.5 host is deployed (dev1 or
   production).
