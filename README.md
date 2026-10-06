@@ -35,6 +35,11 @@ through Module Federation (Vite). Apps can add:
 - menu items in the **Apps** dropdown
 - context menu actions for right-click workflows
 
+> **Building a service app instead?** Cytoscape Web also supports *service
+> apps*: web services that receive network or table data from Cytoscape Web and
+> return a result for it to apply. They are not built with this repository; see
+> the [service app specification](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>).
+
 ---
 
 ## Quick Start
