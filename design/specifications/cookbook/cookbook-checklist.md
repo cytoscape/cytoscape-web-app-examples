@@ -3,17 +3,21 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: PLANNING (2026-10-01).** The design is at revision 5: three reviews, then a
-> catalog of 25 recipes with a backlog for later additions. No implementation has started. Work happens on the `cookbook` branch of this repository.
+> **Status: PLANNING (2026-10-07).** The design is at revision 6: three reviews, a catalog of
+> 25 recipes with a backlog, and a plan for the published beta.5. No implementation has
+> started. Work happens on the `cookbook` branch of this repository.
 >
-> **Release gate.** Nothing merges into `development` until
-> `@cytoscape-web/api-types@1.0.0-beta.5` is on npm (design D-4). Until then, every
-> verification runs against the local tarball, and `verified.json` records that. Deploy-time
-> generation refuses that record by design. Only Phase 5 lifts the gate.
+> **beta.5 is on npm** (2026-10-05, `latest`). The bump to it is a **prerequisite pull
+> request** outside this project (design D-4), tracked below so that Phase 1 does not start
+> without it.
 >
-> **Phase order.** Phase 0 comes before any new link to the cookbook (design Goal 6).
-> Phase 1 comes before everything else. Phases 2 and 3 each need only Phase 1. Phase 5 needs
-> Phases 0–4.
+> **Each phase merges on its own** (design D-12). When a phase's verification passes,
+> `cookbook` merges into `development` with a current `verified.json`, which CI enforces. A
+> `main` deploy between phases publishes the catalog verified so far.
+>
+> **Phase order.** Phase 0 comes before any new link to the cookbook (design Goal 6), and
+> does not need the prerequisite. Phase 1 needs the prerequisite and comes before everything
+> else. Phases 2 and 3 each need only Phase 1. Phase 5 needs `llms.txt` to be live.
 
 _Design: [cookbook-design.md](cookbook-design.md) — full rationale and the reasoning behind every item below. Section references (§) point into it._
 
@@ -28,9 +32,35 @@ verification.
 `cytoscape-web-app-examples/`. Paths prefixed `cytoscape-web/` are in the **host** repository,
 which this project only reads and runs. It changes no host file.
 
-**Local setup, before any phase:** install the host's beta.5 types from a local tarball, as
-described in `CLAUDE.md` under "Developing against an unpublished api-types". Re-run it after
-any `npm install` or `npm ci` here.
+**Local setup:** once the prerequisite pull request is merged into `cookbook`, a plain
+`npm install` resolves beta.5 from the registry. Until then, install it without saving:
+`npm install --no-save @cytoscape-web/api-types@1.0.0-beta.5`. The local-tarball procedure in
+`CLAUDE.md` is for a version that is not on npm yet, which beta.5 no longer is.
+
+---
+
+## Prerequisite: Adopt the published beta.5 ⬜ **NOT STARTED** — separate pull request
+
+_Design: §5 Dependencies, D-4_
+
+Ordinary maintenance that every app needs, so it lands on `development` in its own pull
+request rather than inside the cookbook. Tracked here because Phase 1's CI cannot typecheck
+the cookbook without it. **It changes `package.json` files: confirm with the maintainer
+first** (`CLAUDE.md` §1).
+
+- [ ] Move `@cytoscape-web/api-types` from `^1.0.0-beta.4` to `^1.0.0-beta.5` in the root and
+      in all four apps, and update the lockfile
+- [ ] `API_TYPES_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` →
+      `1.0.0-beta.5`; the exact-pin test in `scaffold.test.ts` passes
+- [ ] Update `CLAUDE.md`: the note that the repository still depends on beta.4 types, and the
+      "(`1.0.0-beta.5` until it is published)" example in "Developing against an unpublished
+      api-types"
+- [ ] `npm run typecheck`, `npm test`, `npm run build` and `npm run verify:federation` pass
+- [ ] Bump the `create-cytoscape-app` version (npm has `0.4.1`; the release workflow skips a
+      version already published), release it, and confirm it was **published, not skipped**
+- [ ] Outside the monorepo, a project scaffolded with the released version pins
+      `1.0.0-beta.5` and builds
+- [ ] Merged into `development`, then `development` merged into `cookbook`
 
 ---
 
@@ -73,6 +103,7 @@ listed here, and any other contradiction found on a page the cookbook will link 
 - [ ] The README API table names every `cyweb/*Api` expose in `federationExposes.ts`
 - [ ] `grep -n remotes.d.ts .serena/memories/lessons.md` finds nothing
 - [ ] `npm run typecheck` and `npm test` still pass
+- [ ] **Merged into `development`** (D-12)
 
 ---
 
@@ -160,23 +191,30 @@ catalog grows.
   - [ ] the host commit
   - [ ] a digest of `recipes/`, `wiring/`, all of `runner/`, and `cookbook/tsconfig.json`
 
+### Deliverables — CI check for a stale record (§4.7)
+
+- [ ] A CI job recomputes the cookbook digest and the resolved api-types version, and fails
+      when either differs from `verified.json`. This is what makes per-phase merges safe
+
 ### Deliverables — README link (§4.9)
 
 - [ ] **After Phase 0 only:** a short "Building with an AI assistant" section near the top of
-      `README.md`, and a Cookbook row in the Documentation Map. The `llms.txt` URL in it goes
-      live in Phase 5, step 2
+      `README.md` that links the **cookbook index**, and a Cookbook row in the Documentation
+      Map. No `llms.txt` link yet: it is not live until Phase 2 reaches `main`
 
 ### Verification (Phase 1)
 
-- [ ] `npm run typecheck`, including the cookbook, passes against the local beta.5
+- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5
 - [ ] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
       expected
 - [ ] The runner passes all three cases against a host on `localhost:5500` (`development`),
-      and `--selftest` fails
+      started fresh from a clean checkout, and `--selftest` fails
 - [ ] Two consecutive runs leave no fixture network behind
-- [ ] `verified.json` exists, and records the local tarball as its source. That is expected
-      until Phase 5
+- [ ] `verified.json` exists and records the **registry** beta.5 as its source
+- [ ] The stale-record check fails on a changed recipe without a refreshed `verified.json`
+      (**seen failing**)
 - [ ] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
+- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
 
@@ -240,11 +278,17 @@ Each recipe has a complete header, covers the pitfall topics for its kind, and h
 ### Verification (Phase 2)
 
 - [ ] 20 recipes (Phases 1 and 2), and all their cases pass
-- [ ] Deploy mode refuses the current, local-tarball `verified.json`, and is **seen failing**
+- [ ] Deploy mode refuses a `verified.json` whose digest does not match, and one recorded
+      from a local tarball (**seen failing**, both)
 - [ ] The structure check fails on a fixture with a missing recipe, and on one with a link to
       a nonexistent path
-- [ ] The CI job's steps pass when run locally for both revision choices. In CI itself they
-      go green only after Phase 5's range bump; see Known non-issues
+- [ ] The CI jobs pass on both a `push` and a `pull_request` run
+- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+
+### After the first `main` deploy that includes Phase 2
+
+- [ ] `llms.txt` and `llms-full.txt` are served from Pages, and their links resolve
+- [ ] The README's "Building with an AI assistant" section gains the `llms.txt` link
 
 ---
 
@@ -288,6 +332,7 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 - [ ] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, and one that
       destructures `apis`
 - [ ] `verified.json` is refreshed; its digest now covers `runner/app`
+- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
 
@@ -306,45 +351,35 @@ _Design: §4.9, §5_
 ### Verification (Phase 4)
 
 - [ ] Every new relative link resolves
+- [ ] **Merged into `development`** (D-12)
 
 ---
 
-## Phase 5: Release ⬜ **NOT STARTED** — blocked on the beta.5 publish
+## Phase 5: Point the scaffolder at the cookbook ⬜ **NOT STARTED**
 
 _Design: §4.7, §4.8, §7_
 
 Strictly in the order of §4.8. **The cookbook must be live before the scaffolder points at
-it.**
+it.** The api-types pin itself moved in the prerequisite pull request; this phase adds only
+the pointer.
 
-### Prerequisite
+### Step 1 — Confirm the cookbook is live
 
-- [ ] `npm view @cytoscape-web/api-types@1.0.0-beta.5 version` succeeds
+- [ ] `llms.txt` and `llms-full.txt` are served from Pages
+- [ ] Their header names the deployed `main` commit, the host commit in `verified.json`, and
+      the api-types version
+- [ ] Every link in `llms.txt` resolves
 
-### Step 1 — Verify before publishing
+### Step 2 — Prepare the scaffolder
 
-- [ ] Bump the api-types range to `1.0.0-beta.5` in the root and in all four apps. **This is a
-      dependency change: confirm with the maintainer first** (`CLAUDE.md` §1)
-- [ ] `API_TYPES_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` →
-      `1.0.0-beta.5`
-- [ ] Bump the `create-cytoscape-app` version. The release workflow skips a version already on
-      npm. Bump `@cytoscape-web/app-runtime` too, if it changed
 - [ ] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
       URL. Regenerate the templates
-- [ ] `CLAUDE.md`: update the note that the repository still depends on beta.4 types
-- [ ] `npm install`, so beta.5 now comes from the registry
-- [ ] Start a host dev server **fresh from a clean `cytoscape-web` checkout**, run the full
-      runner, and commit the refreshed `verified.json` (registry source, host commit)
+- [ ] `API_TYPES_VERSION` equals the version in `verified.json`
+- [ ] Bump the `create-cytoscape-app` version. The release workflow skips a version already on
+      npm. Bump `@cytoscape-web/app-runtime` too, if it changed
 - [ ] Outside the monorepo, scaffold every template from **packed tarballs** and build it. Its
-      `AGENTS.md` names the `llms.txt` URL, which is not live yet
-- [ ] CI is green on the pull request: typecheck including the cookbook, `--check`, and the
-      structure job
-
-### Step 2 — Publish the cookbook
-
-- [ ] Merge `cookbook` into `development`, then `development` into `main`
-- [ ] `deploy-pages.yml` succeeds; `llms.txt` and `llms-full.txt` are served
-- [ ] Their header names the deployed `main` commit and the host commit in `verified.json`
-- [ ] Every link in `llms.txt` resolves
+      `AGENTS.md` names the `llms.txt` URL
+- [ ] CI is green on the pull request, and it is merged into `development`
 
 ### Step 3 — Publish the scaffolder
 
@@ -354,7 +389,8 @@ it.**
 ### Step 4 — Check what was published
 
 - [ ] Outside the monorepo, scaffold with the released `create-cytoscape-app@<version>` and
-      build. The project pins `1.0.0-beta.5`, and its `AGENTS.md` URL resolves
+      build. The project pins the version in `verified.json`, and its `AGENTS.md` URL resolves
+- [ ] The README's "Building with an AI assistant" section names the scaffolded `AGENTS.md`
 - [ ] Run the agent acceptance test below
 
 ### Agent acceptance test (criterion 10)
@@ -451,10 +487,10 @@ Not yet written. Copy the record here each time it is refreshed.
       disable cases
 - [ ] 6 — The runner waits for readiness, the active app and the boot report, and cleans up
       in `finally`
-- [ ] 7 — Changing anything under `recipes/`, `wiring/` or `runner/` blocks deploy-time
-      generation until the runner is re-run
-- [ ] 8 — The Pages files were live before the scaffolder was published; the scaffolder's
-      version was bumped
+- [ ] 7 — Changing anything under `recipes/`, `wiring/` or `runner/` without re-running the
+      runner fails CI; deploy-time generation refuses it as a backstop
+- [ ] 8 — The Pages files were live before the scaffolder that points at them was published;
+      the scaffolder's version was bumped
 - [ ] 9 — A project scaffolded outside the monorepo pins the verified version and builds
 - [ ] 10 — The agent acceptance test is recorded above
 - [ ] 11 — The Phase 0 corrections landed before the README linked the cookbook
@@ -475,10 +511,10 @@ Not yet written. Copy the record here each time it is refreshed.
 
 ### Known non-issues
 
-- [ ] **Until Phase 5, CI cannot typecheck the cookbook.** `npm ci` installs the published
-      beta.4, and the beta.5-only APIs do not exist there. A pull request from `cookbook` is
-      not expected to be green before then (D-4)
-- [ ] **Until Phase 5, `verified.json` records a local-tarball source**, and deploy mode
-      refuses it. That is the gate working, not a failure
+- [ ] **Until the prerequisite pull request lands, CI cannot typecheck the cookbook.**
+      `npm ci` installs beta.4 from the lockfile, and the beta.5-only APIs do not exist there.
+      Phase 0 does not need it; Phase 1 does (D-4)
+- [ ] **A `main` deploy between phases publishes a partial catalog.** That is intended: every
+      recipe in it was verified (D-12)
 - [ ] **`app-runtime`'s `manifestCommand.test.ts` fails on macOS's default `TMPDIR`**, which
       sits under the `/var` symlink. Unrelated to the cookbook; see `.serena/memories/lessons.md`

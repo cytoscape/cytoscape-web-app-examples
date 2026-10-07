@@ -1,15 +1,18 @@
 # Cookbook — Design
 
-> Status: **Draft, revision 5.** Revisions 2–4 incorporate three design reviews; §8 records
+> Status: **Draft, revision 6.** Revisions 2–4 incorporate three design reviews; §8 records
 > how each point was handled. Revision 5 extends the catalog (§4.10) and adds a backlog
-> (§4.12). §9 lists what is settled and what is still open.
+> (§4.12). Revision 6 replans for the published beta.5: the version bump moves to a
+> prerequisite pull request, and each phase merges into `development` on its own (§4.8,
+> §5, D-4, D-12). §9 lists what is settled and what is still open.
 >
 > Scope carved out of [`../developer-onboarding/developer-onboarding-roadmap.md`](../developer-onboarding/developer-onboarding-roadmap.md)
 > (items **B-2** recipes and **E-2** `llms.txt`). This document is self-contained and
 > authoritative for its scope.
 >
-> Touches **this repository only**. Targets App API **`1.0.0-beta.5`**, which is on the host's
-> `development` but not yet on npm — see §5 for what that gates.
+> Touches **this repository only**. Targets App API **`1.0.0-beta.5`**, published to npm on
+> 2026-10-05 as `latest` (host tag `api-types-v1.0.0-beta.5`, `92145e25`). This repository
+> still pins `^1.0.0-beta.4` until the prerequisite pull request of §5 lands.
 >
 > **Implementation tracking: [cookbook-checklist.md](cookbook-checklist.md)** — the phases
 > below, broken into checkable items with per-phase verification and a per-recipe status
@@ -59,8 +62,8 @@ practice:
    ("heat map", "color by score"). It is published as `llms.txt` / `llms-full.txt` on GitHub
    Pages.
 5. **The cookbook reaches scaffolded projects.** The generated `AGENTS.md` names it, and the
-   scaffolder pins the api-types version the cookbook was verified with. Both arrive only
-   through a scaffolder release, which comes after the cookbook is live (§4.8).
+   scaffolder pins the api-types version the cookbook was verified with. The pointer arrives
+   through a scaffolder release that comes after the cookbook is live (§4.8).
 6. **The README routes** developers and agents to the cookbook. Contradictions in the pages
    the cookbook links to are corrected **before** the links are added (Phase 0).
 7. **Nothing is maintained twice.** The index, `llms.txt` and `llms-full.txt` are generated,
@@ -318,9 +321,9 @@ verified. `GITHUB_SHA` at deploy time is the **examples** commit, not the host c
 two are never confused.
 
 **The host commit describes committed code only.** A dev server serves uncommitted changes
-too, and the commit value does not show them. A run that will be recorded for release is
-therefore made against a dev server **started fresh from a clean checkout** of the commit
-it records (§4.8).
+too, and the commit value does not show them. Every merge into `development` carries a
+record (§4.8), so every run that refreshes `verified.json` is made against a dev server
+**started fresh from a clean checkout** of the commit it records.
 
 **The host.** A host on `localhost:5500`, started with `npm run dev` in a `cytoscape-web`
 checkout on `development`. `dev-start.sh` lives in the parent workspace repository, not
@@ -348,7 +351,11 @@ committed:
 - **Deploy-time generation refuses** to run if the cookbook digest does not match
   `verified.json`, or if the recorded api-types did not come from the registry. Recipes
   changed since verification, or verified only against a local tarball, are never
-  published as verified.
+  published as verified. Because CI rejects a stale record first (below), this refusal is
+  a backstop, not something a routine `main` deploy should hit.
+- **Each `main` deploy publishes the catalog verified so far.** Phases merge into
+  `development` one at a time (D-12), so a `main` deploy between phases publishes a partial
+  catalog. That is intended: every recipe in it was verified.
 
 **In CI.** The `--check` on the committed index does not exercise the deploy-time path.
 So a CI job also generates both files into a temporary directory and checks their structure.
@@ -365,31 +372,47 @@ The structure checks are:
 - every raw link uses that revision and names a path that exists in the checkout;
 - every API reference link uses the host commit from `verified.json`.
 
-**In scaffolded projects.** Three changes reach users only through a `create-cytoscape-app`
+**CI also rejects a stale verification record.** It recomputes the cookbook digest and the
+resolved api-types version, and fails when either differs from `verified.json`. CI cannot
+run the runner (§4.6), so a pull request that changes anything under `recipes/`, `wiring/`
+or `runner/` must carry a refreshed `verified.json`. That keeps `development` — and so any
+`main` deploy — free of unverified recipes.
+
+**In scaffolded projects.** The scaffolder's api-types pin is not this project's change:
+the prerequisite pull request (§5) moves `API_TYPES_VERSION` in
+`packages/create-cytoscape-app/src/scaffold.ts` from `1.0.0-beta.4` to `1.0.0-beta.5`. This
+project adds one thing, which reaches users only through a later `create-cytoscape-app`
 release:
 
-- `API_TYPES_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts`, which pins
-  `1.0.0-beta.4` today, moves to the version in `verified.json`;
-- the templates are regenerated;
 - `AGENTS_PLACEHOLDER` (`scripts/sync-templates.mjs`) gains one section naming the
-  `llms.txt` URL.
+  `llms.txt` URL, and the templates are regenerated.
 
-These changes are verified **outside the monorepo**. Here the local beta.5 types are
-installed, which would hide a beta.4 pin in a generated project.
+That release is verified **outside the monorepo**, where the workspace's own installed
+types cannot hide what a generated project actually resolves. Its pin must equal the
+version in `verified.json`.
 
-### 4.8 Release order
+### 4.8 Merging and release order
 
-The scaffolder must not point at a URL that is not live yet. The release-packages workflow
-skips any version already on npm, so the scaffolder needs a version bump of its own.
+**Each phase merges on its own (D-12).** When a phase's verification passes, `cookbook`
+merges into `development`, with a current `verified.json`. The branch then continues from
+there. Two things follow:
 
-1. **Verify before publishing.** beta.5 is on npm. Bump the api-types ranges,
-   `API_TYPES_VERSION` and the `create-cytoscape-app` version, and regenerate the templates.
-   Re-run the runner against the registry package, and against a host dev server started
-   fresh from a clean `cytoscape-web` checkout, to refresh `verified.json`. Then scaffold
-   a project from **packed tarballs** outside the monorepo and build it.
-2. **Publish the cookbook.** Merge into `development`, then `development` into `main`.
-   Confirm that `llms.txt` and `llms-full.txt` are served and that their links resolve.
-3. **Publish the scaffolder** through the release-packages workflow.
+- **The README links only what is live.** Phase 1 links the cookbook index in the
+  repository. The `llms.txt` link is added only after a `main` deploy has published it.
+- **Pages publishes from `main`.** Merging into `development` publishes nothing; `llms.txt`
+  first appears with the first `main` deploy after Phase 2 merges.
+
+**The scaffolder must not point at a URL that is not live yet.** The release-packages
+workflow skips any version already on npm, so the scaffolder needs a version bump of its
+own. Phase 5 runs in this order:
+
+1. **Confirm the cookbook is live.** `llms.txt` and `llms-full.txt` are served from Pages,
+   and their links resolve.
+2. **Prepare the scaffolder.** Add the `AGENTS_PLACEHOLDER` section, regenerate the
+   templates, and bump the `create-cytoscape-app` version. Scaffold every template from
+   **packed tarballs** outside the monorepo and build it.
+3. **Publish the scaffolder** through the release-packages workflow, and confirm that it was
+   published, not skipped.
 4. **Check what was published.** Scaffold from the released `create-cytoscape-app` outside
    the monorepo, build it, follow the `llms.txt` URL in its `AGENTS.md`, and run the agent
    acceptance test (§7).
@@ -406,11 +429,14 @@ skips any version already on npm, so the scaffolder needs a version bump of its 
 - **`.serena/memories/lessons.md`:** remove the `remotes.d.ts` instructions and the stale
   port list.
 
-**Links (Phases 1 and 4):**
+**Links (Phases 1, 2, 4 and 5) — each added only once its target is live (§4.8):**
 
-- **README:** a short "Building with an AI assistant" section near the top that links
-  `llms.txt`, the cookbook index and the scaffolded `AGENTS.md`, and a Cookbook row in the
-  Documentation Map.
+- **README, Phase 1:** a short "Building with an AI assistant" section near the top that
+  links the cookbook index, and a Cookbook row in the Documentation Map.
+- **README, after the first `main` deploy of Phase 2:** the same section gains the `llms.txt`
+  link.
+- **README, Phase 5:** the section names the scaffolded `AGENTS.md`, once the released
+  scaffolder emits the pointer.
 - **`hello-world`:** each section links its related recipes.
 
 ### 4.10 Initial catalog
@@ -505,22 +531,27 @@ project's scope (§2):
 | Dependency | Standing |
 |---|---|
 | The host | **None.** The cookbook only calls the published App API. The runner reads the host's build commit, which the host already exposes |
-| api-types `1.0.0-beta.5` | **Unpublished.** Develop against the local tarball (the "Developing against an unpublished api-types" section of `CLAUDE.md`). Phase 5 waits for the npm publish (D-4) |
-| A `create-cytoscape-app` release | Needed in Phase 5, after the cookbook is live (§4.8) |
+| api-types `1.0.0-beta.5` | **Published** on 2026-10-05 (`latest`). Nothing waits for the publish any more |
+| **The prerequisite pull request** | **Needed before Phase 1 merges** (D-4). A separate pull request to `development`, outside this project: it moves the five `^1.0.0-beta.4` ranges and the scaffolder's `API_TYPES_VERSION` to `1.0.0-beta.5`, updates the beta.4 notes in `CLAUDE.md`, and releases the scaffolder with the new pin. `cookbook` then merges `development`. Until it lands, CI resolves beta.4 and cannot typecheck the cookbook |
+| A `create-cytoscape-app` release for the pointer | Needed in Phase 5, after the cookbook is live (§4.8) |
 | `@cytoscape-web/app-test` (C-1) | **Not needed.** The runner uses a real host instead of a mock |
 | `AGENTS.md` content (E-1) | **Not needed.** This project adds one pointer section |
 
-**Phase 0 — Corrections** (§4.9).
+Each of Phases 0–4 merges into `development` once its verification passes (D-12).
+
+**Phase 0 — Corrections** (§4.9). It does not depend on the prerequisite pull request.
 
 **Phase 1 — Foundation and a minimal runner.** The `cookbook/` layout, the `tsconfig`, the
 typecheck wiring, `wiring/`, `USING-RECIPES.md` and `WRITING-RECIPES.md`, the generator
 (checks and index), the three Phase 1 recipes with their cases, the minimal runner with
-`finally` cleanup, `verified.json`, and the README link. Problems with imports and
-readiness surface here, before the catalog grows.
+`finally` cleanup, `verified.json`, the CI check for a stale record, and the README link to
+the cookbook index. Problems with imports and readiness surface here, before the catalog
+grows.
 
 **Phase 2 — Catalog.** The other 17 host-wide recipes with their cases, deploy-time
 `llms.txt` / `llms-full.txt` generation, and the CI jobs for `--check` and the
-generated-file structure.
+generated-file structure. The README's `llms.txt` link follows the first `main` deploy that
+publishes it.
 
 **Phase 3 — Verification app** for the † recipes and component recipes, including the
 duplicate tab id and disable cases.
@@ -529,7 +560,8 @@ duplicate tab id and disable cases.
 "Carved-out projects" table. (The tree in `design/README.md` was updated together with this
 document and its checklist.)
 
-**Phase 5 — Release**, after beta.5 is on npm, in the order of §4.8.
+**Phase 5 — Point the scaffolder at the cookbook**, once `llms.txt` is live, in the order of
+§4.8.
 
 **Phase 6 — Public Cookbook app (optional).** A published app whose panel lists the recipes
 with a Run button.
@@ -542,12 +574,12 @@ with a Run button.
 | A value import from the declaration-only package passes the types and fails at run time | Core recipes import types only; the generator rejects value imports |
 | An owner-bound domain is used through the anonymous API, and the types cannot tell | Only a few allowed forms for the `apis` argument in `wiring/` and `runner/app`, anything else rejected; behavior cases for duplicate tab ids and disabling |
 | UI awaited inside `mount()` never appears | `mount()` only registers; the runner starts cases after the app is active |
-| A "verified" claim names the wrong commit or stale sources | `verified.json` records the host commit from the running host and a digest of everything that affects verification; deploy refuses a mismatch; release runs use a clean host checkout |
-| The local beta.5 types hide a beta.4 pin in generated projects | Verification outside the monorepo, from packed tarballs and then from the released scaffolder |
-| The scaffolder points at a URL that is not live, or its release is silently skipped | Release order of §4.8; the scaffolder's own version bump |
+| A "verified" claim names the wrong commit or stale sources | `verified.json` records the host commit from the running host and a digest of everything that affects verification; CI rejects a stale record, and deploy refuses one as a backstop; record-refreshing runs use a clean host checkout |
+| A `main` deploy between phases publishes something unverified | Per-phase merges carry a current `verified.json`, which CI enforces; a partial catalog is published only as far as it was verified |
+| The workspace's installed types hide what a generated project resolves | Verification outside the monorepo, from packed tarballs and then from the released scaffolder |
+| The scaffolder points at a URL that is not live, or its release is silently skipped | The order of §4.8; the scaffolder's own version bump |
 | The cookbook duplicates `hello-world` | Separate roles: `hello-world` tours the APIs, the cookbook answers tasks. Each links to the other |
 | Maintenance load on one maintainer | Small, independent recipes; every derived artifact is generated |
-| The beta.5 publish slips, so the branch lives long | The cookbook lives in its own directory, so rebases rarely conflict |
 
 ## 7. Acceptance criteria
 
@@ -559,8 +591,8 @@ with a Run button.
 | 4 | On both `push` and `pull_request`, CI generates `llms.txt` and `llms-full.txt` for the commit it actually checked out, and their structure checks pass (§4.7) |
 | 5 | **Every recipe in the catalog has a real-host case, and every case passes**, including the duplicate tab id and disable cases. `--selftest` shows the runner failing |
 | 6 | The runner starts cases only after `whenReady()` and, for the verification app, after the app is active. It waits for the boot report with a time limit and fails if it does not appear. It cleans up in `finally` and can be re-run with nothing left behind |
-| 7 | `verified.json` records the exact api-types version from the registry, the host commit, and the digest. Changing any file under `recipes/`, `wiring/` or `runner/` makes deploy-time generation fail until the runner is re-run |
-| 8 | Release follows §4.8: the Pages files are live and their links resolve **before** the scaffolder is published, and the scaffolder's version was bumped |
+| 7 | `verified.json` records the exact api-types version from the registry, the host commit, and the digest. Changing any file under `recipes/`, `wiring/` or `runner/` without re-running the runner fails CI, and deploy-time generation refuses it as a backstop |
+| 8 | Phase 5 follows §4.8: the Pages files are live and their links resolve **before** the scaffolder that points at them is published, and the scaffolder's version was bumped |
 | 9 | A project scaffolded **outside the monorepo** with the released `create-cytoscape-app` pins the version in `verified.json`, its `AGENTS.md` names a working `llms.txt` URL, and it builds |
 | 10 | **Agent acceptance test:** in that project, a fresh agent session is given each ★ task. It finds the recipe through `llms.txt` and writes code that typechecks on the first attempt, with no invented API. The prompts and results are recorded in the checklist |
 | 11 | The Phase 0 corrections are in place before the README links the cookbook |
@@ -574,7 +606,7 @@ mechanism chosen differs from the review's wording, the last column says so.
 
 | # | Point | Disposition |
 |---|---|---|
-| 1 | The scaffolder pins `1.0.0-beta.4`; the local beta.5 masks it | Accepted. §4.7, Phase 5 |
+| 1 | The scaffolder pins `1.0.0-beta.4`; the local beta.5 masks it | Accepted. §4.7, Phase 5. (Since revision 6 the pin moves in the prerequisite pull request, §5) |
 | 2 | Await `whenReady()`; readiness is not network loading | Accepted. §4.5; the four-step `follow-current-network` pattern |
 | 3 | `contextMenu`, `nodeGraphics` and `panel` are owner-bound too | Accepted. §4.4 |
 | 4 | Import rules; `.tsx`; compile the wiring | Accepted. §4.3. Wiring became one compiled file per call site, shared by all recipes, rather than a compiled example in every recipe |
@@ -616,8 +648,11 @@ mechanism chosen differs from the review's wording, the last column says so.
 - **D-3. Delivery by URL first.** `llms.txt` on GitHub Pages, linked from `AGENTS.md`, with
   raw URLs pinned to the deployed commit. Bundling recipes into an npm package is revisited
   after the API reaches GA.
-- **D-4. Release after the beta.5 publish.** Until then, verify locally against the tarball.
-  CI is not changed for the unpublished version.
+- **D-4. The beta.5 bump is a prerequisite, not part of this project.** *(Revised in
+  revision 6. It read "release after the beta.5 publish"; beta.5 was published on
+  2026-10-05.)* A separate pull request to `development` moves the ranges and the
+  scaffolder's pin to `1.0.0-beta.5` and releases the scaffolder (§5). The bump is ordinary
+  maintenance that every app needs, so it does not wait for the cookbook.
 - **D-5. Code first.** The `.ts` or `.tsx` file is the recipe, and its header is the
   documentation. Wiring is compiled code in `cookbook/wiring/`.
 - **D-6. Nothing in `cookbook/` is an npm workspace** (§4.1).
@@ -629,6 +664,10 @@ mechanism chosen differs from the review's wording, the last column says so.
 - **D-10. The cookbook is live before the scaffolder points at it** (§4.8).
 - **D-11. The catalog grows from the backlog.** §4.10 is what is committed to, and §4.12
   records the rest. A recipe moves from the backlog to the catalog only with a passing case.
+- **D-12. Each phase merges into `development` on its own** (§4.8). A merge carries a
+  current `verified.json`, which CI enforces. A `main` deploy between phases publishes the
+  catalog verified so far. The README links only what is live, and the scaffolder points at
+  the cookbook only in Phase 5.
 
 **Open**
 
