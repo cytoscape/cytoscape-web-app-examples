@@ -3,9 +3,11 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); Phase 1 next.** The design is at revision 7:
-> three reviews, a catalog of 25 recipes with a backlog, and a plan for the published beta.5.
-> Work happens on the `cookbook` branch of this repository.
+> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); Phase 1 next — start at its
+> "Pre-read files".** The design is at revision 7: three reviews, a catalog of 25 recipes with
+> a backlog, a plan for the published beta.5, and `llms.txt` committed into `docs/`. Work
+> happens on the `cookbook` branch of this repository, which is level with `development` at
+> `1f1a902` (#25 also removed an `npm pack` race from app-runtime's tests).
 >
 > **beta.5 is on npm** (2026-10-05, `latest`), and this repository now depends on it: the
 > prerequisite pull request (design D-4, #21) is merged, and `create-cytoscape-app@0.4.2`
@@ -155,7 +157,8 @@ listed here, and any other contradiction found on a page the cookbook will link 
 - [x] `npm run typecheck` and `npm test` still pass (every workspace; hello-world also builds,
       and `check:imports` passes)
 - [x] **Merged into `development`** (D-12): #23 (`a35f430`), without a verification record,
-      as D-12 allows for Phase 0. The review's three points land in a follow-up pull request
+      as D-12 allows for Phase 0. The review of #23 was handled in #24 (`a6e8ba9`), and the
+      review of #24 in the same pull request (design §8)
 
 ---
 
