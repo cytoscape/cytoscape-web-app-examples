@@ -10,7 +10,7 @@ external web app integration via `postMessage`.
 | Federation name | `networkWorkflows` |
 | Dev port | 7001 |
 | App config file | `network-workflows/src/NetworkWorkflowsApp.tsx` |
-| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.4` |
+| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.5` |
 
 ## Resources
 
