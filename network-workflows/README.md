@@ -47,7 +47,7 @@ network-workflows/
 # Terminal 1 — start the host with the local app registry
 cd ../cytoscape-web
 npm install
-npm run dev:local           # → http://localhost:5500
+npm run dev                 # → http://localhost:5500
 
 # Terminal 2 — start this plugin
 cd cytoscape-web-app-examples/network-workflows
@@ -55,13 +55,13 @@ npm install
 npm run dev                  # → http://localhost:7001
 ```
 
-Open `http://localhost:5500`, then **Apps → App Settings** to enable
+Open `http://localhost:5500`, then **Apps → Manage Apps...** to enable
 **Network Workflow Examples**. The two menu items appear under the
 **Apps** dropdown; the **Jupyter Link** tab appears in the right-side
 panel.
 
-> Use `npm run dev:local` (not `npm run dev`) so the host loads
-> `src/assets/apps.local.json` and discovers the locally running plugin.
+> The host's dev server serves `src/assets/apps.local.json` as its app catalog,
+> and that file already lists this app at `localhost:7001`.
 
 ---
 

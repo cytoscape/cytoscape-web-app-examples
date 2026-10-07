@@ -59,7 +59,7 @@ plugin does not bundle its own copy, which keeps the download small.
 # Terminal 1 — start the host with the local app registry
 cd ../../cytoscape-web
 npm install
-npm run dev:local    # → http://localhost:5500 (loads apps.local.json)
+npm run dev          # → http://localhost:5500 (serves apps.local.json)
 
 # Terminal 2 — start this plugin
 cd hello-world
@@ -67,11 +67,11 @@ npm install
 npm run dev          # → http://localhost:2222
 ```
 
-> Use `npm run dev:local` (not `npm run dev`) so the host loads
-> `src/assets/apps.local.json` and discovers your locally running plugin.
+> The host's dev server serves `src/assets/apps.local.json` as its app catalog,
+> and that file already lists this app at `localhost:2222`.
 
-Open `http://localhost:5500`, click **Apps** in the toolbar, then **App
-Settings** to enable the Hello World app. The panel appears on the right side.
+Open `http://localhost:5500`, click **Apps** in the toolbar, then **Manage
+Apps...** to enable the Hello World app. The panel appears on the right side.
 
 ---
 
@@ -90,7 +90,7 @@ hello-world/
 │       ├── SelectionSection.tsx       ← Example 2: EventBus + SelectionApi
 │       ├── LayoutSection.tsx          ← Example 3: LayoutApi + EventBus (async)
 │       ├── LifecycleSection.tsx       ← Example 4: App lifecycle / useSyncExternalStore
-│       ├── MenuSection.tsx            ← Example 5: Menu component pattern
+│       ├── MenuSection.tsx            ← Example 5: apps-menu entry (plain data + dialog)
 │       ├── ContextMenuSection.tsx     ← Example 6: Context menu items via useAppContext
 │       ├── ElementSection.tsx         ← Example 7: Node/edge CRUD via ElementApi
 │       ├── TableSection.tsx           ← Example 8: Table data read/write via TableApi
@@ -100,11 +100,9 @@ hello-world/
 │       ├── TsvDownloadSection.tsx     ← Example 12: TSV table download via TableApi
 │       └── NetworkSummaryDialog.tsx   ← body of the dialog opened by the apps-menu action
 ├── src/menuActions.tsx                ← Example 5: the apps-menu action (opens the dialog)
-├── vite.config.ts                     ← Module Federation config
+├── vite.config.ts                     ← one defineCyWebApp() call (@cytoscape-web/app-runtime)
 ├── index.html                         ← remote-only stub (Vite needs an HTML entry)
-├── src/cywebHostSentinel.ts           ← entry a production build ships when no host is known
-├── src/mfRuntimePlugin.ts             ← resolves the host URL at runtime
-├── test/mfRuntimePlugin.test.ts       ← covers both remote arrays + every rejection
+├── test/appConfig.test.ts             ← smoke test: identity and the shape of ./AppConfig
 ├── tsconfig.json / .node.json / .test.json
 └── package.json
 ```
@@ -164,7 +162,7 @@ exposes: {
 
 `mount(context)` is called once after your components are registered and the
 host API is fully initialised. `unmount()` is called when the user disables
-the app in App Settings, or when the page unloads.
+the app in **Apps → Manage Apps...**, or when the page unloads.
 
 ```typescript
 mount(context: AppContext): void {
@@ -309,9 +307,10 @@ useCyWebEvent('selection:changed', handleSelectionChanged)
 **What it shows:**
 - Triggering an async host operation and tracking completion via both the
   returned Promise and the event bus.
-- `layoutApi.applyLayout(networkId)` is async. The Promise resolves when the
-  algorithm finishes (or rejects on error). The `layout:completed` event fires
-  at the same time, allowing multiple components to react independently.
+- `layoutApi.applyLayout(networkId)` is async. Like every App API call it
+  never throws or rejects: the Promise resolves to an `ApiResult`, a failed one
+  when the layout cannot run. `layout:completed` fires on success only, just
+  before the Promise resolves, so several components can react independently.
 - Disable the trigger button while the operation runs to prevent duplicate
   submissions.
 
@@ -322,11 +321,11 @@ useCyWebEvent('layout:completed', useCallback(() => setStatus('done'), []))
 
 const handleApply = () => {
   setStatus('running')
-  layoutApi.applyLayout(networkId)
-    .then(result => { if (!result.success) setStatus('idle') })
-    .catch(() => setStatus('idle'))
-  // Always .catch() even when using the event bus — the event does not
-  // carry error information, only the Promise does.
+  layoutApi.applyLayout(networkId).then((result) => {
+    // A failure resolves (it never rejects) and fires no event, so the
+    // result is the only place its error message appears.
+    if (!result.success) setStatus('idle')
+  })
 }
 ```
 
@@ -500,74 +499,26 @@ if (result.success) {
 
 ## Creating your own app
 
-Use `project-template/` as the starting point:
+Use the scaffolder rather than copying this app:
 
 ```bash
-cp -r ../project-template ../my-app
-cd ../my-app
+npm create cytoscape-app my-app
 ```
 
-1. **`package.json`** — change `name` and `version`
-2. **`vite.config.ts`** — change `DEV_SERVER_PORT` (pick an unused port)
-   and `name` in `federation()` (unique camelCase string, no spaces)
-3. **`src/`** — rename and replace the template files; keep `index.ts` as the
-   entry point re-exporting your app config as `default`
-4. **Host registry** — add an entry to the JSON array in
-   `../../cytoscape-web/src/assets/apps.local.json`:
-
-```json
-{
-  "id": "myApp",
-  "name": "My App (display name)",
-  "url": "http://localhost:XXXX/remoteEntry.js",
-  "author": "Your Name",
-  "description": "Short description",
-  "version": "0.1.0"
-}
-```
-
-> The `id` field is the unique identifier and must match your app's `id`
-> and the federation `name`. The `name` field is the human-readable label
-> shown in App Settings.
-
-5. Run `npm run dev` and reload the host at `http://localhost:5500`
+It writes the app's identity into the `cyweb` block of `package.json`, a
+`vite.config.ts` that is one `defineCyWebApp()` call, and a passing smoke test.
+`npm run dev` then prints a `?installApp=` link that installs the app into a
+running host; nothing in the host repository is edited. See
+[Build Your First App](../README.md#build-your-first-app) in the repository
+README.
 
 ---
 
-## Available host APIs
+## Available host APIs and events
 
-Import any of these in your React components using the `cyweb/` prefix:
-
-| Import | Purpose |
-|---|---|
-| `cyweb/WorkspaceApi` | Get current network ID, list networks |
-| `cyweb/ElementApi` | Create / delete nodes and edges |
-| `cyweb/NetworkApi` | Create / delete networks, import CX2 |
-| `cyweb/SelectionApi` | Read and mutate the current selection |
-| `cyweb/VisualStyleApi` | Read and set visual properties |
-| `cyweb/LayoutApi` | Run layout algorithms |
-| `cyweb/ViewportApi` | Pan, zoom, fit the viewport |
-| `cyweb/TableApi` | Read and write node/edge attribute tables |
-| `cyweb/ExportApi` | Export the network as CX2 or image |
-| `cyweb/EventBus` | Subscribe to host events (`useCyWebEvent`) |
-| `cyweb/AppIdContext` | Per-app context (`useAppContext`) for resource and context menu APIs |
-| `cyweb/ApiTypes` | TypeScript types for all of the above |
-
-All API functions return `ApiResult<T>` — check `result.success` before using
-`result.data`.
-
-### Available events (EventBus)
-
-| Event | When it fires |
-|---|---|
-| `network:created` | A new network is added to the workspace |
-| `network:deleted` | A network is removed |
-| `network:switched` | The user navigates to a different network |
-| `selection:changed` | Node or edge selection changes |
-| `layout:started` | A layout algorithm begins |
-| `layout:completed` | A layout algorithm finishes successfully |
-| `style:changed` | A visual style property changes |
-| `data:changed` | Node or edge attribute data changes |
+See [Available APIs](../README.md#available-apis) and
+[Available Events](../README.md#available-events) in the repository README.
+They are kept in one place so that they cannot disagree.
 
 ---
 

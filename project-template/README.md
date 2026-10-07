@@ -40,7 +40,7 @@ The dev server prints the link that installs your app into a local host:
 ```
 
 Start the host (`cd cytoscape-web && npm run dev`), open that URL, confirm the
-install, and enable the app under **Apps → App Settings**.
+install, and enable the app under **Apps → Manage Apps...**.
 
 **You do not edit anything in the host repository.** The host has accepted a
 manifest URL through `?installApp=` all along; the dev server serves yours at
@@ -57,7 +57,7 @@ cannot go stale when you change the port or the version.
 {
   "name": "@you/my-app",
   "version": "0.1.0",
-  "description": "What your app does — shown in App Settings",
+  "description": "What your app does — shown in Manage Apps",
   "cyweb": {
     "id": "myApp",
     "displayName": "My App",

@@ -11,7 +11,20 @@ When this app is enabled, it:
 1. **On mount** — immediately logs statistics for the current network
 2. **On `network:switched`** — logs statistics whenever the user navigates to a
    different network
-3. **On `selection:changed`** — logs a short selection summary (node/edge count)
+3. **On `network:loaded`** — logs statistics for a network that could not be
+   read yet when it became current (see below)
+4. **On `selection:changed`** — logs a short selection summary (node/edge count)
+
+### Switching is not loading
+
+After a page reload the host holds only network summaries. A network's tables
+and view load the first time it becomes current, and `network:switched` fires
+**before** that load lands, so a read made on the switch fails with `APP1`.
+The app remembers the network it could not read and reads it again on that
+network's `network:loaded` (api-types `1.0.0-beta.5`). A load for any other
+network is ignored: `network:loaded` also fires for networks that are not on
+screen, and fires only once per network, so it is a retry cue rather than a
+second "network changed" event.
 
 ### Statistics Reported
 
@@ -79,7 +92,7 @@ logic easy to test and reuse.
 |-----------------|---------------------------------------------------------------|
 | **ElementApi**  | `getNodeIds`, `getEdgeIds`, `getConnectedEdges`, `getRoots`, `getLeaves` |
 | **WorkspaceApi**| `getCurrentNetworkId`, `getNetworkSummary`                    |
-| **Events**      | `network:switched`, `selection:changed`                       |
+| **Events**      | `network:switched`, `network:loaded`, `selection:changed`     |
 
 ## Running Locally
 
@@ -91,7 +104,7 @@ npm run dev:network-statistics
 npm run dev
 ```
 
-Then enable the app in the host: **Apps → App Settings → Network Statistics**.
+Then enable the app in the host: **Apps → Manage Apps... → Network Statistics**.
 
 Open the browser DevTools console to see the statistics output.
 

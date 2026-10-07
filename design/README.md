@@ -20,8 +20,11 @@ design/
 │   │   ├── app-sdk-checklist.md         ← Phase-by-phase implementation checklist
 │   │   ├── phase0-baseline.md           ← Pre-SDK build output, what Phase 1 was graded against
 │   │   └── phase6-release-runbook.md    ← Manual publish procedure for the Preview
-│   └── remote-dev-host/                 ← Shared hosts for local app development (HOST changes)
-│       └── remote-dev-host-checklist.md ← dev1 first, then production; browser permission + origin policy
+│   ├── remote-dev-host/                 ← Shared hosts for local app development (HOST changes)
+│   │   └── remote-dev-host-checklist.md ← dev1 first, then production; browser permission + origin policy
+│   └── cookbook/                        ← Carved out of the roadmap: task-oriented recipes + llms.txt
+│       ├── cookbook-design.md           ← Recipe anatomy, real-host verification, delivery to agents
+│       └── cookbook-checklist.md        ← Phase-by-phase implementation checklist, per-recipe status
 └── apps/               ← Per-app design documents
     ├── hello-world/
     ├── network-workflows/

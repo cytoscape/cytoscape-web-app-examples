@@ -6,16 +6,17 @@
  *
  * Key patterns demonstrated:
  *   - `layoutApi.applyLayout(networkId)` is async: it returns a Promise that
- *     resolves when the layout algorithm finishes (or rejects on error).
- *     Always `.catch()` the Promise even when using the event bus — the Promise
- *     carries error information that the event bus does not.
- *   - `layout:completed` is dispatched by the host after the layout Promise
- *     resolves successfully. Using the event bus for status updates decouples
- *     the UI from the direct Promise chain and allows multiple components to
- *     react independently.
+ *     resolves when the layout algorithm finishes. Like every App API call it
+ *     never throws or rejects — a failure resolves to a failed `ApiResult`, so
+ *     check `result.success` instead of adding a `.catch()`.
+ *   - `layout:completed` is dispatched by the host on success only, just
+ *     before the Promise resolves. A failure fires no event, so the result is
+ *     the only place its error message appears. Using the event bus for status
+ *     updates decouples the UI from the direct Promise chain and allows
+ *     multiple components to react independently.
  *   - Disable the trigger button while the layout is running to prevent
  *     duplicate submissions (`disabled={layoutStatus === 'running'}`).
- *   - Reset `layoutStatus` to `'idle'` on error so the button becomes
+ *   - Reset `layoutStatus` to `'idle'` on a failed result so the button becomes
  *     re-enabled and the user can retry.
  */
 import { Alert, Box, Button, Grid, Typography } from '@mui/material'
@@ -45,18 +46,12 @@ export const LayoutSection = (): JSX.Element => {
       return
     }
     setLayoutStatus('running')
-    layoutApi
-      .applyLayout(currentNetwork.data.networkId)
-      .then((result) => {
-        if (!result.success) {
-          setErrorMessage(result.error.message)
-          setLayoutStatus('idle')
-        }
-      })
-      .catch((e: unknown) => {
-        setErrorMessage(String(e))
+    layoutApi.applyLayout(currentNetwork.data.networkId).then((result) => {
+      if (!result.success) {
+        setErrorMessage(result.error.message)
         setLayoutStatus('idle')
-      })
+      }
+    })
   }
 
   return (

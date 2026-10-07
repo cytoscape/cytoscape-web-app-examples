@@ -35,7 +35,7 @@ place:
 {
   "name": "@you/my-app",
   "version": "0.1.0",
-  "description": "What your app does — shown in App Settings",
+  "description": "What your app does — shown in Manage Apps",
   "private": true,
   "cyweb": {
     "id": "myApp",          // Module Federation container name AND CyApp.id
@@ -244,7 +244,7 @@ on every request, and prints the link that installs it:
 ```
 
 Open that URL with the host running and confirm the install. The app lands in
-your workspace, and you enable it under **Apps → App Settings**.
+your workspace, and you enable it under **Apps → Manage Apps...**.
 
 The host has accepted `?installApp=<manifestUrl>` all along — it is the same
 path the App Store will use. `installGate` allows a localhost app URL when the
@@ -256,7 +256,7 @@ Because the manifest is generated rather than written to a file, changing
 `cyweb.port` or your version updates it on the next request; there is no second
 copy to keep in step.
 
-> **Two other routes exist**, both in **Apps → App Settings**, and both take the
+> **Two other routes exist**, both in **Apps → Manage Apps...**, and both take the
 > same `/cyweb-app.json` URL: *Install from URL* for a single app, and
 > *Manifest Source* to point the host at a catalog of several. The deep link is
 > just the one that needs no clicking.

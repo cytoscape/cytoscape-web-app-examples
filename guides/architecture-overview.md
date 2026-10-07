@@ -75,8 +75,8 @@ file in the host repository**:
 | Route | When |
 | --- | --- |
 | `?installApp=<manifestUrl>` deep link | Development. Your dev server serves this manifest at `/cyweb-app.json`, generated from your `package.json` per request, and prints the link on startup |
-| **Apps → App Settings → Install from URL** | The same thing by hand, one app at a time |
-| **Apps → App Settings → Manifest Source** | Point the host at a catalog of several apps |
+| **Apps → Manage Apps... → Install from URL** | The same thing by hand, one app at a time |
+| **Apps → Manage Apps... → Manifest Source** | Point the host at a catalog of several apps |
 
 The production instance additionally ships a curated `apps.json` at its own
 origin, which is how the published examples appear without anyone installing

@@ -61,7 +61,7 @@ The dev server prints the link that installs your app into a running local host:
 
 Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
 checkout), open that link, confirm the install, and enable the app under
-**Apps → App Settings**.
+**Apps → Manage Apps...**.
 
 **Or skip the host checkout entirely** and develop against the shared staging
 host, with your app still on `localhost`:
@@ -106,7 +106,7 @@ cd cytoscape-web-app-examples && npm install && npm run dev   # all four apps
 cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
 ```
 
-Then open `http://localhost:5500`, **Apps → App Settings**, and enable one. The
+Then open `http://localhost:5500`, **Apps → Manage Apps...**, and enable one. The
 dev server reads `src/assets/apps.local.json`, which already lists them.
 
 ### Publishing to the public Cytoscape Web site
@@ -143,7 +143,7 @@ the build, by the app config, and by the install manifest:
 {
   "name": "@you/my-app",
   "version": "0.1.0",
-  "description": "What your app does — shown in App Settings",
+  "description": "What your app does — shown in Manage Apps",
   "cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
 }
 ```
@@ -282,37 +282,48 @@ All API methods return `ApiResult<T>`. Always check `result.success` before read
 | **VisualStyleApi** | `cyweb/VisualStyleApi` | Set defaults, bypasses, and mappings                                 |
 | **LayoutApi**      | `cyweb/LayoutApi`      | Run layout algorithms                                                |
 | **ExportApi**      | `cyweb/ExportApi`      | Export network as CX2                                                |
+| **PanelApi**       | `cyweb/PanelApi`       | Open a side pane and select a tab in it (`panel.open`)               |
+| **ScopedApi**      | `cyweb/ScopedApi`      | The domain APIs bound to one network (`useScopedApi(networkId?)`)    |
+| **AppDataApi**     | `cyweb/AppDataApi`     | Per-app key/value storage keyed to a network                         |
 | **EventBus**       | `cyweb/EventBus`       | Subscribe to host events (`useCyWebEvent`)                           |
-| **AppIdContext**   | `cyweb/AppIdContext`   | Per-app context (`useAppContext`) for resource and context menu APIs |
+| **AppIdContext**   | `cyweb/AppIdContext`   | Per-app context (`useAppContext`): the app's own `apis`              |
 | **ApiTypes**       | `cyweb/ApiTypes`       | TypeScript types for all of the above                                |
 
 ### Available Events
 
-| Event               | Fires when                                |
-| ------------------- | ----------------------------------------- |
-| `network:created`   | A new network is added to the workspace   |
-| `network:deleted`   | A network is removed                      |
-| `network:switched`  | The user navigates to a different network |
-| `selection:changed` | Node or edge selection changes            |
-| `layout:started`    | A layout algorithm begins                 |
-| `layout:completed`  | A layout algorithm finishes               |
-| `style:changed`     | A visual style property changes           |
-| `data:changed`      | Node or edge attribute data changes       |
+| Event               | Fires when                                                                 |
+| ------------------- | -------------------------------------------------------------------------- |
+| `network:created`   | A new network is added to the workspace                                    |
+| `network:deleted`   | A network is removed                                                       |
+| `network:changed`   | Nodes or edges are added to or removed from an existing network            |
+| `network:switched`  | The current network changes — its data may not be loaded yet              |
+| `network:loaded`    | A network's tables and view are readable; re-read data that failed on the switch |
+| `selection:changed` | Node or edge selection changes                                             |
+| `layout:started`    | A layout algorithm begins                                                  |
+| `layout:completed`  | A layout algorithm finishes successfully                                   |
+| `style:changed`     | A visual style property changes                                            |
+| `style:switched`    | A network's active named style changes                                     |
+| `data:changed`      | Node or edge attribute data changes                                        |
 
 ### Non-React Access
 
 Outside React components, the same APIs are available via `window.CyWebApi`:
 
 ```javascript
-window.addEventListener('cywebapi:ready', () => {
-  const api = window.CyWebApi
-  const result = api.workspace.getCurrentNetworkId()
-  // ...
-})
+const api = await window.CyWebApi.whenReady() // resolves at once if already ready
+const result = api.workspace.getCurrentNetworkId()
+// ...
 ```
 
-> Note: `window.CyWebApi` does not include `resource` or per-app `contextMenu`.
-> Those are only available inside `mount()` via `context.apis` or via `useAppContext()`.
+`window.CyWebApi` exists before the host has finished starting, so await
+`whenReady()` rather than calling it directly. Prefer it to the one-shot
+`cywebapi:ready` event, which a listener added after startup never receives.
+
+> Note: `window.CyWebApi` has no `resource`, `dialog` or `appData`, and its
+> `contextMenu`, `nodeGraphics` and `panel` are anonymous: not tied to an app,
+> so nothing they register is removed when an app is disabled. Use the per-app
+> `apis` instead — `context.apis` in `mount()`, or `useAppContext()?.apis` in a
+> component.
 
 ---
 

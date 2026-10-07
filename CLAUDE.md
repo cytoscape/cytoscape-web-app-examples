@@ -248,6 +248,31 @@ When `cytoscape-web` adds or changes exposed modules:
 3. Update component imports and usage to match new API signatures
 4. Run `npm run build` to verify no TypeScript errors
 
+### Developing against an unpublished api-types
+
+When the host's `development` carries an api-types version that is not on npm
+yet, install the host's types from a local tarball without touching
+`package.json` or the lockfile. (`1.0.0-beta.5` was developed this way until its
+publish on 2026-10-05.)
+
+```bash
+# in cytoscape-web
+npm run build:api-types
+npm pack -w packages/api-types --ignore-scripts --pack-destination /tmp
+
+# in this repository
+npm install --no-save /tmp/cytoscape-web-api-types-<version>.tgz
+npm ls @cytoscape-web/api-types   # every workspace should show <version>
+```
+
+Not `npm link` or a symlink: the declarations `import('react')`, and through
+a link TypeScript resolves that from the host's `node_modules`, a different
+`@types/react` from this repository's — under `skipLibCheck: false` the two
+collide. Not a `file:` range either: it would commit a path outside the
+repository. Any later `npm install` / `npm ci` restores the published version,
+and a change to the host's types needs a fresh pack — re-run both halves.
+Bump the ranges (step 1 above) only once the version is on npm.
+
 ### Publishing
 
 `npm run deploy` builds every workspace and copies each `dist/` into
