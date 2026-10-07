@@ -21,6 +21,7 @@ Shared lessons learned across agent sessions. Update this file after corrections
 ## Release
 
 - **A registry wait that times out after a publish is usually the registry being slow, not the publish failing.** On 2026-10-07 the packument showed the old version for over 5 minutes. Check `npm view <pkg> dist-tags`; if the version is there, use **Re-run failed jobs** — the decide step skips already-published versions, so nothing is republished. See `design/specifications/app-sdk/phase6-release-runbook.md` §3f.
+- **No apostrophes inside a workflow's `node -e '…'` script.** The script is single-quoted for the shell, so `step's` ends the quote and breaks the whole `run` block — and only a real (not dry) release reaches the read-back and smoke steps. Extract the `run` blocks and check each with `bash -n` before merging a workflow change.
 
 ## Build & Tooling
 
