@@ -70,7 +70,7 @@ they disagree, something is not reading it:
 
 - Does `src/MyApp.tsx` still hardcode `id: 'myApp'` instead of importing it?
 - Did you install this app under an older id, before renaming it? Uninstall it
-  in **Apps → App Settings** and open the printed install link again — the host
+  in **Apps → Manage Apps...** and open the printed install link again — the host
   keeps what it installed, not what your dev server now serves.
 
 ### The app "loads" but nothing happens, and there is no error
@@ -241,7 +241,7 @@ resources: [
 **Possible causes:**
 
 1. **App is disabled** — Items from disabled apps are removed automatically.
-   Re-enable the app in App Settings.
+   Re-enable the app in **Apps → Manage Apps...**.
 
 2. **Wrong targetTypes** — If you register with `targetTypes: ['node']`,
    the item only appears when right-clicking a node, not an edge or canvas.
@@ -444,14 +444,16 @@ version.
 
 ### How do I test my app without the host?
 
-For unit tests, mock the `cyweb/*` imports:
+For unit tests, mock the `cyweb/*` imports with Vitest:
 
 ```typescript
-jest.mock('cyweb/AppIdContext', () => ({
+import { vi } from 'vitest'
+
+vi.mock('cyweb/AppIdContext', () => ({
   useAppContext: () => ({
     appId: 'test',
     apis: {
-      element: { getNode: jest.fn() },
+      element: { getNode: vi.fn() },
       // ... mock other APIs
     },
   }),

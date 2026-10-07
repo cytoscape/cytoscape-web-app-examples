@@ -104,7 +104,7 @@ npm run dev:network-statistics
 npm run dev
 ```
 
-Then enable the app in the host: **Apps → App Settings → Network Statistics**.
+Then enable the app in the host: **Apps → Manage Apps... → Network Statistics**.
 
 Open the browser DevTools console to see the statistics output.
 
