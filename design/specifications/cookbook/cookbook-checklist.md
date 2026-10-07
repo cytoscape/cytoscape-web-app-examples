@@ -133,15 +133,21 @@ listed here, and any other contradiction found on a page the cookbook will link 
   - [x] **`guides/architecture-overview.md`**, "Host Exposes Reference": the table omitted
         `PanelApi`, `ScopedApi` and `AppDataApi` and claimed image export. Missed in #23 —
         the check covered the README alone — and caught by its review (design §8)
+  - [x] **`guides/architecture-overview.md`**, its event table (three events missing, no
+        loading caveat on `network:switched`, `layout:completed` not success-only, an old
+        `data:changed` payload) and its API-layer examples (the anonymous `nodeGraphics` and
+        `panel`, and four of the six owner-bound domains, were missing). Missed again in
+        #24 and caught by its review (design §8)
 - [x] Not fixed, deliberately: the other `.serena/memories/*` files (a full E-1a sweep, out of
       scope), and the hello-world "Code style" note about ESLint and Prettier, which is
       tooling rather than API
 
 ### Verification (Phase 0)
 
-- [x] The README event table names every key of `CyWebEventMap` except `cywebapi:ready`, which
-      the README documents under "Non-React Access" (11 of 11, checked by script against the
-      host's `origin/development`)
+- [x] Every event table — the README's and `guides/architecture-overview.md`'s — names every
+      key of `CyWebEventMap` except `cywebapi:ready`, which the README documents under
+      "Non-React Access" (11 of 11 each, checked by script against the host's
+      `origin/development`). *(#23 checked the README alone)*
 - [x] Every page that lists the `cyweb/*Api` exposes — the README's API table and
       `guides/architecture-overview.md`'s "Host Exposes Reference" — names all 12 in
       `federationExposes.ts`. *(After #23's review; #23 itself checked the README alone)*
@@ -323,6 +329,11 @@ and committed into `docs/`, never generated in a workflow (design D-13).
       the index, regenerates `docs/llms*.txt` in memory for the pinned commit, fails on any
       difference from the committed files, and runs the structure checks (§4.7). On
       `pull_request` it checks out `github.event.pull_request.head.sha` explicitly
+- [ ] On `pull_request`, the same job inspects the default merge checkout and fails when the
+      last commit to change `cookbook/` or `guides/` there is the merge itself (both sides
+      changed linked sources)
+- [ ] `scripts/manifest.mjs`: add `llms.txt` and `llms-full.txt` to `RESERVED_PUBLISH_PATHS`,
+      because `copy-dist.mjs` deletes `docs/<publishPath>` before copying an app
 - [ ] `deploy-pages.yml` is **not** changed: its output is never served
 
 ### Verification (Phase 2)
@@ -332,6 +343,10 @@ and committed into `docs/`, never generated in a workflow (design D-13).
       from a local tarball (**seen failing**, both)
 - [ ] The CI check fails when a recipe changes without regenerating `docs/llms*.txt`
       (**seen failing**)
+- [ ] The merge-result check fails when `development` and the branch both changed a linked
+      source (**seen failing**)
+- [ ] `npm run manifest:validate` rejects an app whose `publishPath` is `llms.txt` or
+      `llms-full.txt` (**seen failing**)
 - [ ] The structure check fails on a fixture with a missing recipe, and on one with a link to
       a nonexistent path
 - [ ] The CI jobs pass on both a `push` and a `pull_request` run

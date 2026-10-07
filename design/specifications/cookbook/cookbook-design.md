@@ -323,9 +323,9 @@ verified. The commit that `llms.txt` pins (§4.7) is an **examples** commit, not
 commit; the two are never confused.
 
 **The host commit describes committed code only.** A dev server serves uncommitted changes
-too, and the commit value does not show them. Every merge into `development` carries a
-record (§4.8), so every run that refreshes `verified.json` is made against a dev server
-**started fresh from a clean checkout** of the commit it records.
+too, and the commit value does not show them. From Phase 1 on, every merge into
+`development` carries a record (§4.8), so every run that refreshes `verified.json` is made
+against a dev server **started fresh from a clean checkout** of the commit it records.
 
 **The host.** A host on `localhost:5500`, started with `npm run dev` in a `cytoscape-web`
 checkout on `development`. `dev-start.sh` lives in the parent workspace repository, not
@@ -353,6 +353,9 @@ is ever published (`CLAUDE.md` "Publishing"; `verify-published-apps.yml`). So `l
 - **This relies on merge commits.** A squash merge replaces the pinned commit with a new
   one. This repository merges pull requests with merge commits; if a squash merge happens,
   the CI check on `development` (below) fails until the files are regenerated.
+- **The two file names are reserved.** `copy-dist.mjs` deletes `docs/<publishPath>` before
+  copying an app, so `llms.txt` and `llms-full.txt` join `RESERVED_PUBLISH_PATHS` in
+  `scripts/manifest.mjs`. An app cannot then be published over them.
 - **`llms-full.txt`** contains `USING-RECIPES.md` (a short usage contract), every wiring
   file, every recipe in full, and links to the API reference. It does not copy the API
   reference.
@@ -372,6 +375,14 @@ is ever published (`CLAUDE.md` "Publishing"; `verify-published-apps.yml`). So `l
 both files in memory for the pinned commit, and fails if they differ from the committed
 `docs/llms*.txt`. On `pull_request` it checks out `github.event.pull_request.head.sha`
 explicitly: the default checkout is a merge commit that does not exist in the repository.
+
+**On `pull_request` it also checks the merge result.** If the target branch changed
+`cookbook/` or `guides/` after the branch did, the eventual merge commit itself becomes the
+last commit to change a linked source, and the files pinned on the branch go stale the moment
+it merges. So the job also inspects the default merge checkout and fails if the last commit
+to change `cookbook/` or `guides/` there is the merge itself, asking for `development` to be
+merged into the branch and the files regenerated.
+
 The same job runs the structure checks:
 
 - every recipe and wiring file appears;
@@ -656,6 +667,16 @@ are handled in revision 7.
 | 1 | D-12 requires a CI-enforced `verified.json` on every merge, but Phase 0 has no runner and no record | Accepted. The requirement starts with Phase 1 (§4.8, D-12) |
 | 2 | Pages is `build_type: legacy` from `main:/docs`, so files generated in `deploy-pages.yml` are never published | Accepted, and it was a real design error: `CLAUDE.md` says so. The files are committed into `docs/` (§4.7, D-13) |
 | 3 | `guides/architecture-overview.md` still omitted `PanelApi`, `ScopedApi` and `AppDataApi` and claimed image export | Accepted. Fixed; Phase 0's table check now covers every page that lists the `cyweb/*Api` exposes, not the README alone |
+
+### Review of #24, the Phase 0 addendum (2026-10-07)
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | §4.6 still said every merge into `development` carries a record, contradicting D-12's Phase 0 exception (Copilot) | Accepted. §4.6 now says "from Phase 1 on" |
+| 2 | Checking only the pull request's head misses a merge whose result becomes the last source-changing commit (Codex) | Accepted. On `pull_request`, CI also inspects the merge checkout and fails on that case (§4.7) |
+| 3 | `guides/architecture-overview.md`'s event table was as stale as the README's had been (Codex) | Accepted. Fixed; Phase 0's event-table check now covers it too. A second miss on the same page, after #23's review caught its API table |
+| 4 | The same page's API-layer examples omitted the anonymous `nodeGraphics` and `panel` and four of the six owner-bound domains (Codex) | Accepted. Fixed to match §4.4 |
+| 5 | `docs/llms.txt` and `docs/llms-full.txt` must be reserved publish paths (Codex) | Accepted. §4.7 and a Phase 2 deliverable |
 
 ## 9. Decisions
 
