@@ -82,9 +82,8 @@ export const MyApp: CyAppWithLifecycle = {
 `CyApp.components` (`ComponentType.Menu` / `ComponentType.Panel`) was removed
 from the App API in `1.0.0-beta.5` (cytoscape/cytoscape-web#786). The host
 ignores the field, and `cyweb/ApiTypes` no longer exports `ComponentType`, so an
-app that references it does not load. The beta.4 types this repository still
-depends on declare both, so the type checker will not stop you: do not
-introduce it.
+app that references it does not load. The beta.5 types this repository depends
+on declare neither, so the type checker rejects both: do not reintroduce them.
 
 ### Entry Point Pattern
 
