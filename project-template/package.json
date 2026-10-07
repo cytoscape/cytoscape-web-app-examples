@@ -57,7 +57,7 @@
     "peers — one copy of each, resolved from the app."
   ],
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.4",
+    "@cytoscape-web/api-types": "^1.0.0-beta.5",
     "@cytoscape-web/app-runtime": "^0.4.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",

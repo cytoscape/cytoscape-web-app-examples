@@ -11,7 +11,7 @@ behind a menu item.
 | Federation name | `hello` |
 | Dev port | 2222 |
 | App config file | `hello-world/src/HelloApp.tsx` |
-| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.4` |
+| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.5` |
 
 ## Resources
 
