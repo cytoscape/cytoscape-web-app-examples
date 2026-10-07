@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import Ajv2020 from 'ajv/dist/2020.js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, inject, it } from 'vitest'
 
 import {
   parseAppMeta,
@@ -28,7 +28,6 @@ import {
   type CyManifestV1,
 } from '../src/vite/cyManifest.js'
 import { PREDICATES } from '../src/vite/manifestPredicates.js'
-import { packTarball } from './fixtures/packTarball.js'
 
 
 
@@ -410,11 +409,10 @@ describe('the artifacts as they ship, not as they sit in the workspace', () => {
   // would not prove the shipped copy is the same file.
   it('packs the schema, the predicates and the corpora, byte-identical to the ledger', async () => {
     const { execFileSync } = await import('node:child_process')
-    const packageRoot = join(import.meta.dirname, '..')
     const out = mkdtempSync(join(tmpdir(), 'cyweb-pack-'))
 
-    const tarball = packTarball(packageRoot, out)
-    execFileSync('tar', ['-xzf', join(out, tarball), '-C', out])
+    // Packed once for the run by test/globalSetup.ts.
+    execFileSync('tar', ['-xzf', inject('runtimeTarball'), '-C', out])
 
     const packed = (name: string): string =>
       join(out, 'package', 'schema', name)

@@ -20,13 +20,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import AdmZip from 'adm-zip'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, inject, it } from 'vitest'
 
 import { parseAppMeta, parseSubmissionMeta, readPackageSnapshot } from '../src/vite/appMeta.js'
 import { runManifest } from '../src/cli/manifest.js'
 import { zipForAppStore } from '../src/vite/zipForAppStore.js'
 import { appRootFixture } from './fixtures/appRoot.js'
-import { packTarball } from './fixtures/packTarball.js'
 
 
 
@@ -170,12 +169,11 @@ describe('the packed candidate, as a real process', () => {
   let extracted = ''
 
   beforeAll(() => {
-    // npm pack runs prepack, so this is a fresh build of the candidate — not
-    // whatever happens to be sitting in the workspace dist/.
-    const packageRoot = join(import.meta.dirname, '..')
+    // test/globalSetup.ts packed the candidate once for the run. npm pack runs
+    // prepack, so it is a fresh build — not whatever happens to be sitting in
+    // the workspace dist/.
     extracted = mkdtempSync(join(tmpdir(), 'cyweb-cli-pack-'))
-    const tarball = packTarball(packageRoot, extracted)
-    execFileSync('tar', ['-xzf', join(extracted, tarball), '-C', extracted])
+    execFileSync('tar', ['-xzf', inject('runtimeTarball'), '-C', extracted])
     cli = join(extracted, 'package', 'dist', 'cli', 'cyweb-app.js')
   }, 120_000)
 

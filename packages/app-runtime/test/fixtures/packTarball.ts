@@ -15,7 +15,11 @@ import { execFileSync } from 'node:child_process'
  * fallback exists only for a runner invoked outside `npm run`.
  */
 export const packTarball = (packageRoot: string, destination: string): string => {
-  const args = ['pack', '--pack-destination', destination, '--silent']
+  // `--loglevel=error`, not `--silent`: both keep npm's notices off stdout, so
+  // its last line is still the tarball's name, but `--silent` also swallows
+  // npm's own error. A failed pack then reports exit 1 with an empty stderr,
+  // which is how the 2026-10-07 CI failure arrived — with no cause to read.
+  const args = ['pack', '--pack-destination', destination, '--loglevel=error']
   const cli = process.env.npm_execpath
 
   const output =
