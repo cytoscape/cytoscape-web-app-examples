@@ -405,9 +405,11 @@ passed the smoke step. Before that, the smoke step had also been run by hand
 outside the monorepo, with the same result.
 
 **The wait was too short, not wrong.** §3e's fix stands; its window did not.
-Both registry waits now take `REGISTRY_POLL_TRIES` from the job's `env`: 90
-polls of 10 s, that is 15 minutes each. The job's `timeout-minutes` went from 25
-to 45 to hold both waits.
+Both registry waits now run against a deadline taken from the job's `env`,
+`REGISTRY_WAIT_SECONDS: 900`, that is 15 minutes. There is **one deadline per
+step, not per package**: the read-back checks two packages in turn, and a budget
+per package would let it take 30 minutes. The job's `timeout-minutes` went from
+25 to 45 to hold both waits.
 
 **When a read-back or smoke wait times out:**
 
