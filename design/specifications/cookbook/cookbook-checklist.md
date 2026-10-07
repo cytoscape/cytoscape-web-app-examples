@@ -3,7 +3,7 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite COMPLETE; Phase 0 done, awaiting its merge (2026-10-07).** The design is at revision 6:
+> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); Phase 1 next.** The design is at revision 7:
 > three reviews, a catalog of 25 recipes with a backlog, and a plan for the published beta.5.
 > Work happens on the `cookbook` branch of this repository.
 >
@@ -12,8 +12,9 @@
 > generates projects pinned to it.
 >
 > **Each phase merges on its own** (design D-12). When a phase's verification passes,
-> `cookbook` merges into `development` with a current `verified.json`, which CI enforces. A
-> `main` deploy between phases publishes the catalog verified so far.
+> `cookbook` merges into `development` — from Phase 1 on with a current `verified.json`,
+> which CI enforces. A merge into `main` between phases publishes the catalog verified so
+> far.
 >
 > **Phase order.** Phase 0 comes before any new link to the cookbook (design Goal 6), and
 > does not need the prerequisite. Phase 1 needs the prerequisite and comes before everything
@@ -79,7 +80,7 @@ the cookbook without it. The maintainer approved the `package.json` changes
 
 ---
 
-## Phase 0: Corrections 🟨 **DONE, AWAITING MERGE (2026-10-07)**
+## Phase 0: Corrections ✅ **COMPLETE (2026-10-07)** — #23, plus the addendum from its review
 
 _Design: §1, §4.9, Goal 6_
 
@@ -129,6 +130,9 @@ listed here, and any other contradiction found on a page the cookbook will link 
   - [x] **`guides/troubleshooting.md`** mocked `cyweb/*` with `jest.mock` in a Vitest
         repository
   - [x] **`lessons.md`** recommended the legacy `cyweb/*Store` exposes as the access pattern
+  - [x] **`guides/architecture-overview.md`**, "Host Exposes Reference": the table omitted
+        `PanelApi`, `ScopedApi` and `AppDataApi` and claimed image export. Missed in #23 —
+        the check covered the README alone — and caught by its review (design §8)
 - [x] Not fixed, deliberately: the other `.serena/memories/*` files (a full E-1a sweep, out of
       scope), and the hello-world "Code style" note about ESLint and Prettier, which is
       tooling rather than API
@@ -138,11 +142,14 @@ listed here, and any other contradiction found on a page the cookbook will link 
 - [x] The README event table names every key of `CyWebEventMap` except `cywebapi:ready`, which
       the README documents under "Non-React Access" (11 of 11, checked by script against the
       host's `origin/development`)
-- [x] The README API table names every `cyweb/*Api` expose in `federationExposes.ts` (12 of 12)
+- [x] Every page that lists the `cyweb/*Api` exposes — the README's API table and
+      `guides/architecture-overview.md`'s "Host Exposes Reference" — names all 12 in
+      `federationExposes.ts`. *(After #23's review; #23 itself checked the README alone)*
 - [x] `grep -n remotes.d.ts .serena/memories/lessons.md` finds nothing
 - [x] `npm run typecheck` and `npm test` still pass (every workspace; hello-world also builds,
       and `check:imports` passes)
-- [ ] **Merged into `development`** (D-12)
+- [x] **Merged into `development`** (D-12): #23 (`a35f430`), without a verification record,
+      as D-12 allows for Phase 0. The review's three points land in a follow-up pull request
 
 ---
 
@@ -298,33 +305,39 @@ Each recipe has a complete header, covers the pitfall topics for its kind, and h
 
 ### Deliverables — `llms.txt` and `llms-full.txt` (§4.7)
 
-- [ ] The generator takes `--revision <sha>` and an output directory, and writes both files:
+Pages serves `main:/docs` **as committed** (`build_type: legacy`), so the files are generated
+and committed into `docs/`, never generated in a workflow (design D-13).
+
+- [ ] The generator writes `docs/llms.txt` and `docs/llms-full.txt`:
+  - [ ] The pinned commit is the last one that changed `cookbook/` or `guides/`
+        (`git log -1 -- cookbook guides`). Regenerate in a commit **after** the source change
   - [ ] `llms.txt` links every recipe and wiring file through `raw.githubusercontent.com`
-        URLs pinned to the revision, and links the API reference pinned to the host commit
-        in `verified.json`
+        URLs pinned to that commit, and links the API reference pinned to the host commit in
+        `verified.json`
   - [ ] `llms-full.txt` = `USING-RECIPES.md` + every wiring file + every recipe + pinned API
         reference links. It does not copy the API reference
-  - [ ] Both open with the examples commit, the host commit and the api-types version
-- [ ] **Deploy mode** refuses when the digest does not match `verified.json`, or when the
-      api-types source is not the registry. The CI structure check runs without this gate
-- [ ] `deploy-pages.yml`: generate with `--revision $GITHUB_SHA` into `docs/` before the
-      upload
-- [ ] `ci.yml`: a job that runs `--check`, then generates both files into a temporary
-      directory and checks their structure (§4.7). The revision:
-  - [ ] on `push`: `GITHUB_SHA`
-  - [ ] on `pull_request`: `github.event.pull_request.head.sha`, **checked out explicitly**
+  - [ ] Both open with the pinned examples commit, the host commit and the api-types version
+- [ ] The generator **refuses** when the digest does not match `verified.json`, or when the
+      api-types source is not the registry
+- [ ] `ci.yml`: a job that checks out **full history** (`fetch-depth: 0`), runs `--check` on
+      the index, regenerates `docs/llms*.txt` in memory for the pinned commit, fails on any
+      difference from the committed files, and runs the structure checks (§4.7). On
+      `pull_request` it checks out `github.event.pull_request.head.sha` explicitly
+- [ ] `deploy-pages.yml` is **not** changed: its output is never served
 
 ### Verification (Phase 2)
 
 - [ ] 20 recipes (Phases 1 and 2), and all their cases pass
-- [ ] Deploy mode refuses a `verified.json` whose digest does not match, and one recorded
+- [ ] The generator refuses a `verified.json` whose digest does not match, and one recorded
       from a local tarball (**seen failing**, both)
+- [ ] The CI check fails when a recipe changes without regenerating `docs/llms*.txt`
+      (**seen failing**)
 - [ ] The structure check fails on a fixture with a missing recipe, and on one with a link to
       a nonexistent path
 - [ ] The CI jobs pass on both a `push` and a `pull_request` run
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
-### After the first `main` deploy that includes Phase 2
+### After the first merge into `main` that includes Phase 2
 
 - [ ] `llms.txt` and `llms-full.txt` are served from Pages, and their links resolve
 - [ ] The README's "Building with an AI assistant" section gains the `llms.txt` link
@@ -405,7 +418,7 @@ the pointer.
 ### Step 1 — Confirm the cookbook is live
 
 - [ ] `llms.txt` and `llms-full.txt` are served from Pages
-- [ ] Their header names the deployed `main` commit, the host commit in `verified.json`, and
+- [ ] Their header names the pinned examples commit, the host commit in `verified.json`, and
       the api-types version
 - [ ] Every link in `llms.txt` resolves
 
@@ -520,14 +533,14 @@ Not yet written. Copy the record here each time it is refreshed.
       `verified.json`
 - [ ] 2 — Every generator rejection has been seen failing
 - [ ] 3 — `--check` fails when an index-affecting field changes without regeneration
-- [ ] 4 — CI generates both files for the commit it checked out, on `push` and
-      `pull_request`
+- [ ] 4 — On `push` and `pull_request`, CI regenerates `docs/llms*.txt` for the pinned commit
+      from full history and finds them equal to the committed files
 - [ ] 5 — Every recipe has a passing real-host case, including the duplicate tab id and
       disable cases
 - [ ] 6 — The runner waits for readiness, the active app and the boot report, and cleans up
       in `finally`
 - [ ] 7 — Changing anything under `recipes/`, `wiring/` or `runner/` without re-running the
-      runner fails CI; deploy-time generation refuses it as a backstop
+      runner fails CI; the generator refuses to write `docs/llms*.txt` from it
 - [ ] 8 — The Pages files were live before the scaffolder that points at them was published;
       the scaffolder's version was bumped
 - [ ] 9 — A project scaffolded outside the monorepo pins the verified version and builds
@@ -550,7 +563,7 @@ Not yet written. Copy the record here each time it is refreshed.
 
 ### Known non-issues
 
-- [ ] **A `main` deploy between phases publishes a partial catalog.** That is intended: every
+- [ ] **A merge into `main` between phases publishes a partial catalog.** That is intended: every
       recipe in it was verified (D-12)
 - [ ] **`app-runtime`'s `manifestCommand.test.ts` fails on macOS's default `TMPDIR`**, which
       sits under the `/var` symlink. Unrelated to the cookbook; see `.serena/memories/lessons.md`
