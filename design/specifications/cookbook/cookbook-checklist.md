@@ -3,13 +3,13 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: PLANNING (2026-10-07).** The design is at revision 6: three reviews, a catalog of
-> 25 recipes with a backlog, and a plan for the published beta.5. No implementation has
-> started. Work happens on the `cookbook` branch of this repository.
+> **Status: Prerequisite COMPLETE (2026-10-07); Phase 0 next.** The design is at revision 6:
+> three reviews, a catalog of 25 recipes with a backlog, and a plan for the published beta.5.
+> Work happens on the `cookbook` branch of this repository.
 >
-> **beta.5 is on npm** (2026-10-05, `latest`). The bump to it is a **prerequisite pull
-> request** outside this project (design D-4), tracked below so that Phase 1 does not start
-> without it.
+> **beta.5 is on npm** (2026-10-05, `latest`), and this repository now depends on it: the
+> prerequisite pull request (design D-4, #21) is merged, and `create-cytoscape-app@0.4.2`
+> generates projects pinned to it.
 >
 > **Each phase merges on its own** (design D-12). When a phase's verification passes,
 > `cookbook` merges into `development` with a current `verified.json`, which CI enforces. A
@@ -32,35 +32,50 @@ verification.
 `cytoscape-web-app-examples/`. Paths prefixed `cytoscape-web/` are in the **host** repository,
 which this project only reads and runs. It changes no host file.
 
-**Local setup:** once the prerequisite pull request is merged into `cookbook`, a plain
-`npm install` resolves beta.5 from the registry. Until then, install it without saving:
-`npm install --no-save @cytoscape-web/api-types@1.0.0-beta.5`. The local-tarball procedure in
-`CLAUDE.md` is for a version that is not on npm yet, which beta.5 no longer is.
+**Local setup:** a plain `npm install`. It resolves `@cytoscape-web/api-types@1.0.0-beta.5`
+from the registry. The local-tarball procedure in `CLAUDE.md` is only for a version that is
+not on npm yet.
 
 ---
 
-## Prerequisite: Adopt the published beta.5 ⬜ **NOT STARTED** — separate pull request
+## Prerequisite: Adopt the published beta.5 ✅ **COMPLETE (2026-10-07)** — PR #21
 
 _Design: §5 Dependencies, D-4_
 
-Ordinary maintenance that every app needs, so it lands on `development` in its own pull
+Ordinary maintenance that every app needs, so it landed on `development` in its own pull
 request rather than inside the cookbook. Tracked here because Phase 1's CI cannot typecheck
-the cookbook without it. **It changes `package.json` files: confirm with the maintainer
-first** (`CLAUDE.md` §1).
+the cookbook without it. The maintainer approved the `package.json` changes
+(`CLAUDE.md` §1).
 
-- [ ] Move `@cytoscape-web/api-types` from `^1.0.0-beta.4` to `^1.0.0-beta.5` in the root and
-      in all four apps, and update the lockfile
-- [ ] `API_TYPES_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` →
+> **Done in [#21](https://github.com/cytoscape/cytoscape-web-app-examples/pull/21)**
+> (merged as `4532bfc`), and `create-cytoscape-app@0.4.2` is on npm as `latest`, with
+> provenance. The release run's read-back step timed out on a slow registry although the
+> publish had succeeded; a re-run of the failed job passed both the read-back and the smoke
+> step. [#22](https://github.com/cytoscape/cytoscape-web-app-examples/pull/22) (`183f594`)
+> lengthened the registry waits to one 15-minute deadline per step, and records the incident
+> in `../app-sdk/phase6-release-runbook.md` §3f.
+
+- [x] Move `@cytoscape-web/api-types` from `^1.0.0-beta.4` to `^1.0.0-beta.5` in the root and
+      in all four apps, and update the lockfile. The lockfile diff is limited to the
+      api-types entries and the scaffolder's version
+- [x] `API_TYPES_VERSION` in `packages/create-cytoscape-app/src/scaffold.ts` →
       `1.0.0-beta.5`; the exact-pin test in `scaffold.test.ts` passes
-- [ ] Update `CLAUDE.md`: the note that the repository still depends on beta.4 types, and the
-      "(`1.0.0-beta.5` until it is published)" example in "Developing against an unpublished
-      api-types"
-- [ ] `npm run typecheck`, `npm test`, `npm run build` and `npm run verify:federation` pass
-- [ ] Bump the `create-cytoscape-app` version (npm has `0.4.1`; the release workflow skips a
-      version already published), release it, and confirm it was **published, not skipped**
-- [ ] Outside the monorepo, a project scaffolded with the released version pins
-      `1.0.0-beta.5` and builds
-- [ ] Merged into `development`, then `development` merged into `cookbook`
+- [x] Update `CLAUDE.md`: the note that the repository still depended on beta.4 types (#21),
+      and the "(`1.0.0-beta.5` until it is published)" example in "Developing against an
+      unpublished api-types" (with the merge into `cookbook`, `28d3ee4`)
+- [x] `npm run typecheck`, `npm test`, `npm run build` and `npm run verify:federation` pass,
+      locally and in CI (all four apps pass 28/28 federation checks)
+- [x] Bump the `create-cytoscape-app` version to `0.4.2`, release it, and confirm it was
+      **published, not skipped**. The release run is
+      [37595811547](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/37595811547),
+      green on its second attempt
+- [x] Outside the monorepo, a project scaffolded with the released version pins
+      `1.0.0-beta.5` and builds. Checked twice: by hand (`npm install create-cytoscape-app@latest`,
+      the `panel` template, `build:zip` with a `cy-manifest.json`, and `tsc --noEmit` with
+      `skipLibCheck: false`), and by the release workflow's smoke step on the re-run
+- [x] Merged into `development` (#21), then `development` merged into `cookbook` (`28d3ee4`).
+      On the merged branch, `typecheck` is clean and all workspaces' tests pass, including
+      the 9 in network-statistics
 
 ---
 
@@ -511,9 +526,6 @@ Not yet written. Copy the record here each time it is refreshed.
 
 ### Known non-issues
 
-- [ ] **Until the prerequisite pull request lands, CI cannot typecheck the cookbook.**
-      `npm ci` installs beta.4 from the lockfile, and the beta.5-only APIs do not exist there.
-      Phase 0 does not need it; Phase 1 does (D-4)
 - [ ] **A `main` deploy between phases publishes a partial catalog.** That is intended: every
       recipe in it was verified (D-12)
 - [ ] **`app-runtime`'s `manifestCommand.test.ts` fails on macOS's default `TMPDIR`**, which

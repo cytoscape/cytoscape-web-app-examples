@@ -12,7 +12,7 @@
 >
 > Touches **this repository only**. Targets App API **`1.0.0-beta.5`**, published to npm on
 > 2026-10-05 as `latest` (host tag `api-types-v1.0.0-beta.5`, `92145e25`). This repository
-> still pins `^1.0.0-beta.4` until the prerequisite pull request of §5 lands.
+> has depended on `^1.0.0-beta.5` since the prerequisite pull request of §5 (#21).
 >
 > **Implementation tracking: [cookbook-checklist.md](cookbook-checklist.md)** — the phases
 > below, broken into checkable items with per-phase verification and a per-recipe status
@@ -379,9 +379,9 @@ or `runner/` must carry a refreshed `verified.json`. That keeps `development` �
 `main` deploy — free of unverified recipes.
 
 **In scaffolded projects.** The scaffolder's api-types pin is not this project's change:
-the prerequisite pull request (§5) moves `API_TYPES_VERSION` in
-`packages/create-cytoscape-app/src/scaffold.ts` from `1.0.0-beta.4` to `1.0.0-beta.5`. This
-project adds one thing, which reaches users only through a later `create-cytoscape-app`
+the prerequisite pull request (§5) moved `API_TYPES_VERSION` in
+`packages/create-cytoscape-app/src/scaffold.ts` from `1.0.0-beta.4` to `1.0.0-beta.5`, and
+`create-cytoscape-app@0.4.2` shipped it. This project adds one thing, which reaches users only through a later `create-cytoscape-app`
 release:
 
 - `AGENTS_PLACEHOLDER` (`scripts/sync-templates.mjs`) gains one section naming the
@@ -532,7 +532,7 @@ project's scope (§2):
 |---|---|
 | The host | **None.** The cookbook only calls the published App API. The runner reads the host's build commit, which the host already exposes |
 | api-types `1.0.0-beta.5` | **Published** on 2026-10-05 (`latest`). Nothing waits for the publish any more |
-| **The prerequisite pull request** | **Needed before Phase 1 merges** (D-4). A separate pull request to `development`, outside this project: it moves the five `^1.0.0-beta.4` ranges and the scaffolder's `API_TYPES_VERSION` to `1.0.0-beta.5`, updates the beta.4 notes in `CLAUDE.md`, and releases the scaffolder with the new pin. `cookbook` then merges `development`. Until it lands, CI resolves beta.4 and cannot typecheck the cookbook |
+| **The prerequisite pull request** | **Done** (2026-10-07, D-4). [#21](https://github.com/cytoscape/cytoscape-web-app-examples/pull/21), a separate pull request to `development` outside this project, moved the five ranges and the scaffolder's `API_TYPES_VERSION` to `1.0.0-beta.5` and updated the beta.4 notes in `CLAUDE.md`. `create-cytoscape-app@0.4.2` is published with the new pin, and `cookbook` has merged `development`. CI now resolves beta.5 |
 | A `create-cytoscape-app` release for the pointer | Needed in Phase 5, after the cookbook is live (§4.8) |
 | `@cytoscape-web/app-test` (C-1) | **Not needed.** The runner uses a real host instead of a mock |
 | `AGENTS.md` content (E-1) | **Not needed.** This project adds one pointer section |
