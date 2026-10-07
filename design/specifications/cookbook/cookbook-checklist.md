@@ -3,7 +3,7 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite COMPLETE (2026-10-07); Phase 0 next.** The design is at revision 6:
+> **Status: Prerequisite COMPLETE; Phase 0 done, awaiting its merge (2026-10-07).** The design is at revision 6:
 > three reviews, a catalog of 25 recipes with a backlog, and a plan for the published beta.5.
 > Work happens on the `cookbook` branch of this repository.
 >
@@ -79,7 +79,7 @@ the cookbook without it. The maintainer approved the `package.json` changes
 
 ---
 
-## Phase 0: Corrections ⬜ **NOT STARTED**
+## Phase 0: Corrections 🟨 **DONE, AWAITING MERGE (2026-10-07)**
 
 _Design: §1, §4.9, Goal 6_
 
@@ -100,24 +100,48 @@ listed here, and any other contradiction found on a page the cookbook will link 
 
 ### Deliverables
 
-- [ ] README event table: add `network:changed`, `network:loaded` and `style:switched`, with
-      "fires when" text taken from the doc comments in `events.ts`
-- [ ] README API table: add `cyweb/PanelApi`, `cyweb/AppDataApi` and `cyweb/ScopedApi`
-- [ ] `LayoutSection.tsx`: failure is a resolved, failed `ApiResult`, not a rejection. Fix the
-      comment and any code that depends on `.catch()`
-- [ ] `lessons.md`: remove both `remotes.d.ts` rules and the `remotes.d.ts` step of the "File
+- [x] README event table: add `network:changed`, `network:loaded` and `style:switched`, with
+      "fires when" text taken from the doc comments in `events.ts`. `network:switched` now
+      warns that the data may not be loaded yet, and `layout:completed` says it fires on
+      success only
+- [x] README API table: add `cyweb/PanelApi`, `cyweb/AppDataApi` and `cyweb/ScopedApi`. The
+      `AppIdContext` row now says it carries the app's own `apis`
+- [x] `LayoutSection.tsx`: failure is a resolved, failed `ApiResult`, not a rejection. Fixed the
+      comment and removed the `.catch()`. Also corrected: `layout:completed` fires on success
+      only, just *before* the Promise resolves (host `layoutApi.ts`), not after
+- [x] `lessons.md`: remove both `remotes.d.ts` rules and the `remotes.d.ts` step of the "File
       Update Checklist". Replace the stale port list (`simple-menu`, `simple-panel`) with a
       pointer to each app's `cyweb` block
-- [ ] Any other contradiction found on a page the cookbook links to (README, `guides/`,
-      `hello-world`): fix it here
+- [x] Any other contradiction found on a page the cookbook links to (README, `guides/`,
+      `hello-world`): fix it here. Found and fixed:
+  - [x] **The menu is "Manage Apps...", not "App Settings"** (host `AppMenu`, renamed
+        2025-11): README, three guides, and all four app READMEs
+  - [x] **README "Non-React Access":** `await window.CyWebApi.whenReady()` instead of the
+        one-shot `cywebapi:ready` event, and the anonymous `contextMenu` / `nodeGraphics` /
+        `panel` versus the per-app `apis` (design §4.4)
+  - [x] **`npm run dev:local` is the same command as `npm run dev`** in the host; the dev
+        server always serves `apps.local.json`. hello-world and network-workflows READMEs
+  - [x] **hello-world README:** the file layout listed three files the SDK migration deleted;
+        Example 3 repeated the `.catch()` advice; "Creating your own app" taught copying the
+        template, editing `vite.config.ts` and the host's `apps.local.json` (now a pointer to
+        `npm create cytoscape-app`); its API and event tables were stale duplicates, one
+        claiming image export (now pointers to the repository README)
+  - [x] **`guides/troubleshooting.md`** mocked `cyweb/*` with `jest.mock` in a Vitest
+        repository
+  - [x] **`lessons.md`** recommended the legacy `cyweb/*Store` exposes as the access pattern
+- [x] Not fixed, deliberately: the other `.serena/memories/*` files (a full E-1a sweep, out of
+      scope), and the hello-world "Code style" note about ESLint and Prettier, which is
+      tooling rather than API
 
 ### Verification (Phase 0)
 
-- [ ] The README event table names every key of `CyWebEventMap` except `cywebapi:ready`, which
-      the README documents under "Non-React Access"
-- [ ] The README API table names every `cyweb/*Api` expose in `federationExposes.ts`
-- [ ] `grep -n remotes.d.ts .serena/memories/lessons.md` finds nothing
-- [ ] `npm run typecheck` and `npm test` still pass
+- [x] The README event table names every key of `CyWebEventMap` except `cywebapi:ready`, which
+      the README documents under "Non-React Access" (11 of 11, checked by script against the
+      host's `origin/development`)
+- [x] The README API table names every `cyweb/*Api` expose in `federationExposes.ts` (12 of 12)
+- [x] `grep -n remotes.d.ts .serena/memories/lessons.md` finds nothing
+- [x] `npm run typecheck` and `npm test` still pass (every workspace; hello-world also builds,
+      and `check:imports` passes)
 - [ ] **Merged into `development`** (D-12)
 
 ---
