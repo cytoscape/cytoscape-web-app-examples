@@ -390,6 +390,33 @@ The general form, again: **every step that reads the registry after a publish
 is a read-after-write, and every one of them waits.** There are two such steps;
 each has now failed once.
 
+## 3f. The 0.4.2 release, and how long the read-back has to wait
+
+Published 2026-10-07: `create-cytoscape-app@0.4.2` under `latest`, the
+scaffolder's move to `@cytoscape-web/api-types@1.0.0-beta.5`. The runtime was
+already on npm and was skipped. The run failed on the read-back step again,
+this time **after waiting**: for all 30 polls (5 minutes), the packument at
+`registry.npmjs.org/create-cytoscape-app?cb=…` still showed `latest: 0.4.1` and
+no 0.4.2.
+
+The publish had succeeded. A re-run of the failed job about 20 minutes later
+skipped both publishes as already done, read `latest: 0.4.2` back at once, and
+passed the smoke step. Before that, the smoke step had also been run by hand
+outside the monorepo, with the same result.
+
+**The wait was too short, not wrong.** §3e's fix stands; its window did not.
+Both registry waits now take `REGISTRY_POLL_TRIES` from the job's `env`: 90
+polls of 10 s, that is 15 minutes each. The job's `timeout-minutes` went from 25
+to 45 to hold both waits.
+
+**When a read-back or smoke wait times out:**
+
+1. Check `npm view <pkg> dist-tags` from a workstation.
+2. If the version and the tag are there, use **Re-run failed jobs**. The decide
+   step skips every version already on npm, so the re-run publishes nothing and
+   only reads back and smoke-tests.
+3. If they are not there after an hour, treat it as a failed publish (§7).
+
 ## 4. Pre-flight
 
 The workflow runs all of this itself. Doing it locally first is still worth the

@@ -57,8 +57,20 @@ jobs:
   release:
     name: Publish to npm
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Two registry waits of up to 15 minutes each, below, on top of a build and
+    # test pass of a few minutes. 25 left no room for either wait.
+    timeout-minutes: 45
     environment: release
+    env:
+      # How many 10-second polls each registry wait makes: 90 = 15 minutes.
+      #
+      # Was 30 (5 minutes). On 2026-10-07 the read-back of
+      # create-cytoscape-app@0.4.2 saw the previous packument for all of those
+      # 5 minutes, cache buster and all, although the publish had succeeded;
+      # a re-run some 20 minutes later passed at once. Both waits time out on a
+      # registry that is slow, not wrong, and a re-run of the failed job is
+      # safe: the publish steps skip a version that is already on npm.
+      REGISTRY_POLL_TRIES: '90'
     permissions:
       contents: read
       id-token: write # provenance
@@ -228,7 +240,7 @@ jobs:
             # Only the version's EXISTENCE is waited for: a tag that points
             # elsewhere once the version is there is a real failure, not a
             # propagation delay.
-            for _ in $(seq 1 30); do
+            for _ in $(seq 1 "$REGISTRY_POLL_TRIES"); do
               curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json || true
               if node -e '
                 const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
@@ -249,7 +261,8 @@ jobs:
               console.log("    " + tag + " points at: " + tagged)
               console.log("    deprecated: " + (v?.deprecated ?? "no"))
               if (!v) {
-                console.error("::error::" + name + "@" + version + " is still not in the packument after 5 minutes")
+                const minutes = (Number(process.env.REGISTRY_POLL_TRIES) * 10) / 60
+                console.error("::error::" + name + "@" + version + " is still not in the packument after " + minutes + " minutes")
                 process.exit(1)
               }
               if (tagged !== version) {
@@ -286,7 +299,7 @@ jobs:
           # a symptom three commands away from the cause. Asserting the tag on
           # one path and installing on another is the mistake; this waits on the
           # path that matters.
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 "$REGISTRY_POLL_TRIES"); do
             SEEN=$(npm view --prefer-online "create-cytoscape-app@$TAG" version 2>/dev/null || true)
             SEEN_RUNTIME=$(npm view --prefer-online "@cytoscape-web/app-runtime@$RUNTIME" version 2>/dev/null || true)
             if [ "$SEEN" = "$SCAFFOLDER" ] && [ "$SEEN_RUNTIME" = "$RUNTIME" ]; then break; fi

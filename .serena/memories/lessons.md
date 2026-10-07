@@ -18,6 +18,10 @@ Shared lessons learned across agent sessions. Update this file after corrections
 - **`ApiResult<T>` pattern:** All host App API functions return `ApiResult<T>`. Always check `result.success` before accessing `result.data`. Never assume success.
 - **Store access pattern:** Host stores are consumed via Zustand selector hooks: `const value = useXxxStore((state: any) => state.field)`. The `any` cast is intentional — plugin types for state are not always available.
 
+## Release
+
+- **A registry wait that times out after a publish is usually the registry being slow, not the publish failing.** On 2026-10-07 the packument showed the old version for over 5 minutes. Check `npm view <pkg> dist-tags`; if the version is there, use **Re-run failed jobs** — the decide step skips already-published versions, so nothing is republished. See `design/specifications/app-sdk/phase6-release-runbook.md` §3f.
+
 ## Build & Tooling
 
 - **No `import React from 'react'`:** The project uses `react-jsx` transform. Adding this import causes duplicate React errors.
