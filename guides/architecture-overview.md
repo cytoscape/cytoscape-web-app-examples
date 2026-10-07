@@ -148,12 +148,18 @@ interface CyWebApiType {
   layout: LayoutApi
   export: ExportApi
   workspace: WorkspaceApi
-  contextMenu: ContextMenuApi  // anonymous — no appId tracking
+  contextMenu: ContextMenuApi    // anonymous — no appId tracking
+  nodeGraphics: NodeGraphicsApi  // anonymous — no appId tracking
+  panel: PanelApi                // anonymous — no preference for your own tab
 }
 ```
 
-- Does **NOT** include `resource` (resource registration requires React context)
-- `contextMenu` is an anonymous singleton — items are not auto-cleaned
+- Does **NOT** include `resource`, `dialog` or `appData`: those exist only per app
+- `contextMenu`, `nodeGraphics` and `panel` are anonymous. Nothing registered through
+  them is removed when your app is disabled, and `panel.open` may select another app's
+  tab when tab ids collide
+- Await `window.CyWebApi.whenReady()` before using it: the object exists before the host
+  has finished starting
 
 ### 2. `AppContext.apis` — Per-App API (AppContextApis)
 
@@ -161,21 +167,31 @@ Available inside `mount()` and plugin React components via `useAppContext()`.
 
 ```typescript
 interface AppContextApis extends CyWebApiType {
-  readonly resource: ResourceApi     // per-app resource registration
-  readonly contextMenu: ContextMenuApi  // per-app, auto-cleaned on disable
+  readonly resource: ResourceApi          // per-app resource registration
+  readonly contextMenu: ContextMenuApi    // per-app, removed on disable
+  readonly nodeGraphics: NodeGraphicsApi  // per-app, removed on disable
+  readonly appData: AppDataApi            // per-app storage, KEPT on disable
+  readonly dialog: DialogApi              // per-app, closed on disable
+  readonly panel: PanelApi                // prefers your own tab on id collisions
 }
 ```
 
+- These six domains are **owner-bound**: each is replaced with an implementation bound
+  to your app's ID (`buildPerAppApis` in the host)
 - `resource` is bound to your app's ID — you cannot register resources
   under another app
-- `contextMenu` items carry your app's ID and are automatically removed
-  when your app is disabled
+- `contextMenu` items and `nodeGraphics` hooks carry your app's ID and are removed
+  automatically when your app is disabled; open dialogs are closed
+- `appData` entries are deliberately **not** removed on disable — call `appData.remove()`
+  to discard them
+- Use these through `context.apis` or `useAppContext()?.apis`, never through
+  `window.CyWebApi`: the types are the same, so the compiler cannot tell you
 
 ### When to Use Which
 
 | Scenario | Use |
 |----------|-----|
-| Inside a React component | `useAppContext().apis` |
+| Inside a React component | `useAppContext()?.apis` (it is `null` outside the host) |
 | Inside `mount()` / `unmount()` | `context.apis` (from mount parameter) |
 | Browser console debugging | `window.CyWebApi` |
 | Browser extension / non-React | `window.CyWebApi` |
@@ -250,12 +266,15 @@ Subscribe in components with `useCyWebEvent` or in `mount()` with
 |-------|---------|------------|
 | `network:created` | `{ networkId }` | A new network is created |
 | `network:deleted` | `{ networkId }` | A network is deleted |
-| `network:switched` | `{ networkId, previousId }` | Active network changes |
+| `network:changed` | `{ networkId, addedNodeIds, removedNodeIds, addedEdgeIds, removedEdgeIds }` | Nodes or edges are added to or removed from an existing network |
+| `network:switched` | `{ networkId, previousId }` | Active network changes — its data may not be loaded yet |
+| `network:loaded` | `{ networkId }` | A network's tables and view are readable; re-read data that failed on the switch |
 | `selection:changed` | `{ networkId, selectedNodes, selectedEdges }` | Selection updates |
 | `layout:started` | `{ networkId, algorithm }` | Layout begins |
-| `layout:completed` | `{ networkId, algorithm }` | Layout finishes |
+| `layout:completed` | `{ networkId, algorithm }` | Layout finishes successfully (a failure fires no event) |
 | `style:changed` | `{ networkId, property }` | Visual style changes |
-| `data:changed` | `{ networkId, tableType, rowIds }` | Node/edge data modified |
+| `style:switched` | `{ networkId, styleId, previousStyleId }` | A network's active named style changes |
+| `data:changed` | `{ networkId, tableType, rowIds, addedColumns, removedColumns }` | Node/edge data modified |
 
 ### Usage in Components (Recommended)
 
@@ -298,9 +317,12 @@ These modules are available via the `cyweb/` prefix:
 | `cyweb/TableApi` | `import { useTableApi } from 'cyweb/TableApi'` | Node/edge table data |
 | `cyweb/VisualStyleApi` | `import { useVisualStyleApi } from 'cyweb/VisualStyleApi'` | Visual mappings |
 | `cyweb/LayoutApi` | `import { useLayoutApi } from 'cyweb/LayoutApi'` | Layout algorithms |
-| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2/image export |
+| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2 export (there is no image export) |
 | `cyweb/WorkspaceApi` | `import { useWorkspaceApi } from 'cyweb/WorkspaceApi'` | Workspace state |
-| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context |
+| `cyweb/PanelApi` | `import { usePanelApi } from 'cyweb/PanelApi'` | Open a side pane and select a tab in it |
+| `cyweb/ScopedApi` | `import { useScopedApi } from 'cyweb/ScopedApi'` | The domain APIs bound to one network |
+| `cyweb/AppDataApi` | `import { useAppDataApi } from 'cyweb/AppDataApi'` | Per-app key/value storage keyed to a network |
+| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context: the app's own `apis` |
 | `cyweb/EventBus` | `import { useCyWebEvent } from 'cyweb/EventBus'` | Event subscriptions |
 
 > **Legacy exposes** (`cyweb/NetworkStore`, `cyweb/TableStore`, etc.) are

@@ -1,10 +1,12 @@
 # Cookbook — Design
 
-> Status: **Draft, revision 6.** Revisions 2–4 incorporate three design reviews; §8 records
+> Status: **Draft, revision 7.** Revisions 2–4 incorporate three design reviews; §8 records
 > how each point was handled. Revision 5 extends the catalog (§4.10) and adds a backlog
 > (§4.12). Revision 6 replans for the published beta.5: the version bump moves to a
 > prerequisite pull request, and each phase merges into `development` on its own (§4.8,
-> §5, D-4, D-12). §9 lists what is settled and what is still open.
+> §5, D-4, D-12). Revision 7 answers the review of #23: `llms.txt` is committed into `docs/`
+> because Pages serves `main:/docs` as committed (§4.7, D-13), and Phase 0 merges without a
+> verification record (D-12). §9 lists what is settled and what is still open.
 >
 > Scope carved out of [`../developer-onboarding/developer-onboarding-roadmap.md`](../developer-onboarding/developer-onboarding-roadmap.md)
 > (items **B-2** recipes and **E-2** `llms.txt`). This document is self-contained and
@@ -317,13 +319,13 @@ committed. It is the only source for every "verified with" statement:
 | Cookbook digest | A hash of everything that can change a verification result: `recipes/`, `wiring/`, and all of `runner/` (cases, the verification app, and the runner's own code and configuration), plus `cookbook/tsconfig.json` |
 
 An examples commit cannot record itself, so the digest identifies which sources were
-verified. `GITHUB_SHA` at deploy time is the **examples** commit, not the host commit; the
-two are never confused.
+verified. The commit that `llms.txt` pins (§4.7) is an **examples** commit, not the host
+commit; the two are never confused.
 
 **The host commit describes committed code only.** A dev server serves uncommitted changes
-too, and the commit value does not show them. Every merge into `development` carries a
-record (§4.8), so every run that refreshes `verified.json` is made against a dev server
-**started fresh from a clean checkout** of the commit it records.
+too, and the commit value does not show them. From Phase 1 on, every merge into
+`development` carries a record (§4.8), so every run that refreshes `verified.json` is made
+against a dev server **started fresh from a clean checkout** of the commit it records.
 
 **The host.** A host on `localhost:5500`, started with `npm run dev` in a `cytoscape-web`
 checkout on `development`. `dev-start.sh` lives in the parent workspace repository, not
@@ -334,49 +336,64 @@ deployed, the runner runs locally and not in CI (§9, O-2).
 
 **In the repository.** `cookbook/README.md` is generated and committed; CI runs `--check`.
 
-**On GitHub Pages.** `llms.txt` and `llms-full.txt` are generated at deploy time, not
-committed:
+**On GitHub Pages.** The site is configured as `build_type: legacy` with source `main:/docs`:
+pushing to `main` serves the tracked `docs/` tree **as committed**, and no workflow's output
+is ever published (`CLAUDE.md` "Publishing"; `verify-published-apps.yml`). So `llms.txt` and
+`llms-full.txt` are **generated and committed into `docs/`**, like the app builds that
+`npm run deploy` copies there, and go live when `development` is merged into `main`.
 
-- `deploy-pages.yml` runs on push to `main`. It runs the generator with
-  `--revision $GITHUB_SHA` and writes both files into `docs/` before the upload.
-  `copy-dist.mjs` replaces only `docs/<publishPath>`, so nothing else touches them.
 - `cookbook/` and `guides/` are outside `docs/`, so Pages does not serve them. **`llms.txt`
-  links to every recipe and every wiring file** through `raw.githubusercontent.com` URLs
-  pinned to the deployed examples commit.
+  links to every recipe and every wiring file** through `raw.githubusercontent.com` URLs.
+- **The links are pinned to the last commit that changed a linked source** — anything under
+  `cookbook/` or `guides/` — found with `git log -1 -- cookbook guides`. A committed file
+  cannot name its own commit, but it does not need to: the commit that adds the regenerated
+  `docs/llms*.txt` touches no linked source, so the pinned commit still holds exactly the
+  content that was linked. Sources therefore change in one commit and the files are
+  regenerated in a later one.
+- **This relies on merge commits.** A squash merge replaces the pinned commit with a new
+  one. This repository merges pull requests with merge commits; if a squash merge happens,
+  the CI check on `development` (below) fails until the files are regenerated.
+- **The two file names are reserved.** `copy-dist.mjs` deletes `docs/<publishPath>` before
+  copying an app, so `llms.txt` and `llms-full.txt` join `RESERVED_PUBLISH_PATHS` in
+  `scripts/manifest.mjs`. An app cannot then be published over them.
 - **`llms-full.txt`** contains `USING-RECIPES.md` (a short usage contract), every wiring
   file, every recipe in full, and links to the API reference. It does not copy the API
   reference.
 - **API reference links are pinned to the host commit** in `verified.json`.
-- Both files open with the examples commit, the host commit and the api-types version.
-- **Deploy-time generation refuses** to run if the cookbook digest does not match
+- Both files open with the pinned examples commit, the host commit and the api-types
+  version.
+- **The generator refuses** to write them if the cookbook digest does not match
   `verified.json`, or if the recorded api-types did not come from the registry. Recipes
   changed since verification, or verified only against a local tarball, are never
-  published as verified. Because CI rejects a stale record first (below), this refusal is
-  a backstop, not something a routine `main` deploy should hit.
-- **Each `main` deploy publishes the catalog verified so far.** Phases merge into
-  `development` one at a time (D-12), so a `main` deploy between phases publishes a partial
-  catalog. That is intended: every recipe in it was verified.
+  published as verified.
+- **Each merge into `main` publishes the catalog verified so far.** Phases merge into
+  `development` one at a time (D-12), so `main` can carry a partial catalog. That is
+  intended: every recipe in it was verified.
 
-**In CI.** The `--check` on the committed index does not exercise the deploy-time path.
-So a CI job also generates both files into a temporary directory and checks their structure.
-CI runs on both `push` and `pull_request`, and the revision must be the commit that is
-actually checked out:
+**In CI.** On both `push` and `pull_request`, a job checks out **full history**
+(`fetch-depth: 0`, so `git log -- cookbook guides` sees the real last commit), regenerates
+both files in memory for the pinned commit, and fails if they differ from the committed
+`docs/llms*.txt`. On `pull_request` it checks out `github.event.pull_request.head.sha`
+explicitly: the default checkout is a merge commit that does not exist in the repository.
 
-- on `push`: `GITHUB_SHA`, which the default checkout already uses;
-- on `pull_request`: `github.event.pull_request.head.sha`, checked out explicitly. The
-  default checkout of a pull request is a merge commit whose SHA differs from the head.
+**On `pull_request` it also checks the merge result.** If the target branch changed
+`cookbook/` or `guides/` after the branch did, the eventual merge commit itself becomes the
+last commit to change a linked source, and the files pinned on the branch go stale the moment
+it merges. So the job also inspects the default merge checkout and fails if the last commit
+to change `cookbook/` or `guides/` there is the merge itself, asking for `development` to be
+merged into the branch and the files regenerated.
 
-The structure checks are:
+The same job runs the structure checks:
 
 - every recipe and wiring file appears;
-- every raw link uses that revision and names a path that exists in the checkout;
+- every raw link names a path that exists at the pinned commit;
 - every API reference link uses the host commit from `verified.json`.
 
 **CI also rejects a stale verification record.** It recomputes the cookbook digest and the
 resolved api-types version, and fails when either differs from `verified.json`. CI cannot
 run the runner (§4.6), so a pull request that changes anything under `recipes/`, `wiring/`
-or `runner/` must carry a refreshed `verified.json`. That keeps `development` — and so any
-`main` deploy — free of unverified recipes.
+or `runner/` must carry a refreshed `verified.json`. That keeps `development`, and so
+`main`, free of unverified recipes.
 
 **In scaffolded projects.** The scaffolder's api-types pin is not this project's change:
 the prerequisite pull request (§5) moved `API_TYPES_VERSION` in
@@ -394,13 +411,14 @@ version in `verified.json`.
 ### 4.8 Merging and release order
 
 **Each phase merges on its own (D-12).** When a phase's verification passes, `cookbook`
-merges into `development`, with a current `verified.json`. The branch then continues from
-there. Two things follow:
+merges into `development`, with a current `verified.json` from Phase 1 on. Phase 0 changes
+no file under `recipes/`, `wiring/` or `runner/` and no runner exists yet, so it merges
+without one. The branch then continues from there. Two things follow:
 
 - **The README links only what is live.** Phase 1 links the cookbook index in the
-  repository. The `llms.txt` link is added only after a `main` deploy has published it.
+  repository. The `llms.txt` link is added only after a merge into `main` has published it.
 - **Pages publishes from `main`.** Merging into `development` publishes nothing; `llms.txt`
-  first appears with the first `main` deploy after Phase 2 merges.
+  first appears when `development` is merged into `main` after Phase 2.
 
 **The scaffolder must not point at a URL that is not live yet.** The release-packages
 workflow skips any version already on npm, so the scaffolder needs a version bump of its
@@ -433,7 +451,7 @@ own. Phase 5 runs in this order:
 
 - **README, Phase 1:** a short "Building with an AI assistant" section near the top that
   links the cookbook index, and a Cookbook row in the Documentation Map.
-- **README, after the first `main` deploy of Phase 2:** the same section gains the `llms.txt`
+- **README, after the first merge into `main` that includes Phase 2:** the same section gains the `llms.txt`
   link.
 - **README, Phase 5:** the section names the scaffolded `AGENTS.md`, once the released
   scaffolder emits the pointer.
@@ -537,7 +555,8 @@ project's scope (§2):
 | `@cytoscape-web/app-test` (C-1) | **Not needed.** The runner uses a real host instead of a mock |
 | `AGENTS.md` content (E-1) | **Not needed.** This project adds one pointer section |
 
-Each of Phases 0–4 merges into `development` once its verification passes (D-12).
+Each of Phases 0–4 merges into `development` once its verification passes (D-12). From
+Phase 1 on, the merge carries a current `verified.json`.
 
 **Phase 0 — Corrections** (§4.9). It does not depend on the prerequisite pull request.
 
@@ -548,10 +567,10 @@ typecheck wiring, `wiring/`, `USING-RECIPES.md` and `WRITING-RECIPES.md`, the ge
 the cookbook index. Problems with imports and readiness surface here, before the catalog
 grows.
 
-**Phase 2 — Catalog.** The other 17 host-wide recipes with their cases, deploy-time
-`llms.txt` / `llms-full.txt` generation, and the CI jobs for `--check` and the
-generated-file structure. The README's `llms.txt` link follows the first `main` deploy that
-publishes it.
+**Phase 2 — Catalog.** The other 17 host-wide recipes with their cases, the generation of
+`docs/llms.txt` / `docs/llms-full.txt` (committed), and the CI job that regenerates them for
+the pinned commit and checks their structure. The README's `llms.txt` link follows the first
+merge into `main` that publishes it.
 
 **Phase 3 — Verification app** for the † recipes and component recipes, including the
 duplicate tab id and disable cases.
@@ -574,8 +593,9 @@ with a Run button.
 | A value import from the declaration-only package passes the types and fails at run time | Core recipes import types only; the generator rejects value imports |
 | An owner-bound domain is used through the anonymous API, and the types cannot tell | Only a few allowed forms for the `apis` argument in `wiring/` and `runner/app`, anything else rejected; behavior cases for duplicate tab ids and disabling |
 | UI awaited inside `mount()` never appears | `mount()` only registers; the runner starts cases after the app is active |
-| A "verified" claim names the wrong commit or stale sources | `verified.json` records the host commit from the running host and a digest of everything that affects verification; CI rejects a stale record, and deploy refuses one as a backstop; record-refreshing runs use a clean host checkout |
-| A `main` deploy between phases publishes something unverified | Per-phase merges carry a current `verified.json`, which CI enforces; a partial catalog is published only as far as it was verified |
+| A "verified" claim names the wrong commit or stale sources | `verified.json` records the host commit from the running host and a digest of everything that affects verification; CI rejects a stale record, and the generator refuses to publish from one; record-refreshing runs use a clean host checkout |
+| A merge into `main` between phases publishes something unverified | Per-phase merges carry a current `verified.json` from Phase 1 on, which CI enforces; a partial catalog is published only as far as it was verified |
+| A squash merge removes the commit that `llms.txt` pins | This repository merges with merge commits; CI on `development` regenerates the files for the real last source commit and fails on a mismatch |
 | The workspace's installed types hide what a generated project resolves | Verification outside the monorepo, from packed tarballs and then from the released scaffolder |
 | The scaffolder points at a URL that is not live, or its release is silently skipped | The order of §4.8; the scaffolder's own version bump |
 | The cookbook duplicates `hello-world` | Separate roles: `hello-world` tours the APIs, the cookbook answers tasks. Each links to the other |
@@ -588,10 +608,10 @@ with a Run button.
 | 1 | Every recipe, case and wiring file compiles with `skipLibCheck: false`, and the api-types version the type check resolved equals the one in `verified.json` |
 | 2 | The generator rejects each of the following, and has been seen doing so: a missing tag; an unknown `@related` id; `@apis` differing from the calls in the code; a value import in a core recipe; an owner-bound recipe called with an `apis` argument outside the allowed forms |
 | 3 | `cookbook-index.mjs --check` passes in CI, and changing an index-affecting field (`@recipe`, `@aliases`, `@related`, or the file's path) without regenerating fails it |
-| 4 | On both `push` and `pull_request`, CI generates `llms.txt` and `llms-full.txt` for the commit it actually checked out, and their structure checks pass (§4.7) |
+| 4 | On both `push` and `pull_request`, CI checks out full history, regenerates `docs/llms.txt` and `docs/llms-full.txt` for the pinned commit, finds them equal to the committed files, and passes their structure checks (§4.7) |
 | 5 | **Every recipe in the catalog has a real-host case, and every case passes**, including the duplicate tab id and disable cases. `--selftest` shows the runner failing |
 | 6 | The runner starts cases only after `whenReady()` and, for the verification app, after the app is active. It waits for the boot report with a time limit and fails if it does not appear. It cleans up in `finally` and can be re-run with nothing left behind |
-| 7 | `verified.json` records the exact api-types version from the registry, the host commit, and the digest. Changing any file under `recipes/`, `wiring/` or `runner/` without re-running the runner fails CI, and deploy-time generation refuses it as a backstop |
+| 7 | `verified.json` records the exact api-types version from the registry, the host commit, and the digest. Changing any file under `recipes/`, `wiring/` or `runner/` without re-running the runner fails CI, and the generator refuses to write `docs/llms*.txt` from it |
 | 8 | Phase 5 follows §4.8: the Pages files are live and their links resolve **before** the scaffolder that points at them is published, and the scaffolder's version was bumped |
 | 9 | A project scaffolded **outside the monorepo** with the released `create-cytoscape-app` pins the version in `verified.json`, its `AGENTS.md` names a working `llms.txt` URL, and it builds |
 | 10 | **Agent acceptance test:** in that project, a fresh agent session is given each ★ task. It finds the recipe through `llms.txt` and writes code that typechecks on the first attempt, with no invented API. The prompts and results are recorded in the checklist |
@@ -612,7 +632,7 @@ mechanism chosen differs from the review's wording, the last column says so.
 | 4 | Import rules; `.tsx`; compile the wiring | Accepted. §4.3. Wiring became one compiled file per call site, shared by all recipes, rather than a compiled example in every recipe |
 | 5 | One type package cannot prove per-recipe minimums; `@apis` must skip comments | Accepted. `@requires` removed; the set is versioned (§4.6); `@apis` is checked with the TypeScript compiler API |
 | 6 | Run the runner earlier; verify owner-bound APIs without the public app; every recipe needs a case | Accepted. Minimal runner in Phase 1, verification app in Phase 3 |
-| 7 | Say where `llms.txt` links point; Pages publishes from `main`; narrow O-1 | Accepted. §4.7. To pin the revision, the files are generated at deploy time rather than committed |
+| 7 | Say where `llms.txt` links point; Pages publishes from `main`; narrow O-1 | Accepted. §4.7. To pin the revision, the files are generated at deploy time rather than committed. *(Superseded in revision 7, D-13: Pages never serves a deployed artifact)* |
 | 8 | Fix the contradictions before linking | Accepted as Phase 0, limited to those found so far and those on linked pages; a full E-1a sweep stays out of scope |
 | — | Pitfall topics per kind of recipe; the 15-versus-19 mismatch; the README recipe table missing from the generated outputs | Accepted. §4.2 table; §4.10 states 19 (25 since revision 5); Goal 7 no longer promises a README recipe table, since the README links to the index |
 
@@ -637,6 +657,27 @@ mechanism chosen differs from the review's wording, the last column says so.
 | — | Choose the CI revision per event, and check that commit out | Accepted. §4.7: `GITHUB_SHA` on push, the pull request's head SHA, checked out explicitly, on `pull_request` |
 | — | Narrow the static analysis of where `apis` comes from | Accepted. §4.4: a short list of allowed forms; anything else is rejected rather than traced |
 
+### Review of #23, the Phase 0 merge (2026-10-07)
+
+Copilot reviewed the pull request that merged Phase 0; the points arrived after the merge and
+are handled in revision 7.
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | D-12 requires a CI-enforced `verified.json` on every merge, but Phase 0 has no runner and no record | Accepted. The requirement starts with Phase 1 (§4.8, D-12) |
+| 2 | Pages is `build_type: legacy` from `main:/docs`, so files generated in `deploy-pages.yml` are never published | Accepted, and it was a real design error: `CLAUDE.md` says so. The files are committed into `docs/` (§4.7, D-13) |
+| 3 | `guides/architecture-overview.md` still omitted `PanelApi`, `ScopedApi` and `AppDataApi` and claimed image export | Accepted. Fixed; Phase 0's table check now covers every page that lists the `cyweb/*Api` exposes, not the README alone |
+
+### Review of #24, the Phase 0 addendum (2026-10-07)
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | §4.6 still said every merge into `development` carries a record, contradicting D-12's Phase 0 exception (Copilot) | Accepted. §4.6 now says "from Phase 1 on" |
+| 2 | Checking only the pull request's head misses a merge whose result becomes the last source-changing commit (Codex) | Accepted. On `pull_request`, CI also inspects the merge checkout and fails on that case (§4.7) |
+| 3 | `guides/architecture-overview.md`'s event table was as stale as the README's had been (Codex) | Accepted. Fixed; Phase 0's event-table check now covers it too. A second miss on the same page, after #23's review caught its API table |
+| 4 | The same page's API-layer examples omitted the anonymous `nodeGraphics` and `panel` and four of the six owner-bound domains (Codex) | Accepted. Fixed to match §4.4 |
+| 5 | `docs/llms.txt` and `docs/llms-full.txt` must be reserved publish paths (Codex) | Accepted. §4.7 and a Phase 2 deliverable |
+
 ## 9. Decisions
 
 **Settled**
@@ -646,8 +687,8 @@ mechanism chosen differs from the review's wording, the last column says so.
 - **D-2. Source tree first.** The verification app (Phase 3) is not published. A public,
   runnable Cookbook app is optional Phase 6.
 - **D-3. Delivery by URL first.** `llms.txt` on GitHub Pages, linked from `AGENTS.md`, with
-  raw URLs pinned to the deployed commit. Bundling recipes into an npm package is revisited
-  after the API reaches GA.
+  raw URLs pinned to the last commit that changed a linked source (D-13). Bundling recipes
+  into an npm package is revisited after the API reaches GA.
 - **D-4. The beta.5 bump is a prerequisite, not part of this project.** *(Revised in
   revision 6. It read "release after the beta.5 publish"; beta.5 was published on
   2026-10-05.)* A separate pull request to `development` moves the ranges and the
@@ -664,10 +705,18 @@ mechanism chosen differs from the review's wording, the last column says so.
 - **D-10. The cookbook is live before the scaffolder points at it** (§4.8).
 - **D-11. The catalog grows from the backlog.** §4.10 is what is committed to, and §4.12
   records the rest. A recipe moves from the backlog to the catalog only with a passing case.
-- **D-12. Each phase merges into `development` on its own** (§4.8). A merge carries a
-  current `verified.json`, which CI enforces. A `main` deploy between phases publishes the
+- **D-12. Each phase merges into `development` on its own** (§4.8). From Phase 1 on, a merge
+  carries a current `verified.json`, which CI enforces; Phase 0, which touches no recipe and
+  precedes the runner, merges without one. A merge into `main` between phases publishes the
   catalog verified so far. The README links only what is live, and the scaffolder points at
   the cookbook only in Phase 5.
+- **D-13. `llms.txt` and `llms-full.txt` are committed into `docs/`** (§4.7). *(Revision 7;
+  revision 2 generated them at deploy time.)* Pages is `build_type: legacy` from
+  `main:/docs` and serves the tracked tree, so a workflow-generated file is never published.
+  The links pin the last commit that changed `cookbook/` or `guides/`, which the commit adding
+  the files does not change. Switching Pages to workflow mode was considered and not taken:
+  `deploy-pages.yml` has been failing on `main` since 2026-08-05, and the switch would change
+  how every app is published.
 
 **Open**
 
