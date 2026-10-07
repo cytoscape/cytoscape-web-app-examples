@@ -298,9 +298,12 @@ These modules are available via the `cyweb/` prefix:
 | `cyweb/TableApi` | `import { useTableApi } from 'cyweb/TableApi'` | Node/edge table data |
 | `cyweb/VisualStyleApi` | `import { useVisualStyleApi } from 'cyweb/VisualStyleApi'` | Visual mappings |
 | `cyweb/LayoutApi` | `import { useLayoutApi } from 'cyweb/LayoutApi'` | Layout algorithms |
-| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2/image export |
+| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2 export (there is no image export) |
 | `cyweb/WorkspaceApi` | `import { useWorkspaceApi } from 'cyweb/WorkspaceApi'` | Workspace state |
-| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context |
+| `cyweb/PanelApi` | `import { usePanelApi } from 'cyweb/PanelApi'` | Open a side pane and select a tab in it |
+| `cyweb/ScopedApi` | `import { useScopedApi } from 'cyweb/ScopedApi'` | The domain APIs bound to one network |
+| `cyweb/AppDataApi` | `import { useAppDataApi } from 'cyweb/AppDataApi'` | Per-app key/value storage keyed to a network |
+| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context: the app's own `apis` |
 | `cyweb/EventBus` | `import { useCyWebEvent } from 'cyweb/EventBus'` | Event subscriptions |
 
 > **Legacy exposes** (`cyweb/NetworkStore`, `cyweb/TableStore`, etc.) are
