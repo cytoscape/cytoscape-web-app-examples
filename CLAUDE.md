@@ -82,11 +82,8 @@ export const MyApp: CyAppWithLifecycle = {
 `CyApp.components` (`ComponentType.Menu` / `ComponentType.Panel`) was removed
 from the App API in `1.0.0-beta.5` (cytoscape/cytoscape-web#786). The host
 ignores the field, and `cyweb/ApiTypes` no longer exports `ComponentType`, so an
-app that references it does not load. The published beta.4 types that
-`package.json` still names declare both, so on a plain `npm install` the type
-checker will not stop you; with the local beta.5 types (see "Developing
-against an unpublished api-types" below) it does. Either way: do not
-introduce it.
+app that references it does not load. The beta.5 types this repository depends
+on declare neither, so the type checker rejects both: do not reintroduce them.
 
 ### Entry Point Pattern
 
@@ -253,9 +250,10 @@ When `cytoscape-web` adds or changes exposed modules:
 
 ### Developing against an unpublished api-types
 
-When the host's `development` is ahead of npm (`1.0.0-beta.5` until it is
-published), install the host's types from a local tarball without touching
-`package.json` or the lockfile:
+When the host's `development` carries an api-types version that is not on npm
+yet, install the host's types from a local tarball without touching
+`package.json` or the lockfile. (`1.0.0-beta.5` was developed this way until its
+publish on 2026-10-05.)
 
 ```bash
 # in cytoscape-web

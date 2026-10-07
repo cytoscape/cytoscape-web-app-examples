@@ -11,7 +11,7 @@ context menu item — so a new app starts from code that already loads.
 | Federation name | `template` |
 | Dev port | 5555 |
 | App config file | `project-template/src/TemplateApp.tsx` |
-| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.4` |
+| App API | `apiVersion: '1.0'`, `@cytoscape-web/api-types` `^1.0.0-beta.5` |
 
 `create-cytoscape-app` builds its templates from this directory
 (`packages/create-cytoscape-app/scripts/sync-templates.mjs`), so a change here
