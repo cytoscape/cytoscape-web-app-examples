@@ -1,12 +1,18 @@
 # Cookbook — Design
 
-> Status: **Draft, revision 7.** Revisions 2–4 incorporate three design reviews; §8 records
+> Status: **Draft, revision 8.** Revisions 2–4 incorporate three design reviews; §8 records
 > how each point was handled. Revision 5 extends the catalog (§4.10) and adds a backlog
 > (§4.12). Revision 6 replans for the published beta.5: the version bump moves to a
 > prerequisite pull request, and each phase merges into `development` on its own (§4.8,
 > §5, D-4, D-12). Revision 7 answers the review of #23: `llms.txt` is committed into `docs/`
 > because Pages serves `main:/docs` as committed (§4.7, D-13), and Phase 0 merges without a
-> verification record (D-12). §9 lists what is settled and what is still open.
+> verification record (D-12). Revision 8 follows a review after a five-week pause
+> (2026-11-16). It states which hosts the cookbook supports: **Cytoscape Web 1.1.0 and
+> later**, verified on 1.1.0 and on 1.1.1 (§4.6, D-16). Nothing relies on what a host added
+> after 1.1.0, and where the two releases behave differently a recipe says so (§4.10, §8).
+> The runner also serves an empty app catalog
+> (D-14), Phase 0 gains a small follow-up (§4.9), and a later api-types version is adopted
+> the way beta.5 was (D-15). §9 lists what is settled and what is still open.
 >
 > Scope carved out of [`../developer-onboarding/developer-onboarding-roadmap.md`](../developer-onboarding/developer-onboarding-roadmap.md)
 > (items **B-2** recipes and **E-2** `llms.txt`). This document is self-contained and
@@ -15,6 +21,21 @@
 > Touches **this repository only**. Targets App API **`1.0.0-beta.5`**, published to npm on
 > 2026-10-05 as `latest` (host tag `api-types-v1.0.0-beta.5`, `92145e25`). This repository
 > has depended on `^1.0.0-beta.5` since the prerequisite pull request of §5 (#21).
+>
+> **Supported hosts: Cytoscape Web 1.1.0 and later** (D-16). Every recipe, case and
+> corrected page must be right on both releases below.
+>
+> - **1.1.0 is the floor** (tag `v1.1.0`, `6619411b`, 2026-10-14). Its App API is exactly
+>   beta.5: between the beta.5 tag and `v1.1.0`, `src/app-api` changed only in documents
+>   and tests. Production served this commit on 2026-11-16.
+> - **1.1.1 is the latest release** (tag `v1.1.1`, `c3118c51`, published 2026-11-16), and
+>   is under test on dev1, which served a build 25 commits before the tag (`bc2b20e9`)
+>   that day. It changes behavior that recipes touch, and carries the additions of an
+>   **unpublished `1.0.0-beta.6`**.
+>
+> npm's `latest` is still beta.5, and the cookbook stays on it (§5, D-15). The host's
+> `development` (`7714c138`) is not a supported host: it is read only to learn what the
+> next release changes.
 >
 > **Implementation tracking: [cookbook-checklist.md](cookbook-checklist.md)** — the phases
 > below, broken into checkable items with per-phase verification and a per-recipe status
@@ -294,14 +315,34 @@ the one in `verified.json`.
    can be re-run repeatedly with nothing left behind.
 6. A single case can be run by id. `--selftest` proves the runner can fail.
 
+**No other app runs during a case (D-14).** On 1.1.0 this holds without help: catalog apps
+start off, and a fresh browser context has no workspace record that turns one on. From
+1.1.1 on it does not (`d5d1b0d2`): every entry of the deployment's catalog is a **core
+app**, on when the host starts. A dev server's catalog (`src/assets/apps.local.json`)
+lists the four example apps, and a deployment's lists its own. A run there would depend on
+which of those apps load. So, on every host:
+
+- Before navigating, the runner answers the page's request for the catalog with an empty
+  list (Playwright `route`). The path is `/apps.json` on 1.1.0, and `<base>apps.json` from
+  1.1.1. It changes no host file.
+- The run fails if that request was never intercepted. Both releases fetch the catalog, so
+  the check works on both, and a changed catalog path cannot pass silently.
+- The verification app (below) is installed afterwards with `?installApp=`, so it is the
+  only app in the page.
+
 **Verification app** (Phase 3), in `runner/app`, unpublished:
 
-1. The runner starts the app's dev server (§4.1) and installs it with `?installApp=`.
+1. The runner starts the app's dev server (§4.1), installs it with `?installApp=`, and
+   confirms the host's install dialog. Confirming an install link also turns the app on.
 2. `mount()` only registers the app's resources and keeps `context.apis` on a test harness.
    It runs no case and waits for no UI (§4.5).
 3. The runner waits until the app is active, using the pattern of the `smokeObservable`
    checks in `apps.manifest.json`: open the right panel and wait for the app's panel to
-   render. Then it drives the cases through the harness.
+   render. Then it drives the cases through the harness. On 1.1.0 the right pane always
+   holds the Sub Network Viewer tab, first and selected by default, so the app's panel
+   renders only once its own tab is selected. The runner selects that tab by id. This is
+   also right on 1.1.1, where the Sub Network Viewer tab exists only for a hierarchy and
+   the app's panel comes first (#877).
 4. Component recipes render with React inside the app's panel or dialogs. Owner-bound
    recipes run with the real per-app `apis`, including the duplicate tab id and disable
    cases (§4.4). The runner disables the app through the host UI and asserts that its
@@ -315,7 +356,7 @@ committed. It is the only source for every "verified with" statement:
 | Field | Source |
 |---|---|
 | api-types exact version, and whether it came from the npm registry | `node_modules/@cytoscape-web/api-types/package.json` and npm's hidden lockfile |
-| Host commit | The running host's `window.debug.boot.report.build.commit`, read after the boot report appears (runner step 3). A run fails if the report does not appear in time or the commit is `unknown` |
+| Hosts: one entry per verified release, with its version and commit | The running host's `window.debug.boot.report.build.version` and `.commit`, read after the boot report appears (runner step 3). A run fails if the report does not appear in time or the commit is `unknown`. An entry is written only when the commit is a supported release's tag commit (D-16) |
 | Cookbook digest | A hash of everything that can change a verification result: `recipes/`, `wiring/`, and all of `runner/` (cases, the verification app, and the runner's own code and configuration), plus `cookbook/tsconfig.json` |
 
 An examples commit cannot record itself, so the digest identifies which sources were
@@ -327,10 +368,32 @@ too, and the commit value does not show them. From Phase 1 on, every merge into
 `development` carries a record (§4.8), so every run that refreshes `verified.json` is made
 against a dev server **started fresh from a clean checkout** of the commit it records.
 
-**The host.** A host on `localhost:5500`, started with `npm run dev` in a `cytoscape-web`
-checkout on `development`. `dev-start.sh` lives in the parent workspace repository, not
-here, so `runner/README.md` gives the steps for a standalone clone. Until a beta.5 host is
-deployed, the runner runs locally and not in CI (§9, O-2).
+**The record names every release it was verified on (D-16).** The cookbook supports
+Cytoscape Web 1.1.0 and later. The record has one entry per verified release: the floor,
+1.1.0, and the latest release, which is 1.1.1 on 2026-11-16. The record is complete, and
+may be merged or published, only when both entries were made from the same digest and
+api-types version.
+
+- **An entry is matched by commit, not by version.** `development` and pre-release builds
+  report `1.1.1` too; dev1 served such a build on 2026-11-16. The runner knows each
+  supported release's tag commit and writes an entry only when the host's commit is one
+  of them. On any other host it still runs and reports the cases, and writes nothing.
+- **A case asserts what both releases do.** Where a recipe's header states a difference
+  between releases (§4.10), its case may assert each side on the host that has it, using
+  the host version the runner passes in. It branches for nothing else.
+- **The floor decides what a recipe may call.** On 1.1.0 the types and the host agree
+  exactly. 1.1.1 implements more than beta.5 declares, such as the `recordUndo` option of
+  `viewport.updateNodePositions`. A recipe cannot use it: the type check compiles against
+  the registry version only, and the floor does not have it.
+- `USING-RECIPES.md` names the supported releases and the record, and says that a recipe's
+  header states where the releases differ.
+
+**The host.** Two hosts, one at a time on `localhost:5500`: `npm run dev` in a clean
+checkout of the tag `v1.1.0`, then of `v1.1.1`. Two worktrees of one `cytoscape-web` clone
+are enough. Node 24.22.1 or later satisfies both; 1.1.1 requires it. `dev-start.sh` lives
+in the parent workspace repository, not here, so `runner/README.md` gives the steps for a
+standalone clone, including the two checkouts. The runner runs locally and not in CI.
+Which deployed hosts CI could use is open (§9, O-2).
 
 ### 4.7 Delivery
 
@@ -359,11 +422,13 @@ is ever published (`CLAUDE.md` "Publishing"; `verify-published-apps.yml`). So `l
 - **`llms-full.txt`** contains `USING-RECIPES.md` (a short usage contract), every wiring
   file, every recipe in full, and links to the API reference. It does not copy the API
   reference.
-- **API reference links are pinned to the host commit** in `verified.json`.
-- Both files open with the pinned examples commit, the host commit and the api-types
-  version.
+- **API reference links are pinned to the floor release's commit** in `verified.json`. Its
+  reference describes exactly the published types.
+- Both files open with the pinned examples commit, the host releases the record names, and
+  the api-types version.
 - **The generator refuses** to write them if the cookbook digest does not match
-  `verified.json`, or if the recorded api-types did not come from the registry. Recipes
+  `verified.json`, if the recorded api-types did not come from the registry, or if the
+  record lacks an entry for the floor or for the latest release (D-16). Recipes
   changed since verification, or verified only against a local tarball, are never
   published as verified.
 - **Each merge into `main` publishes the catalog verified so far.** Phases merge into
@@ -390,7 +455,8 @@ The same job runs the structure checks:
 - every API reference link uses the host commit from `verified.json`.
 
 **CI also rejects a stale verification record.** It recomputes the cookbook digest and the
-resolved api-types version, and fails when either differs from `verified.json`. CI cannot
+resolved api-types version, and fails when either differs from `verified.json`, or when
+the record lacks an entry for the floor or for the latest release (D-16). CI cannot
 run the runner (§4.6), so a pull request that changes anything under `recipes/`, `wiring/`
 or `runner/` must carry a refreshed `verified.json`. That keeps `development`, and so
 `main`, free of unverified recipes.
@@ -447,6 +513,28 @@ own. Phase 5 runs in this order:
 - **`.serena/memories/lessons.md`:** remove the `remotes.d.ts` instructions and the stale
   port list.
 
+**Phase 0 follow-up — found in the review of 2026-11-16, also before any new link:**
+
+The pages the cookbook links to must be right on 1.1.0 and on 1.1.1 (D-16). One statement
+is wrong on both. Two are right on 1.1.0 only, because 1.1.1 changed how apps start; they
+are reworded to hold on both, not replaced.
+
+- **After an install link (wrong on both).** The README, `guides/getting-started.md` and
+  the `project-template` README say to confirm the install and then enable the app.
+  Confirming an install link already turns the app on. Phase 0 missed it.
+- **"Enable one under Manage Apps" for the four example apps (right on 1.1.0 only).**
+  Catalog apps start off on 1.1.0. From 1.1.1 on, a dev host turns them on by itself, and
+  reports a load failure for each one whose dev server is not running. The sentences in
+  the README, three app READMEs and `CLAUDE.md` §5 are reworded to hold on both ("enable
+  it there if it is not already on"), and say what a reader on 1.1.1 sees.
+- **Where production apps are registered (right on 1.1.0 only).** `CLAUDE.md` §2 and
+  `guides/troubleshooting.md` name the host's `src/assets/apps.json`. From 1.1.1 on, that
+  file is empty in the host repository, a deployment's build puts in its own list, and
+  every entry is on by default for every user. Both are reworded to "the deployment's
+  curated `apps.json`".
+- The event tables and the `cyweb/*Api` tables need no change: the event map and the
+  exposes are the same at `v1.1.0`, at `v1.1.1` and on `development`.
+
 **Links (Phases 1, 2, 4 and 5) — each added only once its target is live (§4.8):**
 
 - **README, Phase 1:** a short "Building with an AI assistant" section near the top that
@@ -494,13 +582,56 @@ Notes on scope:
 - **`link-out-from-node`** (formerly `node-context-menu`) opens an external database page for
   a node from its context menu, the task the tutorial performs.
 
+**Where 1.1.0 and 1.1.1 differ** (review of 2026-11-16). A recipe must be right on both
+(D-16). It is written so that its own code behaves the same on both, and where the host
+itself behaves differently, its header says so by version. None of the differences adds
+or removes a recipe. Items marked "check" come from a fix's description and have not been
+seen on a running host yet: they are observed on both releases before a header states
+them.
+
+- **Column names.** 1.1.0 compares them exactly: `Name` and `name` are two columns. 1.1.1
+  compares them ignoring case (`120156ff`): `createColumn` fails with `AC6`, and the TSV
+  and CX2 imports merge such columns. So recipes and cases never use two names that differ
+  only by case, and `data/add-computed-column` says to choose a name that differs from the
+  existing ones by more than case. That is right on both.
+- **The workspace's tools after an API change of the current network.** On 1.1.0, after
+  `createNetworkFrom*` makes a network current, the table browser and the layout tools
+  still act on the network shown before. 1.1.1 fixes it (#927).
+  `network/create-network-from-table` and `network/subnetwork-from-selection` state the
+  1.1.0 behavior as a pitfall, by version. Calls that take a `networkId` are not affected.
+- **`network/subnetwork-from-selection` has two possible bodies, and Phase 2 chooses.**
+  `network.createNetworkFromNodeList` (in the types since beta.3, and in 1.1.0) makes the
+  subnetwork in one call and copies ids, columns, attribute rows and positions; the
+  reference does not say that it copies the visual style. Earlier revisions planned
+  `export.exportToCx2` followed by `createNetworkFromCx2` and did not mention the direct
+  call. The recipe uses the direct call unless the case shows it loses something the task
+  needs, and its header says which and why.
+- **The right pane.** `ui/open-own-panel-after-action` passes its own tab id. Without one,
+  `panel.open('right')` opens the pane on the Sub Network Viewer tab on 1.1.0, and on
+  1.1.1 shows nothing on a network that is not a hierarchy until a tab is registered
+  (#877). The tab id is right on both.
+- **Deleting.** 1.1.0 binds no Delete or Backspace key; 1.1.1 does (#867), and there
+  `elements/delete-selected` is for deleting from code. Check what Edit ▸ Undo restores
+  after a deletion: 1.1.1 fixed the restoring of node and edge views (#857). The recipe's
+  "Side effects" says what was seen on each.
+- **Hiding.** Both have the FILTER tab with its show mode. The Select menu, with Hide
+  Selected and Show All, is in 1.1.1 only. Check whether selecting a hidden element shows
+  it again: 1.1.1 fixed that (`0f8b7f42`). `style/hide-by-threshold` says what was seen on
+  each.
+- **Layout.** Check which view is fitted after `applyLayout` on a network that is not
+  current. The fix (#964) is on `development` only, so the two releases should behave
+  alike. `layout/run-layout-and-wait` lays out the current network in its example, and
+  names `fitAfterLayout: false` for any other.
+- **Keyboard shortcuts** (Undo, Redo, Select All, Delete) exist from 1.1.1. No catalog
+  recipe handles keys, so nothing is needed on either.
+
 ### 4.11 Documents
 
 | Document | Contents |
 |---|---|
-| `cookbook/USING-RECIPES.md` | How to find a recipe, where to copy it, how to get `apis` for each call site, readiness, what `verified.json` records, and the shortest path to seeing a recipe work. Also the usage contract at the top of `llms-full.txt` |
-| `cookbook/WRITING-RECIPES.md` | Anatomy and tags, required pitfall topics, import rules, error propagation, preconditions, side effects, unsubscribing, and the generator checks |
-| `cookbook/runner/README.md` | Starting a host (including from a standalone clone), running one case, fixture isolation and cleanup, reading a failure, and refreshing `verified.json` |
+| `cookbook/USING-RECIPES.md` | How to find a recipe, where to copy it, how to get `apis` for each call site, readiness, which host releases are supported and what `verified.json` records about them, that a recipe's header states where the releases differ (§4.6), and the shortest path to seeing a recipe work. Also the usage contract at the top of `llms-full.txt` |
+| `cookbook/WRITING-RECIPES.md` | Anatomy and tags, required pitfall topics, import rules, error propagation, preconditions, side effects, unsubscribing, writing for every supported release and stating a difference by version (§4.10, D-16), and the generator checks |
+| `cookbook/runner/README.md` | Starting a host from a checkout of each supported release's tag (including from a standalone clone), why the runner serves an empty app catalog and records only a release's tag commit (§4.6), running one case, fixture isolation and cleanup, reading a failure, and refreshing `verified.json` |
 | `cookbook-checklist.md` (here) | Per-recipe status of the type check and the real-host case, the current `verified.json`, the release-order checks, and the agent acceptance prompts with their results |
 
 ### 4.12 Backlog
@@ -519,7 +650,7 @@ backlog recipe enters §4.10 only with a passing real-host case (D-9). The same 
 | `analysis/find-connected-components` | NetworkAnalyzer and clusterMaker basics | `element` traversal, `table` | Isolated nodes; selecting the largest component versus coloring every component |
 | `analysis/call-web-service` | App Cookbook "Web Services"; the enrichment tutorials | `fetch`, `table.setValues` | Results that arrive after a switch; partial writes; CORS |
 | † `ui/long-running-task-with-progress` | App Cookbook "task monitor" | `dialog.open` | Cancel; the app disabled during a run; never awaiting inside `mount()` |
-| `layout/arrange-nodes-programmatically` | App Cookbook node positions; "Advanced Visualization" | `viewport.getNodePositions`, `updateNodePositions` | Nodes without positions (`missing`); arranging only the selection |
+| `layout/arrange-nodes-programmatically` | App Cookbook node positions; "Advanced Visualization" | `viewport.getNodePositions`, `updateNodePositions` | Nodes without positions (`missing`); arranging only the selection; 1.1.0 does not validate positions and 1.1.1 does (`APP9`), so the recipe validates them itself; the move is not undoable. `{ recordUndo: true }` exists in 1.1.1 but not in beta.5 or 1.1.0, so an undoable version waits for beta.6 and a floor of 1.1.1 (D-15, D-16) |
 
 **Needs a feasibility check first:**
 
@@ -542,14 +673,19 @@ project's scope (§2):
   `fitAfterLayout`.
 - **Groups (collapse and expand), annotations and legends.**
 
+The first three were checked again on 2026-11-16, on 1.1.0, on 1.1.1 and on `development`
+(`7714c138`): all remain on each. The host's own Export Network to Image dialog is user
+interface only.
+
 ## 5. Implementation phases
 
 ### Dependencies
 
 | Dependency | Standing |
 |---|---|
-| The host | **None.** The cookbook only calls the published App API. The runner reads the host's build commit, which the host already exposes |
+| The host | **None.** The cookbook only calls the published App API. The runner reads the host's build version and commit, which the host already exposes. Supported: **1.1.0 and later**. The floor's App API is exactly beta.5, and the record names the floor and the latest release, 1.1.1 (D-16) |
 | api-types `1.0.0-beta.5` | **Published** on 2026-10-05 (`latest`). Nothing waits for the publish any more |
+| api-types `1.0.0-beta.6` | **Unpublished** on 2026-11-16: its changes are on the host's `development`, and the package version stays at beta.5 until the release. **Not needed:** no catalog recipe calls what it adds, and the floor, 1.1.0, does not implement it. Once published, it is adopted the way beta.5 was; a recipe may use its additions only after the floor rises to 1.1.1 (D-15, D-16) |
 | **The prerequisite pull request** | **Done** (2026-10-07, D-4). [#21](https://github.com/cytoscape/cytoscape-web-app-examples/pull/21), a separate pull request to `development` outside this project, moved the five ranges and the scaffolder's `API_TYPES_VERSION` to `1.0.0-beta.5` and updated the beta.4 notes in `CLAUDE.md`. `create-cytoscape-app@0.4.2` is published with the new pin, and `cookbook` has merged `development`. CI now resolves beta.5 |
 | A `create-cytoscape-app` release for the pointer | Needed in Phase 5, after the cookbook is live (§4.8) |
 | `@cytoscape-web/app-test` (C-1) | **Not needed.** The runner uses a real host instead of a mock |
@@ -558,7 +694,10 @@ project's scope (§2):
 Each of Phases 0–4 merges into `development` once its verification passes (D-12). From
 Phase 1 on, the merge carries a current `verified.json`.
 
-**Phase 0 — Corrections** (§4.9). It does not depend on the prerequisite pull request.
+**Phase 0 — Corrections** (§4.9). It does not depend on the prerequisite pull request. Its
+**follow-up** corrects one statement Phase 0 missed, and rewords two that 1.1.1 made
+wrong so that they hold on 1.1.0 and 1.1.1. It lands before Phase 1 adds the README link, in the
+same merge or in one of its own.
 
 **Phase 1 — Foundation and a minimal runner.** The `cookbook/` layout, the `tsconfig`, the
 typecheck wiring, `wiring/`, `USING-RECIPES.md` and `WRITING-RECIPES.md`, the generator
@@ -598,6 +737,10 @@ with a Run button.
 | A squash merge removes the commit that `llms.txt` pins | This repository merges with merge commits; CI on `development` regenerates the files for the real last source commit and fails on a mismatch |
 | The workspace's installed types hide what a generated project resolves | Verification outside the monorepo, from packed tarballs and then from the released scaffolder |
 | The scaffolder points at a URL that is not live, or its release is silently skipped | The order of §4.8; the scaffolder's own version bump |
+| From 1.1.1 on, another app changes a case's result, or its failed load raises a toast | The runner serves the page an empty app catalog and fails if the request was never intercepted; the verification app is the only app installed (§4.6, D-14) |
+| A recipe works on one supported release and not on the other | Every case runs on the floor, 1.1.0, and on the latest release, 1.1.1; the record is incomplete without both, and CI and the generator reject an incomplete record (D-16). "Pre-read files" are read at both tags |
+| A recipe uses, or describes as general, something only the newer release has | The types are the floor's, so a call the floor lacks does not compile. Behavior differences are listed in §4.10, stated by version in the header, and observed on both releases first |
+| A build that reports `1.1.1` is taken for the release | An entry is matched by the tag's commit, not by the version: `development` and dev1's pre-release build report the same version (§4.6) |
 | The cookbook duplicates `hello-world` | Separate roles: `hello-world` tours the APIs, the cookbook answers tasks. Each links to the other |
 | Maintenance load on one maintainer | Small, independent recipes; every derived artifact is generated |
 
@@ -609,13 +752,13 @@ with a Run button.
 | 2 | The generator rejects each of the following, and has been seen doing so: a missing tag; an unknown `@related` id; `@apis` differing from the calls in the code; a value import in a core recipe; an owner-bound recipe called with an `apis` argument outside the allowed forms |
 | 3 | `cookbook-index.mjs --check` passes in CI, and changing an index-affecting field (`@recipe`, `@aliases`, `@related`, or the file's path) without regenerating fails it |
 | 4 | On both `push` and `pull_request`, CI checks out full history, regenerates `docs/llms.txt` and `docs/llms-full.txt` for the pinned commit, finds them equal to the committed files, and passes their structure checks (§4.7) |
-| 5 | **Every recipe in the catalog has a real-host case, and every case passes**, including the duplicate tab id and disable cases. `--selftest` shows the runner failing |
-| 6 | The runner starts cases only after `whenReady()` and, for the verification app, after the app is active. It waits for the boot report with a time limit and fails if it does not appear. It cleans up in `finally` and can be re-run with nothing left behind |
-| 7 | `verified.json` records the exact api-types version from the registry, the host commit, and the digest. Changing any file under `recipes/`, `wiring/` or `runner/` without re-running the runner fails CI, and the generator refuses to write `docs/llms*.txt` from it |
+| 5 | **Every recipe in the catalog has a real-host case, and every case passes on the floor, 1.1.0, and on the latest release, 1.1.1**, including the duplicate tab id and disable cases. `--selftest` shows the runner failing |
+| 6 | The runner starts cases only after `whenReady()` and, for the verification app, after the app is active. It waits for the boot report with a time limit and fails if it does not appear. It serves an empty app catalog and fails if the catalog request was never intercepted, so a run passes whether or not the example apps' dev servers are running. It cleans up in `finally` and can be re-run with nothing left behind |
+| 7 | `verified.json` records the exact api-types version from the registry, the digest, and one host entry each for the floor (1.1.0) and the latest release (1.1.1), matched by tag commit and made from that digest (D-16). A run on another commit writes no entry. Changing any file under `recipes/`, `wiring/` or `runner/` without re-running the runner fails CI, and the generator refuses to write `docs/llms*.txt` from it |
 | 8 | Phase 5 follows §4.8: the Pages files are live and their links resolve **before** the scaffolder that points at them is published, and the scaffolder's version was bumped |
 | 9 | A project scaffolded **outside the monorepo** with the released `create-cytoscape-app` pins the version in `verified.json`, its `AGENTS.md` names a working `llms.txt` URL, and it builds |
 | 10 | **Agent acceptance test:** in that project, a fresh agent session is given each ★ task. It finds the recipe through `llms.txt` and writes code that typechecks on the first attempt, with no invented API. The prompts and results are recorded in the checklist |
-| 11 | The Phase 0 corrections are in place before the README links the cookbook |
+| 11 | The Phase 0 corrections, and the follow-up for the host changes after 2026-10-07, are in place before the README links the cookbook |
 
 ## 8. Review disposition
 
@@ -678,6 +821,42 @@ are handled in revision 7.
 | 4 | The same page's API-layer examples omitted the anonymous `nodeGraphics` and `panel` and four of the six owner-bound domains (Codex) | Accepted. Fixed to match §4.4 |
 | 5 | `docs/llms.txt` and `docs/llms-full.txt` must be reserved publish paths (Codex) | Accepted. §4.7 and a Phase 2 deliverable |
 
+### Review after a pause (2026-11-16)
+
+No work happened between 2026-10-07 and 2026-11-16. This repository did not change: the
+`cookbook` branch is still `development` plus one commit. The host released 1.1.0 and
+1.1.1, and its `development` gained about 320 commits.
+
+The review took three passes. The first read the design against the host's `development`
+and wrote several of its changes into the design as the host's behavior. The second, on
+the condition that the cookbook work on the released 1.1.0, found that almost none of
+those changes is in 1.1.0, which was tagged one week after the pause began. The
+maintainer then stated the condition exactly: **the cookbook must work on 1.1.0 and
+later, and 1.1.1 is under test on dev1.** The third pass checked each change against both
+tags. The design now supports both releases (D-16), and each row says which release has
+the change and what the design does about it.
+
+What the two deployments served on 2026-11-16, read from their bundles: production,
+`6619411b`, which is the tag `v1.1.0`; dev1, `bc2b20e9`, a build that reports `1.1.1` and
+is 25 commits before the tag `v1.1.1` (`c3118c51`).
+
+| # | Host change | 1.1.0 | 1.1.1 | Disposition |
+|---|---|---|---|---|
+| 1 | Catalog apps are on by default, so a dev host starts the four example apps (`d5d1b0d2`, `649f219b`, `b60cfd12`) | No: they start off | Yes | The runner serves an empty catalog and checks that it did, on both (§4.6, D-14) |
+| 2 | The pages that say "enable the app under Manage Apps" | Right | Wrong for catalog apps | Reworded to hold on both. The install-link sentence is wrong on both (§4.9) |
+| 3 | The host's `apps.json` is `[]`, and a deployment puts in its own | No: three example apps | Yes | `CLAUDE.md` §2 and `guides/troubleshooting.md` reworded to hold on both (§4.9) |
+| 4 | `viewport.updateNodePositions(…, { recordUndo: true })` and position validation (#874), declared by the unpublished beta.6 | No | Implemented, not declared by beta.5 | The cookbook stays on beta.5 (D-15). The backlog's `arrange-nodes-programmatically` validates positions itself and is not undoable (§4.12) |
+| 5 | The right pane is shown only while it has a tab; `'sub-network-viewer'` only for a hierarchy (#877) | No: that tab is always first | Yes | The runner and `open-own-panel-after-action` select the app's tab by id, which is right on both (§4.6, §4.10) |
+| 6 | Column names compared ignoring case; imports merge columns (`120156ff`) | No: compared exactly | Yes | Recipes and cases never use names that differ only by case (§4.10) |
+| 7 | The workspace's tools follow an API change of the current network (#927) | No | Yes | A pitfall in two recipes, stated by version (§4.10) |
+| 8 | Delete and Backspace keys, the Select menu, "Host Keyboard Shortcuts" (#867, #837) | No | Yes | `delete-selected` and `hide-by-threshold` describe both (§4.10) |
+| 9 | Fixes to undo of a deletion (#857) and to hidden elements shown on selection (`0f8b7f42`) | No | Yes | Two "check" items: the header states what is seen on each (§4.10) |
+| 10 | The layout fit follows the network laid out (#964, #979) | No | No: `development` only | A "check" item; the two releases should behave alike (§4.10) |
+| 11 | The host's `engines` field requires Node 24.22.1 (#913) | No: `>=24.0.0` | Yes | The runner's hosts use Node 24.22.1 or later, which satisfies both (§4.6) |
+| 12 | The FILTER tab in the left pane | Yes | Yes | `hide-by-threshold` mentions its show mode (§4.10) |
+| — | **The same at both tags and on `development`:** the event map (11 events besides `cywebapi:ready`) and the 12 `cyweb/*Api` exposes; `perAppApis.ts` and the six owner-bound domains; the debug override key and `window.debug.boot.report.build`; `?installApp=`, its confirmation dialog and `activate: true`; `ApplyLayoutOptions`, `ExportApi` and `viewport.fit`; the api-types version, `1.0.0-beta.5` | Yes | Yes | Nothing to change |
+| — | Found on the way, not a host change: `network.createNetworkFromNodeList` has been in the types since beta.3, and the plan for `subnetwork-from-selection` did not mention it | Yes | Yes | Phase 2 chooses between it and the CX2 round trip (§4.10) |
+
 ## 9. Decisions
 
 **Settled**
@@ -717,9 +896,43 @@ are handled in revision 7.
   the files does not change. Switching Pages to workflow mode was considered and not taken:
   `deploy-pages.yml` has been failing on `main` since 2026-08-05, and the switch would change
   how every app is published.
+- **D-14. No other app runs during a case** (§4.6). *(Revision 8.)* The runner serves the
+  page an empty app catalog and fails if the request was never intercepted. On 1.1.0 this
+  changes nothing, because catalog apps start off. On 1.1.1 it is needed: the catalog's
+  apps are on by default, and a dev host's catalog lists the four example apps. Turning
+  the apps off through the host's user interface was considered and not taken: it depends
+  on that interface, and the apps would already have loaded once.
+- **D-15. A later api-types version is adopted the way beta.5 was** (D-4). *(Revision 8.)*
+  The cookbook compiles against what npm publishes, never against a local tarball of an
+  unpublished version. When beta.6 is published, a separate pull request to `development`
+  moves the ranges and the scaffolder's pin, and the next phase merge carries a record made
+  with it: CI already rejects a record whose api-types version differs from the one
+  resolved (§4.7). A recipe that needs an unpublished addition stays in the backlog, and
+  one that needs an addition the floor lacks waits until the floor rises (D-16).
+- **D-16. The cookbook supports Cytoscape Web 1.1.0 and later** (§4.6). *(Revision 8; the
+  condition was set by the maintainer on 2026-11-16.)*
+  - **1.1.0 is the floor.** A recipe may not depend on anything a host added or fixed
+    after it.
+  - **Every recipe, case and corrected page is right on every supported release.** It is
+    verified on two: the floor, and the latest release, which is 1.1.1 today. The record
+    has one entry for each, matched by the tag's commit, and is incomplete without both.
+  - **Where the releases behave differently, the recipe's own code behaves the same on
+    both, and its header states the difference by version** (§4.10).
+  - "Pre-read files" are read at both tags. Earlier revisions said `development`: on
+    2026-10-07 it was almost the same as what became 1.1.0, and it no longer is.
+  - **A new release** is added by running every case on its tag and adding its entry. It
+    then takes the place of 1.1.1 as the latest release; the floor's entry stays.
+  - **Raising the floor** is a decision of its own, in one pull request that removes the
+    old floor's entry and the version notes that no longer apply.
 
 **Open**
 
 - **O-1. Which backlog recipes (§4.12) to add next, and in what order.**
-- **O-2. Which host the runner uses in CI** once a beta.5 host is deployed (dev1 or
-  production).
+- **O-2. Which hosts the runner uses in CI.** *(Reworded in revision 8.)* It read "once a
+  beta.5 host is deployed". On 2026-11-16 production served exactly 1.1.0, and dev1 a
+  pre-release build of 1.1.1 (§8). A deployment can stand for a release only while it
+  serves that release's tag commit, which the runner checks. Also open: the verification
+  app's dev server is on `localhost`, which dev1 accepts and production may not.
+- **O-3. When to raise the floor above 1.1.0.** *(New in revision 8.)* Probably once
+  production runs 1.1.1. Raising it lets recipes use what 1.1.1 adds, once beta.6 declares
+  it (D-15), and removes the version notes of §4.10.
