@@ -576,8 +576,8 @@ and committed into `docs/`, never generated in a workflow (design D-13).
 - [x] `scripts/manifest.mjs`: `llms.txt` and `llms-full.txt` join `RESERVED_PUBLISH_PATHS`
 - [x] `deploy-pages.yml` is **not** changed: its output is never served
 - [x] **The files are committed**, in two steps as WRITING-RECIPES.md describes: the
-      sources in `31cbb6a` and `46ebe17`, then the two files alone in `3a8ec14`, pinned to
-      `46ebe17`. `--check` finds them current
+      sources, then the two files alone. First pinned to `46ebe17` (`3a8ec14`); after the
+      review of #28, regenerated for `d418a9c` (`0b66856`). `--check` finds them current
 
 ### Verification (Phase 2)
 
