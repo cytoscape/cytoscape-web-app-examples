@@ -30,7 +30,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, posix } from 'node:path'
 
 import ts from 'typescript'
 
@@ -687,6 +687,46 @@ const rawUrl = (commit, path) =>
   `https://raw.githubusercontent.com/${EXAMPLES_REPO}/${commit}/${path}`
 const hostUrl = (commit, path) =>
   `https://raw.githubusercontent.com/${HOST_REPO}/${commit}/${path}`
+const treeUrl = (commit, path) =>
+  `https://github.com/${EXAMPLES_REPO}/tree/${commit}/${path}`
+
+/** `repo/(blob|tree)/<ref>/path` or raw `repo/<ref>/path` → { ref, path }. */
+const githubTarget = (url, repo) => {
+  const match =
+    new RegExp(`^https://github\\.com/${repo}/(?:blob|tree)/([^/]+)/?(.*)$`).exec(url) ??
+    new RegExp(`^https://raw\\.githubusercontent\\.com/${repo}/([^/]+)/?(.*)$`).exec(url)
+  return match === null ? null : { ref: match[1], path: match[2] }
+}
+
+/** Markdown outside fenced code, where a link is a link. */
+const outsideFences = (text) => text.replace(/^(`{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm, '')
+
+/**
+ * A Markdown document from `cookbook/`, with every link made absolute and
+ * pinned: relative paths to the pinned commit (raw for a file, the tree page
+ * for a directory), and links into either repository's branches to the pin
+ * or to the floor's commit. llms-full.txt is read away from the repository,
+ * where a relative link or a branch name points at nothing, or at something
+ * else later.
+ */
+const pinLinks = (markdown, base, sources) => {
+  const { pinned, floor } = sources
+  return markdown.replace(/\]\(([^)\s]+)\)/g, (whole, target) => {
+    if (target.startsWith('#')) return whole
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target)) {
+      const host = githubTarget(target, HOST_REPO)
+      if (host !== null) return `](${hostUrl(floor.commit, host.path)})`
+      const examples = githubTarget(target, EXAMPLES_REPO)
+      if (examples !== null) return `](${rawUrl(pinned, examples.path)})`
+      return whole
+    }
+    const [path, hash] = target.split('#')
+    const resolved = posix.normalize(posix.join(base, path)).replace(/\/$/, '')
+    const isTree = git(['cat-file', '-t', `${pinned}:${resolved}`]) === 'tree'
+    const url = isTree ? treeUrl(pinned, resolved) : rawUrl(pinned, resolved)
+    return `](${url}${hash === undefined ? '' : `#${hash}`})`
+  })
+}
 
 const GUIDES = [
   ['getting-started.md', 'Scaffold, configure and run an app'],
@@ -791,7 +831,11 @@ const renderLlmsFull = (sources) => {
   lines.push(
     '---',
     '',
-    readFileSync(join(COOKBOOK_DIR, 'USING-RECIPES.md'), 'utf8').trim(),
+    pinLinks(
+      readFileSync(join(COOKBOOK_DIR, 'USING-RECIPES.md'), 'utf8').trim(),
+      'cookbook',
+      sources,
+    ),
     '',
     '---',
     '',
@@ -830,21 +874,25 @@ const checkLlmsStructure = (llms, full, sources, pathExists) => {
       problems.push(`llms-full.txt does not hold cookbook/${path}`)
     }
   }
-  const examplesPrefix = `https://raw.githubusercontent.com/${EXAMPLES_REPO}/`
-  const hostPrefix = `https://raw.githubusercontent.com/${HOST_REPO}/`
-  for (const url of new Set(`${llms}\n${full}`.match(/https:\/\/[^\s)]+/g) ?? [])) {
-    if (url.startsWith(examplesPrefix)) {
-      const [commit, ...path] = url.slice(examplesPrefix.length).split('/')
-      if (commit !== pinned) {
+  // Read away from the repository, a relative link leads nowhere.
+  for (const [name, text] of [['llms.txt', llms], ['llms-full.txt', full]]) {
+    for (const [, target] of outsideFences(text).matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (!/^(https?:|mailto:|#)/.test(target)) {
+        problems.push(`${name} has a relative link, ${target}`)
+      }
+    }
+  }
+  for (const url of new Set(`${llms}\n${full}`.match(/https:\/\/[^\s)>\]]+/g) ?? [])) {
+    const examples = githubTarget(url, EXAMPLES_REPO)
+    const host = githubTarget(url, HOST_REPO)
+    if (examples !== null) {
+      if (examples.ref !== pinned) {
         problems.push(`${url} is not pinned to ${pinned}`)
-      } else if (!pathExists(commit, path.join('/'))) {
-        problems.push(`${url} names a path that does not exist at ${commit}`)
+      } else if (!pathExists(examples.ref, examples.path)) {
+        problems.push(`${url} names a path that does not exist at ${examples.ref}`)
       }
-    } else if (url.startsWith(hostPrefix)) {
-      const commit = url.slice(hostPrefix.length).split('/')[0]
-      if (commit !== floor.commit) {
-        problems.push(`${url} is not pinned to the floor, ${floor.commit}`)
-      }
+    } else if (host !== null && host.ref !== floor.commit) {
+      problems.push(`${url} is not pinned to the floor, ${floor.commit}`)
     }
   }
   return problems
@@ -986,6 +1034,30 @@ const selftest = () => {
       `${llms}\n- [h](${hostUrl('d'.repeat(40), 'src/app-api/api_docs/Api.md')})`,
       full,
       'is not pinned to the floor',
+    ],
+    [
+      'llms-relative-link',
+      llms,
+      `${full}\nSee [the wiring](wiring/from-mount.ts).`,
+      'has a relative link, wiring/from-mount.ts',
+    ],
+    [
+      'llms-host-branch-link',
+      llms,
+      `${full}\n[ref](https://github.com/${HOST_REPO}/blob/development/src/app-api/api_docs/Api.md)`,
+      'is not pinned to the floor',
+    ],
+    [
+      'llms-examples-branch-link',
+      llms,
+      `${full}\n[x](https://github.com/${EXAMPLES_REPO}/blob/development/cookbook/README.md)`,
+      'is not pinned to',
+    ],
+    [
+      'llms-link-in-code-is-not-a-link',
+      llms,
+      `${full}\n\`\`\`\`typescript\nconst a = b[0](c)\n\`\`\`\``,
+      'ok',
     ],
   ]
   for (const [name, text, fullText, expected] of structureFixtures) {

@@ -30,14 +30,17 @@ const recipeCase: RecipeCase = {
     )
     if (grid === undefined) return check(false, 'the host has a grid layout')
 
-    // Count the events, to check the order the header describes.
-    const events: string[] = []
+    // Every layout event, with its network: the order for the fixture, and
+    // none at all for a call that fails.
+    const seen: Array<{ type: string; networkId: string }> = []
     const onStarted = (e: WindowEventMap['layout:started']): void => {
-      if (e.detail.networkId === networkId) events.push('started')
+      seen.push({ type: 'started', networkId: e.detail.networkId })
     }
     const onCompleted = (e: WindowEventMap['layout:completed']): void => {
-      if (e.detail.networkId === networkId) events.push('completed')
+      seen.push({ type: 'completed', networkId: e.detail.networkId })
     }
+    const events = (id: string): string[] =>
+      seen.filter((e) => e.networkId === id).map((e) => e.type)
     window.addEventListener('layout:started', onStarted)
     window.addEventListener('layout:completed', onCompleted)
     ctx.onCleanup(() => {
@@ -55,8 +58,8 @@ const recipeCase: RecipeCase = {
     )
     check(spread(networkId) > 0, 'the nodes have moved apart')
     check(
-      events.join() === 'started,completed',
-      `started, then completed, before the promise resolved (${events.join()})`,
+      events(networkId).join() === 'started,completed',
+      `started, then completed, before the promise resolved (${events(networkId).join()})`,
     )
 
     // A network that is not current: laid out, not fitted, not current.
@@ -87,8 +90,9 @@ const recipeCase: RecipeCase = {
       `an unknown network resolves to the host's failure (${JSON.stringify(missing)})`,
     )
     check(
-      events.filter((e) => e === 'completed').length === 1,
-      'no layout:completed follows a failure',
+      events('no-such-network').length === 0 &&
+        events(networkId).join() === 'started,completed',
+      'a failed call fires no layout event at all',
     )
   },
 }

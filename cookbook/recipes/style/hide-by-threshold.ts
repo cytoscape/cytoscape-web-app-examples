@@ -23,7 +23,10 @@
  *   threshold, and an `edgeVisibility` one on every edge that touches such a
  *   node, as the host's own Hide Selected does on 1.1.1.
  * - Leaves elements that were already hidden as they were, and returns
- *   `show()`, which shows again only what the recipe hid.
+ *   `show()`, which shows again only what the recipe hid; a second call does
+ *   nothing. An element with an
+ *   `'element'` bypass (shown on purpose, by an import, the style editor or
+ *   an app) is hidden too, and `show()` puts its `'element'` back.
  * - Records **no** undo entry. Bypasses are saved with the network until
  *   removed.
  *
@@ -45,8 +48,12 @@
  *   every element whenever the selection changed from outside the canvas,
  *   for example by the selection API. 1.1.1 fixes this (`0f8b7f42`). The
  *   case sees both behaviors.
+ * - **A visibility bypass is not always "hidden".** Its value is `'none'` or
+ *   `'element'`. Only `'none'` hides; skipping every element that has a
+ *   bypass would leave the `'element'` ones on screen, with success
+ *   reported.
  * - **Use one call per property.** `setBypass` takes every id at once. If
- *   the edges fail, the recipe shows the nodes again, so nothing is left
+ *   the edges fail, the recipe restores the nodes, so nothing is left
  *   half-hidden.
  *
  * ## Don't
@@ -106,10 +113,19 @@ export function hideByThreshold(
     )
   }
 
-  const hiddenNodes = apis.visualStyle.getBypasses(networkId, 'nodeVisibility')
-  if (!hiddenNodes.success) return hiddenNodes
-  const hiddenEdges = apis.visualStyle.getBypasses(networkId, 'edgeVisibility')
-  if (!hiddenEdges.success) return hiddenEdges
+  const nodeBypasses = apis.visualStyle.getBypasses(networkId, 'nodeVisibility')
+  if (!nodeBypasses.success) return nodeBypasses
+  const edgeBypasses = apis.visualStyle.getBypasses(networkId, 'edgeVisibility')
+  if (!edgeBypasses.success) return edgeBypasses
+  const before = {
+    nodeVisibility: nodeBypasses.data.bypasses,
+    edgeVisibility: edgeBypasses.data.bypasses,
+  }
+  // Only 'none' is hidden. An 'element' bypass shows an element on purpose:
+  // it is replaced while hidden, and put back by show().
+  const notHidden =
+    (vpName: 'nodeVisibility' | 'edgeVisibility') => (id: IdType) =>
+      before[vpName][id] !== 'none'
 
   const below = new Set<IdType>()
   for (const row of table.data.rows) {
@@ -120,33 +136,43 @@ export function hideByThreshold(
         : options.hideMissing === true
     if (fails) below.add(String(row.id))
   }
-  const nodeIds = [...below].filter((id) => !(id in hiddenNodes.data.bypasses))
+  const nodeIds = [...below].filter(notHidden('nodeVisibility'))
 
   const edges = apis.element.getEdges(networkId)
   if (!edges.success) return edges
   const edgeIds = edges.data.edges
     .filter((e) => below.has(e.sourceId) || below.has(e.targetId))
     .map((e) => e.id)
-    .filter((id) => !(id in hiddenEdges.data.bypasses))
+    .filter(notHidden('edgeVisibility'))
 
-  const show = (): ApiResult => {
-    if (nodeIds.length > 0) {
-      const shown = apis.visualStyle.deleteBypass(
+  // What each property still has to put back. Emptied once restored, so a
+  // second show() never touches a bypass set after the first.
+  const pending = { nodeVisibility: nodeIds, edgeVisibility: edgeIds }
+  /** Put back what the pending ids had: no bypass, or their own one. */
+  const restore = (vpName: 'nodeVisibility' | 'edgeVisibility'): ApiResult => {
+    const ids = pending[vpName]
+    const unset = ids.filter((id) => !(id in before[vpName]))
+    if (unset.length > 0) {
+      const shown = apis.visualStyle.deleteBypass(networkId, vpName, unset)
+      if (!shown.success) return shown
+    }
+    const visible = ids.filter((id) => id in before[vpName])
+    if (visible.length > 0) {
+      const shown = apis.visualStyle.setBypass(
         networkId,
-        'nodeVisibility',
-        nodeIds,
+        vpName,
+        visible,
+        'element',
       )
       if (!shown.success) return shown
     }
-    if (edgeIds.length > 0) {
-      const shown = apis.visualStyle.deleteBypass(
-        networkId,
-        'edgeVisibility',
-        edgeIds,
-      )
-      if (!shown.success) return shown
-    }
+    pending[vpName] = []
     return { success: true, data: undefined }
+  }
+  const show = (): ApiResult => {
+    const nodes = restore('nodeVisibility')
+    if (!nodes.success) return nodes
+    return restore('edgeVisibility')
   }
 
   if (nodeIds.length > 0) {
@@ -166,7 +192,7 @@ export function hideByThreshold(
       'none',
     )
     if (!hid.success) {
-      show()
+      restore('nodeVisibility')
       return hid
     }
   }

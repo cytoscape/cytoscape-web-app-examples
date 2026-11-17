@@ -22,7 +22,7 @@
  * - Sets a border color and width bypass on those nodes. Their fill, label
  *   and any mapping stay as they are.
  * - Returns `clear()`, which puts back exactly the bypasses those nodes had
- *   before: none, or the earlier values.
+ *   before: none, or the earlier values. A second call does nothing.
  * - Records **no** undo entry. Edit ▸ Undo does not remove a highlight; only
  *   `clear()` does.
  * - Bypasses are part of the network's style: they are saved with the
@@ -91,6 +91,8 @@ export function highlightWithBypass(
   if (nodeIds.length === 0) {
     return failure('RECIPE_NO_NODES', 'nodeIds is empty')
   }
+  // A private copy: the caller may reuse its array.
+  const ids = [...nodeIds]
 
   // What these nodes have now, to restore it.
   const before = new Map<string, Record<IdType, unknown>>()
@@ -100,21 +102,25 @@ export function highlightWithBypass(
     before.set(vpName, read.data.bypasses)
   }
 
-  const set = apis.visualStyle.setBypasses(networkId, nodeIds, {
+  const set = apis.visualStyle.setBypasses(networkId, ids, {
     nodeBorderColor: options.color ?? '#e69f00',
     nodeBorderWidth: options.width ?? 6,
   })
   if (!set.success) return set
 
+  // What each property still has to put back. Emptied once restored, so a
+  // second clear() never touches a bypass set after the first.
+  const pending = new Map<string, IdType[]>(PROPERTIES.map((vp) => [vp, ids]))
   const clear = (): ApiResult => {
     for (const vpName of PROPERTIES) {
+      const targets = pending.get(vpName) ?? []
       const earlier = before.get(vpName) ?? {}
-      const unset = nodeIds.filter((id) => !(id in earlier))
+      const unset = targets.filter((id) => !(id in earlier))
       if (unset.length > 0) {
         const removed = apis.visualStyle.deleteBypass(networkId, vpName, unset)
         if (!removed.success) return removed
       }
-      for (const id of nodeIds.filter((id) => id in earlier)) {
+      for (const id of targets.filter((id) => id in earlier)) {
         const restored = apis.visualStyle.setBypass(
           networkId,
           vpName,
@@ -123,6 +129,7 @@ export function highlightWithBypass(
         )
         if (!restored.success) return restored
       }
+      pending.set(vpName, [])
     }
     return { success: true, data: undefined }
   }

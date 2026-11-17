@@ -122,9 +122,12 @@ export function createNetworkFromTable(
   // Check everything before creating anything.
   const edgeList: Array<[string, string]> = []
   const types = new Map<string, ValueTypeName>()
+  // A row's own cells only: row.toString is not a "toString" column.
+  const cell = (row: Record<string, Cell | undefined>, column: string) =>
+    Object.hasOwn(row, column) ? row[column] : undefined
   for (const [index, row] of rows.entries()) {
-    const source = row[columns.source]
-    const target = row[columns.target]
+    const source = cell(row, columns.source)
+    const target = cell(row, columns.target)
     if (source === undefined || source === '' || target === undefined ||
         target === '') {
       return failure(
@@ -198,12 +201,13 @@ export function createNetworkFromTable(
   // One row per edge, holding the row's own values: see Pitfalls.
   const edgeRows: Record<IdType, Record<string, Cell>> = {}
   rows.forEach((row, index) => {
-    const values: Record<string, Cell> = {}
-    for (const column of types.keys()) {
-      const value = row[column]
-      if (value !== undefined) values[column] = value
-    }
-    edgeRows[edgeIds[index]] = values
+    // fromEntries, not values[column] = …: a column named "__proto__" would
+    // set the object's prototype instead of adding a value.
+    edgeRows[edgeIds[index]] = Object.fromEntries(
+      [...types.keys()]
+        .filter((column) => cell(row, column) !== undefined)
+        .map((column) => [column, cell(row, column) as Cell]),
+    )
   })
   const written = apis.table.editRows(networkId, 'edge', edgeRows)
   if (!written.success) return undo(written)

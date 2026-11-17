@@ -3,7 +3,8 @@
  * @aliases import table, import data, join table, merge data, add
  *   attributes from a file, import TSV, load node attributes, map data onto
  *   nodes, attribute table
- * @apis table.getColumns, table.importTableFromTsv
+ * @apis table.getColumns, element.getNodeIds, element.getEdgeIds,
+ *   table.getTable, table.editRows, table.importTableFromTsv
  * @related data/add-computed-column, data/read-column-values-safely,
  *   network/create-network-from-table
  *
@@ -25,7 +26,10 @@
  *
  * - Creates every column of the file that the table lacks, and writes the
  *   values of every row whose key matches.
- * - Records **no** undo entry: Edit ▸ Undo does not remove imported data.
+ * - The import records **no** undo entry: Edit ▸ Undo does not remove
+ *   imported data.
+ * - With key `id`, an element the file names that has no table row gets an
+ *   empty one first, in one batch (`createdRows`): **one** undo entry.
  * - A row whose key matches nothing is skipped and reported in
  *   `unmatchedKeys`. A key that matches several elements, two nodes with the
  *   same `name`, writes to all of them.
@@ -45,8 +49,16 @@
  *   refuses such a file on both, before changing anything.
  * - **An empty cell** leaves a number or boolean as it was, and writes an
  *   empty string into a text column.
- * - **Duplicate keys in the file** would leave the last row's values. The
- *   recipe refuses them.
+ * - **An element with no row takes no value.** The import writes through
+ *   `setValues`, which changes only rows that exist and reports a match
+ *   either way, on 1.1.0 and 1.1.1. An edge-list network has no edge rows. So
+ *   with key `id`, the recipe creates empty rows for the elements that lack
+ *   one; `editRows` would replace a row that exists, so only missing ones are
+ *   created. With any other key such an element has no key value, and
+ *   cannot match.
+ * - **Duplicate keys in the file** would leave the last row's values, and a
+ *   row with an empty key would be skipped without being reported. The
+ *   recipe refuses both.
  * - **A typed header must match an existing column's type.** 1.1.0 would
  *   write `score:long` values into a `double` column as they are; 1.1.1
  *   refuses them with `A1`. The recipe refuses such a file on both.
@@ -75,6 +87,8 @@ import type {
 export interface Joined {
   /** Elements that received values. */
   matchedElements: number
+  /** Empty rows created first, for elements the file names that had none. */
+  createdRows: number
   /** Key values in the file that match no element. */
   unmatchedKeys: string[]
   /** Columns the import created. */
@@ -105,7 +119,7 @@ const columnName = (field: string): string => {
 }
 
 export function joinTableByKey(
-  apis: Pick<CyWebApiType, 'table'>,
+  apis: Pick<CyWebApiType, 'table' | 'element'>,
   networkId: IdType,
   tsvText: string,
   key: string,
@@ -132,16 +146,20 @@ export function joinTableByKey(
   }
 
   // Same letters, other case: 1.1.0 and 1.1.1 would do different things.
-  const seen = new Map<string, string>()
-  for (const name of [...columns.data.columns.map((c) => c.name), ...header]) {
-    const other = seen.get(name.toLowerCase())
-    if (other !== undefined && other !== name) {
+  // Only the file's columns matter; two old table columns that clash with
+  // each other, and with nothing in the file, are left alone.
+  for (const [i, name] of header.entries()) {
+    const other =
+      header.slice(0, i).find((h) => h.toLowerCase() === name.toLowerCase() && h !== name) ??
+      columns.data.columns
+        .map((c) => c.name)
+        .find((c) => c.toLowerCase() === name.toLowerCase() && c !== name)
+    if (other !== undefined) {
       return failure(
         'RECIPE_NAME_CLASH',
         `${name} and ${other} differ only by case`,
       )
     }
-    seen.set(name.toLowerCase(), name)
   }
   if (new Set(header).size !== header.length) {
     return failure('RECIPE_NAME_CLASH', 'the file names a column twice')
@@ -163,12 +181,47 @@ export function joinTableByKey(
   }
 
   const keys = new Set<string>()
-  for (const line of lines.slice(1)) {
+  for (const [index, line] of lines.slice(1).entries()) {
     const value = line.split('\t')[keyIndex] ?? ''
+    if (value === '') {
+      return failure(
+        'RECIPE_EMPTY_KEY',
+        `row ${index + 1} has no ${key}: the host would skip it unreported`,
+      )
+    }
     if (keys.has(value)) {
       return failure('RECIPE_DUPLICATE_KEY', `the key ${value} appears twice`)
     }
     keys.add(value)
+  }
+
+  // With key `id`, an element without a row would be matched and written
+  // nothing: see Pitfalls. Create the missing rows, and only those.
+  let createdRows = 0
+  if (key === 'id') {
+    let elementIds: IdType[]
+    if (tableType === 'node') {
+      const read = apis.element.getNodeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.nodeIds
+    } else {
+      const read = apis.element.getEdgeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.edgeIds
+    }
+    const table = apis.table.getTable(networkId, tableType)
+    if (!table.success) return table
+    const withRow = new Set(table.data.rows.map((row) => String(row.id)))
+    const missing = elementIds.filter((id) => keys.has(id) && !withRow.has(id))
+    if (missing.length > 0) {
+      const made = apis.table.editRows(
+        networkId,
+        tableType,
+        Object.fromEntries(missing.map((id) => [id, {}])),
+      )
+      if (!made.success) return made
+      createdRows = missing.length
+    }
   }
 
   const imported = apis.table.importTableFromTsv(
@@ -182,6 +235,7 @@ export function joinTableByKey(
     success: true,
     data: {
       matchedElements: imported.data.rowCount,
+      createdRows,
       unmatchedKeys: imported.data.skippedRows,
       newColumns: imported.data.newColumns,
       skippedCells: imported.data.skippedCells,

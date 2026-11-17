@@ -22,10 +22,13 @@ const recipeCase: RecipeCase = {
       'c has a width bypass of 3',
     )
 
-    const highlight = highlightWithBypass(apis, networkId, [ids.b, ids.c], {
+    const targets = [ids.b, ids.c]
+    const highlight = highlightWithBypass(apis, networkId, targets, {
       color: '#ff0000',
       width: 6,
     })
+    // The caller reuses its array: clear() must not follow it.
+    targets[0] = ids.a
     check(highlight.success, 'the recipe succeeds')
     if (!highlight.success) return
     check(
@@ -51,6 +54,17 @@ const recipeCase: RecipeCase = {
       bypass('nodeBorderWidth', ids.c) === 3 &&
         bypass('nodeBorderColor', ids.c) === undefined,
       'c has its own width of 3 again',
+    )
+
+    // A second clear() leaves a bypass set after the first one alone.
+    check(
+      apis.visualStyle.setBypass(networkId, 'nodeBorderWidth', [ids.b], 4)
+        .success,
+      'the user gives b a width of 4',
+    )
+    check(
+      highlight.data.clear().success && bypass('nodeBorderWidth', ids.b) === 4,
+      'a second clear() changes nothing',
     )
 
     const empty = highlightWithBypass(apis, networkId, [])

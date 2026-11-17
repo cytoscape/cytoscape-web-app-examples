@@ -69,6 +69,16 @@ const recipeCase: RecipeCase = {
       !twice.success && twice.error.code === 'RECIPE_DUPLICATE_KEY',
       'a key twice in the file is refused',
     )
+    const emptyKey = joinTableByKey(
+      apis,
+      networkId,
+      'name\tnote\na\t1\n\t2\n',
+      'name',
+    )
+    check(
+      !emptyKey.success && emptyKey.error.code === 'RECIPE_EMPTY_KEY',
+      'a row with no key is refused, not skipped in silence',
+    )
     const retyped = joinTableByKey(
       apis,
       networkId,
@@ -90,6 +100,46 @@ const recipeCase: RecipeCase = {
       'a file without the key is refused',
     )
     check(columnNames() === before, 'the refusals create no column')
+
+    // Edges by id: an edge-list network has no edge rows, and a plain import
+    // would report the match and store nothing.
+    const edges = apis.element.getEdgeIds(networkId)
+    if (!edges.success) return check(false, 'edges readable')
+    const [first, second] = edges.data.edgeIds
+    const byId = joinTableByKey(
+      apis,
+      networkId,
+      `id\tweight:double\n${first}\t0.5\n`,
+      'id',
+      'edge',
+    )
+    check(byId.success, 'edges are joined by id')
+    check(
+      byId.success && byId.data.createdRows === 1 && byId.data.matchedElements === 1,
+      `one empty row is created, for the one edge named (${JSON.stringify(byId)})`,
+    )
+    const weight = apis.table.getValue(networkId, 'edge', first, 'weight')
+    check(
+      weight.success && weight.data.value === 0.5,
+      `the weight is stored and reads back (${JSON.stringify(weight)})`,
+    )
+    const untouched = apis.table.getRow(networkId, 'edge', second)
+    check(!untouched.success, 'an edge the file does not name gets no row')
+
+    // Again: the row exists now, and is updated, not replaced.
+    const again = joinTableByKey(
+      apis,
+      networkId,
+      `id\tlabel\n${first}\tstrong\n`,
+      'id',
+      'edge',
+    )
+    const row = apis.table.getRow(networkId, 'edge', first)
+    check(
+      again.success && again.data.createdRows === 0 && row.success &&
+        row.data.row.weight === 0.5 && row.data.row.label === 'strong',
+      'a second import keeps the first one\'s value',
+    )
   },
 }
 

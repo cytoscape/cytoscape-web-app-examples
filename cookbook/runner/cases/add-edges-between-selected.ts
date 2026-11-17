@@ -63,6 +63,28 @@ const recipeCase: RecipeCase = {
     )
     check(pairs().length === 4, 'the refusal creates no edge')
 
+    // A large selection is refused quickly: the pairs are not all listed.
+    // Stubbed host: 20,000 unconnected nodes would make 200 million pairs.
+    const many = Array.from({ length: 20_000 }, (_, i) => `n${i}`)
+    const stub = {
+      selection: {
+        getSelection: () => ({
+          success: true,
+          data: { selectedNodes: many, selectedEdges: [] },
+        }),
+      },
+      element: {
+        getEdges: () => ({ success: true, data: { edges: [], missing: [] } }),
+      },
+    } as unknown as Parameters<typeof addEdgesBetweenSelected>[0]
+    const startedAt = performance.now()
+    const huge = addEdgesBetweenSelected(stub, 'large')
+    check(
+      !huge.success && huge.error.code === 'RECIPE_TOO_MANY_EDGES' &&
+        performance.now() - startedAt < 1000,
+      'a selection of 20,000 nodes is refused at once',
+    )
+
     check(
       apis.selection.exclusiveSelect(networkId, [ids.a], []).success,
       'one node selected',

@@ -34,7 +34,7 @@ to use it, what it changes, and what not to do.
 | Recipe | Also asked as | Calls |
 |---|---|---|
 | [Add a computed column: node degree](recipes/data/add-computed-column.ts) | add a column, computed column, calculate degree, node degree, number of connections, count neighbors, derived attribute, write results to the table | `element.getNodeIds`, `element.getEdges`, `table.getColumns`, `table.createColumn`, `table.setValues`, `table.deleteColumn` |
-| [Join a table of values to the network by a key column](recipes/data/join-table-by-key.ts) | import table, import data, join table, merge data, add attributes from a file, import TSV, load node attributes, map data onto nodes, attribute table | `table.getColumns`, `table.importTableFromTsv` |
+| [Join a table of values to the network by a key column](recipes/data/join-table-by-key.ts) | import table, import data, join table, merge data, add attributes from a file, import TSV, load node attributes, map data onto nodes, attribute table | `table.getColumns`, `element.getNodeIds`, `element.getEdgeIds`, `table.getTable`, `table.editRows`, `table.importTableFromTsv` |
 | [Read a column's numbers safely](recipes/data/read-column-values-safely.ts) | read column values, get numeric values, read a column, column to numbers, parse numbers from a column, column statistics, min and max of a column, missing values | `table.getTable` |
 
 ## style

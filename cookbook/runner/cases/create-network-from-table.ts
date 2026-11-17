@@ -5,8 +5,12 @@ const recipeCase: RecipeCase = {
   id: 'network/create-network-from-table',
   run: (ctx) => {
     const { apis, check } = ctx
-    const rows = [
-      { from: 'A', to: 'B', interaction: 'pp', weight: 0.5 },
+    // Typed as plain records: a literal with a toString key would clash with
+    // Object's own method in TypeScript's inference.
+    const rows: Array<Record<string, string | number>> = [
+      // Only this row has a "toString" cell: the others have none, whatever
+      // Object.prototype says.
+      { from: 'A', to: 'B', interaction: 'pp', weight: 0.5, toString: 'tag' },
       { from: 'B', to: 'C', interaction: 'pd', weight: 2 },
       { from: 'A', to: 'C', interaction: 'pp' },
       // A second edge between A and B: rows are matched by order, not ends.
@@ -22,8 +26,9 @@ const recipeCase: RecipeCase = {
     ctx.adopt(networkId)
 
     check(
-      columns.interaction === 'string' && columns.weight === 'double',
-      `interaction is text and weight a double (${JSON.stringify(columns)})`,
+      columns.interaction === 'string' && columns.weight === 'double' &&
+        columns['toString'] === 'string',
+      `interaction and toString are text, weight a double (${JSON.stringify(columns)})`,
     )
     const current = apis.workspace.getCurrentNetworkId()
     check(
@@ -41,7 +46,8 @@ const recipeCase: RecipeCase = {
       const edge = edges.data.edges.find((e) => e.id === edgeIds[i])
       const values = apis.table.getRow(networkId, 'edge', edgeIds[i])
       check(
-        edge?.sourceId === names[row.from] && edge?.targetId === names[row.to],
+        edge?.sourceId === names[String(row.from)] &&
+          edge?.targetId === names[String(row.to)],
         `edge ${i} joins ${row.from} to ${row.to}`,
       )
       check(
@@ -51,6 +57,14 @@ const recipeCase: RecipeCase = {
         `edge ${i} holds row ${i}'s values (${JSON.stringify(values)})`,
       )
     })
+
+    const firstRow = apis.table.getRow(networkId, 'edge', edgeIds[0])
+    const secondRow = apis.table.getRow(networkId, 'edge', edgeIds[1])
+    check(
+      firstRow.success && firstRow.data.row['toString'] === 'tag' &&
+        secondRow.success && !Object.hasOwn(secondRow.data.row, 'toString'),
+      'only the first edge has a toString value',
+    )
 
     // Refusals create no network.
     const before = apis.workspace.getNetworkIds()

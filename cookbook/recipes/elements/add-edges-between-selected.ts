@@ -30,7 +30,9 @@
  *
  * - **The number of pairs grows with the square of the selection.** 50 nodes
  *   make up to 1,225 edges. The recipe refuses more than `maxEdges` (100 by
- *   default) before creating anything.
+ *   default) before creating anything, and stops counting as soon as the
+ *   limit is passed: listing every pair of a large selection first would
+ *   freeze the page.
  * - **Use the batch call.** `createEdges` validates every edge first, creates
  *   all or none, and records one undo entry. A loop over `createEdge` records
  *   one per edge and can stop halfway. A failure here therefore leaves
@@ -91,20 +93,21 @@ export function addEdgesBetweenSelected(
     existing.data.edges.map((e) => pairKey(e.sourceId, e.targetId)),
   )
 
+  // Stop as soon as the limit is passed: 10,000 selected nodes would make
+  // 50 million pairs before a check at the end could refuse them.
+  const maxEdges = options.maxEdges ?? 100
   const pairs: Array<[IdType, IdType]> = []
   for (let i = 0; i < nodes.length; i += 1) {
     for (let j = i + 1; j < nodes.length; j += 1) {
-      if (!connected.has(pairKey(nodes[i], nodes[j]))) {
-        pairs.push([nodes[i], nodes[j]])
+      if (connected.has(pairKey(nodes[i], nodes[j]))) continue
+      pairs.push([nodes[i], nodes[j]])
+      if (pairs.length > maxEdges) {
+        return failure(
+          'RECIPE_TOO_MANY_EDGES',
+          `more than ${maxEdges} edges would be created`,
+        )
       }
     }
-  }
-  const maxEdges = options.maxEdges ?? 100
-  if (pairs.length > maxEdges) {
-    return failure(
-      'RECIPE_TOO_MANY_EDGES',
-      `${pairs.length} edges would be created, more than ${maxEdges}`,
-    )
   }
   if (pairs.length === 0) return { success: true, data: { edgeIds: [] } }
 

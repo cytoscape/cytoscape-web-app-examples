@@ -109,7 +109,8 @@ export function readNumericColumn(
 
   const result: NumericColumn = {
     type: info.type,
-    values: {},
+    // No prototype: an element id is data, and "__proto__" would not stick.
+    values: Object.create(null) as Record<IdType, number>,
     missing: [],
     invalid: [],
     fromText,

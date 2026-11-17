@@ -43,6 +43,9 @@
  *   default does not reach them (`style/set-style-defaults`).
  * - **Order is sorted, not by frequency,** so the same values get the same
  *   colors every time the recipe runs.
+ * - **Values are data, not keys you chose.** `colors["__proto__"] = …` sets
+ *   the object's prototype instead of adding a category. The recipe builds
+ *   the mapping with `Object.fromEntries`.
  *
  * ## Don't
  *
@@ -121,12 +124,14 @@ export function colorByCategory(
       : String(a).localeCompare(String(b)),
   )
 
-  const colors: Record<string, HexColor> = {}
-  const uncolored: string[] = []
-  values.forEach((value, index) => {
-    if (index < palette.length) colors[String(value)] = palette[index]
-    else uncolored.push(String(value))
-  })
+  // fromEntries, not colors[value] = …: a category named "__proto__" would
+  // set the object's prototype instead of adding a key.
+  const colors: Record<string, HexColor> = Object.fromEntries(
+    values
+      .slice(0, palette.length)
+      .map((value, index) => [String(value), palette[index]]),
+  )
+  const uncolored = values.slice(palette.length).map(String)
 
   const mapped = apis.visualStyle.createDiscreteMapping(
     networkId,

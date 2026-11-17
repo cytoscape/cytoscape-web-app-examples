@@ -27,12 +27,18 @@ const recipeCase: RecipeCase = {
         apis.table.setValue(networkId, 'node', ids.b, 'score', 0.1).success,
       'b scores 0.1, the others 1',
     )
-    // The user had already hidden d.
+    // The user had already hidden d, and shown b on purpose.
     check(
       apis.visualStyle.setBypass(networkId, 'nodeVisibility', [ids.d], 'none')
-        .success,
-      'd is hidden by the user',
+        .success &&
+        apis.visualStyle.setBypass(networkId, 'nodeVisibility', [ids.b], 'element')
+          .success,
+      "d is hidden by the user, and b has an 'element' bypass",
     )
+    const visibility = (id: string): unknown => {
+      const read = apis.visualStyle.getBypass(networkId, 'nodeVisibility', id)
+      return read.success ? read.data.value : 'unreadable'
+    }
     const late = apis.element.createNode(networkId, [0, 0], {
       autoSelect: false,
     })
@@ -41,7 +47,11 @@ const recipeCase: RecipeCase = {
     const result = hideByThreshold(apis, networkId, 'score', 0.5)
     check(result.success, 'the recipe succeeds')
     if (!result.success) return
-    check(result.data.nodeIds.join() === ids.b, 'only b is hidden')
+    check(
+      result.data.nodeIds.join() === ids.b,
+      "only b is hidden: its 'element' bypass does not count as hidden",
+    )
+    check(visibility(ids.b) === 'none', "b's bypass is now 'none'")
     check(
       [...result.data.edgeIds].sort().join() ===
         [edgeOf('a', 'b'), edgeOf('b', 'c')].sort().join(),
@@ -74,8 +84,29 @@ const recipeCase: RecipeCase = {
 
     const shown = result.data.show()
     check(shown.success, 'show() succeeds')
-    check(hidden('nodeVisibility') === ids.d, "only the user's d stays hidden")
+    check(visibility(ids.b) === 'element', "b has its 'element' bypass back")
+    check(visibility(ids.d) === 'none', "the user's d stays hidden")
+    check(
+      hidden('nodeVisibility') === [ids.b, ids.d].sort().join(),
+      'no other node has a bypass',
+    )
     check(hidden('edgeVisibility') === '', 'no edge stays hidden')
+
+    // A second show() leaves what the user did since alone.
+    check(
+      apis.visualStyle.setBypass(networkId, 'nodeVisibility', [ids.b], 'none')
+        .success,
+      'the user hides b',
+    )
+    check(
+      result.data.show().success && visibility(ids.b) === 'none',
+      'a second show() changes nothing',
+    )
+    check(
+      apis.visualStyle.setBypass(networkId, 'nodeVisibility', [ids.b], 'element')
+        .success,
+      "b is given its 'element' bypass again",
+    )
 
     const withMissing = hideByThreshold(apis, networkId, 'score', 0.5, {
       hideMissing: true,

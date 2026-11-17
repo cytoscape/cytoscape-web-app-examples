@@ -65,10 +65,27 @@ const recipeCase: RecipeCase = {
       'group 7 is drawn sky blue: numeric keys match',
     )
 
+    // A category is data: "__proto__" is a value like any other.
+    check(
+      apis.table.setValue(networkId, 'node', ids.d, 'kind', '__proto__').success,
+      'd is of kind __proto__',
+    )
+    const odd = colorByCategory(apis, networkId, 'kind')
+    check(
+      odd.success &&
+        Object.keys(odd.data.colors).join() === '__proto__,kinase,tf' &&
+        odd.data.uncolored.length === 0,
+      `__proto__ gets a color like the others (${odd.success ? Object.keys(odd.data.colors).join() : ''})`,
+    )
+    await ctx.waitFor(
+      () => ctx.rendered(ids.d, 'background-color') === 'rgb(230,159,0)',
+      'the __proto__ node is drawn in the first color',
+    )
+
     const short = colorByCategory(apis, networkId, 'kind', ['#000000'])
     check(
-      short.success && short.data.uncolored.join() === 'tf',
-      'a value past the palette is reported',
+      short.success && short.data.uncolored.join() === 'kinase,tf',
+      'values past the palette are reported',
     )
     check(
       apis.table.createColumn(networkId, 'node', 'flag', 'boolean', false)
