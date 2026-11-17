@@ -434,7 +434,10 @@ cd cytoscape-web && npm run dev  # port 5500
 
 Apps are loaded via Module Federation at runtime, not installed via npm.
 To deploy, host your `remoteEntry.js` on a static server (Netlify, S3,
-etc.) and add the URL to the host's `apps.json`.
+etc.) and have its URL listed in the deployment's curated `apps.json`. That
+list belongs to whoever runs the deployment, and from Cytoscape Web 1.1.1 every
+app in it is on by default for every user. For the public site, see
+[Publishing to the public Cytoscape Web site](../README.md#publishing-to-the-public-cytoscape-web-site).
 
 ### What TypeScript version should I use?
 

@@ -60,8 +60,8 @@ The dev server prints the link that installs your app into a running local host:
 ```
 
 Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
-checkout), open that link, confirm the install, and enable the app under
-**Apps → Manage Apps...**.
+checkout), open that link, and confirm the install. The app is on as soon as you
+confirm; **Apps → Manage Apps...** lists it, with a switch to turn it off.
 
 **Or skip the host checkout entirely** and develop against the shared staging
 host, with your app still on `localhost`:
@@ -106,8 +106,16 @@ cd cytoscape-web-app-examples && npm install && npm run dev   # all four apps
 cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
 ```
 
-Then open `http://localhost:5500`, **Apps → Manage Apps...**, and enable one. The
-dev server reads `src/assets/apps.local.json`, which already lists them.
+Then open `http://localhost:5500`. The dev server reads
+`src/assets/apps.local.json`, which already lists them. What happens next
+depends on the host's version:
+
+- **Cytoscape Web 1.1.1 and later** turn all four on by themselves. An app
+  whose dev server is not running is reported when the host starts ("apps
+  failed to load") and marked *failed* under **Apps → Manage Apps...**: start
+  its dev server and reload the page, or turn the app off there.
+- **Cytoscape Web 1.1.0** starts them off: enable one under
+  **Apps → Manage Apps...**.
 
 ### Publishing to the public Cytoscape Web site
 

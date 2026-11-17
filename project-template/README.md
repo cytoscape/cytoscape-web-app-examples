@@ -39,8 +39,9 @@ The dev server prints the link that installs your app into a local host:
   http://localhost:5500/?installApp=http://localhost:5555/cyweb-app.json
 ```
 
-Start the host (`cd cytoscape-web && npm run dev`), open that URL, confirm the
-install, and enable the app under **Apps → Manage Apps...**.
+Start the host (`cd cytoscape-web && npm run dev`), open that URL, and confirm
+the install. The app is on as soon as you confirm; **Apps → Manage Apps...**
+lists it, with a switch to turn it off.
 
 **You do not edit anything in the host repository.** The host has accepted a
 manifest URL through `?installApp=` all along; the dev server serves yours at

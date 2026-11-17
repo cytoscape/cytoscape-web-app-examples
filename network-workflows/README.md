@@ -55,8 +55,9 @@ npm install
 npm run dev                  # → http://localhost:7001
 ```
 
-Open `http://localhost:5500`, then **Apps → Manage Apps...** to enable
-**Network Workflow Examples**. The two menu items appear under the
+Open `http://localhost:5500`. Cytoscape Web 1.1.1 and later turn
+**Network Workflow Examples** on by themselves; on 1.1.0, enable it under
+**Apps → Manage Apps...**. The two menu items appear under the
 **Apps** dropdown; the **Jupyter Link** tab appears in the right-side
 panel.
 

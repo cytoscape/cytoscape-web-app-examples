@@ -23,7 +23,7 @@ This repo contains **reference implementations** for Cytoscape Web plugin apps b
 
 - Import host stores and APIs via `cyweb/<ModuleName>` imports
 - Expose one module, `./AppConfig`, via their own `remoteEntry.js`; panels are React components, Apps-menu entries are plain data
-- Are registered in the host's `src/assets/apps.json` (production) or `src/assets/apps.local.json` (local dev)
+- Are listed in a deployment's curated `apps.json` (production) or in the host's `src/assets/apps.local.json` (local dev). A deployment's build puts in its own list; the copy in the host repository, `src/assets/apps.json`, is `[]` from Cytoscape Web 1.1.1, where every listed app is also on by default for every user
 
 ### App Registry
 
@@ -235,9 +235,9 @@ npm run dev:project-template
 
 The host app (`cytoscape-web`) must be running on `localhost:5500`.
 
-The host's dev server serves `src/assets/apps.local.json` as its app catalog, and that file already lists the four apps here at their `localhost:XXXX` dev server URLs — nothing in the host repo is edited or copied. Enable an app under **Apps → Manage Apps...**. Reload the host page after changing an app: HMR does not cross the federation boundary.
+The host's dev server serves `src/assets/apps.local.json` as its app catalog, and that file already lists the four apps here at their `localhost:XXXX` dev server URLs — nothing in the host repo is edited or copied. Cytoscape Web 1.1.1 and later turn all four on at startup, and report an app whose dev server is not running as failed to load; on 1.1.0 they start off, so enable one under **Apps → Manage Apps...**. Reload the host page after changing an app: HMR does not cross the federation boundary.
 
-An app that is not in `apps.local.json` installs through the link its own `npm run dev` prints (`http://localhost:5500/?installApp=…`).
+An app that is not in `apps.local.json` installs through the link its own `npm run dev` prints (`http://localhost:5500/?installApp=…`). Confirming the install turns the app on, on both versions.
 
 ### When Host API Changes
 
