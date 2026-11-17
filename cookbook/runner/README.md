@@ -86,6 +86,8 @@ the record names one release until the second run.
 **An entry is written only when:**
 
 - every case ran and passed, and nothing was left behind;
+- the sources and the installed api-types are the same at the end of the run
+  as when the bundle was built. Edit nothing while the runner runs;
 - the host's commit is the tag commit of a release in `hosts.json`. The
   version is not enough: the host's `development`, and pre-release builds such
   as dev1's, report the version of the release that follows them. Against

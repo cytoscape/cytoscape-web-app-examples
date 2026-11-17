@@ -353,63 +353,124 @@ const functionName = (fn) => {
   return null
 }
 
+/** Whether a binding name or pattern declares `name`. */
+const bindsName = (nameNode, name) => {
+  if (ts.isIdentifier(nameNode)) return nameNode.text === name
+  return nameNode.elements.some(
+    (element) => !ts.isOmittedExpression(element) && bindsName(element.name, name),
+  )
+}
+
+/**
+ * The declaration an identifier refers to, found by walking out through its
+ * lexical scopes, as the compiler would. Returns
+ * `{ kind: 'parameter', fn }`, `{ kind: 'const', declaration }`, `{ kind:
+ * 'other' }` for any other binding (let, var, a destructured name, an import,
+ * a loop or catch variable), or null when nothing in the file declares it.
+ */
+const resolveBinding = (identifier) => {
+  const name = identifier.text
+  const declaresIn = (list) =>
+    list.declarations.find((d) => bindsName(d.name, name))
+  for (let scope = identifier.parent; scope !== undefined; scope = scope.parent) {
+    if (ts.isFunctionLike(scope)) {
+      const parameter = scope.parameters.find((p) => bindsName(p.name, name))
+      if (parameter !== undefined) {
+        return ts.isIdentifier(parameter.name)
+          ? { kind: 'parameter', fn: scope }
+          : { kind: 'other' }
+      }
+    }
+    if (
+      (ts.isForStatement(scope) ||
+        ts.isForOfStatement(scope) ||
+        ts.isForInStatement(scope)) &&
+      scope.initializer !== undefined &&
+      ts.isVariableDeclarationList(scope.initializer) &&
+      declaresIn(scope.initializer) !== undefined
+    ) {
+      return { kind: 'other' }
+    }
+    if (
+      ts.isCatchClause(scope) &&
+      scope.variableDeclaration !== undefined &&
+      bindsName(scope.variableDeclaration.name, name)
+    ) {
+      return { kind: 'other' }
+    }
+    if (!('statements' in scope)) continue
+    for (const statement of scope.statements) {
+      if (ts.isVariableStatement(statement)) {
+        const declaration = declaresIn(statement.declarationList)
+        if (declaration === undefined) continue
+        const isConst =
+          (statement.declarationList.flags & ts.NodeFlags.Const) !== 0
+        return isConst && ts.isIdentifier(declaration.name)
+          ? { kind: 'const', declaration }
+          : { kind: 'other' }
+      }
+      if (
+        (ts.isFunctionDeclaration(statement) ||
+          ts.isClassDeclaration(statement)) &&
+        statement.name?.text === name
+      ) {
+        return { kind: 'other' }
+      }
+      if (
+        ts.isImportDeclaration(statement) &&
+        statement.importClause !== undefined &&
+        (statement.importClause.name?.text === name ||
+          (statement.importClause.namedBindings !== undefined &&
+            (ts.isNamespaceImport(statement.importClause.namedBindings)
+              ? statement.importClause.namedBindings.name.text === name
+              : statement.importClause.namedBindings.elements.some(
+                  (element) => element.name.text === name,
+                ))))
+      ) {
+        return { kind: 'other' }
+      }
+    }
+  }
+  return null
+}
+
 /**
  * Whether `argument` is one of the few ways an app's own API object may be
  * written. Anything else is rejected rather than traced: an alias, a
- * destructured name, `window.CyWebApi`, a `use*Api` hook.
+ * destructured name, `window.CyWebApi`, a `use*Api` hook. Each form is checked
+ * against the declaration the argument actually refers to, so a name declared
+ * correctly in one function does not vouch for the same name in another.
  */
-const isAllowedApisSource = (argument, source, allowHarness) => {
-  // 1. `context.apis`, inside mount(context).
+const isAllowedApisSource = (argument, allowHarness) => {
+  // 1. `context.apis`, where `context` is the parameter of mount().
   if (
     ts.isPropertyAccessExpression(argument) &&
     argument.name.text === 'apis' &&
     ts.isIdentifier(argument.expression)
   ) {
-    const owner = argument.expression.text
-    let fn = enclosingFunction(argument)
-    while (fn !== undefined) {
-      if (
-        functionName(fn) === 'mount' &&
-        fn.parameters.some((p) => p.name.getText() === owner)
-      ) {
-        return true
-      }
-      fn = enclosingFunction(fn)
+    const owner = resolveBinding(argument.expression)
+    if (owner?.kind === 'parameter' && functionName(owner.fn) === 'mount') {
+      return true
     }
     // 4. In the verification app only: the one harness field that mount()
     //    assigned from context.apis.
-    return allowHarness && owner === 'harness'
+    return allowHarness && argument.expression.text === 'harness'
   }
   if (!ts.isIdentifier(argument)) return false
 
-  // 2. The parameter of an onClick arrow function.
-  let fn = enclosingFunction(argument)
-  while (fn !== undefined) {
-    if (
-      functionName(fn) === 'onClick' &&
-      fn.parameters.some((p) => p.name.getText() === argument.text)
-    ) {
-      return true
-    }
-    fn = enclosingFunction(fn)
+  const binding = resolveBinding(argument)
+  // 2. The parameter of an onClick function.
+  if (binding?.kind === 'parameter') {
+    return functionName(binding.fn) === 'onClick'
   }
-
   // 3. A const initialized from `useAppContext()?.apis`.
-  let found = false
-  const visit = (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.name.text === argument.text &&
-      node.initializer !== undefined &&
-      /^useAppContext\(\)\?\.apis$/.test(node.initializer.getText())
-    ) {
-      found = true
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(source)
-  return found
+  return (
+    binding?.kind === 'const' &&
+    binding.declaration.initializer !== undefined &&
+    /^useAppContext\(\)\?\.apis$/.test(
+      binding.declaration.initializer.getText(),
+    )
+  )
 }
 
 const readCallSites = (cookbookDir, dir, recipes, problems) => {
@@ -448,7 +509,7 @@ const readCallSites = (cookbookDir, dir, recipes, problems) => {
         if (
           recipe?.ownerBound === true &&
           argument !== undefined &&
-          !isAllowedApisSource(argument, source, allowHarness)
+          !isAllowedApisSource(argument, allowHarness)
         ) {
           const { line } = source.getLineAndCharacterOfPosition(
             node.getStart(),
@@ -531,6 +592,10 @@ const readCookbook = (cookbookDir) => {
   }
 
   readCallSites(cookbookDir, 'wiring', recipes, problems)
+  // The minimal runner gives every case the anonymous window.CyWebApi, which
+  // is never an allowed source: an owner-bound recipe's case cannot live
+  // here until Phase 3 gives it an app's own API object.
+  readCallSites(cookbookDir, 'runner/cases', recipes, problems)
   readCallSites(cookbookDir, 'runner/app', recipes, problems)
 
   return { recipes, problems }

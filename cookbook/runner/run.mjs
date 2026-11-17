@@ -195,17 +195,44 @@ const openHost = async (browser, hostUrl) => {
   return { context, page, hostBuild, otherApps }
 }
 
-const networkIds = (page) =>
-  page.evaluate(() => {
-    const result = globalThis.CyWebApi.workspace.getNetworkIds()
-    return result.success ? result.data.networkIds : []
-  })
+// A failed read is an error, not an empty workspace: an empty answer would
+// hide every network a case left behind.
+const networkIds = async (page) => {
+  const result = await page.evaluate(() =>
+    globalThis.CyWebApi.workspace.getNetworkIds(),
+  )
+  if (!result.success) {
+    throw new Error(
+      `the host could not list its networks: ${result.error.message}`,
+    )
+  }
+  return result.data.networkIds
+}
 
 // ── The record ──────────────────────────────────────────────────────────────
 
-const writeEntry = (host, hostBuild, caseCount) => {
-  const digest = computeDigest()
-  const apiTypes = readApiTypes()
+/**
+ * What the run is about to verify: the sources, and the api-types they are
+ * checked with. Read before the bundle is built, and written as read. A run
+ * whose files change before it ends records nothing: the bundle the host ran
+ * was built from the earlier files.
+ */
+const readIdentity = () => ({ digest: computeDigest(), apiTypes: readApiTypes() })
+
+const writeEntry = (host, hostBuild, caseCount, identity) => {
+  const now = readIdentity()
+  if (
+    now.digest !== identity.digest ||
+    now.apiTypes.version !== identity.apiTypes.version ||
+    now.apiTypes.source !== identity.apiTypes.source
+  ) {
+    throw new Error(
+      'the cookbook\'s sources or the installed api-types changed during the ' +
+        'run, so the cases ran on other files than the record would name. ' +
+        'Nothing was recorded: run again',
+    )
+  }
+  const { digest, apiTypes } = identity
   const previous = readRecord()
   // An entry made from other sources, or with other types, says nothing
   // about these ones.
@@ -263,6 +290,7 @@ const main = async () => {
     throw new Error(`no such recipe: ${unknown.join(', ')}`)
   }
 
+  const identity = readIdentity()
   const bundle = await buildBundle(caseFiles)
   const browser = await chromium.launch()
   let outcomes = []
@@ -365,7 +393,7 @@ const main = async () => {
           .join(', ')})\n`,
     )
   } else {
-    const hosts = writeEntry(host, hostBuild, caseFiles.length)
+    const hosts = writeEntry(host, hostBuild, caseFiles.length, identity)
     console.log(
       `  recorded in cookbook/verified.json: Cytoscape Web ${host.version} ` +
         `(${host.role}). The record now names: ` +

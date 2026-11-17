@@ -58,6 +58,9 @@ const ExamplePanel = (): JSX.Element => {
   useCyWebEvent('network:switched', readNodeCount)
   // 3. When data arrives: a read made on the switch alone can fail with APP1.
   useCyWebEvent('network:loaded', readNodeCount)
+  // 4. When nodes or edges are added or removed: by this panel's own button,
+  //    by another app, or by Edit ▸ Undo.
+  useCyWebEvent('network:changed', readNodeCount)
 
   const addChain = (): void => {
     const current = workspace.getCurrentNetworkId()

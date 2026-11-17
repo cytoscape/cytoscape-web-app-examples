@@ -153,9 +153,9 @@ do:
 
 1. **Declaration.** A recipe that calls one of these domains types `apis` as
    `Pick<AppContextApis, …>`. *(Checked: `owner-bound-declaration`.)*
-2. **Source.** In `wiring/` and `runner/app`, the `apis` argument of an
-   owner-bound recipe is written in one of these forms, and no other
-   *(checked: `apis-source`)*:
+2. **Source.** In `wiring/`, `runner/cases` and `runner/app`, the `apis`
+   argument of an owner-bound recipe is written in one of these forms, and no
+   other *(checked: `apis-source`)*:
    - `context.apis`, inside `mount(context)`;
    - the parameter of an `onClick` arrow function;
    - a `const` initialized from `useAppContext()?.apis`;
@@ -163,7 +163,11 @@ do:
      from `context.apis`.
 
    An alias, a destructured name or a helper in between is rejected, even
-   when it would be right. The check does not trace.
+   when it would be right. The check does not trace. It does resolve the name
+   the way the compiler does: the declaration that counts is the one the
+   argument refers to, not another of the same name elsewhere in the file. In
+   `runner/cases`, where every case gets `window.CyWebApi`, no form is allowed
+   until the verification app (Phase 3) provides an app's own object.
 3. **Behavior.** The verification app's cases include a duplicate tab id and
    a disabled app.
 
