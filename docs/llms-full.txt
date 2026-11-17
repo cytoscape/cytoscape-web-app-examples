@@ -5,7 +5,7 @@
 > not to do. Each compiles against the published API types and passed a
 > case in a running Cytoscape Web.
 
-- Examples commit: `46ebe17ac64421060983dcc2db9a2f9a37cea28a`. Every link below is pinned to it.
+- Examples commit: `d418a9c17121ae416a31bd7bcddbd8faba593051`. Every link below is pinned to it.
 - Verified on: Cytoscape Web 1.1.0 (`6619411b`) and Cytoscape Web 1.1.1 (`c3118c51`). Supported: 1.1.0 and later.
 - API types: `@cytoscape-web/api-types@1.0.0-beta.5`.
 
@@ -18,7 +18,7 @@ A recipe is one TypeScript file that performs one task in Cytoscape Web, such as
 says when to use it, what it changes, and what goes wrong.
 
 This page is for developers and for coding agents. The index is
-[README.md](README.md).
+[README.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/README.md).
 
 ## 1. Find the recipe
 
@@ -27,7 +27,7 @@ column lists them: "heat map" and "color by score" both lead to
 `style/color-nodes-by-numeric-column`.
 
 If no recipe fits, do not adapt one by guessing. Read the
-[API reference](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/Api.md)
+[API reference](https://raw.githubusercontent.com/cytoscape/cytoscape-web/6619411b3e4f4367679cd69299c63abdb865121c/src/app-api/api_docs/Api.md)
 and let the type checker tell you what exists.
 
 ## 2. Copy it into your app
@@ -44,15 +44,15 @@ Copy the file as it is, for example to `src/recipes/`, and import its function.
 ## 3. Give it `apis`
 
 Every recipe takes `apis` as its first argument. Where `apis` comes from
-depends on where you call the recipe. [`wiring/`](wiring) has one compiled
+depends on where you call the recipe. [`wiring/`](https://github.com/cytoscape/cytoscape-web-app-examples/tree/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring) has one compiled
 example per call site.
 
 | You are in | `apis` is | Example |
 |---|---|---|
-| `mount(context)` | `context.apis` | [`wiring/from-mount.ts`](wiring/from-mount.ts) |
-| the `onClick` of an `'apps-menu'` entry | the `apis` parameter | [`wiring/from-apps-menu.ts`](wiring/from-apps-menu.ts) |
-| a React component | `useAppContext()?.apis`, or the `use*Api` hooks | [`wiring/from-panel.tsx`](wiring/from-panel.tsx) |
-| a script that is not an app | `await window.CyWebApi.whenReady()` | [`wiring/from-window.ts`](wiring/from-window.ts) |
+| `mount(context)` | `context.apis` | [`wiring/from-mount.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-mount.ts) |
+| the `onClick` of an `'apps-menu'` entry | the `apis` parameter | [`wiring/from-apps-menu.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-apps-menu.ts) |
+| a React component | `useAppContext()?.apis`, or the `use*Api` hooks | [`wiring/from-panel.tsx`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-panel.tsx) |
+| a script that is not an app | `await window.CyWebApi.whenReady()` | [`wiring/from-window.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-window.ts) |
 
 **Look at the type of the recipe's `apis` parameter.** It decides which of
 these you may use.
@@ -94,14 +94,14 @@ Four different things are easy to take for one.
 3. **A network's data is loaded.** This is per network. After a page reload,
    `network:switched` arrives before the network's tables do, and a read made
    then fails with `APP1`. Use
-   [`events/follow-current-network`](recipes/events/follow-current-network.ts).
+   [`events/follow-current-network`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/events/follow-current-network.ts).
 4. **Your app is active.** The host calls `mount()`, waits for it to return,
    and only then shows the app's panels and dialogs. So `mount()` must never
    wait for the app's own UI.
 
 ## 6. What "verified" means
 
-[`verified.json`](verified.json) records what the recipes were checked with:
+[`verified.json`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/verified.json) records what the recipes were checked with:
 
 - the `@cytoscape-web/api-types` version every file compiles against, with
   library checking on;
@@ -145,7 +145,7 @@ network, and choose your entry in the **Apps** menu.
 
 ## cookbook/wiring/from-apps-menu.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/wiring/from-apps-menu.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-apps-menu.ts
 
 ````typescript
 /**
@@ -206,7 +206,7 @@ export const menuEntries: ResourceDeclaration[] = [
 
 ## cookbook/wiring/from-mount.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/wiring/from-mount.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-mount.ts
 
 ````typescript
 /**
@@ -251,7 +251,7 @@ export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
 
 ## cookbook/wiring/from-panel.tsx
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/wiring/from-panel.tsx
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-panel.tsx
 
 ````typescript
 /**
@@ -376,7 +376,7 @@ export default ExamplePanel
 
 ## cookbook/wiring/from-window.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/wiring/from-window.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-window.ts
 
 ````typescript
 /**
@@ -420,7 +420,7 @@ export async function addChainFromPage(): Promise<ApiResult<AddedElements>> {
 
 ## Add a computed column: node degree
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/data/add-computed-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/add-computed-column.ts
 
 ````typescript
 /**
@@ -571,7 +571,7 @@ export function addDegreeColumn(
 
 ## Join a table of values to the network by a key column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/data/join-table-by-key.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/join-table-by-key.ts
 
 ````typescript
 /**
@@ -579,7 +579,8 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  * @aliases import table, import data, join table, merge data, add
  *   attributes from a file, import TSV, load node attributes, map data onto
  *   nodes, attribute table
- * @apis table.getColumns, table.importTableFromTsv
+ * @apis table.getColumns, element.getNodeIds, element.getEdgeIds,
+ *   table.getTable, table.editRows, table.importTableFromTsv
  * @related data/add-computed-column, data/read-column-values-safely,
  *   network/create-network-from-table
  *
@@ -601,7 +602,10 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *
  * - Creates every column of the file that the table lacks, and writes the
  *   values of every row whose key matches.
- * - Records **no** undo entry: Edit ▸ Undo does not remove imported data.
+ * - The import records **no** undo entry: Edit ▸ Undo does not remove
+ *   imported data.
+ * - With key `id`, an element the file names that has no table row gets an
+ *   empty one first, in one batch (`createdRows`): **one** undo entry.
  * - A row whose key matches nothing is skipped and reported in
  *   `unmatchedKeys`. A key that matches several elements, two nodes with the
  *   same `name`, writes to all of them.
@@ -621,8 +625,16 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *   refuses such a file on both, before changing anything.
  * - **An empty cell** leaves a number or boolean as it was, and writes an
  *   empty string into a text column.
- * - **Duplicate keys in the file** would leave the last row's values. The
- *   recipe refuses them.
+ * - **An element with no row takes no value.** The import writes through
+ *   `setValues`, which changes only rows that exist and reports a match
+ *   either way, on 1.1.0 and 1.1.1. An edge-list network has no edge rows. So
+ *   with key `id`, the recipe creates empty rows for the elements that lack
+ *   one; `editRows` would replace a row that exists, so only missing ones are
+ *   created. With any other key such an element has no key value, and
+ *   cannot match.
+ * - **Duplicate keys in the file** would leave the last row's values, and a
+ *   row with an empty key would be skipped without being reported. The
+ *   recipe refuses both.
  * - **A typed header must match an existing column's type.** 1.1.0 would
  *   write `score:long` values into a `double` column as they are; 1.1.1
  *   refuses them with `A1`. The recipe refuses such a file on both.
@@ -651,6 +663,8 @@ import type {
 export interface Joined {
   /** Elements that received values. */
   matchedElements: number
+  /** Empty rows created first, for elements the file names that had none. */
+  createdRows: number
   /** Key values in the file that match no element. */
   unmatchedKeys: string[]
   /** Columns the import created. */
@@ -681,7 +695,7 @@ const columnName = (field: string): string => {
 }
 
 export function joinTableByKey(
-  apis: Pick<CyWebApiType, 'table'>,
+  apis: Pick<CyWebApiType, 'table' | 'element'>,
   networkId: IdType,
   tsvText: string,
   key: string,
@@ -708,16 +722,20 @@ export function joinTableByKey(
   }
 
   // Same letters, other case: 1.1.0 and 1.1.1 would do different things.
-  const seen = new Map<string, string>()
-  for (const name of [...columns.data.columns.map((c) => c.name), ...header]) {
-    const other = seen.get(name.toLowerCase())
-    if (other !== undefined && other !== name) {
+  // Only the file's columns matter; two old table columns that clash with
+  // each other, and with nothing in the file, are left alone.
+  for (const [i, name] of header.entries()) {
+    const other =
+      header.slice(0, i).find((h) => h.toLowerCase() === name.toLowerCase() && h !== name) ??
+      columns.data.columns
+        .map((c) => c.name)
+        .find((c) => c.toLowerCase() === name.toLowerCase() && c !== name)
+    if (other !== undefined) {
       return failure(
         'RECIPE_NAME_CLASH',
         `${name} and ${other} differ only by case`,
       )
     }
-    seen.set(name.toLowerCase(), name)
   }
   if (new Set(header).size !== header.length) {
     return failure('RECIPE_NAME_CLASH', 'the file names a column twice')
@@ -739,12 +757,47 @@ export function joinTableByKey(
   }
 
   const keys = new Set<string>()
-  for (const line of lines.slice(1)) {
+  for (const [index, line] of lines.slice(1).entries()) {
     const value = line.split('\t')[keyIndex] ?? ''
+    if (value === '') {
+      return failure(
+        'RECIPE_EMPTY_KEY',
+        `row ${index + 1} has no ${key}: the host would skip it unreported`,
+      )
+    }
     if (keys.has(value)) {
       return failure('RECIPE_DUPLICATE_KEY', `the key ${value} appears twice`)
     }
     keys.add(value)
+  }
+
+  // With key `id`, an element without a row would be matched and written
+  // nothing: see Pitfalls. Create the missing rows, and only those.
+  let createdRows = 0
+  if (key === 'id') {
+    let elementIds: IdType[]
+    if (tableType === 'node') {
+      const read = apis.element.getNodeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.nodeIds
+    } else {
+      const read = apis.element.getEdgeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.edgeIds
+    }
+    const table = apis.table.getTable(networkId, tableType)
+    if (!table.success) return table
+    const withRow = new Set(table.data.rows.map((row) => String(row.id)))
+    const missing = elementIds.filter((id) => keys.has(id) && !withRow.has(id))
+    if (missing.length > 0) {
+      const made = apis.table.editRows(
+        networkId,
+        tableType,
+        Object.fromEntries(missing.map((id) => [id, {}])),
+      )
+      if (!made.success) return made
+      createdRows = missing.length
+    }
   }
 
   const imported = apis.table.importTableFromTsv(
@@ -758,6 +811,7 @@ export function joinTableByKey(
     success: true,
     data: {
       matchedElements: imported.data.rowCount,
+      createdRows,
       unmatchedKeys: imported.data.skippedRows,
       newColumns: imported.data.newColumns,
       skippedCells: imported.data.skippedCells,
@@ -768,7 +822,7 @@ export function joinTableByKey(
 
 ## Read a column's numbers safely
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/data/read-column-values-safely.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/read-column-values-safely.ts
 
 ````typescript
 /**
@@ -882,7 +936,8 @@ export function readNumericColumn(
 
   const result: NumericColumn = {
     type: info.type,
-    values: {},
+    // No prototype: an element id is data, and "__proto__" would not stick.
+    values: Object.create(null) as Record<IdType, number>,
     missing: [],
     invalid: [],
     fromText,
@@ -918,7 +973,7 @@ export function readNumericColumn(
 
 ## Connect the selected nodes to each other
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/elements/add-edges-between-selected.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-edges-between-selected.ts
 
 ````typescript
 /**
@@ -953,7 +1008,9 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *
  * - **The number of pairs grows with the square of the selection.** 50 nodes
  *   make up to 1,225 edges. The recipe refuses more than `maxEdges` (100 by
- *   default) before creating anything.
+ *   default) before creating anything, and stops counting as soon as the
+ *   limit is passed: listing every pair of a large selection first would
+ *   freeze the page.
  * - **Use the batch call.** `createEdges` validates every edge first, creates
  *   all or none, and records one undo entry. A loop over `createEdge` records
  *   one per edge and can stop halfway. A failure here therefore leaves
@@ -1014,20 +1071,21 @@ export function addEdgesBetweenSelected(
     existing.data.edges.map((e) => pairKey(e.sourceId, e.targetId)),
   )
 
+  // Stop as soon as the limit is passed: 10,000 selected nodes would make
+  // 50 million pairs before a check at the end could refuse them.
+  const maxEdges = options.maxEdges ?? 100
   const pairs: Array<[IdType, IdType]> = []
   for (let i = 0; i < nodes.length; i += 1) {
     for (let j = i + 1; j < nodes.length; j += 1) {
-      if (!connected.has(pairKey(nodes[i], nodes[j]))) {
-        pairs.push([nodes[i], nodes[j]])
+      if (connected.has(pairKey(nodes[i], nodes[j]))) continue
+      pairs.push([nodes[i], nodes[j]])
+      if (pairs.length > maxEdges) {
+        return failure(
+          'RECIPE_TOO_MANY_EDGES',
+          `more than ${maxEdges} edges would be created`,
+        )
       }
     }
-  }
-  const maxEdges = options.maxEdges ?? 100
-  if (pairs.length > maxEdges) {
-    return failure(
-      'RECIPE_TOO_MANY_EDGES',
-      `${pairs.length} edges would be created, more than ${maxEdges}`,
-    )
   }
   if (pairs.length === 0) return { success: true, data: { edgeIds: [] } }
 
@@ -1049,7 +1107,7 @@ export function addEdgesBetweenSelected(
 
 ## Add nodes to a network, and connect them
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/elements/add-nodes-to-network.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-nodes-to-network.ts
 
 ````typescript
 /**
@@ -1209,7 +1267,7 @@ export function addNodesToNetwork(
 
 ## Delete the selected nodes and edges
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/elements/delete-selected.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/delete-selected.ts
 
 ````typescript
 /**
@@ -1326,7 +1384,7 @@ export function deleteSelected(
 
 ## Follow the current network, and read it only when it is ready
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/events/follow-current-network.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/events/follow-current-network.ts
 
 ````typescript
 /**
@@ -1456,7 +1514,7 @@ export function followCurrentNetwork(
 
 ## Run a layout and wait for it to finish
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/layout/run-layout-and-wait.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/layout/run-layout-and-wait.ts
 
 ````typescript
 /**
@@ -1575,7 +1633,7 @@ export async function runLayoutAndWait(
 
 ## Create a network from a table of edges
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/network/create-network-from-table.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/create-network-from-table.ts
 
 ````typescript
 /**
@@ -1702,9 +1760,12 @@ export function createNetworkFromTable(
   // Check everything before creating anything.
   const edgeList: Array<[string, string]> = []
   const types = new Map<string, ValueTypeName>()
+  // A row's own cells only: row.toString is not a "toString" column.
+  const cell = (row: Record<string, Cell | undefined>, column: string) =>
+    Object.hasOwn(row, column) ? row[column] : undefined
   for (const [index, row] of rows.entries()) {
-    const source = row[columns.source]
-    const target = row[columns.target]
+    const source = cell(row, columns.source)
+    const target = cell(row, columns.target)
     if (source === undefined || source === '' || target === undefined ||
         target === '') {
       return failure(
@@ -1778,12 +1839,13 @@ export function createNetworkFromTable(
   // One row per edge, holding the row's own values: see Pitfalls.
   const edgeRows: Record<IdType, Record<string, Cell>> = {}
   rows.forEach((row, index) => {
-    const values: Record<string, Cell> = {}
-    for (const column of types.keys()) {
-      const value = row[column]
-      if (value !== undefined) values[column] = value
-    }
-    edgeRows[edgeIds[index]] = values
+    // fromEntries, not values[column] = …: a column named "__proto__" would
+    // set the object's prototype instead of adding a value.
+    edgeRows[edgeIds[index]] = Object.fromEntries(
+      [...types.keys()]
+        .filter((column) => cell(row, column) !== undefined)
+        .map((column) => [column, cell(row, column) as Cell]),
+    )
   })
   const written = apis.table.editRows(networkId, 'edge', edgeRows)
   if (!written.success) return undo(written)
@@ -1797,7 +1859,7 @@ export function createNetworkFromTable(
 
 ## Create a new network from the selected nodes
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/network/subnetwork-from-selection.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/subnetwork-from-selection.ts
 
 ````typescript
 /**
@@ -1952,7 +2014,7 @@ export function subnetworkFromSelection(
 
 ## Select nodes or edges by a column's value
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/selection/select-by-attribute.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-by-attribute.ts
 
 ````typescript
 /**
@@ -2073,7 +2135,7 @@ export function selectByAttribute(
 
 ## Select the neighbors of the selected nodes
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/selection/select-neighbors.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-neighbors.ts
 
 ````typescript
 /**
@@ -2206,7 +2268,7 @@ export function selectNeighbors(
 
 ## Color nodes by category
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/color-by-category.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-by-category.ts
 
 ````typescript
 /**
@@ -2254,6 +2316,9 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *   default does not reach them (`style/set-style-defaults`).
  * - **Order is sorted, not by frequency,** so the same values get the same
  *   colors every time the recipe runs.
+ * - **Values are data, not keys you chose.** `colors["__proto__"] = …` sets
+ *   the object's prototype instead of adding a category. The recipe builds
+ *   the mapping with `Object.fromEntries`.
  *
  * ## Don't
  *
@@ -2332,12 +2397,14 @@ export function colorByCategory(
       : String(a).localeCompare(String(b)),
   )
 
-  const colors: Record<string, HexColor> = {}
-  const uncolored: string[] = []
-  values.forEach((value, index) => {
-    if (index < palette.length) colors[String(value)] = palette[index]
-    else uncolored.push(String(value))
-  })
+  // fromEntries, not colors[value] = …: a category named "__proto__" would
+  // set the object's prototype instead of adding a key.
+  const colors: Record<string, HexColor> = Object.fromEntries(
+    values
+      .slice(0, palette.length)
+      .map((value, index) => [String(value), palette[index]]),
+  )
+  const uncolored = values.slice(palette.length).map(String)
 
   const mapped = apis.visualStyle.createDiscreteMapping(
     networkId,
@@ -2353,7 +2420,7 @@ export function colorByCategory(
 
 ## Color nodes by a numeric column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/color-nodes-by-numeric-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-nodes-by-numeric-column.ts
 
 ````typescript
 /**
@@ -2529,7 +2596,7 @@ export function colorNodesByNumericColumn(
 
 ## Emphasize nodes past a threshold
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/emphasize-by-threshold.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/emphasize-by-threshold.ts
 
 ````typescript
 /**
@@ -2682,7 +2749,7 @@ export function emphasizeByThreshold(
 
 ## Hide nodes below a threshold
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/hide-by-threshold.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/hide-by-threshold.ts
 
 ````typescript
 /**
@@ -2710,7 +2777,10 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *   threshold, and an `edgeVisibility` one on every edge that touches such a
  *   node, as the host's own Hide Selected does on 1.1.1.
  * - Leaves elements that were already hidden as they were, and returns
- *   `show()`, which shows again only what the recipe hid.
+ *   `show()`, which shows again only what the recipe hid; a second call does
+ *   nothing. An element with an
+ *   `'element'` bypass (shown on purpose, by an import, the style editor or
+ *   an app) is hidden too, and `show()` puts its `'element'` back.
  * - Records **no** undo entry. Bypasses are saved with the network until
  *   removed.
  *
@@ -2732,8 +2802,12 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  *   every element whenever the selection changed from outside the canvas,
  *   for example by the selection API. 1.1.1 fixes this (`0f8b7f42`). The
  *   case sees both behaviors.
+ * - **A visibility bypass is not always "hidden".** Its value is `'none'` or
+ *   `'element'`. Only `'none'` hides; skipping every element that has a
+ *   bypass would leave the `'element'` ones on screen, with success
+ *   reported.
  * - **Use one call per property.** `setBypass` takes every id at once. If
- *   the edges fail, the recipe shows the nodes again, so nothing is left
+ *   the edges fail, the recipe restores the nodes, so nothing is left
  *   half-hidden.
  *
  * ## Don't
@@ -2793,10 +2867,19 @@ export function hideByThreshold(
     )
   }
 
-  const hiddenNodes = apis.visualStyle.getBypasses(networkId, 'nodeVisibility')
-  if (!hiddenNodes.success) return hiddenNodes
-  const hiddenEdges = apis.visualStyle.getBypasses(networkId, 'edgeVisibility')
-  if (!hiddenEdges.success) return hiddenEdges
+  const nodeBypasses = apis.visualStyle.getBypasses(networkId, 'nodeVisibility')
+  if (!nodeBypasses.success) return nodeBypasses
+  const edgeBypasses = apis.visualStyle.getBypasses(networkId, 'edgeVisibility')
+  if (!edgeBypasses.success) return edgeBypasses
+  const before = {
+    nodeVisibility: nodeBypasses.data.bypasses,
+    edgeVisibility: edgeBypasses.data.bypasses,
+  }
+  // Only 'none' is hidden. An 'element' bypass shows an element on purpose:
+  // it is replaced while hidden, and put back by show().
+  const notHidden =
+    (vpName: 'nodeVisibility' | 'edgeVisibility') => (id: IdType) =>
+      before[vpName][id] !== 'none'
 
   const below = new Set<IdType>()
   for (const row of table.data.rows) {
@@ -2807,33 +2890,43 @@ export function hideByThreshold(
         : options.hideMissing === true
     if (fails) below.add(String(row.id))
   }
-  const nodeIds = [...below].filter((id) => !(id in hiddenNodes.data.bypasses))
+  const nodeIds = [...below].filter(notHidden('nodeVisibility'))
 
   const edges = apis.element.getEdges(networkId)
   if (!edges.success) return edges
   const edgeIds = edges.data.edges
     .filter((e) => below.has(e.sourceId) || below.has(e.targetId))
     .map((e) => e.id)
-    .filter((id) => !(id in hiddenEdges.data.bypasses))
+    .filter(notHidden('edgeVisibility'))
 
-  const show = (): ApiResult => {
-    if (nodeIds.length > 0) {
-      const shown = apis.visualStyle.deleteBypass(
+  // What each property still has to put back. Emptied once restored, so a
+  // second show() never touches a bypass set after the first.
+  const pending = { nodeVisibility: nodeIds, edgeVisibility: edgeIds }
+  /** Put back what the pending ids had: no bypass, or their own one. */
+  const restore = (vpName: 'nodeVisibility' | 'edgeVisibility'): ApiResult => {
+    const ids = pending[vpName]
+    const unset = ids.filter((id) => !(id in before[vpName]))
+    if (unset.length > 0) {
+      const shown = apis.visualStyle.deleteBypass(networkId, vpName, unset)
+      if (!shown.success) return shown
+    }
+    const visible = ids.filter((id) => id in before[vpName])
+    if (visible.length > 0) {
+      const shown = apis.visualStyle.setBypass(
         networkId,
-        'nodeVisibility',
-        nodeIds,
+        vpName,
+        visible,
+        'element',
       )
       if (!shown.success) return shown
     }
-    if (edgeIds.length > 0) {
-      const shown = apis.visualStyle.deleteBypass(
-        networkId,
-        'edgeVisibility',
-        edgeIds,
-      )
-      if (!shown.success) return shown
-    }
+    pending[vpName] = []
     return { success: true, data: undefined }
+  }
+  const show = (): ApiResult => {
+    const nodes = restore('nodeVisibility')
+    if (!nodes.success) return nodes
+    return restore('edgeVisibility')
   }
 
   if (nodeIds.length > 0) {
@@ -2853,7 +2946,7 @@ export function hideByThreshold(
       'none',
     )
     if (!hid.success) {
-      show()
+      restore('nodeVisibility')
       return hid
     }
   }
@@ -2863,7 +2956,7 @@ export function hideByThreshold(
 
 ## Highlight some nodes, and remove the highlight later
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/highlight-with-bypass.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/highlight-with-bypass.ts
 
 ````typescript
 /**
@@ -2890,7 +2983,7 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/4
  * - Sets a border color and width bypass on those nodes. Their fill, label
  *   and any mapping stay as they are.
  * - Returns `clear()`, which puts back exactly the bypasses those nodes had
- *   before: none, or the earlier values.
+ *   before: none, or the earlier values. A second call does nothing.
  * - Records **no** undo entry. Edit ▸ Undo does not remove a highlight; only
  *   `clear()` does.
  * - Bypasses are part of the network's style: they are saved with the
@@ -2959,6 +3052,8 @@ export function highlightWithBypass(
   if (nodeIds.length === 0) {
     return failure('RECIPE_NO_NODES', 'nodeIds is empty')
   }
+  // A private copy: the caller may reuse its array.
+  const ids = [...nodeIds]
 
   // What these nodes have now, to restore it.
   const before = new Map<string, Record<IdType, unknown>>()
@@ -2968,21 +3063,25 @@ export function highlightWithBypass(
     before.set(vpName, read.data.bypasses)
   }
 
-  const set = apis.visualStyle.setBypasses(networkId, nodeIds, {
+  const set = apis.visualStyle.setBypasses(networkId, ids, {
     nodeBorderColor: options.color ?? '#e69f00',
     nodeBorderWidth: options.width ?? 6,
   })
   if (!set.success) return set
 
+  // What each property still has to put back. Emptied once restored, so a
+  // second clear() never touches a bypass set after the first.
+  const pending = new Map<string, IdType[]>(PROPERTIES.map((vp) => [vp, ids]))
   const clear = (): ApiResult => {
     for (const vpName of PROPERTIES) {
+      const targets = pending.get(vpName) ?? []
       const earlier = before.get(vpName) ?? {}
-      const unset = nodeIds.filter((id) => !(id in earlier))
+      const unset = targets.filter((id) => !(id in earlier))
       if (unset.length > 0) {
         const removed = apis.visualStyle.deleteBypass(networkId, vpName, unset)
         if (!removed.success) return removed
       }
-      for (const id of nodeIds.filter((id) => id in earlier)) {
+      for (const id of targets.filter((id) => id in earlier)) {
         const restored = apis.visualStyle.setBypass(
           networkId,
           vpName,
@@ -2991,6 +3090,7 @@ export function highlightWithBypass(
         )
         if (!restored.success) return restored
       }
+      pending.set(vpName, [])
     }
     return { success: true, data: undefined }
   }
@@ -3000,7 +3100,7 @@ export function highlightWithBypass(
 
 ## Label nodes or edges from a column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/label-from-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/label-from-column.ts
 
 ````typescript
 /**
@@ -3100,7 +3200,7 @@ export function labelFromColumn(
 
 ## Set the style's defaults
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/set-style-defaults.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/set-style-defaults.ts
 
 ````typescript
 /**
@@ -3222,7 +3322,7 @@ export function setStyleDefaults(
 
 ## Size nodes by their degree
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/46ebe17ac64421060983dcc2db9a2f9a37cea28a/cookbook/recipes/style/size-nodes-by-degree.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/size-nodes-by-degree.ts
 
 ````typescript
 /**
