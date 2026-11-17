@@ -25,7 +25,9 @@ export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
       return true
     }
 
-    const following = followCurrentNetwork(context.apis, read)
+    const following = followCurrentNetwork(context.apis, read, () => {
+      console.info('no network is open')
+    })
     if (following.success) stopFollowing = following.data.stop
   },
 

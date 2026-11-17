@@ -79,7 +79,7 @@ the record names one release until the second run.
 
 | Field | Meaning |
 |---|---|
-| `apiTypes.version`, `.source` | The `@cytoscape-web/api-types` the type check resolved, and whether npm took it from the registry or from a local tarball |
+| `apiTypes.version`, `.source` | The `@cytoscape-web/api-types` the type check resolved. `registry` only when the installed package has the integrity `package-lock.json` pins; anything else, a local tarball of the same version included, is `local` |
 | `digest` | A hash of `recipes/`, `wiring/`, `runner/` and `cookbook/tsconfig.json`, Markdown excluded |
 | `hosts[]` | One entry per release: its version, the commit the host reported, the number of cases, and when |
 
@@ -92,15 +92,18 @@ the record names one release until the second run.
   such a host the cases run, and nothing is recorded.
 
 `node scripts/cookbook-index.mjs --check` fails when the digest or the
-api-types version no longer matches, or when a release in `hosts.json` has no
-entry. CI runs it.
+api-types version no longer matches, when a release in `hosts.json` has no
+entry, or when the record or the installed api-types is not the registry
+package. CI runs it. After developing against a local tarball, run `npm ci`
+before the runner.
 
 ## What the runner does to the page
 
 - **It serves an empty app catalog.** From 1.1.1 on, the host turns on every
   app of its catalog, and a dev server's catalog lists this repository's four
   apps. The runner answers the catalog request with `[]`, and fails if the
-  host never made that request or loaded any other app's `remoteEntry.js`. It
+  host never made that request or fetched any `remoteEntry.js` but its own
+  (the URL it publishes in `window.__CYWEB_HOST__.remoteEntry`). It
   matches the catalog's exact path: a 1.1.1 dev server also imports
   `/src/assets/apps.json` as a module, and answering that keeps the host from
   starting.

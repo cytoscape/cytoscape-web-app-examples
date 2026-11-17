@@ -35,6 +35,9 @@
  * - **Every node needs a position.** Nodes created at the same position sit
  *   on top of each other. This recipe puts the new nodes in a row below the
  *   existing ones.
+ * - **Find the extent with a loop.** `Math.min(...xs)` passes one argument
+ *   per node, and throws a `RangeError` past about 120,000 of them. The host
+ *   does not stop a network of that size from loading.
  * - **If the edges fail, the nodes stay.** The two batches are separate
  *   calls. The recipe returns the failure and leaves the nodes in place; one
  *   undo removes them. That cannot happen for a link that names a missing
@@ -108,9 +111,15 @@ export function addNodesToNetwork(
   // Place the new nodes in a row below everything that is already there.
   const existing = apis.viewport.getNodePositions(networkId)
   if (!existing.success) return existing
-  const placed = Object.values(existing.data.positions)
-  const left = placed.length === 0 ? 0 : Math.min(...placed.map((p) => p[0]))
-  const bottom = placed.length === 0 ? 0 : Math.max(...placed.map((p) => p[1]))
+  // A loop, not Math.min(...xs): see Pitfalls.
+  let left = 0
+  let bottom = 0
+  let first = true
+  for (const [x, y] of Object.values(existing.data.positions)) {
+    left = first ? x : Math.min(left, x)
+    bottom = first ? y : Math.max(bottom, y)
+    first = false
+  }
 
   const created = apis.element.createNodes(
     networkId,

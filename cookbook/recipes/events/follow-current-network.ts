@@ -18,6 +18,7 @@
  * - `read` returns `false` when it could not read the network yet, and `true`
  *   when it could. A failed read is how the recipe learns that the data has
  *   not arrived.
+ * - `onNone`, if given, clears whatever the app shows about a network.
  *
  * ## Side effects
  *
@@ -26,6 +27,8 @@
  * - Calls `read` once at the start if a network is current, once for every
  *   switch, and once more when the data of a network it could not read
  *   arrives.
+ * - Calls `onNone` at the start if no network is current, and whenever the
+ *   last network is closed.
  * - Changes nothing in the host.
  *
  * ## Pitfalls
@@ -44,8 +47,12 @@
  * - **Unsubscribe.** Call `stop()` in `unmount()`, or in the cleanup of a
  *   React effect. A listener that outlives its app keeps running after the
  *   app is disabled.
- * - `getCurrentNetworkId` fails when no network is open. That is not an
- *   error here: the recipe waits for the first switch.
+ * - **No network is a state too.** When the last network is closed, the
+ *   host fires `network:switched` with an empty `networkId`. There is nothing
+ *   to read, and what the app shows describes a network that is gone: the
+ *   recipe calls `onNone` so that the app can clear it. At the start,
+ *   `getCurrentNetworkId` fails when no network is open; that is the same
+ *   state, not an error.
  * - Do not use a timer to wait for a load. There is no safe duration.
  *
  * ## Don't
@@ -72,6 +79,7 @@ export interface FollowedNetwork {
 export function followCurrentNetwork(
   apis: Pick<CyWebApiType, 'workspace'>,
   read: (networkId: IdType) => boolean,
+  onNone: () => void = () => {},
 ): ApiResult<FollowedNetwork> {
   // The network whose data had not arrived when `read` was last called.
   let waitingFor: IdType | null = null
@@ -83,8 +91,9 @@ export function followCurrentNetwork(
   const onSwitched = (event: WindowEventMap['network:switched']): void => {
     const { networkId } = event.detail
     if (networkId === '') {
-      // An empty id names no network: there is nothing to read.
+      // The last network was closed: nothing is current.
       waitingFor = null
+      onNone()
       return
     }
     deliver(networkId)
@@ -100,6 +109,7 @@ export function followCurrentNetwork(
   // 1. The network that is already on screen, if any.
   const current = apis.workspace.getCurrentNetworkId()
   if (current.success) deliver(current.data.networkId)
+  else onNone()
 
   return {
     success: true,

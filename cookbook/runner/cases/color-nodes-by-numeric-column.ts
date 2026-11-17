@@ -137,6 +137,32 @@ const recipeCase: RecipeCase = {
       unchanged.success && unchanged.data.mapping?.attribute === 'count',
       'a refused call changes no mapping',
     )
+
+    // A network past the argument limit of a function call (about 120,000).
+    // The host is stubbed: what is checked is the recipe's own arithmetic,
+    // and 200,000 real nodes would take the case minutes to build.
+    const large = 200_000
+    const stub = {
+      table: {
+        getTable: () => ({
+          success: true,
+          data: {
+            columns: [{ name: 'score', type: 'double' }],
+            rows: Array.from({ length: large }, (_, i) => ({ score: i })),
+          },
+        }),
+      },
+      visualStyle: {
+        createContinuousMapping: () => ({ success: true, data: undefined }),
+      },
+    } as unknown as Parameters<typeof colorNodesByNumericColumn>[0]
+    const byLarge = colorNodesByNumericColumn(stub, 'large', 'score')
+    check(
+      byLarge.success &&
+        byLarge.data.max === large - 1 &&
+        byLarge.data.mappedCount === large,
+      'a column of 200,000 values is graded, not thrown on',
+    )
   },
 }
 

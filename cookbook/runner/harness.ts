@@ -91,6 +91,12 @@ const runCase = async (
       }
       const { networkId } = created.data
       cleanups.push(() => {
+        // A case may delete its own fixture. One that is gone needs nothing;
+        // run.mjs still fails the run on any network left behind.
+        const present = apis.workspace.getNetworkIds()
+        if (present.success && !present.data.networkIds.includes(networkId)) {
+          return
+        }
         const deleted = apis.network.deleteNetwork(networkId)
         if (!deleted.success) throw new Error(deleted.error.message)
       })

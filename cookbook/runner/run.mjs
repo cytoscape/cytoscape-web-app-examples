@@ -114,14 +114,18 @@ const openHost = async (browser, hostUrl) => {
     },
   )
 
-  // The empty catalog is a means. This is the end it serves: no app's entry
-  // is fetched from anywhere but the host itself.
-  const hostOrigin = new URL(hostUrl).origin
-  const otherApps = new Set()
+  // The empty catalog is a means. This is the end it serves: the only
+  // remoteEntry.js the page fetches is the host's own. Every entry is
+  // collected, whatever its origin: an app can be served from the host's own
+  // origin. The host's entry is known only once it has published its
+  // descriptor, so it is set aside at the end, by its exact URL.
+  const entries = new Set()
   page.on('request', (request) => {
     const url = new URL(request.url())
-    if (url.pathname.endsWith('/remoteEntry.js') && url.origin !== hostOrigin) {
-      otherApps.add(url.href)
+    if (url.pathname.endsWith('/remoteEntry.js')) {
+      url.search = ''
+      url.hash = ''
+      entries.add(url.href)
     }
   })
 
@@ -177,6 +181,17 @@ const openHost = async (browser, hostUrl) => {
         `update the route in cookbook/runner/run.mjs`,
     )
   }
+  // Both supported releases publish it (src/app-api/federation/hostDescriptor.ts).
+  const hostEntry = await page.evaluate(
+    () => globalThis.__CYWEB_HOST__?.remoteEntry,
+  )
+  if (typeof hostEntry !== 'string') {
+    throw new Error(
+      'the host published no window.__CYWEB_HOST__.remoteEntry, so its own ' +
+        'entry cannot be told from an app\'s',
+    )
+  }
+  const otherApps = () => [...entries].filter((href) => href !== hostEntry)
   return { context, page, hostBuild, otherApps }
 }
 
@@ -291,10 +306,11 @@ const main = async () => {
     if (leftBehind.length > 0) {
       console.log(`  ✗ networks left behind: ${leftBehind.join(', ')}`)
     }
-    if (opened.otherApps.size > 0) {
+    const otherApps = opened.otherApps()
+    if (otherApps.length > 0) {
       throw new Error(
         `the host loaded other apps during the run, so a result may depend ` +
-          `on them: ${[...opened.otherApps].join(', ')}`,
+          `on them: ${otherApps.join(', ')}`,
       )
     }
   } finally {
@@ -355,6 +371,12 @@ const main = async () => {
         `(${host.role}). The record now names: ` +
         `${hosts.map((h) => h.version).join(', ')}\n`,
     )
+    if (readApiTypes().source !== 'registry') {
+      console.log(
+        '  ✗ this record cannot be merged: the installed api-types is not ' +
+          'the registry package the lockfile pins. Run npm ci and run again\n',
+      )
+    }
   }
 }
 

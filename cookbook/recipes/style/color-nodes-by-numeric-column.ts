@@ -41,6 +41,9 @@
  *   (`visualStyle.setDefault`).
  * - **`attributeType` must be the column's own type.** Read it from the
  *   table. Passing `'long'` for a `double` column fails with `MI2`.
+ * - **Find the range with a loop.** `Math.min(...values)` passes one argument
+ *   per node, and throws a `RangeError` past about 120,000 of them. The host
+ *   does not stop a network of that size from loading.
  * - **Pass the two control points yourself.** Without them the host uses its
  *   own three-color scheme, and takes the first and last entries of
  *   `attributeValues` as the range, whatever their order.
@@ -113,16 +116,20 @@ export function colorNodesByNumericColumn(
     )
   }
 
-  const values: number[] = []
+  // A loop, not Math.min(...values): see Pitfalls.
+  let min = Infinity
+  let max = -Infinity
+  let mappedCount = 0
   for (const row of table.data.rows) {
     const value = row[column]
-    if (typeof value === 'number' && Number.isFinite(value)) values.push(value)
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
+    mappedCount += 1
+    min = Math.min(min, value)
+    max = Math.max(max, value)
   }
-  if (values.length === 0) {
+  if (mappedCount === 0) {
     return failure('RECIPE_NO_VALUES', `"${column}" has no numeric value`)
   }
-  const min = Math.min(...values)
-  const max = Math.max(...values)
   if (min === max) {
     return failure(
       'RECIPE_SINGLE_VALUE',
@@ -155,8 +162,8 @@ export function colorNodesByNumericColumn(
     data: {
       min,
       max,
-      mappedCount: values.length,
-      unmappedCount: table.data.rows.length - values.length,
+      mappedCount,
+      unmappedCount: table.data.rows.length - mappedCount,
     },
   }
 }

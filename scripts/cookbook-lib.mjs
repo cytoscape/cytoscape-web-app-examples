@@ -76,11 +76,22 @@ export const computeDigest = (cookbookDir = COOKBOOK_DIR) => {
   return `sha256:${hash.digest('hex')}`
 }
 
+const readLockEntry = (lockPath) =>
+  existsSync(lockPath)
+    ? JSON.parse(readFileSync(lockPath, 'utf8')).packages?.[
+        `node_modules/${API_TYPES}`
+      ]
+    : undefined
+
 /**
- * The api-types version the type check resolves, and whether npm took it from
- * the registry. A version installed from a local tarball (CLAUDE.md,
- * "Developing against an unpublished api-types") is recorded as `local`, and
- * nothing is published from such a record.
+ * The api-types version the type check resolves, and where it came from.
+ *
+ * `registry` means: the installed package is byte for byte the registry
+ * package the committed lockfile pins (same integrity). Anything else is
+ * `local`. The version alone proves nothing: a tarball installed from a host
+ * checkout (CLAUDE.md, "Developing against an unpublished api-types") can
+ * carry a published version and other declarations. On 2026-11-17 the host's
+ * `development` packed beta.6 declarations as `1.0.0-beta.5`.
  */
 export const readApiTypes = (repoRoot = REPO_ROOT) => {
   const packagePath = join(repoRoot, 'node_modules', API_TYPES, 'package.json')
@@ -89,18 +100,17 @@ export const readApiTypes = (repoRoot = REPO_ROOT) => {
   }
   const { version } = JSON.parse(readFileSync(packagePath, 'utf8'))
 
-  let source = 'unknown'
-  const lockPath = join(repoRoot, 'node_modules', '.package-lock.json')
-  if (existsSync(lockPath)) {
-    const entry = JSON.parse(readFileSync(lockPath, 'utf8')).packages?.[
-      `node_modules/${API_TYPES}`
-    ]
-    const resolved = entry?.resolved ?? ''
-    source = resolved.startsWith('https://registry.npmjs.org/')
-      ? 'registry'
-      : 'local'
-  }
-  return { version, source }
+  // npm's own record of what it installed, and what the repository pins.
+  const installed = readLockEntry(
+    join(repoRoot, 'node_modules', '.package-lock.json'),
+  )
+  const pinned = readLockEntry(join(repoRoot, 'package-lock.json'))
+  const fromRegistry =
+    typeof pinned?.integrity === 'string' &&
+    (pinned.resolved ?? '').startsWith('https://registry.npmjs.org/') &&
+    installed?.integrity === pinned.integrity &&
+    installed?.version === version
+  return { version, source: fromRegistry ? 'registry' : 'local' }
 }
 
 /** The host releases the cookbook supports, with their tag commits. */
@@ -161,6 +171,20 @@ export const checkRecord = ({
     problems.push(
       `the record was made with api-types ${record.apiTypes?.version}, ` +
         `and the type check resolves ${apiTypes.version}`,
+    )
+  }
+  // Equal versions are not equal declarations: see readApiTypes.
+  if (record.apiTypes?.source !== 'registry') {
+    problems.push(
+      `the record was made with api-types from a ${record.apiTypes?.source} ` +
+        `install, not the registry package the lockfile pins: run npm ci, ` +
+        `then the runner`,
+    )
+  }
+  if (apiTypes.source !== 'registry') {
+    problems.push(
+      `the installed api-types is not the registry package the lockfile ` +
+        `pins, so the type check proves nothing about it: run npm ci`,
     )
   }
 

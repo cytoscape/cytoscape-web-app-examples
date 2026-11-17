@@ -10,10 +10,12 @@
  *   `nodeGraphics`, `panel`): `useAppContext()?.apis`, and nothing else. A
  *   recipe that needs one of them takes that object.
  *
- * To follow the current network in a component, use the `useCyWebEvent` hook:
- * it subscribes on mount and unsubscribes on unmount.
+ * To follow the current network in a component, read it once when the
+ * component mounts, then on its events through the `useCyWebEvent` hook, which
+ * subscribes on mount and unsubscribes on unmount. Clear what you show when no
+ * network is current.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useAppContext } from 'cyweb/AppIdContext'
 import { useElementApi } from 'cyweb/ElementApi'
@@ -35,18 +37,26 @@ const ExamplePanel = (): JSX.Element => {
   const [message, setMessage] = useState('')
   const [nodeCount, setNodeCount] = useState<number | null>(null)
 
-  // Read on a switch, and again when the data arrives: a read made on the
-  // switch alone can fail with APP1.
-  const readNodeCount = useCallback(
-    ({ networkId }: { networkId: string }): void => {
-      const current = workspace.getCurrentNetworkId()
-      if (!current.success || current.data.networkId !== networkId) return
-      const nodes = element.getNodeIds(networkId)
-      setNodeCount(nodes.success ? nodes.data.nodeIds.length : null)
-    },
-    [element, workspace],
-  )
+  // Always show the network that is current now, whatever event asked.
+  // No network, or one whose data has not arrived yet, shows nothing.
+  const readNodeCount = useCallback((): void => {
+    const current = workspace.getCurrentNetworkId()
+    if (!current.success) {
+      setNodeCount(null)
+      return
+    }
+    const nodes = element.getNodeIds(current.data.networkId)
+    setNodeCount(nodes.success ? nodes.data.nodeIds.length : null)
+  }, [element, workspace])
+
+  // 1. When the panel opens: a network may already be on screen, and no
+  //    event will announce it.
+  useEffect(() => {
+    readNodeCount()
+  }, [readNodeCount])
+  // 2. On every switch, including to no network at all (an empty id).
   useCyWebEvent('network:switched', readNodeCount)
+  // 3. When data arrives: a read made on the switch alone can fail with APP1.
   useCyWebEvent('network:loaded', readNodeCount)
 
   const addChain = (): void => {

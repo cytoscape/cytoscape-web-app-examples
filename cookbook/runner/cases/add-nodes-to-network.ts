@@ -104,6 +104,44 @@ const recipeCase: RecipeCase = {
       !missing.success && !missing.error.code.startsWith('RECIPE_'),
       'an unknown network fails with the host’s own error',
     )
+
+    // A network past the argument limit of a function call (about 120,000).
+    // The host is stubbed: what is checked is the recipe's own arithmetic,
+    // and 200,000 real nodes would take the case minutes to build.
+    const large = 200_000
+    const largePositions: Record<string, [number, number]> = {}
+    for (let i = 0; i < large; i += 1) largePositions[`n${i}`] = [i, -i]
+    let placedAt: Array<[number, number, number?]> = []
+    const stub = {
+      viewport: {
+        getNodePositions: () => ({
+          success: true,
+          data: { positions: largePositions, missing: [] },
+        }),
+      },
+      element: {
+        createNodes: (
+          _networkId: string,
+          specs: Array<{ position: [number, number, number?] }>,
+        ) => {
+          placedAt = specs.map((spec) => spec.position)
+          return {
+            success: true,
+            data: {
+              nodes: specs.map((spec, i) => ({
+                nodeId: `new-${i}`,
+                node: { attributes: {}, position: spec.position },
+              })),
+            },
+          }
+        },
+      },
+    } as unknown as Parameters<typeof addNodesToNetwork>[0]
+    const onLarge = addNodesToNetwork(stub, 'large', [{ name: 'Z' }])
+    check(
+      onLarge.success && placedAt[0]?.[0] === 0 && placedAt[0]?.[1] > 0,
+      'a network of 200,000 nodes gets a new node below them, not a throw',
+    )
   },
 }
 

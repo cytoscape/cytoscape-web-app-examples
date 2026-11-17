@@ -75,7 +75,7 @@ does not apply. A recipe may be of more than one kind.
 | Numeric mapping | Missing values; non-numeric values; an empty column; all values equal |
 | Mutation | Batch APIs over loops (`createNodes` validates all-or-nothing and records one undo entry); what remains when a later call fails; the undo unit |
 | Persistence | `appData` stores locally by default and enters CX2 only when shared (`cyAppData` aspect); read values are deeply frozen and must be copied before mutation |
-| Events and async | Ignore events for other networks; discard results that arrive after a switch; unsubscribe |
+| Events and async | Ignore events for other networks; discard results that arrive after a switch; no network at all (the last one closed fires `network:switched` with an empty id); unsubscribe |
 
 ## The code
 
@@ -118,6 +118,11 @@ const failure = (code: string, message: string): ApiFailure => ({
   error: { code, severity: 'error', message },
 })
 ```
+
+**Never spread a network-sized array into a call.** `Math.min(...values)`
+passes one argument per element and throws a `RangeError` past about 120,000
+of them, and the host loads networks that large. Use a loop. A case can check
+this with a stubbed `apis` and 200,000 elements, as the two Phase 1 cases do.
 
 **No React in a core recipe.** A component recipe is a React component that
 calls core functions of its own file and renders their results.
