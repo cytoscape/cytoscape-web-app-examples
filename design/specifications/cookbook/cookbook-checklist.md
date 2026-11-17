@@ -4,8 +4,9 @@
 > verification before starting the next phase.
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
-> Phase 1 COMPLETE (2026-11-17), merged in #27. Phase 2 BUILT (2026-11-17): 20 recipes pass
-> on both hosts; the source commit, `docs/llms*.txt` and the merge are next.** The design is at revision 8: three
+> Phase 1 COMPLETE (2026-11-17), merged in #27. Phase 2 BUILT and committed (2026-11-17):
+> 20 recipes pass on both hosts, `docs/llms*.txt` are generated; CI and the merge are
+> next.** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, and the review of #27. Work
 > happens on the `cookbook` branch of this repository, which is level with `development`
@@ -478,7 +479,7 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
 
 ---
 
-## Phase 2: Catalog 🟡 **BUILT (2026-11-17)** — not committed; `docs/llms*.txt` follow the source commit
+## Phase 2: Catalog 🟡 **BUILT (2026-11-17)** — committed; CI and the merge are next
 
 _Design: §4.7, §4.10_
 
@@ -574,9 +575,9 @@ and committed into `docs/`, never generated in a workflow (design D-13).
       `cookbook/` or `guides/`
 - [x] `scripts/manifest.mjs`: `llms.txt` and `llms-full.txt` join `RESERVED_PUBLISH_PATHS`
 - [x] `deploy-pages.yml` is **not** changed: its output is never served
-- [ ] **The files themselves are not committed yet.** They need the source commit first:
-      commit the Phase 2 sources, run `--llms`, commit the two files (WRITING-RECIPES.md,
-      "Two commits")
+- [x] **The files are committed**, in two steps as WRITING-RECIPES.md describes: the
+      sources in `31cbb6a` and `46ebe17`, then the two files alone in `3a8ec14`, pinned to
+      `46ebe17`. `--check` finds them current
 
 ### Verification (Phase 2)
 
