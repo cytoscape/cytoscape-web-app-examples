@@ -4,12 +4,12 @@
 > verification before starting the next phase.
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
-> Phase 1 DONE (2026-11-16), awaiting their merge into `development`. Next: Phase 2 —
-> start at its "Pre-read files".** The design is at revision 8: three
+> Phase 1 COMPLETE (2026-11-17), merged in #27. Next: Phase 2 — start at its "Pre-read
+> files".** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
-> `llms.txt` committed into `docs/`, and a review after a pause. Work happens on the
-> `cookbook` branch of this repository, which is level with `development` at `1f1a902`
-> (#25 also removed an `npm pack` race from app-runtime's tests).
+> `llms.txt` committed into `docs/`, a review after a pause, and the review of #27. Work
+> happens on the `cookbook` branch of this repository, which is level with `development`
+> at `4f1a2af`, the merge of #27.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -194,7 +194,7 @@ listed here, and any other contradiction found on a page the cookbook will link 
 
 ---
 
-## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — `4d38f6c`, not merged yet
+## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **COMPLETE (2026-11-17)** — `4d38f6c`, merged in #27
 
 _Design: §4.9, §8 "Review after a pause", Goal 6, criterion 11, D-16_
 
@@ -255,13 +255,14 @@ Confirm each behavior in a running host of each release before changing the text
       (`grep -rni "enable" README.md CLAUDE.md guides/ */README.md`)
 - [x] `npm run typecheck` passes. `npm test` passes except the six `manifestCommand`
       tests of the known non-issue below; with `TMPDIR` resolved, all 413 pass
-- [ ] **Merged into `development`**, without a verification record (D-12), on its own or
-      together with Phase 1. Either way its commits come before the one that adds the
-      README link
+- [x] **Merged into `development`**, without a verification record (D-12), together with
+      Phase 1 in [#27](https://github.com/cytoscape/cytoscape-web-app-examples/pull/27)
+      (merge commit `4f1a2af`, 2026-11-17). Its commit `4d38f6c` comes before `1eac431`,
+      which adds the README link
 
 ---
 
-## Phase 1: Foundation and a minimal runner ✅ **DONE (2026-11-16)** — not committed or merged yet
+## Phase 1: Foundation and a minimal runner ✅ **COMPLETE (2026-11-17)** — #27
 
 _Design: §4.1–§4.6, §4.9 (README link), §4.10 (the three Phase 1 recipes), §4.11_
 
@@ -412,8 +413,14 @@ catalog grows.
 Hosts: dev servers from clean worktrees of the two tags, on `localhost:5500`, one at a
 time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
 
-- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5.
-      *(Passes locally. CI has not run yet: nothing is pushed)*
+- [x] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5:
+      on #27 (runs
+      [44148817210](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44148817210)
+      and
+      [44158581711](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44158581711)),
+      and on `development` after the merge
+      ([44161181883](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44161181883)),
+      all nine jobs green each time, the new `Cookbook` job included
 - [x] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
       expected
 - [x] The type check rejects an invented name: `'NODE_BACKGROUND_COLOR'` in place of
@@ -462,7 +469,12 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
         record as it was; the previous generator lets both new fixtures through
         (`apis-source-shadowed`, `apis-source-case`), and the new one rejects them;
         `--selftest` now runs 17 fixtures
-- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+- [x] **Merged into `development`**, with the current `verified.json` (D-12):
+      [#27](https://github.com/cytoscape/cytoscape-web-app-examples/pull/27), merge commit
+      `4f1a2af` (2026-11-17), a merge and not a squash, as §4.7 relies on. The record's
+      digest `c4f40a9f` matched on `development`: its `Cookbook` job passed. Codex,
+      Copilot and CodeRabbit raised 21 comments; all were answered and their 11 threads
+      resolved (design §8, "Review of #27")
 
 ---
 
@@ -808,7 +820,7 @@ Copy the record here each time it is refreshed.
       the scaffolder's version was bumped
 - [ ] 9 — A project scaffolded outside the monorepo pins the verified version and builds
 - [ ] 10 — The agent acceptance test is recorded above
-- [ ] 11 — The Phase 0 corrections and the follow-up landed before the README linked the
+- [x] 11 — The Phase 0 corrections and the follow-up landed before the README linked the
       cookbook
 
 ### Deferred, deliberately
