@@ -4,6 +4,7 @@
 //
 // Design: design/specifications/cookbook/cookbook-design.md §4.6 and §4.7.
 
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
@@ -209,4 +210,37 @@ export const checkRecord = ({
     }
   }
   return problems
+}
+
+// ── Git: the commit llms.txt pins ───────────────────────────────────────────
+
+/** The sources llms.txt links to. Changing any of them moves the pin. */
+export const LINKED_SOURCES = ['cookbook', 'guides']
+
+export const git = (args, repoRoot = REPO_ROOT) =>
+  execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).trim()
+
+/**
+ * The last commit that changed a linked source, reachable from `ref`. A file
+ * cannot name the commit that adds it, so llms.txt names this one instead;
+ * the commit that adds the regenerated llms.txt changes no linked source, and
+ * leaves the pin where it was.
+ */
+export const pinnedCommit = (ref = 'HEAD', repoRoot = REPO_ROOT) =>
+  git(['log', '-1', '--format=%H', ref, '--', ...LINKED_SOURCES], repoRoot)
+
+/** Uncommitted changes to linked sources, which the pin would not describe. */
+export const uncommittedSources = (repoRoot = REPO_ROOT) =>
+  git(['status', '--porcelain', '--', ...LINKED_SOURCES], repoRoot)
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+
+/** Whether `path` exists at `commit`. */
+export const existsAt = (commit, path, repoRoot = REPO_ROOT) => {
+  try {
+    git(['cat-file', '-e', `${commit}:${path}`], repoRoot)
+    return true
+  } catch {
+    return false
+  }
 }

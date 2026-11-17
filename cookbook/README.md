@@ -12,19 +12,56 @@ to use it, what it changes, and what not to do.
 - **What these were verified with:** [verified.json](verified.json), and
   [runner/README.md](runner/README.md) for how
 
-3 recipes. Find one by the words in "Also asked as".
+20 recipes. Find one by the words in "Also asked as".
+
+## network
+
+| Recipe | Also asked as | Calls |
+|---|---|---|
+| [Create a network from a table of edges](recipes/network/create-network-from-table.ts) | import network from table, network from rows, edge list with attributes, build a network from data, network from a spreadsheet, source target table, interaction table | `network.createNetworkFromEdgeList`, `table.createColumn`, `table.editRows`, `network.deleteNetwork` |
+| [Create a new network from the selected nodes](recipes/network/subnetwork-from-selection.ts) | subnetwork, extract selection, new network from selection, network from selected nodes, induced subgraph, sub-network, copy selection to a new network | `selection.getSelection`, `element.getEdges`, `network.createNetworkFromNodeList`, `visualStyle.getVisualStyle`, `visualStyle.applyVisualStyle`, `network.deleteNetwork` |
 
 ## elements
 
 | Recipe | Also asked as | Calls |
 |---|---|---|
+| [Connect the selected nodes to each other](recipes/elements/add-edges-between-selected.ts) | add edges between selected nodes, connect selected nodes, link selected nodes, make a clique, connect all pairs, fully connect selection | `selection.getSelection`, `element.getEdges`, `element.createEdges` |
 | [Add nodes to a network, and connect them](recipes/elements/add-nodes-to-network.ts) | add nodes, create nodes, insert nodes, new nodes, add a chain of nodes, connect nodes, add edges between new nodes | `viewport.getNodePositions`, `element.createNodes`, `element.createEdges` |
+| [Delete the selected nodes and edges](recipes/elements/delete-selected.ts) | delete selection, remove selected, delete selected nodes, remove nodes, delete edges, clear selected elements | `selection.getSelection`, `element.deleteNodes`, `element.deleteEdges` |
+
+## data
+
+| Recipe | Also asked as | Calls |
+|---|---|---|
+| [Add a computed column: node degree](recipes/data/add-computed-column.ts) | add a column, computed column, calculate degree, node degree, number of connections, count neighbors, derived attribute, write results to the table | `element.getNodeIds`, `element.getEdges`, `table.getColumns`, `table.createColumn`, `table.setValues`, `table.deleteColumn` |
+| [Join a table of values to the network by a key column](recipes/data/join-table-by-key.ts) | import table, import data, join table, merge data, add attributes from a file, import TSV, load node attributes, map data onto nodes, attribute table | `table.getColumns`, `table.importTableFromTsv` |
+| [Read a column's numbers safely](recipes/data/read-column-values-safely.ts) | read column values, get numeric values, read a column, column to numbers, parse numbers from a column, column statistics, min and max of a column, missing values | `table.getTable` |
 
 ## style
 
 | Recipe | Also asked as | Calls |
 |---|---|---|
+| [Color nodes by category](recipes/style/color-by-category.ts) | color by type, color by group, color by class, categorical colors, discrete color mapping, one color per value, color by label, legend colors | `table.getTable`, `visualStyle.createDiscreteMapping` |
 | [Color nodes by a numeric column](recipes/style/color-nodes-by-numeric-column.ts) | color by score, color by value, heat map, heatmap, gradient, color scale, continuous color mapping, color nodes from blue to red, expression coloring | `table.getTable`, `visualStyle.createContinuousMapping` |
+| [Emphasize nodes past a threshold](recipes/style/emphasize-by-threshold.ts) | highlight nodes above a value, mark significant nodes, threshold border, emphasize high scores, nodes over cutoff, outline nodes above a threshold, step mapping | `table.getTable`, `visualStyle.getDefault`, `visualStyle.createContinuousMapping`, `visualStyle.deleteMapping` |
+| [Hide nodes below a threshold](recipes/style/hide-by-threshold.ts) | filter nodes, hide nodes, hide low values, show only nodes above, remove from view, cutoff filter, hide edges of hidden nodes, show again | `table.getTable`, `element.getEdges`, `visualStyle.getBypasses`, `visualStyle.setBypass`, `visualStyle.deleteBypass` |
+| [Highlight some nodes, and remove the highlight later](recipes/style/highlight-with-bypass.ts) | highlight nodes, mark nodes, emphasize these nodes, flag nodes, outline nodes, temporary highlight, bypass, override style for some nodes | `visualStyle.getBypasses`, `visualStyle.setBypasses`, `visualStyle.setBypass`, `visualStyle.deleteBypass` |
+| [Label nodes or edges from a column](recipes/style/label-from-column.ts) | show labels, change label, label by column, display attribute, node label, edge label, show gene names, label mapping, passthrough mapping | `table.getColumns`, `visualStyle.createPassthroughMapping` |
+| [Set the style's defaults](recipes/style/set-style-defaults.ts) | make every node red, change node color, change node shape, set default color, default size, background color, change the look of all nodes, style all edges | `visualStyle.setDefaults`, `visualStyle.getVisualProperties`, `visualStyle.getBypasses` |
+| [Size nodes by their degree](recipes/style/size-nodes-by-degree.ts) | size by degree, bigger nodes for hubs, node size by connections, scale nodes, hubs larger, node size mapping, size by number of edges | `element.getNodeIds`, `element.getEdges`, `table.getColumns`, `table.createColumn`, `table.setValues`, `visualStyle.createContinuousMapping`, `visualStyle.deleteMapping` |
+
+## selection
+
+| Recipe | Also asked as | Calls |
+|---|---|---|
+| [Select nodes or edges by a column's value](recipes/selection/select-by-attribute.ts) | select by attribute, select where, find nodes with, select matching nodes, filter selection, select by value, select by type, query nodes | `table.getTable`, `selection.exclusiveSelect`, `selection.additiveSelect` |
+| [Select the neighbors of the selected nodes](recipes/selection/select-neighbors.ts) | first neighbors, select neighbors, expand selection, select adjacent nodes, second neighbors, neighborhood, n hops, k-hop neighborhood, grow selection | `selection.getSelection`, `element.getEdges`, `selection.additiveSelect` |
+
+## layout
+
+| Recipe | Also asked as | Calls |
+|---|---|---|
+| [Run a layout and wait for it to finish](recipes/layout/run-layout-and-wait.ts) | apply layout, run layout, arrange nodes, layout network, wait for layout, force-directed layout, grid layout, re-layout, after layout | `layout.getAvailableLayouts`, `workspace.getCurrentNetworkId`, `layout.applyLayout` |
 
 ## events
 

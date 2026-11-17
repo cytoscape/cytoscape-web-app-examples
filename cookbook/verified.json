@@ -3,21 +3,21 @@
     "version": "1.0.0-beta.5",
     "source": "registry"
   },
-  "digest": "sha256:c4f40a9f13710d947c191d8ed2d5fbc89a17e2939c29f83cef00eb5061804bb9",
+  "digest": "sha256:7192832cff918181a18164b2f62d8b6fe2681f57edda49befb652fd36b112370",
   "hosts": [
     {
       "version": "1.1.0",
       "commit": "6619411b",
       "role": "floor",
-      "cases": 3,
-      "verifiedAt": "2026-11-17T19:25:06.520Z"
+      "cases": 20,
+      "verifiedAt": "2026-11-17T20:09:25.442Z"
     },
     {
       "version": "1.1.1",
       "commit": "c3118c51",
       "role": "latest",
-      "cases": 3,
-      "verifiedAt": "2026-11-17T19:25:15.945Z"
+      "cases": 20,
+      "verifiedAt": "2026-11-17T20:09:09.590Z"
     }
   ]
 }
