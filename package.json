@@ -37,7 +37,11 @@
     "deploy": "npm run build && npm run copy-dist",
     "copy-dist": "node scripts/copy-dist.mjs",
     "manifest:validate": "node scripts/manifest.mjs --validate",
-    "typecheck": "npm run typecheck --workspaces",
+    "//typecheck": [
+      "cookbook/ is not a workspace (scripts/manifest.mjs would take it for an",
+      "app), so its tsconfig is run here, after the workspaces' own."
+    ],
+    "typecheck": "npm run typecheck --workspaces && tsc --noEmit -p cookbook",
     "test": "npm run test --workspaces --if-present",
     "verify:federation": "node scripts/verify-federation-build.mjs",
     "check:imports": "node scripts/check-imports.mjs",

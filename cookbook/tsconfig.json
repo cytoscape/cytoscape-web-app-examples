@@ -1,0 +1,33 @@
+{
+  "//": [
+    "Type-checks every recipe, wiring file and runner case against the",
+    "@cytoscape-web/api-types installed at the repository root.",
+    "",
+    "skipLibCheck is false on purpose: it is what makes an invented API a",
+    "compile error instead of a surprise at run time.",
+    "",
+    "cookbook/ is not an npm workspace (scripts/manifest.mjs would take it for",
+    "an app), so the root `typecheck` script runs `tsc -p cookbook` itself.",
+    "",
+    "runner/app (Phase 3) has its own tsconfig and is not included here."
+  ],
+  "include": ["recipes/**/*", "wiring/**/*", "runner/*.ts", "runner/cases/**/*"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": false,
+
+    "types": ["@cytoscape-web/api-types"]
+  }
+}

@@ -40,6 +40,17 @@ through Module Federation (Vite). Apps can add:
 > return a result for it to apply. They are not built with this repository; see
 > the [service app specification](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>).
 
+## Building with an AI assistant
+
+Most apps are now written with a coding agent. Point it at the
+[**cookbook**](cookbook/README.md): one file per task, such as "color nodes by a
+numeric column" or "add nodes to a network". Each recipe is a function to copy
+into your app, with a header that says what it changes and what not to do.
+
+Every recipe compiles against the published API types, and has passed a case
+in a running Cytoscape Web 1.1.0 and 1.1.1. Start at
+[Using a recipe](cookbook/USING-RECIPES.md).
+
 ---
 
 ## Quick Start
@@ -256,6 +267,7 @@ export const MyApp: CyAppWithLifecycle = {
 | [Registration Patterns](guides/registration-patterns.md) | Panels, menus, context menus, upsert, batch |
 | [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md)   | mount/unmount, auto-cleanup, re-enable      |
 | [Troubleshooting](guides/troubleshooting.md)             | Build errors, runtime errors, FAQ           |
+| [Cookbook](cookbook/README.md)                           | One recipe per task, verified in a host     |
 
 ### API Reference
 

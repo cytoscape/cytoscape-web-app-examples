@@ -1,0 +1,23 @@
+{
+  "apiTypes": {
+    "version": "1.0.0-beta.5",
+    "source": "registry"
+  },
+  "digest": "sha256:e78df151b54909353e0abec9a11f4d86e81467a8b1ceac3b01bb33f450c8bee0",
+  "hosts": [
+    {
+      "version": "1.1.0",
+      "commit": "6619411b",
+      "role": "floor",
+      "cases": 3,
+      "verifiedAt": "2026-11-17T05:29:09.242Z"
+    },
+    {
+      "version": "1.1.1",
+      "commit": "c3118c51",
+      "role": "latest",
+      "cases": 3,
+      "verifiedAt": "2026-11-17T05:28:56.685Z"
+    }
+  ]
+}
