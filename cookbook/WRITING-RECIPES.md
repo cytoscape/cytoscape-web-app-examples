@@ -124,6 +124,19 @@ passes one argument per element and throws a `RangeError` past about 120,000
 of them, and the host loads networks that large. Use a loop. A case can check
 this with a stubbed `apis` and 200,000 elements, as the two Phase 1 cases do.
 
+**Data is not code.** Values from the user's data, such as category names,
+column names and ids, become keys: build those objects with
+`Object.fromEntries` or `Object.create(null)`, not `obj[key] = value`, where
+`"__proto__"` sets the prototype instead of adding a key. Read a row's cells
+with `Object.hasOwn`: `row.toString` is a method, not a `toString` column.
+
+**Bound what the user's selection can cost.** Stop a quadratic loop as soon as
+its limit is passed, instead of listing everything and checking at the end.
+
+**A function a recipe returns keeps what it needs.** Copy the arrays it will
+use later (the caller may change them), and let an undo-like function (`clear`,
+`show`) act once: a second call must not remove what the user set since.
+
 **No React in a core recipe.** A component recipe is a React component that
 calls core functions of its own file and renders their results.
 
@@ -263,3 +276,9 @@ Seen on 1.1.0 and 1.1.1 while writing the Phase 2 recipes:
   `long` and `double` columns only: a boolean column never matches.
 - **A column created later fills every row that exists then** with its default.
   A row added afterwards has no value.
+- **A visibility bypass is `'none'` or `'element'`.** Only `'none'` hides; an
+  `'element'` bypass shows an element on purpose (from an import, the style
+  editor or an app).
+- **`importTableFromTsv` writes through `setValues`**, so it too reports a
+  match and writes nothing to an element without a row; and it skips a row
+  whose key cell is empty without reporting it.

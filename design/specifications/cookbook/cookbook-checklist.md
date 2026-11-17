@@ -595,8 +595,12 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 - [x] `npm run manifest:validate` rejects an app whose `publishPath` is `llms.txt` or
       `llms-full.txt` (**seen failing**, both)
 - [x] The structure check fails on a fixture with a missing recipe, and on one with a link
-      to a nonexistent path; also on a link with another pin, and a host link not pinned to
-      the floor. `--selftest` runs these with the other 17 fixtures: 22 in all
+      to a nonexistent path; also on a link with another pin, a host link not pinned to the
+      floor, a relative link, and a link to either repository's branch. A link-like text in
+      code is not a link. `--selftest` runs these with the other 17 fixtures: 26 in all
+- [x] **The review of #28** (design §8): every fix seen failing on the code it replaces,
+      in its case, then the record refreshed on both hosts. Fourteen points from Codex,
+      Copilot and CodeRabbit, nine after merging duplicates
 - [ ] The CI jobs pass on both a `push` and a `pull_request` run
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
@@ -801,8 +805,8 @@ Copy the record here each time it is refreshed.
 | api-types version and source | `1.0.0-beta.5`, registry |
 | Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 20 cases |
 | Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 20 cases |
-| Cookbook digest | `sha256:7192832cff918181a18164b2f62d8b6fe2681f57edda49befb652fd36b112370` |
-| Run date | 2026-11-17 (Phase 2) |
+| Cookbook digest | `sha256:a5de1c4d0592cfc37e500c9f2522adb0df0a0454fc7755a21bfa0cb7779c7260` |
+| Run date | 2026-11-17 (Phase 2, after the review of #28) |
 
 ---
 

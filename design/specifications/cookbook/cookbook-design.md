@@ -974,6 +974,24 @@ The other seven were checked and accepted:
 | 10 | D-15 had the next phase merge carry the beta.6 record, but the adoption pull request itself would fail CI without one | Accepted. D-15 corrected |
 | 11 | On 1.1.1, an app the user turned off stays off; the READMEs said the apps turn on by themselves. The project-template README's `cd cytoscape-web` cannot work from `my-app` | Accepted. Both corrected in the READMEs and `CLAUDE.md` |
 
+### Review of #28, Phase 2 (2026-11-17)
+
+Codex and Copilot reviewed the head of #28, and CodeRabbit the same commit later. Every
+point was checked and accepted; each fix has a check in a case, seen failing on the code it
+replaces (or, for the loop, seen hanging the page).
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | `hide-by-threshold` took any visibility bypass for "hidden", so an element with an `'element'` bypass stayed visible (all three) | Only `'none'` counts. An `'element'` bypass is replaced while hidden and put back by `show()` |
+| 2 | `add-edges-between-selected` listed every missing pair before checking the limit: 10,000 nodes make 50 million (all three) | It stops at the limit. The previous code hung the page in the case's 20,000-node check |
+| 3 | A category named `__proto__` was dropped by `color-by-category` (all three); the same in `create-network-from-table`'s rows and `read-column-values-safely`'s values (CodeRabbit) | Objects keyed by data are built with `Object.fromEntries` or `Object.create(null)` |
+| 4 | `join-table-by-key` by `id` reported a match and stored nothing on edges with no row (Copilot) | With key `id`, missing rows are created first, and only those (`editRows`); the case reads the value back |
+| 5 | `llms-full.txt` kept `USING-RECIPES.md`'s relative links and a link to the host's `development` branch (Copilot, CodeRabbit) | Links are pinned when embedded; the structure check rejects relative links and unpinned GitHub links (four new fixtures) |
+| 6 | `create-network-from-table` read inherited properties as cells (`toString`) | It reads own cells only |
+| 7 | `highlight-with-bypass` kept the caller's array; `clear()` and `show()` acted again on a second call | A private copy; each acts once |
+| 8 | `join-table-by-key` let the host skip an empty key unreported, and refused a file over two unrelated old columns that clash with each other | An empty key is refused; only the file's own columns are checked for case clashes |
+| 9 | The layout case filtered events by the fixture's network, so it could not see an event for the failed call | It records every event, and asserts none for the failed call |
+
 ## 9. Decisions
 
 **Settled**
