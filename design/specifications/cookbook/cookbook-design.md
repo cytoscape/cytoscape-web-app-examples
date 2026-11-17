@@ -200,7 +200,7 @@ or say why it does not apply:
 | Numeric mapping | Missing values; non-numeric values; an empty column; all values equal |
 | Mutation | Batch APIs over loops (`createNodes` validates all-or-nothing and records one undo entry); what remains when a later call fails; the undo unit |
 | Persistence | `appData` stores locally by default and enters CX2 only when shared (`cyAppData` aspect); read values are deeply frozen and must be copied before mutation |
-| Events and async | Ignore events for other networks; discard results that arrive after a switch; unsubscribe |
+| Events and async | Ignore events for other networks; discard results that arrive after a switch; no network at all (the last one closed fires `network:switched` with an empty id; added after the review of #27); unsubscribe |
 
 Rules for the code:
 
@@ -352,7 +352,10 @@ which of those apps load. So, on every host:
 - The run fails if that request was never intercepted. Both releases fetch the catalog, so
   the check works on both, and a changed catalog path cannot pass silently.
 - **The run also fails if the host fetched any other app's `remoteEntry.js`.** The empty
-  catalog is the means; this checks the end. In Phase 1 no app at all may load.
+  catalog is the means; this checks the end. Every entry is collected, whatever its
+  origin, since an app can be served from the host's own. Only the host's own entry is
+  set aside, by the exact URL it publishes in `window.__CYWEB_HOST__.remoteEntry` (both
+  supported releases do). In Phase 1 no app at all may load.
 - The verification app (below) is installed afterwards with `?installApp=`, so it is the
   only app in the page.
 
@@ -387,7 +390,7 @@ committed. It is the only source for every "verified with" statement:
 
 | Field | Source |
 |---|---|
-| api-types exact version, and whether it came from the npm registry | `node_modules/@cytoscape-web/api-types/package.json` and npm's hidden lockfile |
+| api-types exact version, and whether it came from the npm registry | `node_modules/@cytoscape-web/api-types/package.json`, and npm's hidden lockfile compared with the committed one: `registry` only when the installed package has the integrity the lockfile pins. A version string is not enough: a tarball packed from a host checkout can carry a published version and other declarations |
 | Hosts: one entry per verified release, with its version and commit | The running host's `window.debug.boot.report.build.version` and `.commit`, read after the boot report appears (runner step 3). A run fails if the report does not appear in time or the commit is `unknown`. An entry is written only when the commit is a supported release's tag commit (D-16) |
 | Cookbook digest | A hash of everything that can change a verification result: `recipes/`, `wiring/`, and all of `runner/` (cases, the verification app, and the runner's own code and configuration), plus `cookbook/tsconfig.json`. Markdown is left out: a README cannot change what a case does, and including it would ask for a new run on two hosts after a spelling fix |
 
@@ -487,8 +490,9 @@ The same job runs the structure checks:
 - every API reference link uses the host commit from `verified.json`.
 
 **CI also rejects a stale verification record.** It recomputes the cookbook digest and the
-resolved api-types version, and fails when either differs from `verified.json`, or when
-the record lacks an entry for the floor or for the latest release (D-16). CI cannot
+resolved api-types version, and fails when either differs from `verified.json`, when the
+record lacks an entry for the floor or for the latest release (D-16), or when the record
+or the installed package is not the registry package the lockfile pins (§4.6). CI cannot
 run the runner (§4.6), so a pull request that changes anything under `recipes/`, `wiring/`
 or `runner/` must carry a refreshed `verified.json`. That keeps `development`, and so
 `main`, free of unverified recipes.
@@ -894,6 +898,20 @@ is 25 commits before the tag `v1.1.1` (`c3118c51`).
 | 12 | The FILTER tab in the left pane | Yes | Yes | `hide-by-threshold` mentions its show mode (§4.10) |
 | — | **The same at both tags and on `development`:** the event map (11 events besides `cywebapi:ready`) and the 12 `cyweb/*Api` exposes; `perAppApis.ts` and the six owner-bound domains; the debug override key and `window.debug.boot.report.build`; `?installApp=`, its confirmation dialog and `activate: true`; `ApplyLayoutOptions`, `ExportApi` and `viewport.fit`; the api-types version, `1.0.0-beta.5` | Yes | Yes | Nothing to change |
 | — | Found on the way, not a host change: `network.createNetworkFromNodeList` has been in the types since beta.3, and the plan for `subnetwork-from-selection` did not mention it | Yes | Yes | Phase 2 chooses between it and the CX2 round trip (§4.10) |
+
+### Review of #27, Phase 1 (2026-11-17)
+
+Codex and Copilot reviewed the pull request that merges the Phase 0 follow-up and
+Phase 1. Every point was checked, and accepted. Each fix has a check that was seen
+failing on the code it replaces.
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | `Math.min(...xs)` and `Math.max(...xs)` throw on a large network, in two recipes (Codex, Copilot) | Accepted. Both throw a `RangeError` at 150,000 elements, in Node and in Chromium; the host's `maxNetworkElementsThreshold` picks a default layout and does not stop a network loading. Both recipes use a loop and say why in Pitfalls, `WRITING-RECIPES.md` forbids the pattern, and both cases run their recipe on 200,000 elements with a stubbed host |
+| 2 | A record made with local api-types passes the check when the version matches (Codex, Copilot) | Accepted. On 2026-11-17 the host's `development` packed beta.6 declarations as `1.0.0-beta.5`, and with them installed the type check passed. The check now requires the registry package the lockfile pins, by integrity, in the record and in the installation (§4.6, §4.7) |
+| 3 | The other-app check exempts every entry on the host's origin (Copilot) | Accepted. Only the host's own entry, by its published URL, is exempt (§4.6) |
+| 4 | `wiring/from-panel.tsx` shows nothing until the first event, and keeps a stale count when no network is left (Codex, Copilot) | Accepted. It reads once on mount and clears when no network is current. Wiring is type-checked and not run, which is how this passed |
+| — | Found while checking 4: `follow-current-network` told the app nothing when the last network closed (the host fires `network:switched` with an empty id) | Fixed with an optional `onNone`, called then and at the start when no network is current; the case closes its own fixtures to see it. "No network at all" joins the Events and async pitfall topics (§4.2) |
 
 ## 9. Decisions
 

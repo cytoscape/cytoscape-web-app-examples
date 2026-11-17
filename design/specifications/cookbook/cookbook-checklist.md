@@ -449,6 +449,15 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
       (**seen failing**)
 - [x] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
       (`npm test` with `TMPDIR` resolved: see "Known non-issues")
+- [x] **The review of #27** (design §8): each fix seen failing on the code it replaces,
+      on 1.1.0, then the record refreshed on both hosts:
+  - [x] both recipes' original `Math.min(...)` throws on 200,000 elements in their cases
+  - [x] `--check` rejects a record whose api-types `source` is `local`, and an installation
+        of the 1.1.1 api-types tarball (version `1.0.0-beta.5`, beta.6 declarations), which
+        `tsc -p cookbook` accepted
+  - [x] the runner rejects an entry fetched from the host's own origin
+        (`/apps/example/remoteEntry.js`)
+  - [x] `follow-current-network` without `onNone` times out in its case
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
@@ -756,8 +765,8 @@ Copy the record here each time it is refreshed.
 | api-types version and source | `1.0.0-beta.5`, registry |
 | Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 3 cases |
 | Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 3 cases |
-| Cookbook digest | `sha256:e78df151b54909353e0abec9a11f4d86e81467a8b1ceac3b01bb33f450c8bee0` |
-| Run date | 2026-11-16 (Phase 1) |
+| Cookbook digest | `sha256:39a3f30fe1a2f2b1f97985901f57ff1266c45465b8164ade9a721c10b034c040` |
+| Run date | 2026-11-17 (Phase 1, after the review of #27) |
 
 ---
 
