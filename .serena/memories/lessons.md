@@ -36,6 +36,11 @@ Shared lessons learned across agent sessions. Update this file after corrections
 - **A fresh host profile opens a welcome dialog and a cookie banner, and Escape closes neither.** Click "Explore on my own" and "Decline" before clicking the toolbar. The toolbar's "Apps" is not a `button` role: find it by its text.
 - **A local host sends Google Analytics page views.** 1.1.0 sends them without consent. Abort requests to `google-analytics.com` and `google.com/g/collect` in any automated run.
 - **Host 1.1.1 needs Node 24.22.1 or later, and enforces it.** Its `.npmrc` sets `engine-strict` and `engines` asks for `>=24.22.1`, while the parent directory's `mise.toml` may pin an older Node (24.21.0 on 2026-11-16). `mise exec node@24.22.1 -- npm ci` installs with the right Node without changing the pin. Start a host with `npx vite --host`, not `npm run dev`, when no browser window should open.
+- **`@cytoscape-web/api-types` declares more types than it exports.** `VisualMappingFunction`, `ColorType`, `VisualPropertyValueType` and `ContinuousFunctionControlPoint` are in `dist/index.d.ts` and not in its export list, so importing them fails with TS2305. Check the `export { … }` line at the end of the file, and write or derive the shape instead.
+- **The host's `Api.md` is not checked by the types.** Its `createContinuousMapping` example passes `'NODE_BACKGROUND_COLOR'`; the real name is `'nodeBackgroundColor'`, and only that compiles. Take names from the declarations, not from the prose.
+- **Vite library mode resolves `build.lib.entry` against `root`.** A virtual entry id such as `virtual:entry` becomes `<root>/virtual:entry` and fails with `UNRESOLVED_ENTRY`. Give the plugin an absolute path under `root` to answer for (`cookbook/runner/run.mjs`).
+- **`git checkout -- <path>` restores nothing in an untracked directory, and says so only on stderr.** Before a deliberate mutation of a new file, copy it aside and restore from the copy; then `cmp` the two.
+- **In zsh, `"$R:src/x"` applies the `:s` modifier to `$R`.** Write `"${R}:src/x"` when building `git show <rev>:<path>` arguments.
 - **Validate orchestration JavaScript delimiters:** when wrapping a single tool call in `functions.exec`, check the closing `});` before execution; an extra parenthesis can fail an otherwise completed plan update.
 
 ## File Update Checklist (when host API changes)

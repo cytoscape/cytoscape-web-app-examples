@@ -3,9 +3,9 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up DONE
-> (2026-11-16), awaiting its commit and merge. Next: Phase 1 — start at its "Pre-read
-> files".** The design is at revision 8: three
+> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
+> Phase 1 DONE (2026-11-16), awaiting their merge into `development`. Next: Phase 2 —
+> start at its "Pre-read files".** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, and a review after a pause. Work happens on the
 > `cookbook` branch of this repository, which is level with `development` at `1f1a902`
@@ -194,7 +194,7 @@ listed here, and any other contradiction found on a page the cookbook will link 
 
 ---
 
-## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — not committed or merged yet
+## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — `4d38f6c`, not merged yet
 
 _Design: §4.9, §8 "Review after a pause", Goal 6, criterion 11, D-16_
 
@@ -261,7 +261,7 @@ Confirm each behavior in a running host of each release before changing the text
 
 ---
 
-## Phase 1: Foundation and a minimal runner ⬜ **NOT STARTED**
+## Phase 1: Foundation and a minimal runner ✅ **DONE (2026-11-16)** — not committed or merged yet
 
 _Design: §4.1–§4.6, §4.9 (README link), §4.10 (the three Phase 1 recipes), §4.11_
 
@@ -286,122 +286,169 @@ catalog grows.
 
 ### Deliverables — layout and type check (§4.1)
 
-- [ ] The `cookbook/` tree of §4.1, outside the root `workspaces`
-- [ ] `cookbook/tsconfig.json`: `skipLibCheck: false`, `types` including
-      `@cytoscape-web/api-types`. It includes `recipes/`, `wiring/` and `runner/cases/`
-- [ ] The root `typecheck` script also runs `tsc -p cookbook`. **This edits the root
-      `package.json`: confirm with the maintainer first**
+- [x] The `cookbook/` tree of §4.1, outside the root `workspaces`
+- [x] `cookbook/tsconfig.json`: `skipLibCheck: false`, `types` including
+      `@cytoscape-web/api-types`. It includes `recipes/`, `wiring/`, `runner/cases/` and
+      the runner's own in-page files (`runner/*.ts`)
+- [x] The root `typecheck` script also runs `tsc --noEmit -p cookbook`. The maintainer
+      approved the `package.json` edit (2026-11-16). No dependency and no lockfile changed
 
 ### Deliverables — documents (§4.11)
 
-- [ ] `cookbook/USING-RECIPES.md`, including which host releases are supported, what
+- [x] `cookbook/USING-RECIPES.md`, including which host releases are supported, what
       `verified.json` records about them, and that a recipe's header states where they
       differ (§4.6)
-- [ ] `cookbook/WRITING-RECIPES.md`, including the required pitfall topics (§4.2), the
+- [x] `cookbook/WRITING-RECIPES.md`, including the required pitfall topics (§4.2), the
       import rules (§4.3), the **allowed `apis` forms** (§4.4), and the rule that a recipe
       is right on every supported release and states a difference by version (§4.10, D-16)
-- [ ] `cookbook/runner/README.md`, including how to start a host from a checkout of each
+- [x] `cookbook/runner/README.md`, including how to start a host from a checkout of each
       tag, `v1.1.0` and `v1.1.1`, in a standalone clone (`dev-start.sh` lives in the parent
       workspace repository, not here), and why the runner serves an empty app catalog and
       records only a release's tag commit
 
 ### Deliverables — wiring (§4.2, §4.4)
 
-- [ ] One compiled file per call site: `mount(context)`, an `'apps-menu'` `onClick`, a React
-      panel (hooks for host-wide domains, `useAppContext()?.apis` for owner-bound ones), and
-      `window.CyWebApi` after `whenReady()`
-- [ ] Every owner-bound call uses an allowed `apis` form
+- [x] One compiled file per call site: `from-mount.ts`, `from-apps-menu.ts`,
+      `from-panel.tsx` (hooks for host-wide domains, `useAppContext()?.apis` for
+      owner-bound ones) and `from-window.ts` (`window.CyWebApi` after `whenReady()`)
+- [x] Every owner-bound call uses an allowed `apis` form. Phase 1 has no owner-bound
+      recipe, so no such call exists yet; the check runs on `wiring/` and is proven on
+      fixtures
 
 ### Deliverables — generator: checks and index (§4.6, §4.7)
 
-- [ ] `scripts/cookbook-index.mjs` parses with the TypeScript compiler API. `typescript` is
-      already a root devDependency, so no dependency is added
-- [ ] It rejects:
-  - [ ] a missing tag
-  - [ ] an unknown `@related` id
-  - [ ] `@apis` differing from the API call expressions (comments excluded)
-  - [ ] a value import in a core recipe
-  - [ ] an owner-bound recipe without an `AppContextApis` parameter
-  - [ ] an owner-bound call in `wiring/` or `runner/app` with an `apis` argument outside the
-        allowed forms
-- [ ] It fails when the api-types version the type check resolved differs from
+- [x] `scripts/cookbook-index.mjs` parses with the TypeScript compiler API. `typescript` is
+      already a root devDependency, so no dependency is added. What it shares with the
+      runner (the digest, the record check) is in `scripts/cookbook-lib.mjs`
+- [x] It rejects (problem code in parentheses):
+  - [x] a missing tag (`missing-tag`), and a missing header section (`missing-section`)
+  - [x] an unknown `@related` id (`unknown-related`)
+  - [x] `@apis` differing from the API call expressions, comments excluded
+        (`apis-mismatch`)
+  - [x] a value import in a core recipe (`value-import`), and an import of anything but
+        types from `cyweb/ApiTypes` (`foreign-import`)
+  - [x] an owner-bound recipe without an `AppContextApis` parameter
+        (`owner-bound-declaration`)
+  - [x] an owner-bound call in `wiring/` or `runner/app` with an `apis` argument outside the
+        allowed forms (`apis-source`: `window.CyWebApi`, a destructured `apis`, a
+        `use*Api` hook)
+  - [x] Added while building it, each needed to make the checks above sound:
+        `apis-untraceable` (a use of `apis` the `@apis` check cannot follow),
+        `apis-signature` (the `Pick<…>` does not name exactly the domains called),
+        `recipe-function` (not exactly one exported function), `missing-case` and
+        `orphan-case` (a recipe without a case, a case without a recipe)
+- [x] `--check` fails when the api-types version the type check resolved differs from
       `verified.json`
-- [ ] It writes `cookbook/README.md`. `--check` regenerates in memory and fails on any
+- [x] It writes `cookbook/README.md`. `--check` regenerates in memory and fails on any
       difference
-- [ ] Each rejection has a fixture that is **seen failing** (criterion 2)
+- [x] Each rejection has a fixture that is **seen failing** (criterion 2):
+      `node scripts/cookbook-index.mjs --selftest` runs 15 fixtures in
+      `scripts/cookbook-fixtures/`. `ok/` is the control and must have no problem; each
+      other one holds only what differs from it and must produce exactly the codes in its
+      `expect.txt`
 
 ### Deliverables — recipes (§4.2, §4.10)
 
-- [ ] ★ `elements/add-nodes-to-network`, with its case
-- [ ] ★ `style/color-nodes-by-numeric-column`, with its case
-- [ ] `events/follow-current-network`, with its case, covering all four steps of §4.5
+- [x] ★ `elements/add-nodes-to-network`, with its case
+- [x] ★ `style/color-nodes-by-numeric-column`, with its case
+- [x] `events/follow-current-network`, with its case, covering all four steps of §4.5.
+      Steps 1, 2 and 4 use the host's own events. **Step 3 dispatches `network:loaded`
+      itself:** the host delays a network's data only after a page reload, which a case
+      cannot do without losing the injected bundle
 
 ### Deliverables — minimal runner (§4.6)
 
-- [ ] Bundle the core recipes and cases with Vite library mode (Vite is already a root
-      devDependency)
-- [ ] Before navigating, set `localStorage['cyweb-debug-enabled'] = 'true'`
-- [ ] Before navigating, answer the request for the app catalog with `[]` (Playwright
+- [x] Bundle the core recipes and cases with Vite library mode (Vite is already a root
+      devDependency). The entry is generated from the case files on disk, so there is no
+      list of cases to keep in step
+- [x] Before navigating, set `localStorage['cyweb-debug-enabled'] = 'true'`
+- [x] Before navigating, answer the request for the app catalog with `[]` (Playwright
       `route`; `/apps.json` on 1.1.0, `<base>apps.json` from 1.1.1), and fail the run if
       the request was never intercepted (design D-14). On 1.1.0 catalog apps start off
       anyway; on 1.1.1 this is what keeps the example apps out. **Match the path exactly:**
       a 1.1.1 dev server also imports `/src/assets/apps.json?import`, and answering that
       keeps the host from becoming ready (seen in the Phase 0 follow-up)
-- [ ] Abort the host's analytics requests, and close the welcome dialog and the cookie
+- [x] Added: fail the run if the host fetched any other app's `remoteEntry.js`. The empty
+      catalog is the means; this checks the end
+- [x] Abort the host's analytics requests, and close the welcome dialog and the cookie
       banner of a fresh profile by their own buttons (design §4.6)
-- [ ] The runner's configuration lists the supported releases with their tag commits:
-      1.1.0 `6619411b`, 1.1.1 `c3118c51` (design D-16)
-- [ ] Read `report.build.version` and `.commit`. Write that release's entry only when the
+- [x] The runner's configuration lists the supported releases with their tag commits:
+      `cookbook/runner/hosts.json`, 1.1.0 `6619411b` and 1.1.1 `c3118c51` (design D-16)
+- [x] Read `report.build.version` and `.commit`. Write that release's entry only when the
       commit is its tag commit. On any other host, say so, report the cases' results, and
       write nothing
-- [ ] Pass the host version to each case. A case branches on it only to assert a
-      difference that its recipe's header states
-- [ ] `await window.CyWebApi.whenReady()`, then wait, **with a time limit**, for
+- [x] Pass the host version to each case (`ctx.host.version`). No Phase 1 case branches
+      on it: the three recipes behave the same on both releases
+- [x] `await window.CyWebApi.whenReady()`, then wait, **with a time limit** (30 s), for
       `window.debug.boot.report`. Fail if it does not appear, or if
       `report.build.commit` is `unknown`
-- [ ] Each case builds an isolated fixture with `network.createNetworkFromEdgeList` and reads
+- [x] Each case builds an isolated fixture with `network.createNetworkFromEdgeList` and reads
       the result back through the read-side APIs
-- [ ] Cleanup in `finally`, pass or fail: the fixture network, subscriptions, registrations
-- [ ] A single case can be run by id; `--selftest` proves the runner can fail
-- [ ] A full, passing run writes `cookbook/verified.json`:
-  - [ ] api-types exact version, and its source (registry or local)
-  - [ ] one host entry per verified release, with its version and commit. A run adds or
+- [x] Cleanup in `finally`, pass or fail: the fixture network, subscriptions, registrations.
+      The runner also compares the workspace's networks before and after
+- [x] A single case can be run by id; `--selftest` proves the runner can fail
+- [x] A full, passing run writes `cookbook/verified.json`:
+  - [x] api-types exact version, and its source (registry or local)
+  - [x] one host entry per verified release, with its version and commit. A run adds or
         replaces its own release's entry, and drops an entry made from another digest
-  - [ ] a digest of `recipes/`, `wiring/`, all of `runner/`, and `cookbook/tsconfig.json`
+  - [x] a digest of `recipes/`, `wiring/`, all of `runner/`, and `cookbook/tsconfig.json`,
+        Markdown excluded (design §4.6)
 
 ### Deliverables — CI check for a stale record (§4.7)
 
-- [ ] A CI job recomputes the cookbook digest and the resolved api-types version, and fails
-      when either differs from `verified.json`. This is what makes per-phase merges safe
+- [x] The `Cookbook` job in `ci.yml` runs the generator's self-test and
+      `cookbook-index.mjs --check`, which recomputes the digest and the resolved api-types
+      version, and fails when either differs from `verified.json`, or when a release in
+      `hosts.json` has no entry. This is what makes per-phase merges safe
 
 ### Deliverables — README link (§4.9)
 
-- [ ] **After Phase 0 only:** a short "Building with an AI assistant" section near the top of
+- [x] **After Phase 0 only:** a short "Building with an AI assistant" section near the top of
       `README.md` that links the **cookbook index**, and a Cookbook row in the Documentation
       Map. No `llms.txt` link yet: it is not live until Phase 2 reaches `main`
 
 ### Verification (Phase 1)
 
-- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5
-- [ ] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
+Hosts: dev servers from clean worktrees of the two tags, on `localhost:5500`, one at a
+time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
+
+- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5.
+      *(Passes locally. CI has not run yet: nothing is pushed)*
+- [x] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
       expected
-- [ ] The runner passes all three cases against a host on `localhost:5500`, started fresh
+- [x] The type check rejects an invented name: `'NODE_BACKGROUND_COLOR'` in place of
+      `'nodeBackgroundColor'` fails with TS2345 (**seen failing**). The host's own
+      `Api.md` uses that spelling in an example
+- [x] The runner passes all three cases against a host on `localhost:5500`, started fresh
       from a clean checkout of the tag `v1.1.0`, and again from one of `v1.1.1`.
-      `--selftest` fails
-- [ ] Two consecutive runs leave no fixture network behind, on each
-- [ ] The run fails when the catalog request is not intercepted (**seen failing**, with the
+      `--selftest` reports its case as failed, and exits 0 for that reason
+- [x] The cases catch a broken recipe (**seen failing**, four mutations, each restored):
+      the two colors swapped; `network:loaded` read for every network; `stop()` leaving a
+      listener; `autoSelect` left at the host's default
+- [x] Repeated runs leave no fixture network behind, on each. The runner checks it in
+      every run
+- [x] The run fails when the catalog request is not intercepted (**seen failing**, with the
       route pattern changed)
-- [ ] On the 1.1.1 host, the run gives the same results with the four example apps' dev
-      servers running and with them stopped, and the host loads no example app
-- [ ] Against a host that is not a tag commit (`development`, or dev1 while it serves a
-      pre-release build), the cases run and **no entry is written** (**seen**)
-- [ ] `verified.json` exists and records the **registry** beta.5 as its source, and two
+- [x] On the 1.1.1 host, the run gives the same results with the four example apps' dev
+      servers running and with them stopped, and the host loads no example app. With the
+      real catalog let through, the run fails and names the four `remoteEntry.js`
+      (**seen failing**)
+- [x] The run fails when the boot report does not appear (**seen failing**, against dev1
+      with the debug switch left off)
+- [x] Against a host that is not a tag commit, the cases run and **no entry is written**
+      (**seen**, against dev1, which served `bc2b20e9` and reported `1.1.1`). This also
+      showed the runner working on a deployed host under a base path
+- [x] `verified.json` exists and records the **registry** beta.5 as its source, and two
       host entries from the same digest: 1.1.0 (`6619411b`) and 1.1.1 (`c3118c51`)
-- [ ] The stale-record check fails on a record with only one of the two entries
+- [x] The stale-record check fails on a record with only one of the two entries
       (**seen failing**)
-- [ ] The stale-record check fails on a changed recipe without a refreshed `verified.json`
+- [x] The stale-record check fails on a changed recipe without a refreshed `verified.json`,
+      on a record that names another api-types version, and on an entry whose commit is
+      not the tag's (**seen failing**, each)
+- [x] `--check` fails when an alias changes without regenerating the index
       (**seen failing**)
-- [ ] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
+- [x] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
+      (`npm test` with `TMPDIR` resolved: see "Known non-issues")
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
@@ -674,9 +721,9 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 
 | Recipe | Kind | Verified by | Phase | Types | Case passes |
 |---|---|---|---|---|---|
-| ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [ ] | [ ] |
-| ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [ ] | [ ] |
-| `events/follow-current-network` | Events and async | Runner | 1 | [ ] | [ ] |
+| ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [x] | [x] |
+| ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [x] | [x] |
+| `events/follow-current-network` | Events and async | Runner | 1 | [x] | [x] |
 | `network/create-network-from-table` | Mutation | Runner | 2 | [ ] | [ ] |
 | `network/subnetwork-from-selection` | Mutation | Runner | 2 | [ ] | [ ] |
 | `elements/add-edges-between-selected` | Mutation | Runner | 2 | [ ] | [ ] |
@@ -702,15 +749,15 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 
 ## Current `verified.json`
 
-Not yet written. Copy the record here each time it is refreshed.
+Copy the record here each time it is refreshed.
 
 | Field | Value |
 |---|---|
-| api-types version and source | — |
-| Host entry for the floor (1.1.0, `6619411b`) | — |
-| Host entry for the latest release (1.1.1, `c3118c51`) | — |
-| Cookbook digest | — |
-| Run date | — |
+| api-types version and source | `1.0.0-beta.5`, registry |
+| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 3 cases |
+| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 3 cases |
+| Cookbook digest | `sha256:e78df151b54909353e0abec9a11f4d86e81467a8b1ceac3b01bb33f450c8bee0` |
+| Run date | 2026-11-16 (Phase 1) |
 
 ---
 

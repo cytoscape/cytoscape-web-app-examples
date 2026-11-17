@@ -141,9 +141,17 @@ cookbook/
   wiring/                 compiled call-site examples, one per call site (§4.2)
   runner/                 real-host verification (§4.6)
     README.md
+    run.mjs               the runner: bundles, drives a host, writes the record
+    hosts.json            the supported releases and their tag commits (D-16)
+    harness.ts            the part that runs inside the host page
+    selftest-case.ts      a case that must fail (`--selftest`)
     cases/<recipe-id>.ts
     app/                  Phase 3: verification app, with its own package.json
 scripts/cookbook-index.mjs        index and llms generator, recipe checks
+scripts/cookbook-lib.mjs          what the generator and the runner share:
+                                  the digest and the record check
+scripts/cookbook-fixtures/        one small tree per generator check, each
+                                  seen failing by `--selftest`
 ```
 
 **No npm workspaces.** `scripts/manifest.mjs` treats every workspace outside `packages/` as
@@ -215,6 +223,10 @@ so the generator enforces the rule:
   such as `'nodeBackgroundColor'`, which `VisualPropertyName` checks.
 - Because core recipes have no runtime imports, the runner bundles them without resolving
   React or `cyweb/*`.
+- **Only exported types can be imported.** The package declares more than it exports:
+  `VisualMappingFunction` and `ColorType`, for example, are declared and not exported. A
+  recipe writes the shape it needs, or derives it from an exported type. The type check
+  catches this (found in Phase 1).
 - **Component recipes (`.tsx`)** may import React and `cyweb/*` hooks at run time. They run
   only inside the verification app (§4.6), where the federation runtime resolves those
   imports.
@@ -296,6 +308,14 @@ so comments are never mistaken for code. It rejects:
 It also fails when the api-types version that the type check actually resolved differs from
 the one in `verified.json`.
 
+Building it showed that those checks are sound only with a few more, so it also rejects:
+a use of `apis` that the `@apis` check cannot follow (anything but
+`apis.<domain>.<method>(…)`, or handing `apis` to another function of the same file); an
+`apis` type that is not a `Pick<…>` naming exactly the domains called; a recipe file with
+more or fewer than one exported function; a recipe without a case, and a case without a
+recipe. Every check has a fixture that `--selftest` sees failing, next to a control
+fixture that must pass.
+
 **Runner** (minimal in Phase 1, extended in Phase 2):
 
 1. Bundle the core recipes and their cases (`runner/cases/<recipe-id>.ts`) into one script
@@ -331,6 +351,8 @@ which of those apps load. So, on every host:
   both releases: no example app loaded, and an app installed afterwards was the only one.
 - The run fails if that request was never intercepted. Both releases fetch the catalog, so
   the check works on both, and a changed catalog path cannot pass silently.
+- **The run also fails if the host fetched any other app's `remoteEntry.js`.** The empty
+  catalog is the means; this checks the end. In Phase 1 no app at all may load.
 - The verification app (below) is installed afterwards with `?installApp=`, so it is the
   only app in the page.
 
@@ -367,7 +389,7 @@ committed. It is the only source for every "verified with" statement:
 |---|---|
 | api-types exact version, and whether it came from the npm registry | `node_modules/@cytoscape-web/api-types/package.json` and npm's hidden lockfile |
 | Hosts: one entry per verified release, with its version and commit | The running host's `window.debug.boot.report.build.version` and `.commit`, read after the boot report appears (runner step 3). A run fails if the report does not appear in time or the commit is `unknown`. An entry is written only when the commit is a supported release's tag commit (D-16) |
-| Cookbook digest | A hash of everything that can change a verification result: `recipes/`, `wiring/`, and all of `runner/` (cases, the verification app, and the runner's own code and configuration), plus `cookbook/tsconfig.json` |
+| Cookbook digest | A hash of everything that can change a verification result: `recipes/`, `wiring/`, and all of `runner/` (cases, the verification app, and the runner's own code and configuration), plus `cookbook/tsconfig.json`. Markdown is left out: a README cannot change what a case does, and including it would ask for a new run on two hosts after a spelling fix |
 
 An examples commit cannot record itself, so the digest identifies which sources were
 verified. The commit that `llms.txt` pins (§4.7) is an **examples** commit, not the host
@@ -591,6 +613,12 @@ Notes on scope:
   `analysis/` (§4.12).
 - **`link-out-from-node`** (formerly `node-context-menu`) opens an external database page for
   a node from its context menu, the task the tutorial performs.
+- **`follow-current-network`'s case dispatches one event itself.** The host delays a
+  network's data only after a page reload, and a reload discards the bundle the runner
+  injected. So the step "read again on `network:loaded`, and only for the awaited
+  network" is driven by a `network:loaded` event the case dispatches. The other three
+  steps use the host's own events. A case that reloads the page is possible, and is left
+  until a recipe needs it.
 
 **Where 1.1.0 and 1.1.1 differ** (review of 2026-11-16). A recipe must be right on both
 (D-16). It is written so that its own code behaves the same on both, and where the host
