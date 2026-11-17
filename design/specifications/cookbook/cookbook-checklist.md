@@ -3,22 +3,46 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); Phase 1 next.** The design is at revision 7:
-> three reviews, a catalog of 25 recipes with a backlog, and a plan for the published beta.5.
-> Work happens on the `cookbook` branch of this repository.
+> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
+> Phase 1 DONE (2026-11-16), awaiting their merge into `development`. Next: Phase 2 —
+> start at its "Pre-read files".** The design is at revision 8: three
+> reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
+> `llms.txt` committed into `docs/`, and a review after a pause. Work happens on the
+> `cookbook` branch of this repository, which is level with `development` at `1f1a902`
+> (#25 also removed an `npm pack` race from app-runtime's tests).
+>
+> **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
+> change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
+>
+> **The cookbook supports Cytoscape Web 1.1.0 and later** (design D-16). The floor is
+> 1.1.0 (tag `v1.1.0`, `6619411b`), which production served on 2026-11-16. The latest
+> release is 1.1.1 (tag `v1.1.1`, `c3118c51`), under test on dev1. Every recipe, case and
+> corrected page must be right on both, and the record needs an entry for each. Design §8,
+> "Review after a pause", lists what the host changed and which release has it. What the
+> review added here: a Phase 0 follow-up, a runner that serves an empty app catalog and
+> records one entry per release (Phase 1), new "Pre-read files", and notes on the recipes
+> whose host behavior differs between 1.1.0 and 1.1.1.
 >
 > **beta.5 is on npm** (2026-10-05, `latest`), and this repository now depends on it: the
 > prerequisite pull request (design D-4, #21) is merged, and `create-cytoscape-app@0.4.2`
-> generates projects pinned to it.
+> generates projects pinned to it. **beta.6 is not published** (checked 2026-11-16). The
+> cookbook stays on beta.5 until it is, and then adopts it in a pull request of its own
+> (design D-15).
 >
 > **Each phase merges on its own** (design D-12). When a phase's verification passes,
 > `cookbook` merges into `development` — from Phase 1 on with a current `verified.json`,
 > which CI enforces. A merge into `main` between phases publishes the catalog verified so
 > far.
 >
-> **Phase order.** Phase 0 comes before any new link to the cookbook (design Goal 6), and
-> does not need the prerequisite. Phase 1 needs the prerequisite and comes before everything
-> else. Phases 2 and 3 each need only Phase 1. Phase 5 needs `llms.txt` to be live.
+> **Phase order.** Phase 0 and its follow-up come before any new link to the cookbook
+> (design Goal 6), and do not need the prerequisite. Phase 1 needs the prerequisite and
+> comes before everything else. Phases 2 and 3 each need only Phase 1. Phase 5 needs
+> `llms.txt` to be live.
+>
+> **Read every host file at both tags, `v1.1.0` and `v1.1.1`,** not at `development` and
+> not in a working tree that follows it: `git -C ../cytoscape-web show v1.1.0:<path>`, or
+> a worktree of each tag. A file marked "(1.1.1)" does not exist at `v1.1.0`, or differs
+> there.
 
 _Design: [cookbook-design.md](cookbook-design.md) — full rationale and the reasoning behind every item below. Section references (§) point into it._
 
@@ -35,7 +59,13 @@ which this project only reads and runs. It changes no host file.
 
 **Local setup:** a plain `npm install`. It resolves `@cytoscape-web/api-types@1.0.0-beta.5`
 from the registry. The local-tarball procedure in `CLAUDE.md` is only for a version that is
-not on npm yet.
+not on npm yet, and the cookbook does not use it for beta.6 (design D-15). The hosts are
+checkouts of the tags `v1.1.0` and `v1.1.1`, for example two worktrees of one
+`cytoscape-web` clone. Run them with Node 24.22.1 or later: 1.1.1 requires it, and it
+satisfies 1.1.0. Both tags set `engine-strict`, so the 1.1.1 checkout must not be
+installed with an older Node, such as the 24.21.0 a parent `mise.toml` may pin;
+`mise exec node@24.22.1 -- <command>` uses the right one without changing the pin. Start a host with `npx vite --host`: `npm run dev` also opens a
+browser window.
 
 ---
 
@@ -155,11 +185,83 @@ listed here, and any other contradiction found on a page the cookbook will link 
 - [x] `npm run typecheck` and `npm test` still pass (every workspace; hello-world also builds,
       and `check:imports` passes)
 - [x] **Merged into `development`** (D-12): #23 (`a35f430`), without a verification record,
-      as D-12 allows for Phase 0. The review's three points land in a follow-up pull request
+      as D-12 allows for Phase 0. The review of #23 was handled in #24 (`a6e8ba9`), and the
+      review of #24 in the same pull request (design §8)
+- [x] **Checked again on 2026-11-16** at the tags `v1.1.0` and `v1.1.1` and on the host's
+      `origin/development` (`7714c138`): on each, `CyWebEventMap` has the same 11 events
+      besides `cywebapi:ready`, and `federationExposes.ts` the same 12 `cyweb/*Api`
+      exposes. The tables fixed above need no change
 
 ---
 
-## Phase 1: Foundation and a minimal runner ⬜ **NOT STARTED**
+## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — `4d38f6c`, not merged yet
+
+_Design: §4.9, §8 "Review after a pause", Goal 6, criterion 11, D-16_
+
+The pages the cookbook links to must be right on host **1.1.0 and 1.1.1**. One statement
+is wrong on both. Two are right on 1.1.0 only, because 1.1.1 changed how apps start; they
+are reworded to hold on both, not replaced. Do this before Phase 1 adds the README link.
+Like Phase 0, this is not a full sweep (roadmap E-1a).
+
+### Pre-read files
+
+| File | Purpose |
+| ---- | ------- |
+| `cytoscape-web/src/features/AppManager/install/installConfirmedApps.ts` | An install link installs with `activate: true`, at both tags |
+| `cytoscape-web/src/data/hooks/stores/useAppManager.ts` | At `v1.1.0`, the startup auto-load takes the active set from the workspace's records: catalog apps start off |
+| `cytoscape-web/src/models/AppModel/impl/startupAppStatus.ts` (1.1.1) | The rule that turns a catalog app on at startup |
+| `cytoscape-web/src/features/AppManager/AppManager_docs/AppManager.md` (1.1.1) | "App Management": core apps, and what a failed load shows |
+| `README.md`, `CLAUDE.md`, `guides/getting-started.md`, `guides/troubleshooting.md`, the four app READMEs | The statements to check |
+
+### Deliverables
+
+Confirm each behavior in a running host of each release before changing the text.
+
+> **How it was confirmed.** Two dev hosts on `localhost:5500`, from worktrees of the tags,
+> driven with Playwright in a fresh browser context each time. Their boot reports said
+> `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`. The four example apps' dev servers were
+> running, except where noted.
+
+- [x] **After an install link (wrong on both).** `README.md`, `guides/getting-started.md`
+      and `project-template/README.md` said to confirm the install and then enable the
+      app. Confirming already turns it on. They now say so, and name Manage Apps as where
+      to turn it off
+- [x] **"Enable one under Manage Apps" (right on 1.1.0 only).** Catalog apps start off on
+      1.1.0. From 1.1.1 on, a dev host turns the four example apps on by itself. Each
+      sentence now names both versions:
+  - [x] `README.md` (the quick start for all four apps)
+  - [x] `hello-world/README.md`, `network-statistics/README.md`,
+        `network-workflows/README.md`
+  - [x] `CLAUDE.md` §5, "Connect to Local Host"
+  - [x] The README says what a reader on 1.1.1 sees when an app's dev server is not
+        running. Seen with all four stopped: the toast "4 apps failed to load — open App
+        Manager for details.", and each row marked *failed* with "Could not fetch …
+        Reload the page to try again." and its switch still on
+- [x] **Where production apps are registered (right on 1.1.0 only).** `CLAUDE.md` §2 and
+      `guides/troubleshooting.md` ("Can I publish my app to npm?") named the host's
+      `src/assets/apps.json`. Both now say "the deployment's curated `apps.json`", and the
+      guide points to the README's "Publishing to the public Cytoscape Web site"
+- [x] Not changed, deliberately: `guides/architecture-overview.md`'s "curated `apps.json`"
+      and the README's "curated allowlist", which are right on both
+
+### Verification (Phase 0 follow-up)
+
+- [x] In a 1.1.0 host with a fresh profile: the four example apps are off, and no
+      `remoteEntry.js` of theirs is requested
+- [x] In a 1.1.1 host with a fresh profile: the four example apps are on without a click
+- [x] In both: an app installed from its install link is on after the confirmation
+      (`project-template`, with the catalog served empty so that the app was not in it)
+- [x] No page tells the reader to enable an app that is already on in either release
+      (`grep -rni "enable" README.md CLAUDE.md guides/ */README.md`)
+- [x] `npm run typecheck` passes. `npm test` passes except the six `manifestCommand`
+      tests of the known non-issue below; with `TMPDIR` resolved, all 413 pass
+- [ ] **Merged into `development`**, without a verification record (D-12), on its own or
+      together with Phase 1. Either way its commits come before the one that adds the
+      README link
+
+---
+
+## Phase 1: Foundation and a minimal runner ✅ **DONE (2026-11-16)** — not committed or merged yet
 
 _Design: §4.1–§4.6, §4.9 (README link), §4.10 (the three Phase 1 recipes), §4.11_
 
@@ -175,97 +277,191 @@ catalog grows.
 | `cytoscape-web/src/app-api/core/elementApi.ts` | `createNodes`: all-or-nothing validation, one undo entry |
 | `cytoscape-web/src/app-api/api_docs/Api.md` | "Readiness" (`whenReady()`) and `network:loaded` |
 | `cytoscape-web/src/boot/metrics/bootReport.ts`, `cytoscape-web/src/debug.ts` | Where the build commit is, and when it is published |
+| `cytoscape-web/vite.config.ts`, `cytoscape-web/src/app-api/constants.ts` | `appsConfigPlugin` and `DEFAULT_MANIFEST_URL`: the catalog request the runner intercepts is `/apps.json` at `v1.1.0` and `<base>apps.json` at `v1.1.1` (design D-14). Also `gitCommit`: the build commit is `git rev-parse --short HEAD` |
+| `cytoscape-web/package.json`, `cytoscape-web/.nvmrc` | The version and Node requirement at each tag. `development` reports `1.1.1` too, which is why the runner matches by commit |
+| `cytoscape-web/packages/api-types/CHANGELOG.md` (1.1.1) | The "1.0.0-beta.6 (unpublished)" section: what 1.1.1 does that 1.1.0 and beta.5 do not |
 | `network-statistics/src/NetworkStatisticsApp.ts` | The `network:switched` + `network:loaded` pattern that `follow-current-network` generalizes |
 | `scripts/preflight-host.mjs` | Playwright navigation and waiting patterns to reuse |
 | `scripts/manifest.mjs` | `NON_APP_WORKSPACE_PREFIXES`: why `cookbook/` is not a workspace |
 
 ### Deliverables — layout and type check (§4.1)
 
-- [ ] The `cookbook/` tree of §4.1, outside the root `workspaces`
-- [ ] `cookbook/tsconfig.json`: `skipLibCheck: false`, `types` including
-      `@cytoscape-web/api-types`. It includes `recipes/`, `wiring/` and `runner/cases/`
-- [ ] The root `typecheck` script also runs `tsc -p cookbook`. **This edits the root
-      `package.json`: confirm with the maintainer first**
+- [x] The `cookbook/` tree of §4.1, outside the root `workspaces`
+- [x] `cookbook/tsconfig.json`: `skipLibCheck: false`, `types` including
+      `@cytoscape-web/api-types`. It includes `recipes/`, `wiring/`, `runner/cases/` and
+      the runner's own in-page files (`runner/*.ts`)
+- [x] The root `typecheck` script also runs `tsc --noEmit -p cookbook`. The maintainer
+      approved the `package.json` edit (2026-11-16). No dependency and no lockfile changed
 
 ### Deliverables — documents (§4.11)
 
-- [ ] `cookbook/USING-RECIPES.md`
-- [ ] `cookbook/WRITING-RECIPES.md`, including the required pitfall topics (§4.2), the
-      import rules (§4.3) and the **allowed `apis` forms** (§4.4)
-- [ ] `cookbook/runner/README.md`, including how to start a host from a standalone clone
-      (`dev-start.sh` lives in the parent workspace repository, not here)
+- [x] `cookbook/USING-RECIPES.md`, including which host releases are supported, what
+      `verified.json` records about them, and that a recipe's header states where they
+      differ (§4.6)
+- [x] `cookbook/WRITING-RECIPES.md`, including the required pitfall topics (§4.2), the
+      import rules (§4.3), the **allowed `apis` forms** (§4.4), and the rule that a recipe
+      is right on every supported release and states a difference by version (§4.10, D-16)
+- [x] `cookbook/runner/README.md`, including how to start a host from a checkout of each
+      tag, `v1.1.0` and `v1.1.1`, in a standalone clone (`dev-start.sh` lives in the parent
+      workspace repository, not here), and why the runner serves an empty app catalog and
+      records only a release's tag commit
 
 ### Deliverables — wiring (§4.2, §4.4)
 
-- [ ] One compiled file per call site: `mount(context)`, an `'apps-menu'` `onClick`, a React
-      panel (hooks for host-wide domains, `useAppContext()?.apis` for owner-bound ones), and
-      `window.CyWebApi` after `whenReady()`
-- [ ] Every owner-bound call uses an allowed `apis` form
+- [x] One compiled file per call site: `from-mount.ts`, `from-apps-menu.ts`,
+      `from-panel.tsx` (hooks for host-wide domains, `useAppContext()?.apis` for
+      owner-bound ones) and `from-window.ts` (`window.CyWebApi` after `whenReady()`)
+- [x] Every owner-bound call uses an allowed `apis` form. Phase 1 has no owner-bound
+      recipe, so no such call exists yet; the check runs on `wiring/` and is proven on
+      fixtures
 
 ### Deliverables — generator: checks and index (§4.6, §4.7)
 
-- [ ] `scripts/cookbook-index.mjs` parses with the TypeScript compiler API. `typescript` is
-      already a root devDependency, so no dependency is added
-- [ ] It rejects:
-  - [ ] a missing tag
-  - [ ] an unknown `@related` id
-  - [ ] `@apis` differing from the API call expressions (comments excluded)
-  - [ ] a value import in a core recipe
-  - [ ] an owner-bound recipe without an `AppContextApis` parameter
-  - [ ] an owner-bound call in `wiring/` or `runner/app` with an `apis` argument outside the
-        allowed forms
-- [ ] It fails when the api-types version the type check resolved differs from
+- [x] `scripts/cookbook-index.mjs` parses with the TypeScript compiler API. `typescript` is
+      already a root devDependency, so no dependency is added. What it shares with the
+      runner (the digest, the record check) is in `scripts/cookbook-lib.mjs`
+- [x] It rejects (problem code in parentheses):
+  - [x] a missing tag (`missing-tag`), and a missing header section (`missing-section`)
+  - [x] an unknown `@related` id (`unknown-related`)
+  - [x] `@apis` differing from the API call expressions, comments excluded
+        (`apis-mismatch`)
+  - [x] a value import in a core recipe (`value-import`), and an import of anything but
+        types from `cyweb/ApiTypes` (`foreign-import`)
+  - [x] an owner-bound recipe without an `AppContextApis` parameter
+        (`owner-bound-declaration`)
+  - [x] an owner-bound call in `wiring/` or `runner/app` with an `apis` argument outside the
+        allowed forms (`apis-source`: `window.CyWebApi`, a destructured `apis`, a
+        `use*Api` hook)
+  - [x] Added while building it, each needed to make the checks above sound:
+        `apis-untraceable` (a use of `apis` the `@apis` check cannot follow),
+        `apis-signature` (the `Pick<…>` does not name exactly the domains called),
+        `recipe-function` (not exactly one exported function), `missing-case` and
+        `orphan-case` (a recipe without a case, a case without a recipe)
+- [x] `--check` fails when the api-types version the type check resolved differs from
       `verified.json`
-- [ ] It writes `cookbook/README.md`. `--check` regenerates in memory and fails on any
+- [x] It writes `cookbook/README.md`. `--check` regenerates in memory and fails on any
       difference
-- [ ] Each rejection has a fixture that is **seen failing** (criterion 2)
+- [x] Each rejection has a fixture that is **seen failing** (criterion 2):
+      `node scripts/cookbook-index.mjs --selftest` runs 15 fixtures in
+      `scripts/cookbook-fixtures/`. `ok/` is the control and must have no problem; each
+      other one holds only what differs from it and must produce exactly the codes in its
+      `expect.txt`
 
 ### Deliverables — recipes (§4.2, §4.10)
 
-- [ ] ★ `elements/add-nodes-to-network`, with its case
-- [ ] ★ `style/color-nodes-by-numeric-column`, with its case
-- [ ] `events/follow-current-network`, with its case, covering all four steps of §4.5
+- [x] ★ `elements/add-nodes-to-network`, with its case
+- [x] ★ `style/color-nodes-by-numeric-column`, with its case
+- [x] `events/follow-current-network`, with its case, covering all four steps of §4.5.
+      Steps 1, 2 and 4 use the host's own events. **Step 3 dispatches `network:loaded`
+      itself:** the host delays a network's data only after a page reload, which a case
+      cannot do without losing the injected bundle
 
 ### Deliverables — minimal runner (§4.6)
 
-- [ ] Bundle the core recipes and cases with Vite library mode (Vite is already a root
-      devDependency)
-- [ ] Before navigating, set `localStorage['cyweb-debug-enabled'] = 'true'`
-- [ ] `await window.CyWebApi.whenReady()`, then wait, **with a time limit**, for
+- [x] Bundle the core recipes and cases with Vite library mode (Vite is already a root
+      devDependency). The entry is generated from the case files on disk, so there is no
+      list of cases to keep in step
+- [x] Before navigating, set `localStorage['cyweb-debug-enabled'] = 'true'`
+- [x] Before navigating, answer the request for the app catalog with `[]` (Playwright
+      `route`; `/apps.json` on 1.1.0, `<base>apps.json` from 1.1.1), and fail the run if
+      the request was never intercepted (design D-14). On 1.1.0 catalog apps start off
+      anyway; on 1.1.1 this is what keeps the example apps out. **Match the path exactly:**
+      a 1.1.1 dev server also imports `/src/assets/apps.json?import`, and answering that
+      keeps the host from becoming ready (seen in the Phase 0 follow-up)
+- [x] Added: fail the run if the host fetched any other app's `remoteEntry.js`. The empty
+      catalog is the means; this checks the end
+- [x] Abort the host's analytics requests, and close the welcome dialog and the cookie
+      banner of a fresh profile by their own buttons (design §4.6)
+- [x] The runner's configuration lists the supported releases with their tag commits:
+      `cookbook/runner/hosts.json`, 1.1.0 `6619411b` and 1.1.1 `c3118c51` (design D-16)
+- [x] Read `report.build.version` and `.commit`. Write that release's entry only when the
+      commit is its tag commit. On any other host, say so, report the cases' results, and
+      write nothing
+- [x] Pass the host version to each case (`ctx.host.version`). No Phase 1 case branches
+      on it: the three recipes behave the same on both releases
+- [x] `await window.CyWebApi.whenReady()`, then wait, **with a time limit** (30 s), for
       `window.debug.boot.report`. Fail if it does not appear, or if
       `report.build.commit` is `unknown`
-- [ ] Each case builds an isolated fixture with `network.createNetworkFromEdgeList` and reads
+- [x] Each case builds an isolated fixture with `network.createNetworkFromEdgeList` and reads
       the result back through the read-side APIs
-- [ ] Cleanup in `finally`, pass or fail: the fixture network, subscriptions, registrations
-- [ ] A single case can be run by id; `--selftest` proves the runner can fail
-- [ ] A full, passing run writes `cookbook/verified.json`:
-  - [ ] api-types exact version, and its source (registry or local)
-  - [ ] the host commit
-  - [ ] a digest of `recipes/`, `wiring/`, all of `runner/`, and `cookbook/tsconfig.json`
+- [x] Cleanup in `finally`, pass or fail: the fixture network, subscriptions, registrations.
+      The runner also compares the workspace's networks before and after
+- [x] A single case can be run by id; `--selftest` proves the runner can fail
+- [x] A full, passing run writes `cookbook/verified.json`:
+  - [x] api-types exact version, and its source (registry or local)
+  - [x] one host entry per verified release, with its version and commit. A run adds or
+        replaces its own release's entry, and drops an entry made from another digest
+  - [x] a digest of `recipes/`, `wiring/`, all of `runner/`, and `cookbook/tsconfig.json`,
+        Markdown excluded (design §4.6)
 
 ### Deliverables — CI check for a stale record (§4.7)
 
-- [ ] A CI job recomputes the cookbook digest and the resolved api-types version, and fails
-      when either differs from `verified.json`. This is what makes per-phase merges safe
+- [x] The `Cookbook` job in `ci.yml` runs the generator's self-test and
+      `cookbook-index.mjs --check`, which recomputes the digest and the resolved api-types
+      version, and fails when either differs from `verified.json`, or when a release in
+      `hosts.json` has no entry. This is what makes per-phase merges safe
 
 ### Deliverables — README link (§4.9)
 
-- [ ] **After Phase 0 only:** a short "Building with an AI assistant" section near the top of
+- [x] **After Phase 0 only:** a short "Building with an AI assistant" section near the top of
       `README.md` that links the **cookbook index**, and a Cookbook row in the Documentation
       Map. No `llms.txt` link yet: it is not live until Phase 2 reaches `main`
 
 ### Verification (Phase 1)
 
-- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5
-- [ ] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
+Hosts: dev servers from clean worktrees of the two tags, on `localhost:5500`, one at a
+time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
+
+- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5.
+      *(Passes locally. CI has not run yet: nothing is pushed)*
+- [x] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
       expected
-- [ ] The runner passes all three cases against a host on `localhost:5500` (`development`),
-      started fresh from a clean checkout, and `--selftest` fails
-- [ ] Two consecutive runs leave no fixture network behind
-- [ ] `verified.json` exists and records the **registry** beta.5 as its source
-- [ ] The stale-record check fails on a changed recipe without a refreshed `verified.json`
+- [x] The type check rejects an invented name: `'NODE_BACKGROUND_COLOR'` in place of
+      `'nodeBackgroundColor'` fails with TS2345 (**seen failing**). The host's own
+      `Api.md` uses that spelling in an example
+- [x] The runner passes all three cases against a host on `localhost:5500`, started fresh
+      from a clean checkout of the tag `v1.1.0`, and again from one of `v1.1.1`.
+      `--selftest` reports its case as failed, and exits 0 for that reason
+- [x] The cases catch a broken recipe (**seen failing**, four mutations, each restored):
+      the two colors swapped; `network:loaded` read for every network; `stop()` leaving a
+      listener; `autoSelect` left at the host's default
+- [x] Repeated runs leave no fixture network behind, on each. The runner checks it in
+      every run
+- [x] The run fails when the catalog request is not intercepted (**seen failing**, with the
+      route pattern changed)
+- [x] On the 1.1.1 host, the run gives the same results with the four example apps' dev
+      servers running and with them stopped, and the host loads no example app. With the
+      real catalog let through, the run fails and names the four `remoteEntry.js`
       (**seen failing**)
-- [ ] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
+- [x] The run fails when the boot report does not appear (**seen failing**, against dev1
+      with the debug switch left off)
+- [x] Against a host that is not a tag commit, the cases run and **no entry is written**
+      (**seen**, against dev1, which served `bc2b20e9` and reported `1.1.1`). This also
+      showed the runner working on a deployed host under a base path
+- [x] `verified.json` exists and records the **registry** beta.5 as its source, and two
+      host entries from the same digest: 1.1.0 (`6619411b`) and 1.1.1 (`c3118c51`)
+- [x] The stale-record check fails on a record with only one of the two entries
+      (**seen failing**)
+- [x] The stale-record check fails on a changed recipe without a refreshed `verified.json`,
+      on a record that names another api-types version, and on an entry whose commit is
+      not the tag's (**seen failing**, each)
+- [x] `--check` fails when an alias changes without regenerating the index
+      (**seen failing**)
+- [x] `npm run manifest:validate`, `npm run check:imports` and `npm test` still pass
+      (`npm test` with `TMPDIR` resolved: see "Known non-issues")
+- [x] **The review of #27** (design §8): each fix seen failing on the code it replaces,
+      on 1.1.0, then the record refreshed on both hosts:
+  - [x] both recipes' original `Math.min(...)` throws on 200,000 elements in their cases
+  - [x] `--check` rejects a record whose api-types `source` is `local`, and an installation
+        of the 1.1.1 api-types tarball (version `1.0.0-beta.5`, beta.6 declarations), which
+        `tsc -p cookbook` accepted
+  - [x] the runner rejects an entry fetched from the host's own origin
+        (`/apps/example/remoteEntry.js`)
+  - [x] `follow-current-network` without `onNone` times out in its case
+  - [x] CodeRabbit's points (design §8, 5–11): a recipe changed during a run leaves the
+        record as it was; the previous generator lets both new fixtures through
+        (`apis-source-shadowed`, `apis-source-case`), and the new one rejects them;
+        `--selftest` now runs 17 fixtures
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
@@ -282,32 +478,54 @@ The other 17 host-wide recipes, and the generation path for `llms.txt` and
 | File | Purpose |
 | ---- | ------- |
 | `cytoscape-web/src/app-api/core/networkApi.ts` | `createNetworkFromEdgeList` takes only `[source, target, interaction]`; `createNetworkFromCx2` and its `navigate` / `addToWorkspace` |
-| `cytoscape-web/src/app-api/core/exportApi.ts` | `exportToCx2`, the first step of `subnetwork-from-selection` |
-| `cytoscape-web/src/app-api/core/tableApi.ts` | `importTableFromTsv` and its `keyColumn` (default `id`) |
+| `cytoscape-web/src/app-api/core/networkApi.ts` (again) | `createNetworkFromNodeList`: a subnetwork in one call, the first candidate for `subnetwork-from-selection` |
+| `cytoscape-web/src/app-api/core/exportApi.ts` | `exportToCx2`: the other candidate, as a CX2 round trip with `createNetworkFromCx2` |
+| `cytoscape-web/src/app-api/core/tableApi.ts` | `importTableFromTsv` and its `keyColumn` (default `id`). Column names are matched exactly at `v1.1.0`, and ignoring case at `v1.1.1` |
+| `cytoscape-web/src/app-api/core/validation.ts` | Column names: at `v1.1.0`, `id` is rejected and an exact duplicate fails with `AC6`; at `v1.1.1`, both ignoring case |
+| `cytoscape-web/src/app-api/api_docs/Api.md` | At both tags, the sections on `createColumn`, `importTableFromTsv`, `createNetworkFromCx2` and `switchCurrentNetwork`: they differ |
+| `cytoscape-web/src/data/select/selectCommands.ts` (1.1.1) | `hideSelected` and `showAll`: what the Select menu does to visibility bypasses |
 | `cytoscape-web/src/models/VisualStyleModel/VisualPropertyName.ts` | `NodeBorderWidth`, `NodeBorderColor`, `NodeVisibility`, `EdgeVisibility` |
 
 ### Deliverables — recipes (§4.10)
 
 Each recipe has a complete header, covers the pitfall topics for its kind, and has a case
-(see the Recipe status table below).
+(see the Recipe status table below), which passes on 1.1.0 and on 1.1.1. The notes marked
+"Releases:" come from the review of 2026-11-16 (design §4.10): the recipe's code behaves
+the same on both, and its header states the host's difference by version. "Check" means:
+observe it on a host of each release before the header states it.
 
-- [ ] `network/create-network-from-table`
-- [ ] `network/subnetwork-from-selection`
+- [ ] `network/create-network-from-table`. Releases: on 1.1.0, after the call makes the
+      network current, the table browser and layout tools still act on the network shown
+      before; 1.1.1 fixes it (#927). A pitfall, by version
+- [ ] `network/subnetwork-from-selection`. Choose between `createNetworkFromNodeList` and
+      the CX2 round trip, and say why in the header. Releases: the same pitfall as above
 - [ ] `elements/add-edges-between-selected`
-- [ ] `elements/delete-selected`
-- [ ] `data/add-computed-column`, with degree as its example
+- [ ] `elements/delete-selected`. Releases: 1.1.0 binds no Delete or Backspace key, 1.1.1
+      does (#867). Check what Edit ▸ Undo restores after the deletion on each (#857 is in
+      1.1.1 only)
+- [ ] `data/add-computed-column`, with degree as its example. Releases: names are compared
+      exactly on 1.1.0 and ignoring case on 1.1.1, where a clash fails with `AC6`. The
+      header says to choose a name that differs from existing ones by more than case
 - [ ] `data/read-column-values-safely`
-- [ ] `data/join-table-by-key`
+- [ ] `data/join-table-by-key`. Releases: TSV columns match existing ones exactly on 1.1.0
+      and ignoring case on 1.1.1. The case uses the existing columns' exact spelling, so it
+      passes on both
 - [ ] `style/size-nodes-by-degree`
 - [ ] `style/color-by-category`
 - [ ] `style/label-from-column`
 - [ ] `style/highlight-with-bypass`
 - [ ] `style/set-style-defaults`, whose "Don't" covers a bypass on every node
 - [ ] `style/emphasize-by-threshold`
-- [ ] `style/hide-by-threshold`
+- [ ] `style/hide-by-threshold`. Releases: say what the FILTER tab's show mode (both) and
+      the Select menu's Show All (1.1.1 only) do to the elements the recipe hid. Check
+      whether selecting a hidden element shows it again on each (`0f8b7f42` is in 1.1.1
+      only)
 - [ ] `selection/select-neighbors`, taking a hop count
 - [ ] `selection/select-by-attribute`
-- [ ] `layout/run-layout-and-wait`
+- [ ] `layout/run-layout-and-wait`. The example lays out the current network. Check which
+      view is fitted for a network that is not current; the fix (#964) is in neither
+      release, so both should behave alike. Name `fitAfterLayout: false` for that use
+- [ ] No recipe or case uses two column names that differ only by case (design §4.10)
 
 ### Deliverables — `llms.txt` and `llms-full.txt` (§4.7)
 
@@ -338,7 +556,7 @@ and committed into `docs/`, never generated in a workflow (design D-13).
 
 ### Verification (Phase 2)
 
-- [ ] 20 recipes (Phases 1 and 2), and all their cases pass
+- [ ] 20 recipes (Phases 1 and 2), and all their cases pass on 1.1.0 and on 1.1.1
 - [ ] The generator refuses a `verified.json` whose digest does not match, and one recorded
       from a local tarball (**seen failing**, both)
 - [ ] The CI check fails when a recipe changes without regenerating `docs/llms*.txt`
@@ -365,6 +583,18 @@ _Design: §4.1, §4.4, §4.5, §4.6_
 
 The † recipes and component recipes, run with real per-app `apis` in an unpublished app.
 
+### Pre-read files
+
+| File | Purpose |
+| ---- | ------- |
+| `cytoscape-web/src/features/AppManager/AppListPanel.tsx`, `cytoscape-web/src/data/hooks/stores/useAppManager.ts` | At both tags: the switch that disables an app, and how an app is activated and deactivated. 1.1.1 adds host compatibility and version ranking |
+| `cytoscape-web/src/boot/steps/runInstallIntents.ts`, `cytoscape-web/src/features/AppManager/install/installConfirmedApps.ts` | `?installApp=`: the origin gate, the confirmation dialog, `activate: true`; from 1.1.1 also the host-version gate |
+| `cytoscape-web/src/app-api/core/panelApi.ts`, `cytoscape-web/src/app-api/types/PanelTypes.ts` | The right pane: at `v1.1.0` it always holds `'sub-network-viewer'`, first and selected by default; at `v1.1.1` that tab exists only for a hierarchy and the pane is shown only while it has a tab (#877) |
+| `cytoscape-web/src/app-api/core/perAppApis.ts` | The six owner-bound domains, and what disabling removes |
+| `packages/app-runtime/src/vite/devInstall.ts` | The install manifest and link the app's dev server offers |
+| `scripts/preflight-apps.mjs`, `apps.manifest.json` | The `smokeObservable` pattern, and whether its `openRightPanel` step works on both right panes |
+| `cytoscape-web/src/app-api/api_docs/Api.md` (1.1.1) | "Host Keyboard Shortcuts": Undo and Redo do not act while a dialog from `apis.dialog.open` is open |
+
 ### Deliverables — the app (§4.1, §4.6)
 
 - [ ] `cookbook/runner/app/` with its own `package.json` and `cyweb` block. It is in neither
@@ -375,8 +605,14 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
       `node_modules`
 - [ ] `mount()` registers resources and stores `context.apis` on the harness, in the one
       allowed harness assignment. It runs no case and waits for no UI (§4.5)
-- [ ] The runner installs the app with `?installApp=`, waits until it is active (open the right
-      panel and wait for the app's panel, as `smokeObservable` does), then drives the cases
+- [ ] The runner installs the app with `?installApp=`, confirms the host's install dialog,
+      waits until it is active (open the right panel, select the app's tab by id and wait
+      for the app's panel, as `smokeObservable` does), then drives the cases. On 1.1.0 the
+      Sub Network Viewer tab is first and selected, so the tab must be selected; on 1.1.1
+      the app's tab is first, and the pane can be opened only once the tab is registered
+      (#877). Selecting by id after the app is active is right on both
+- [ ] The empty catalog of Phase 1 still applies, so the verification app is the only app
+      in the page (design D-14)
 - [ ] Each run uses a fresh browser context. Cleanup in `finally` stops the dev server
 
 ### Deliverables — recipes (§4.10)
@@ -384,7 +620,10 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 - [ ] † `layout/register-app-layout`
 - [ ] † `ui/menu-action-with-dialog`
 - [ ] † `ui/link-out-from-node` (formerly `node-context-menu`)
-- [ ] † `ui/open-own-panel-after-action`
+- [ ] † `ui/open-own-panel-after-action`. Pass the app's own tab id. Releases: without
+      one, `panel.open('right')` opens the pane on the Sub Network Viewer tab on 1.1.0, and
+      on 1.1.1 shows nothing on a network that is not a hierarchy (#877). The case asserts
+      that the app's own tab is the selected one
 - [ ] † `ui/persist-results-per-network`
 
 ### Deliverables — behavior cases (§4.4)
@@ -395,7 +634,11 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 
 ### Verification (Phase 3)
 
-- [ ] All 25 recipes have a case, and every case passes. There are no exemptions (D-9)
+- [ ] All 25 recipes have a case, and every case passes on 1.1.0 and on 1.1.1. There are no
+      exemptions (D-9)
+- [ ] The disable case passes on both: the row's switch on 1.1.0 and on 1.1.1
+- [ ] An owner-bound recipe's case gets an app's own object, and the `apis-source` check
+      allows that form in `runner/cases` (today it allows none there; design §4.4)
 - [ ] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, and one that
       destructures `apis`
 - [ ] `verified.json` is refreshed; its digest now covers `runner/app`
@@ -441,7 +684,8 @@ the pointer.
 
 - [ ] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
       URL. Regenerate the templates
-- [ ] `API_TYPES_VERSION` equals the version in `verified.json`
+- [ ] `API_TYPES_VERSION` equals the version in `verified.json`. If beta.6 was published in
+      the meantime, its own pull request and a refreshed record come first (design D-15)
 - [ ] Bump the `create-cytoscape-app` version. The release workflow skips a version already on
       npm. Bump `@cytoscape-web/app-runtime` too, if it changed
 - [ ] Outside the monorepo, scaffold every template from **packed tarballs** and build it. Its
@@ -492,9 +736,9 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 
 | Recipe | Kind | Verified by | Phase | Types | Case passes |
 |---|---|---|---|---|---|
-| ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [ ] | [ ] |
-| ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [ ] | [ ] |
-| `events/follow-current-network` | Events and async | Runner | 1 | [ ] | [ ] |
+| ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [x] | [x] |
+| ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [x] | [x] |
+| `events/follow-current-network` | Events and async | Runner | 1 | [x] | [x] |
 | `network/create-network-from-table` | Mutation | Runner | 2 | [ ] | [ ] |
 | `network/subnetwork-from-selection` | Mutation | Runner | 2 | [ ] | [ ] |
 | `elements/add-edges-between-selected` | Mutation | Runner | 2 | [ ] | [ ] |
@@ -520,14 +764,15 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 
 ## Current `verified.json`
 
-Not yet written. Copy the record here each time it is refreshed.
+Copy the record here each time it is refreshed.
 
 | Field | Value |
 |---|---|
-| api-types version and source | — |
-| Host commit | — |
-| Cookbook digest | — |
-| Run date | — |
+| api-types version and source | `1.0.0-beta.5`, registry |
+| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 3 cases |
+| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 3 cases |
+| Cookbook digest | `sha256:c4f40a9f13710d947c191d8ed2d5fbc89a17e2939c29f83cef00eb5061804bb9` |
+| Run date | 2026-11-17 (Phase 1, after the review of #27) |
 
 ---
 
@@ -552,25 +797,40 @@ Not yet written. Copy the record here each time it is refreshed.
       from full history and finds them equal to the committed files
 - [ ] 5 — Every recipe has a passing real-host case, including the duplicate tab id and
       disable cases
-- [ ] 6 — The runner waits for readiness, the active app and the boot report, and cleans up
-      in `finally`
+- [ ] 6 — The runner waits for readiness, the active app and the boot report, serves an
+      empty app catalog and checks that it did, and cleans up in `finally`
+- [ ] 5 and 7 (hosts) — Every case passed on 1.1.0 and on 1.1.1. The record has both
+      entries, matched by tag commit and made from the same digest, and a run against
+      another commit wrote no entry
 - [ ] 7 — Changing anything under `recipes/`, `wiring/` or `runner/` without re-running the
       runner fails CI; the generator refuses to write `docs/llms*.txt` from it
 - [ ] 8 — The Pages files were live before the scaffolder that points at them was published;
       the scaffolder's version was bumped
 - [ ] 9 — A project scaffolded outside the monorepo pins the verified version and builds
 - [ ] 10 — The agent acceptance test is recorded above
-- [ ] 11 — The Phase 0 corrections landed before the README linked the cookbook
+- [ ] 11 — The Phase 0 corrections and the follow-up landed before the README linked the
+      cookbook
 
 ### Deferred, deliberately
 
 - [ ] **Per-recipe minimum versions** (D-7) — needs verification against several versions
 - [ ] **Recipes inside an npm package** (D-3) — revisited after the API reaches GA
-- [ ] **The runner in CI** (O-2) — needs a deployed beta.5 host
+- [ ] **The runner in CI** (O-2) — needs deployed hosts that serve the releases' tag
+      commits. On 2026-11-16 production served 1.1.0 exactly, and dev1 a pre-release build
+      of 1.1.1
+- [ ] **Raising the floor above 1.1.0** (D-16, O-3) — one pull request: remove the old
+      floor's entry and the version notes that no longer apply
+- [ ] **Adding a release after 1.1.1** (D-16) — run every case on its tag and add its
+      entry; it replaces 1.1.1 as the latest release
+- [ ] **Adopting api-types beta.6** (D-15) — unpublished on 2026-11-16; a pull request of
+      its own once it is on npm, carrying a record refreshed on both hosts with it (CI
+      fails without one). A recipe may use its additions only after the floor rises to
+      1.1.1
 - [ ] **The public Cookbook app** — Phase 6
 - [ ] **The backlog** (design §4.12): seven planned recipes and four that need a feasibility
       check, added one at a time once Phase 3 is complete (D-11, O-1). Each addition adds a
-      row to the Recipe status table
+      row to the Recipe status table. `layout/arrange-nodes-programmatically` validates
+      positions itself and is not undoable; `recordUndo` needs beta.6 and a floor of 1.1.1
 - [ ] **The API gaps** in design §4.12 (image export, zoom to selection, laying out only the
       selection, groups, annotations, legends) — host-side work, not recipes
 - [ ] **`AGENTS.md` content (E-1b, E-1c), `api-surface.json` (E-3), a full E-1a sweep** —

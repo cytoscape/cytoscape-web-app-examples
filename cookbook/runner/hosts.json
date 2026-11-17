@@ -1,0 +1,14 @@
+[
+  {
+    "version": "1.1.0",
+    "tag": "v1.1.0",
+    "commit": "6619411b3e4f4367679cd69299c63abdb865121c",
+    "role": "floor"
+  },
+  {
+    "version": "1.1.1",
+    "tag": "v1.1.1",
+    "commit": "c3118c510cd77789c143081cfdef30bce60c9a3a",
+    "role": "latest"
+  }
+]

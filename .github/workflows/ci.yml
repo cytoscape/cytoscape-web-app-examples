@@ -319,3 +319,34 @@ jobs:
       # --if-present: an app joins the test scope by gaining a `test` script in
       # its migration commit. No workflow edit, nothing to forget.
       - run: npm run test
+
+  # The cookbook's own gate. Types cannot see what this checks: a recipe header
+  # that drifted from its code, a value import from the declarations-only
+  # api-types package, an owner-bound domain reached through the wrong API
+  # object, a stale index, and a stale verification record.
+  #
+  # The record is the point. CI cannot run the recipes: their cases need a
+  # running Cytoscape Web of two releases (cookbook/runner/README.md). So a
+  # change to cookbook/recipes, wiring or runner must arrive with a
+  # cookbook/verified.json made from exactly those sources, and this job fails
+  # when the digest, the api-types version or a supported host is missing.
+  #
+  # `tsc -p cookbook` itself runs in the Typecheck job, through the root
+  # `typecheck` script.
+  cookbook:
+    name: Cookbook
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # First: prove that each check can fail. A generator that accepts
+      # everything looks the same as one that works.
+      - name: Every generator check rejects its fixture
+        run: node scripts/cookbook-index.mjs --selftest
+      - name: Recipes, index and verification record are current
+        run: node scripts/cookbook-index.mjs --check

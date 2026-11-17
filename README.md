@@ -40,6 +40,17 @@ through Module Federation (Vite). Apps can add:
 > return a result for it to apply. They are not built with this repository; see
 > the [service app specification](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>).
 
+## Building with an AI assistant
+
+Most apps are now written with a coding agent. Point it at the
+[**cookbook**](cookbook/README.md): one file per task, such as "color nodes by a
+numeric column" or "add nodes to a network". Each recipe is a function to copy
+into your app, with a header that says what it changes and what not to do.
+
+Every recipe compiles against the published API types, and has passed a case
+in a running Cytoscape Web 1.1.0 and 1.1.1. Start at
+[Using a recipe](cookbook/USING-RECIPES.md).
+
 ---
 
 ## Quick Start
@@ -60,8 +71,8 @@ The dev server prints the link that installs your app into a running local host:
 ```
 
 Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
-checkout), open that link, confirm the install, and enable the app under
-**Apps → Manage Apps...**.
+checkout), open that link, and confirm the install. The app is on as soon as you
+confirm; **Apps → Manage Apps...** lists it, with a switch to turn it off.
 
 **Or skip the host checkout entirely** and develop against the shared staging
 host, with your app still on `localhost`:
@@ -106,8 +117,17 @@ cd cytoscape-web-app-examples && npm install && npm run dev   # all four apps
 cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
 ```
 
-Then open `http://localhost:5500`, **Apps → Manage Apps...**, and enable one. The
-dev server reads `src/assets/apps.local.json`, which already lists them.
+Then open `http://localhost:5500`. The dev server reads
+`src/assets/apps.local.json`, which already lists them. What happens next
+depends on the host's version:
+
+- **Cytoscape Web 1.1.1 and later** turn all four on by themselves, except one
+  you turned off earlier in this workspace: turn it back on under
+  **Apps → Manage Apps...**. An app whose dev server is not running is
+  reported when the host starts ("apps failed to load") and marked *failed*
+  there: start its dev server and reload the page, or turn the app off.
+- **Cytoscape Web 1.1.0** starts them off: enable one under
+  **Apps → Manage Apps...**.
 
 ### Publishing to the public Cytoscape Web site
 
@@ -248,6 +268,7 @@ export const MyApp: CyAppWithLifecycle = {
 | [Registration Patterns](guides/registration-patterns.md) | Panels, menus, context menus, upsert, batch |
 | [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md)   | mount/unmount, auto-cleanup, re-enable      |
 | [Troubleshooting](guides/troubleshooting.md)             | Build errors, runtime errors, FAQ           |
+| [Cookbook](cookbook/README.md)                           | One recipe per task, verified in a host     |
 
 ### API Reference
 

@@ -70,8 +70,10 @@ npm run dev          # → http://localhost:2222
 > The host's dev server serves `src/assets/apps.local.json` as its app catalog,
 > and that file already lists this app at `localhost:2222`.
 
-Open `http://localhost:5500`, click **Apps** in the toolbar, then **Manage
-Apps...** to enable the Hello World app. The panel appears on the right side.
+Open `http://localhost:5500`. Cytoscape Web 1.1.1 and later turn the Hello World
+app on by themselves. On 1.1.0, or if you turned the app off earlier in this
+workspace, click **Apps** in the toolbar, then **Manage Apps...**, and enable
+it. The panel appears on the right side.
 
 ---
 

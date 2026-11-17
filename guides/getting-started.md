@@ -244,7 +244,8 @@ on every request, and prints the link that installs it:
 ```
 
 Open that URL with the host running and confirm the install. The app lands in
-your workspace, and you enable it under **Apps → Manage Apps...**.
+your workspace already turned on. **Apps → Manage Apps...** lists it, with a
+switch to turn it off.
 
 The host has accepted `?installApp=<manifestUrl>` all along — it is the same
 path the App Store will use. `installGate` allows a localhost app URL when the
