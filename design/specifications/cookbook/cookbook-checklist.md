@@ -458,6 +458,10 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
   - [x] the runner rejects an entry fetched from the host's own origin
         (`/apps/example/remoteEntry.js`)
   - [x] `follow-current-network` without `onNone` times out in its case
+  - [x] CodeRabbit's points (design §8, 5–11): a recipe changed during a run leaves the
+        record as it was; the previous generator lets both new fixtures through
+        (`apis-source-shadowed`, `apis-source-case`), and the new one rejects them;
+        `--selftest` now runs 17 fixtures
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
@@ -633,6 +637,8 @@ The † recipes and component recipes, run with real per-app `apis` in an unpubl
 - [ ] All 25 recipes have a case, and every case passes on 1.1.0 and on 1.1.1. There are no
       exemptions (D-9)
 - [ ] The disable case passes on both: the row's switch on 1.1.0 and on 1.1.1
+- [ ] An owner-bound recipe's case gets an app's own object, and the `apis-source` check
+      allows that form in `runner/cases` (today it allows none there; design §4.4)
 - [ ] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, and one that
       destructures `apis`
 - [ ] `verified.json` is refreshed; its digest now covers `runner/app`
@@ -765,7 +771,7 @@ Copy the record here each time it is refreshed.
 | api-types version and source | `1.0.0-beta.5`, registry |
 | Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 3 cases |
 | Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 3 cases |
-| Cookbook digest | `sha256:39a3f30fe1a2f2b1f97985901f57ff1266c45465b8164ade9a721c10b034c040` |
+| Cookbook digest | `sha256:c4f40a9f13710d947c191d8ed2d5fbc89a17e2939c29f83cef00eb5061804bb9` |
 | Run date | 2026-11-17 (Phase 1, after the review of #27) |
 
 ---
@@ -817,8 +823,9 @@ Copy the record here each time it is refreshed.
 - [ ] **Adding a release after 1.1.1** (D-16) — run every case on its tag and add its
       entry; it replaces 1.1.1 as the latest release
 - [ ] **Adopting api-types beta.6** (D-15) — unpublished on 2026-11-16; a pull request of
-      its own once it is on npm. A recipe may use its additions only after the floor rises
-      to 1.1.1
+      its own once it is on npm, carrying a record refreshed on both hosts with it (CI
+      fails without one). A recipe may use its additions only after the floor rises to
+      1.1.1
 - [ ] **The public Cookbook app** — Phase 6
 - [ ] **The backlog** (design §4.12): seven planned recipes and four that need a feasibility
       check, added one at a time once Phase 3 is complete (D-11, O-1). Each addition adds a

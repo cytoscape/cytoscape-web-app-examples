@@ -256,7 +256,7 @@ satisfies `Pick<AppContextApis, 'panel'>`. Three checks cover this together:
 
 1. **Declaration.** The generator requires an owner-bound recipe's parameter to be typed
    `Pick<AppContextApis, …>`. This documents intent; it does not enforce anything.
-2. **Source.** In `wiring/` and `runner/app`, the `apis` argument to an owner-bound recipe
+2. **Source.** In `wiring/`, `runner/cases` and `runner/app`, the `apis` argument to an owner-bound recipe
    must be written in one of a few **allowed forms**, listed in `WRITING-RECIPES.md`:
    - `context.apis`, inside `mount(context)`;
    - the parameter of an `onClick` arrow function;
@@ -266,7 +266,10 @@ satisfies `Pick<AppContextApis, 'panel'>`. Three checks cover this together:
    The generator recognizes those forms and nothing more. Aliases, destructuring, and passing
    `apis` through helper functions are rejected as untraceable, rather than traced. So the
    check stays small, and `window.CyWebApi` or an anonymous `use*Api` hook can never be
-   the source.
+   the source. Each form is checked against the declaration the argument refers to,
+   resolved through its lexical scopes, so a correct declaration in one function does not
+   vouch for the same name in another. In `runner/cases` no form is allowed yet: the
+   minimal runner gives every case `window.CyWebApi`. *(Both after the review of #27.)*
 3. **Behavior.** The verification app's cases (§4.6) include a duplicate tab id, where the
    app's own tab must be selected, and a disable, after which the app's registrations must
    be gone.
@@ -913,6 +916,19 @@ failing on the code it replaces.
 | 4 | `wiring/from-panel.tsx` shows nothing until the first event, and keeps a stale count when no network is left (Codex, Copilot) | Accepted. It reads once on mount and clears when no network is current. Wiring is type-checked and not run, which is how this passed |
 | — | Found while checking 4: `follow-current-network` told the app nothing when the last network closed (the host fires `network:switched` with an empty id) | Fixed with an optional `onNone`, called then and at the start when no network is current; the case closes its own fixtures to see it. "No network at all" joins the Events and async pitfall topics (§4.2) |
 
+CodeRabbit reviewed the same commit later, with 12 points. Five repeat 1, 2 and 4 above.
+The other seven were checked and accepted:
+
+| # | Point | Disposition |
+|---|---|---|
+| 5 | The runner computes the digest when it writes the record, after the cases ran, so a file changed during a run is recorded as verified | Accepted. The digest and the api-types are read before the bundle is built, and a run whose files changed by the end records nothing (§4.6) |
+| 6 | The runner reads a failed `getNetworkIds()` as an empty workspace, which hides networks left behind | Accepted. It is an error |
+| 7 | The `apis-source` check accepts `useAppContext()?.apis` declared anywhere in the file, so another function's `const apis = window.CyWebApi` passes | Accepted. The argument is resolved through its lexical scopes (§4.4) |
+| 8 | `runner/cases` is not checked, and the minimal runner gives cases `window.CyWebApi` (marked unverified by its author) | Accepted. `runner/cases` is checked, with no allowed form until Phase 3 |
+| 9 | `wiring/from-panel.tsx` does not refresh after its own button adds nodes | Accepted. It also reads on `network:changed` |
+| 10 | D-15 had the next phase merge carry the beta.6 record, but the adoption pull request itself would fail CI without one | Accepted. D-15 corrected |
+| 11 | On 1.1.1, an app the user turned off stays off; the READMEs said the apps turn on by themselves. The project-template README's `cd cytoscape-web` cannot work from `my-app` | Accepted. Both corrected in the READMEs and `CLAUDE.md` |
+
 ## 9. Decisions
 
 **Settled**
@@ -961,9 +977,10 @@ failing on the code it replaces.
 - **D-15. A later api-types version is adopted the way beta.5 was** (D-4). *(Revision 8.)*
   The cookbook compiles against what npm publishes, never against a local tarball of an
   unpublished version. When beta.6 is published, a separate pull request to `development`
-  moves the ranges and the scaffolder's pin, and the next phase merge carries a record made
-  with it: CI already rejects a record whose api-types version differs from the one
-  resolved (§4.7). A recipe that needs an unpublished addition stays in the backlog, and
+  moves the ranges and the scaffolder's pin, and **carries a record made with it**: CI
+  rejects a record whose api-types version differs from the one resolved (§4.7), so that
+  pull request cannot pass without one. *(Corrected after the review of #27: it said
+  the next phase merge would carry the record.)* A recipe that needs an unpublished addition stays in the backlog, and
   one that needs an addition the floor lacks waits until the floor rises (D-16).
 - **D-16. The cookbook supports Cytoscape Web 1.1.0 and later** (§4.6). *(Revision 8; the
   condition was set by the maintainer on 2026-11-16.)*

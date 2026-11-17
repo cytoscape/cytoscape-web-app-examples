@@ -105,7 +105,8 @@ npm run dev
 ```
 
 Cytoscape Web 1.1.1 and later turn the app on by themselves in a dev host. On
-1.1.0, enable it in the host: **Apps → Manage Apps... → Network Statistics**.
+1.1.0, or if you turned the app off earlier in this workspace, enable it in the
+host: **Apps → Manage Apps... → Network Statistics**.
 
 Open the browser DevTools console to see the statistics output.
 

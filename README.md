@@ -121,10 +121,11 @@ Then open `http://localhost:5500`. The dev server reads
 `src/assets/apps.local.json`, which already lists them. What happens next
 depends on the host's version:
 
-- **Cytoscape Web 1.1.1 and later** turn all four on by themselves. An app
-  whose dev server is not running is reported when the host starts ("apps
-  failed to load") and marked *failed* under **Apps → Manage Apps...**: start
-  its dev server and reload the page, or turn the app off there.
+- **Cytoscape Web 1.1.1 and later** turn all four on by themselves, except one
+  you turned off earlier in this workspace: turn it back on under
+  **Apps → Manage Apps...**. An app whose dev server is not running is
+  reported when the host starts ("apps failed to load") and marked *failed*
+  there: start its dev server and reload the page, or turn the app off.
 - **Cytoscape Web 1.1.0** starts them off: enable one under
   **Apps → Manage Apps...**.
 
