@@ -3,8 +3,9 @@
 > Track progress across the seven phases (0–6). Mark `[x]` when complete. Run the per-phase
 > verification before starting the next phase.
 >
-> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07). Next: the Phase 0 follow-up,
-> then Phase 1 — start at its "Pre-read files".** The design is at revision 8: three
+> **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up DONE
+> (2026-11-16), awaiting its commit and merge. Next: Phase 1 — start at its "Pre-read
+> files".** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, and a review after a pause. Work happens on the
 > `cookbook` branch of this repository, which is level with `development` at `1f1a902`
@@ -61,7 +62,10 @@ from the registry. The local-tarball procedure in `CLAUDE.md` is only for a vers
 not on npm yet, and the cookbook does not use it for beta.6 (design D-15). The hosts are
 checkouts of the tags `v1.1.0` and `v1.1.1`, for example two worktrees of one
 `cytoscape-web` clone. Run them with Node 24.22.1 or later: 1.1.1 requires it, and it
-satisfies 1.1.0.
+satisfies 1.1.0. Both tags set `engine-strict`, so the 1.1.1 checkout must not be
+installed with an older Node, such as the 24.21.0 a parent `mise.toml` may pin;
+`mise exec node@24.22.1 -- <command>` uses the right one without changing the pin. Start a host with `npx vite --host`: `npm run dev` also opens a
+browser window.
 
 ---
 
@@ -190,7 +194,7 @@ listed here, and any other contradiction found on a page the cookbook will link 
 
 ---
 
-## Phase 0 follow-up: found in the review of 2026-11-16 ⬜ **NOT STARTED**
+## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — not committed or merged yet
 
 _Design: §4.9, §8 "Review after a pause", Goal 6, criterion 11, D-16_
 
@@ -213,35 +217,44 @@ Like Phase 0, this is not a full sweep (roadmap E-1a).
 
 Confirm each behavior in a running host of each release before changing the text.
 
-- [ ] **After an install link (wrong on both).** `README.md`, `guides/getting-started.md`
-      and `project-template/README.md` say to confirm the install and then enable the app.
-      Confirming already turns it on. Phase 0 missed it
-- [ ] **"Enable one under Manage Apps" (right on 1.1.0 only).** Catalog apps start off on
-      1.1.0. From 1.1.1 on, a dev host turns the four example apps on by itself. Reword
-      each sentence so that it holds on both, for example "enable it there if it is not
-      already on":
-  - [ ] `README.md` (the quick start for all four apps)
-  - [ ] `hello-world/README.md`, `network-statistics/README.md`,
+> **How it was confirmed.** Two dev hosts on `localhost:5500`, from worktrees of the tags,
+> driven with Playwright in a fresh browser context each time. Their boot reports said
+> `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`. The four example apps' dev servers were
+> running, except where noted.
+
+- [x] **After an install link (wrong on both).** `README.md`, `guides/getting-started.md`
+      and `project-template/README.md` said to confirm the install and then enable the
+      app. Confirming already turns it on. They now say so, and name Manage Apps as where
+      to turn it off
+- [x] **"Enable one under Manage Apps" (right on 1.1.0 only).** Catalog apps start off on
+      1.1.0. From 1.1.1 on, a dev host turns the four example apps on by itself. Each
+      sentence now names both versions:
+  - [x] `README.md` (the quick start for all four apps)
+  - [x] `hello-world/README.md`, `network-statistics/README.md`,
         `network-workflows/README.md`
-  - [ ] `CLAUDE.md` §5, "Connect to Local Host"
-  - [ ] Say what a reader on 1.1.1 sees when an app's dev server is not running: a load
-        failure in the startup toast and on the app's row
-- [ ] **Where production apps are registered (right on 1.1.0 only).** `CLAUDE.md` §2 and
-      `guides/troubleshooting.md` ("Can I publish my app to npm?") name the host's
-      `src/assets/apps.json`. From 1.1.1 on it is empty in the host repository, a
-      deployment's build puts in its own list, and every entry is on by default for every
-      user. Reword both to "the deployment's curated `apps.json`", and point to the
-      README's "Publishing to the public Cytoscape Web site"
-- [ ] Not changed, deliberately: `guides/architecture-overview.md`'s "curated `apps.json`"
+  - [x] `CLAUDE.md` §5, "Connect to Local Host"
+  - [x] The README says what a reader on 1.1.1 sees when an app's dev server is not
+        running. Seen with all four stopped: the toast "4 apps failed to load — open App
+        Manager for details.", and each row marked *failed* with "Could not fetch …
+        Reload the page to try again." and its switch still on
+- [x] **Where production apps are registered (right on 1.1.0 only).** `CLAUDE.md` §2 and
+      `guides/troubleshooting.md` ("Can I publish my app to npm?") named the host's
+      `src/assets/apps.json`. Both now say "the deployment's curated `apps.json`", and the
+      guide points to the README's "Publishing to the public Cytoscape Web site"
+- [x] Not changed, deliberately: `guides/architecture-overview.md`'s "curated `apps.json`"
       and the README's "curated allowlist", which are right on both
 
 ### Verification (Phase 0 follow-up)
 
-- [ ] In a 1.1.0 host with a fresh profile: the four example apps are off until enabled
-- [ ] In a 1.1.1 host with a fresh profile: the four example apps are on without a click
-- [ ] In both: an app installed from its install link is on after the confirmation
-- [ ] No page tells the reader to enable an app that is already on in either release
-- [ ] `npm run typecheck` and `npm test` still pass
+- [x] In a 1.1.0 host with a fresh profile: the four example apps are off, and no
+      `remoteEntry.js` of theirs is requested
+- [x] In a 1.1.1 host with a fresh profile: the four example apps are on without a click
+- [x] In both: an app installed from its install link is on after the confirmation
+      (`project-template`, with the catalog served empty so that the app was not in it)
+- [x] No page tells the reader to enable an app that is already on in either release
+      (`grep -rni "enable" README.md CLAUDE.md guides/ */README.md`)
+- [x] `npm run typecheck` passes. `npm test` passes except the six `manifestCommand`
+      tests of the known non-issue below; with `TMPDIR` resolved, all 413 pass
 - [ ] **Merged into `development`**, without a verification record (D-12), on its own or
       together with Phase 1. Either way its commits come before the one that adds the
       README link
@@ -331,7 +344,11 @@ catalog grows.
 - [ ] Before navigating, answer the request for the app catalog with `[]` (Playwright
       `route`; `/apps.json` on 1.1.0, `<base>apps.json` from 1.1.1), and fail the run if
       the request was never intercepted (design D-14). On 1.1.0 catalog apps start off
-      anyway; on 1.1.1 this is what keeps the example apps out
+      anyway; on 1.1.1 this is what keeps the example apps out. **Match the path exactly:**
+      a 1.1.1 dev server also imports `/src/assets/apps.json?import`, and answering that
+      keeps the host from becoming ready (seen in the Phase 0 follow-up)
+- [ ] Abort the host's analytics requests, and close the welcome dialog and the cookie
+      banner of a fresh profile by their own buttons (design §4.6)
 - [ ] The runner's configuration lists the supported releases with their tag commits:
       1.1.0 `6619411b`, 1.1.1 `c3118c51` (design D-16)
 - [ ] Read `report.build.version` and `.commit`. Write that release's entry only when the

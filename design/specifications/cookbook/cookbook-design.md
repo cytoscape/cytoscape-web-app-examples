@@ -325,15 +325,25 @@ which of those apps load. So, on every host:
 - Before navigating, the runner answers the page's request for the catalog with an empty
   list (Playwright `route`). The path is `/apps.json` on 1.1.0, and `<base>apps.json` from
   1.1.1. It changes no host file.
+- The route matches that path exactly. A 1.1.1 dev server also imports
+  `/src/assets/apps.json?import` as a module, and answering that request with JSON keeps
+  the host from ever becoming ready. Seen on 2026-11-16, when the exact match was tried on
+  both releases: no example app loaded, and an app installed afterwards was the only one.
 - The run fails if that request was never intercepted. Both releases fetch the catalog, so
   the check works on both, and a changed catalog path cannot pass silently.
 - The verification app (below) is installed afterwards with `?installApp=`, so it is the
   only app in the page.
 
+**A run sends nothing to analytics.** A local host sends Google Analytics page views, and
+1.1.0 sends them without waiting for consent. The runner aborts those requests. It also
+closes the welcome dialog and the cookie banner that a fresh profile opens, by their own
+buttons, before it touches the toolbar.
+
 **Verification app** (Phase 3), in `runner/app`, unpublished:
 
 1. The runner starts the app's dev server (§4.1), installs it with `?installApp=`, and
-   confirms the host's install dialog. Confirming an install link also turns the app on.
+   confirms the host's install dialog ("Install into this workspace?", **Install**).
+   Confirming an install link also turns the app on; this was seen on both releases.
 2. `mount()` only registers the app's resources and keeps `context.apis` on a test harness.
    It runs no case and waits for no UI (§4.5).
 3. The runner waits until the app is active, using the pattern of the `smokeObservable`
