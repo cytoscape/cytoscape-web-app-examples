@@ -5,12 +5,14 @@
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
-> #28. Next: merge `development` into `main` so that Pages serves `llms.txt`, then the
-> README link; Phase 3 can start in parallel.** The design is at revision 8: three
-> reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
-> `llms.txt` committed into `docs/`, a review after a pause, and the reviews of #27 and
-> #28. Work happens on the `cookbook` branch of this repository, which is level with
-> `development` at `337d540`, the merge of #28.
+> #28; Phase 3 IMPLEMENTED (2026-11-18) in `591d91c`, all 27 cases passing on 1.1.0 and
+> 1.1.1, in review. Next: merge Phase 3; merge `development` into `main` so that Pages
+> serves `llms.txt`, then the README link.** The design is at
+> revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan for the
+> published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the reviews
+> of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of this
+> repository, which was level with `development` at `337d540`, the merge of #28, when
+> Phase 3 started.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -623,71 +625,83 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 
 ---
 
-## Phase 3: Verification app ⬜ **NOT STARTED**
+## Phase 3: Verification app 🔄 **IMPLEMENTED (2026-11-18)** — `591d91c`, in review
 
-_Design: §4.1, §4.4, §4.5, §4.6_
+_Design: §4.1, §4.4, §4.5, §4.6, D-17_
 
 The † recipes and component recipes, run with real per-app `apis` in an unpublished app.
 
 ### Pre-read files
 
+Read at both tags on 2026-11-17. What they settled is noted.
+
 | File | Purpose |
 | ---- | ------- |
-| `cytoscape-web/src/features/AppManager/AppListPanel.tsx`, `cytoscape-web/src/data/hooks/stores/useAppManager.ts` | At both tags: the switch that disables an app, and how an app is activated and deactivated. 1.1.1 adds host compatibility and version ranking |
-| `cytoscape-web/src/boot/steps/runInstallIntents.ts`, `cytoscape-web/src/features/AppManager/install/installConfirmedApps.ts` | `?installApp=`: the origin gate, the confirmation dialog, `activate: true`; from 1.1.1 also the host-version gate |
-| `cytoscape-web/src/app-api/core/panelApi.ts`, `cytoscape-web/src/app-api/types/PanelTypes.ts` | The right pane: at `v1.1.0` it always holds `'sub-network-viewer'`, first and selected by default; at `v1.1.1` that tab exists only for a hierarchy and the pane is shown only while it has a tab (#877) |
-| `cytoscape-web/src/app-api/core/perAppApis.ts` | The six owner-bound domains, and what disabling removes |
-| `packages/app-runtime/src/vite/devInstall.ts` | The install manifest and link the app's dev server offers |
-| `scripts/preflight-apps.mjs`, `apps.manifest.json` | The `smokeObservable` pattern, and whether its `openRightPanel` step works on both right panes |
-| `cytoscape-web/src/app-api/api_docs/Api.md` (1.1.1) | "Host Keyboard Shortcuts": Undo and Redo do not act while a dialog from `apis.dialog.open` is open |
+| `cytoscape-web/src/features/AppManager/AppListPanel.tsx`, `cytoscape-web/src/data/hooks/stores/useAppManager.ts` | At both tags: the switch that disables an app, and how an app is activated and deactivated. 1.1.1 adds host compatibility and version ranking. **The switch is `[data-testid="app-toggle-<id>"]` on both; `deactivateApp` runs `cleanupAllForApp` before `unmount()`** |
+| `cytoscape-web/src/boot/steps/runInstallIntents.ts`, `cytoscape-web/src/features/AppManager/install/installConfirmedApps.ts` | `?installApp=`: the origin gate, the confirmation dialog, `activate: true`; from 1.1.1 also the host-version gate. **`installApp` repeats: one link installs both apps, after one confirmation (`app-install-confirmation-dialog-confirm`). A deployed host accepts `localhost` apps only if it opts in (`allowsLocalhostAppsOn`)** |
+| `cytoscape-web/src/app-api/core/panelApi.ts`, `cytoscape-web/src/app-api/types/PanelTypes.ts` | The right pane: at `v1.1.0` it always holds `'sub-network-viewer'`, first and selected by default; at `v1.1.1` that tab exists only for a hierarchy and the pane is shown only while it has a tab (#877). **`pickPanelTab` prefers the caller's own tab; an anonymous caller gets the first in strip order (`order`, then registration)** |
+| `cytoscape-web/src/app-api/core/perAppApis.ts` | The six owner-bound domains, and what disabling removes. **The same at both tags. `appData` is not cleaned on disable; deleting a network deletes its `appData`** |
+| `packages/app-runtime/src/vite/devInstall.ts` | The install manifest and link the app's dev server offers. **`/cyweb-app.json`; `defineCyWebApp` exposes `./src/index.ts` exactly, so the entry is `.ts`** |
+| `scripts/preflight-apps.mjs`, `apps.manifest.json` | The `smokeObservable` pattern, and whether its `openRightPanel` step works on both right panes. **`preflight-apps.mjs` does not perform `setup` steps; the runner opens the app's tab by id itself** |
+| `cytoscape-web/src/app-api/api_docs/Api.md` (1.1.1) | "Host Keyboard Shortcuts": Undo and Redo do not act while a dialog from `apis.dialog.open` is open. **No recipe states it: 1.1.0 has no shortcuts** |
 
 ### Deliverables — the app (§4.1, §4.6)
 
-- [ ] `cookbook/runner/app/` with its own `package.json` and `cyweb` block. It is in neither
-      the root `workspaces` nor `apps.manifest.json`. Its port must not collide with 2222,
-      3333, 5555, 6100 or 7001
-- [ ] `vite.config.ts` calls `defineCyWebApp`. The runner starts the dev server with
-      `runner/app` as the working directory; dependencies resolve from the root
-      `node_modules`
-- [ ] `mount()` registers resources and stores `context.apis` on the harness, in the one
-      allowed harness assignment. It runs no case and waits for no UI (§4.5)
-- [ ] The runner installs the app with `?installApp=`, confirms the host's install dialog,
-      waits until it is active (open the right panel, select the app's tab by id and wait
-      for the app's panel, as `smokeObservable` does), then drives the cases. On 1.1.0 the
-      Sub Network Viewer tab is first and selected, so the tab must be selected; on 1.1.1
-      the app's tab is first, and the pane can be opened only once the tab is registered
-      (#877). Selecting by id after the app is active is right on both
-- [ ] The empty catalog of Phase 1 still applies, so the verification app is the only app
-      in the page (design D-14)
-- [ ] Each run uses a fresh browser context. Cleanup in `finally` stops the dev server
+- [x] `cookbook/runner/app/` with its own `package.json` and `cyweb` block (`cookbookVerification`,
+      port 6310). It is in neither the root `workspaces` nor `apps.manifest.json`. Its rival,
+      `runner/app/rival/` (`cookbookRival`, port 6311), is the same (D-17)
+- [x] `vite.config.ts` calls `defineCyWebApp`, with Vite's cache in the root `node_modules`. The
+      runner starts both dev servers with Vite's `createServer`, each app's directory as its root;
+      dependencies resolve from the root `node_modules`. Its own `tsconfig.json`, checked by the
+      root `typecheck` script (a `scripts` change only)
+- [x] `mount()` registers resources (two tabs and an Apps menu entry), assigns
+      `harness.apis = context.apis`, and publishes the cases on `window.__cookbookApp`. It runs
+      no case and waits for no UI (§4.5). The generator rejects any other write
+      (`harness-assignment`)
+- [x] The runner installs both apps with one `?installApp=` link, confirms the host's install
+      dialog, waits until the app has mounted and its tab, opened by id, shows its panel, then
+      drives the cases. Seen on both releases
+- [x] The empty catalog of Phase 1 still applies, so the verification app and its rival are the
+      only apps in the page (design D-14). Their `remoteEntry.js` are set aside by exact URL, and
+      must have loaded
+- [x] Each run uses a fresh browser context. Cleanup in `finally` stops both dev servers
+- [x] Cases that use the host's UI ask the runner for real input (`ctx.ui`); the runner marks the
+      welcome dialog seen, keeps a screenshot of a failed UI action with `COOKBOOK_SCREENSHOTS`,
+      and answers `https://cookbook.invalid/` itself
 
 ### Deliverables — recipes (§4.10)
 
-- [ ] † `layout/register-app-layout`
-- [ ] † `ui/menu-action-with-dialog`
-- [ ] † `ui/link-out-from-node` (formerly `node-context-menu`)
-- [ ] † `ui/open-own-panel-after-action`. Pass the app's own tab id. Releases: without
-      one, `panel.open('right')` opens the pane on the Sub Network Viewer tab on 1.1.0, and
-      on 1.1.1 shows nothing on a network that is not a hierarchy (#877). The case asserts
-      that the app's own tab is the selected one
-- [ ] † `ui/persist-results-per-network`
+- [x] † `layout/register-app-layout` — a grid of the selected nodes, with `Spacing` and
+      `Selected only` parameters
+- [x] † `ui/menu-action-with-dialog` — a component recipe (`.tsx`): an Apps menu entry opens a
+      "select nodes by name" dialog. Its case uses the menu, the field, Cancel, Enter and Escape
+- [x] † `ui/link-out-from-node` (formerly `node-context-menu`). Its case right-clicks a node and
+      reads the address of the window the item opens
+- [x] † `ui/open-own-panel-after-action`. Passes the app's own tab id. The case asserts that the
+      app's own tab is the selected one while the rival's tab of the same id comes first
+- [x] † `ui/persist-results-per-network` — compute once per network, local or shared (`cyAppData`)
 
 ### Deliverables — behavior cases (§4.4)
 
-- [ ] **Duplicate tab id:** the app's own tab is selected
-- [ ] **Disable:** the runner disables the app through the host UI, and every registration it
-      made (context menu item, layout algorithm, panel tab) is gone
+- [x] **Duplicate tab id** (`behavior/duplicate-tab-id`): the anonymous `panel.open` selects the
+      rival's tab, the app's own selects the app's
+- [x] **Disable** (`behavior/disable`): the runner turns the app off with its switch in Apps ▸
+      Manage Apps..., and its context menu item, layout, tabs and menu entry are gone; an item
+      registered through `window.CyWebApi` stays; its `appData` is kept
 
 ### Verification (Phase 3)
 
-- [ ] All 25 recipes have a case, and every case passes on 1.1.0 and on 1.1.1. There are no
-      exemptions (D-9)
-- [ ] The disable case passes on both: the row's switch on 1.1.0 and on 1.1.1
-- [ ] An owner-bound recipe's case gets an app's own object, and the `apis-source` check
-      allows that form in `runner/cases` (today it allows none there; design §4.4)
-- [ ] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, and one that
-      destructures `apis`
-- [ ] `verified.json` is refreshed; its digest now covers `runner/app`
+- [x] All 25 recipes have a case, and every case passes on 1.1.0 and on 1.1.1, with the two
+      behavior cases: 27 on each. There are no exemptions (D-9)
+- [x] The disable case passes on both: the row's switch on 1.1.0 and on 1.1.1
+- [x] An owner-bound recipe's case gets an app's own object: it lives in `runner/app/cases` and
+      passes `harness.apis` (design §4.4). `runner/cases` still allows no form, and an
+      owner-bound recipe's case there is rejected (`case-location`)
+- [x] The allowed-forms check rejects a fixture that passes `window.CyWebApi`, one that
+      destructures `apis`, and one with a local `harness`, in `runner/app` too
+      (`apis-source-app-*`); `--selftest` passes 31 fixtures
+- [x] `verified.json` is refreshed; its digest now covers `runner/app` (`e0e5c1f2…`, 27 cases on
+      each release, 2026-11-18). The self-test passes on 1.1.0
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
@@ -777,7 +791,7 @@ _Design: D-2, §5_
 
 The kind decides the required pitfall topics (§4.2); a recipe may have more than one. The
 kinds below are an initial assignment; `WRITING-RECIPES.md` is authoritative. "Runner" means
-the minimal runner; "App" means the Phase 3 verification app. Recipes still in the backlog
+the runner's bundle (`runner/cases`); "App" means the verification app (`runner/app/cases`). Recipes still in the backlog
 (design §4.12) are not listed here until they enter the catalog (D-11).
 
 | Recipe | Kind | Verified by | Phase | Types | Case passes |
@@ -802,11 +816,11 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 | `selection/select-neighbors` | — | Runner | 2 | [x] | [x] |
 | `selection/select-by-attribute` | — | Runner | 2 | [x] | [x] |
 | `layout/run-layout-and-wait` | Events and async | Runner | 2 | [x] | [x] |
-| † `layout/register-app-layout` | — | App | 3 | [ ] | [ ] |
-| † `ui/menu-action-with-dialog` | — | App | 3 | [ ] | [ ] |
-| † `ui/link-out-from-node` | — | App | 3 | [ ] | [ ] |
-| † `ui/open-own-panel-after-action` | — | App | 3 | [ ] | [ ] |
-| † `ui/persist-results-per-network` | Persistence | App | 3 | [ ] | [ ] |
+| † `layout/register-app-layout` | Mutation | App | 3 | [x] | [x] |
+| † `ui/menu-action-with-dialog` | Mutation | App | 3 | [x] | [x] |
+| † `ui/link-out-from-node` | — | App | 3 | [x] | [x] |
+| † `ui/open-own-panel-after-action` | — | App | 3 | [x] | [x] |
+| † `ui/persist-results-per-network` | Persistence | App | 3 | [x] | [x] |
 
 ## Current `verified.json`
 
@@ -815,10 +829,10 @@ Copy the record here each time it is refreshed.
 | Field | Value |
 |---|---|
 | api-types version and source | `1.0.0-beta.5`, registry |
-| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 20 cases |
-| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 20 cases |
-| Cookbook digest | `sha256:a5de1c4d0592cfc37e500c9f2522adb0df0a0454fc7755a21bfa0cb7779c7260` |
-| Run date | 2026-11-17 (Phase 2, after the review of #28) |
+| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 27 cases |
+| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 27 cases |
+| Cookbook digest | `sha256:e0e5c1f204e7bd6ea7baa732f458a919441cd615da32bcc83eaa0b2d80a437ea` |
+| Run date | 2026-11-18 (Phase 3, before its commit; 25 recipes and 2 behavior cases) |
 
 ---
 
