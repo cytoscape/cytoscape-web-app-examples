@@ -138,11 +138,35 @@ export const readRecord = (cookbookDir = COOKBOOK_DIR) => {
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null
 }
 
-/** The recipes' cases: `runner/cases/<name>.ts`. */
-export const listCases = (cookbookDir = COOKBOOK_DIR) =>
-  listFiles(join(cookbookDir, 'runner', 'cases')).filter((path) =>
-    /^[^/]+\.ts$/.test(path),
-  )
+/**
+ * Where cases live, as paths relative to the cookbook. A host-wide recipe's
+ * case runs in the runner's bundle; an owner-bound or component recipe's, in
+ * the verification app, which has the app's own API object and React.
+ */
+export const CASE_DIRS = {
+  core: 'runner/cases',
+  app: 'runner/app/cases',
+  behavior: 'runner/app/behaviors',
+}
+
+const casesIn = (cookbookDir, dir, pattern) =>
+  listFiles(join(cookbookDir, ...dir.split('/')))
+    .filter((path) => pattern.test(path))
+    .map((path) => `${dir}/${path}`)
+
+/** The recipes' cases: `runner/cases/<name>.ts` and `runner/app/cases/<name>.ts(x)`. */
+export const listCases = (cookbookDir = COOKBOOK_DIR) => [
+  ...casesIn(cookbookDir, CASE_DIRS.core, /^[^/]+\.ts$/),
+  ...casesIn(cookbookDir, CASE_DIRS.app, /^[^/]+\.tsx?$/),
+]
+
+/** The verification app's behavior cases, which belong to no recipe. */
+export const listBehaviors = (cookbookDir = COOKBOOK_DIR) =>
+  casesIn(cookbookDir, CASE_DIRS.behavior, /^[^/]+\.ts$/)
+
+/** How many cases a full run runs: every recipe's, and every behavior's. */
+export const countCases = (cookbookDir = COOKBOOK_DIR) =>
+  listCases(cookbookDir).length + listBehaviors(cookbookDir).length
 
 /**
  * Everything that makes the record unfit to merge or publish from. An empty
@@ -189,7 +213,7 @@ export const checkRecord = ({
     )
   }
 
-  const caseCount = listCases(cookbookDir).length
+  const caseCount = countCases(cookbookDir)
   for (const host of readHosts(cookbookDir)) {
     const entry = (record.hosts ?? []).find((h) => h.version === host.version)
     if (entry === undefined) {

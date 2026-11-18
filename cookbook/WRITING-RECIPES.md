@@ -15,8 +15,8 @@ recipe.
 ## The file
 
 - `recipes/<category>/<name>.ts`. The id is `<category>/<name>`.
-- `.tsx` only for a recipe that is a React component. It runs in the
-  verification app (Phase 3), not in the runner.
+- `.tsx` only for a recipe that is a React component. Its case runs in the
+  verification app, which has React.
 - One idiom per file. Aim for 120 lines of code or fewer.
 - **A recipe imports no other recipe**, and no other file. *(Checked:
   `foreign-import`.)*
@@ -154,7 +154,9 @@ compiles, and fails in the browser.
 - **Only exported types can be imported.** `VisualMappingFunction` and
   `ColorType`, for example, are declared and not exported. Write the shape you
   need, or derive it from an exported type.
-- A component recipe may also import React and `cyweb/*` hooks.
+- A component recipe may also import React, `cyweb/*` hooks and
+  `@mui/material`, from the root barrel only (`import { Button } from
+  '@mui/material'`): a subpath bundles a second MUI into the app.
 
 ## Owner-bound domains
 
@@ -172,17 +174,24 @@ do:
    - `context.apis`, inside `mount(context)`;
    - the parameter of an `onClick` arrow function;
    - a `const` initialized from `useAppContext()?.apis`;
-   - in `runner/app` only, `harness.apis`, the one field `mount()` assigns
-     from `context.apis`.
+   - in `runner/app` only, `harness.apis`, where `harness` is imported from
+     `runner/app/src/harness.ts`. `mount()` assigns that field from
+     `context.apis`, and nothing else in the app writes it *(checked:
+     `harness-assignment`)*.
 
    An alias, a destructured name or a helper in between is rejected, even
    when it would be right. The check does not trace. It does resolve the name
    the way the compiler does: the declaration that counts is the one the
    argument refers to, not another of the same name elsewhere in the file. In
-   `runner/cases`, where every case gets `window.CyWebApi`, no form is allowed
-   until the verification app (Phase 3) provides an app's own object.
-3. **Behavior.** The verification app's cases include a duplicate tab id and
-   a disabled app.
+   `runner/cases`, where every case gets `window.CyWebApi`, no form is
+   allowed.
+3. **Behavior.** The verification app's behavior cases
+   (`runner/app/behaviors/`) run on every supported release: with two apps
+   using one tab id, the app's own `panel.open` selects its own tab and the
+   anonymous one does not; and after the app is turned off in Apps ▸ Manage
+   Apps..., its context menu item, layout, tabs and menu entry are gone, an
+   item registered through `window.CyWebApi` is not, and its `appData` is
+   kept.
 
 ## Host releases
 
@@ -203,8 +212,14 @@ latest release.
 
 ## The case
 
-`runner/cases/<name>.ts`, with the recipe's id. *(Checked: `missing-case`,
-`orphan-case`.)*
+One case per recipe, named after it and declaring its id. Where it lives
+depends on the recipe *(checked: `missing-case`, `orphan-case`,
+`case-location`)*:
+
+| Recipe | Case | `apis` for the recipe |
+|---|---|---|
+| Host-wide, `.ts` | `runner/cases/<name>.ts`, bundled by the runner | `ctx.apis`, which is `window.CyWebApi` |
+| Owner-bound, or a component (`.tsx`) | `runner/app/cases/<name>.ts`, part of the verification app | `harness.apis`, the app's own object, from `../src/harness` |
 
 ```typescript
 const recipeCase: RecipeCase = {
@@ -227,6 +242,15 @@ export default recipeCase
   only for a difference the recipe's header states.
 - A case that cannot use the host's own event (a load after a page reload,
   for example) may dispatch it itself, and says so in a comment.
+- **A case that goes through the host's UI** does what a user does, through
+  `ctx.ui`: `click`, `fill`, `press`, `visible`, `waitFor`, `rightClickNode`,
+  `clickForPopup` and `setAppEnabled`, with Playwright selectors
+  (`text="Apps"`, `role=menuitem[name="…"]`, `[data-testid="…"]`). The
+  runner performs them with real mouse and keyboard events. A link-out case
+  points its addresses at `https://cookbook.invalid/`, which the runner
+  answers itself.
+- **Close what the case opened** in its cleanup: a dialog, a panel tab. The
+  next case clicks on the same page.
 
 ## Before you commit
 
@@ -261,7 +285,7 @@ one the files do not name.
 
 ## Host behaviors that surprise
 
-Seen on 1.1.0 and 1.1.1 while writing the Phase 2 recipes:
+Seen on 1.1.0 and 1.1.1 while writing the Phase 2 and Phase 3 recipes:
 
 - **A write to a row that does not exist reports success and does nothing.**
   `setValue` and `setValues` change only existing rows. A network made with
@@ -282,3 +306,7 @@ Seen on 1.1.0 and 1.1.1 while writing the Phase 2 recipes:
 - **`importTableFromTsv` writes through `setValues`**, so it too reports a
   match and writes nothing to an element without a row; and it skips a row
   whose key cell is empty without reporting it.
+- **`viewport.fit` fails with `APP5` right after a network is created**, until
+  the renderer has drawn it; a few milliseconds later it succeeds.
+- **A value read from `appData` is deeply frozen**, and is the JSON round trip
+  of what was stored: a `Date` comes back as text.

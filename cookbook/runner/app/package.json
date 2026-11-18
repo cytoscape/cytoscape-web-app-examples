@@ -1,0 +1,19 @@
+{
+  "name": "@cytoscape-web/cookbook-verification",
+  "description": "Runs the cookbook's owner-bound and component recipes with an app's own API object. Unpublished: started by cookbook/runner/run.mjs.",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "//": [
+    "Not an npm workspace and not in apps.manifest.json: scripts/manifest.mjs",
+    "would take a workspace for a published app. Nothing is installed here.",
+    "The runner starts this app's dev server with this directory as its",
+    "working directory, and every import resolves from the repository root's",
+    "node_modules. See cookbook-design.md §4.1."
+  ],
+  "cyweb": {
+    "id": "cookbookVerification",
+    "displayName": "Cookbook verification",
+    "port": 6310
+  }
+}

@@ -11,11 +11,28 @@
 import type { AppContext, CyAppWithLifecycle, IdType } from 'cyweb/ApiTypes'
 
 import { followCurrentNetwork } from '../recipes/events/follow-current-network'
+import { registerGridLayout } from '../recipes/layout/register-app-layout'
+import { addLinkOut } from '../recipes/ui/link-out-from-node'
 
 let stopFollowing: (() => void) | null = null
 
 export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
   mount(context: AppContext): void {
+    // Owner-bound registrations: made for this app, so the host removes them
+    // when the app is disabled. Registering is synchronous; nothing here
+    // waits for anything.
+    const layout = registerGridLayout(context.apis, {
+      id: 'grid',
+      displayName: 'Grid (selected nodes)',
+    })
+    if (!layout.success) console.error(layout.error.message)
+    const linkOut = addLinkOut(context.apis, {
+      label: 'Open in NCBI Gene',
+      column: 'name',
+      url: (term) => `https://www.ncbi.nlm.nih.gov/gene/?term=${term}`,
+    })
+    if (!linkOut.success) console.error(linkOut.error.message)
+
     const read = (networkId: IdType): boolean => {
       const nodes = context.apis.element.getNodeIds(networkId)
       // false: the data has not arrived yet, so the recipe reads again when
@@ -31,6 +48,8 @@ export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
     if (following.success) stopFollowing = following.data.stop
   },
 
+  // The host removes the layout and the context menu item itself. Only what
+  // the host does not know about is undone here.
   unmount(): void {
     stopFollowing?.()
     stopFollowing = null

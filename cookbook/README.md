@@ -12,7 +12,7 @@ to use it, what it changes, and what not to do.
 - **What these were verified with:** [verified.json](verified.json), and
   [runner/README.md](runner/README.md) for how
 
-20 recipes. Find one by the words in "Also asked as".
+25 recipes. Find one by the words in "Also asked as".
 
 ## network
 
@@ -61,6 +61,7 @@ to use it, what it changes, and what not to do.
 
 | Recipe | Also asked as | Calls |
 |---|---|---|
+| [Add a layout of your own to the Layout menu](recipes/layout/register-app-layout.ts) | custom layout, register a layout, layout algorithm, my own layout, grid layout, lay out the selected nodes, arrange selected nodes, layout plugin | `resource.registerLayout` |
 | [Run a layout and wait for it to finish](recipes/layout/run-layout-and-wait.ts) | apply layout, run layout, arrange nodes, layout network, wait for layout, force-directed layout, grid layout, re-layout, after layout | `layout.getAvailableLayouts`, `workspace.getCurrentNetworkId`, `layout.applyLayout` |
 
 ## events
@@ -68,6 +69,15 @@ to use it, what it changes, and what not to do.
 | Recipe | Also asked as | Calls |
 |---|---|---|
 | [Follow the current network, and read it only when it is ready](recipes/events/follow-current-network.ts) | current network changed, network switched, on network change, react to network switch, wait for network to load, network not loaded, APP1 after switching, refresh when the user opens another network | `workspace.getCurrentNetworkId` |
+
+## ui
+
+| Recipe | Also asked as | Calls |
+|---|---|---|
+| [Open a node's page in an external database from its context menu](recipes/ui/link-out-from-node.ts) | link out, linkout, external link, open in NCBI, open in UniProt, look up a gene, right-click menu, node context menu, open a web page for a node | `contextMenu.addContextMenuItem`, `table.getValue` |
+| [Ask for input in a dialog from an Apps menu item](recipes/ui/menu-action-with-dialog.tsx) | menu item with a dialog, prompt the user, input dialog, form dialog, apps menu action, ask for a value, find nodes by name, search dialog | `workspace.getCurrentNetworkId`, `dialog.open`, `table.getTable`, `selection.exclusiveSelect` |
+| [Show your app's panel after an action](recipes/ui/open-own-panel-after-action.ts) | open my panel, show results panel, switch to my tab, open the right panel, reveal the app panel, focus my panel | `panel.open` |
+| [Keep an app's results for each network](recipes/ui/persist-results-per-network.ts) | cache results, save results per network, remember results, persist analysis results, app data, store results with the network, compute once | `appData.get`, `appData.set` |
 
 ## Wiring
 

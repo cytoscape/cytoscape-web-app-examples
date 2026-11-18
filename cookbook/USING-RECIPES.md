@@ -27,6 +27,9 @@ Copy the file as it is, for example to `src/recipes/`, and import its function.
   code, so importing a value from it (`ok`, `fail`, `VisualPropertyName`)
   compiles and then fails in the browser.
 - A recipe imports nothing else, so one file is all you need.
+- A `.tsx` recipe is a React component, or opens one. It also imports React
+  and `@mui/material`, which an app built with `defineCyWebApp` gets from the
+  host. Import MUI from its root, as the recipe does.
 
 ## 3. Give it `apis`
 

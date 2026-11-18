@@ -1,6 +1,6 @@
 # Cookbook — Design
 
-> Status: **Draft, revision 8.** Revisions 2–4 incorporate three design reviews; §8 records
+> Status: **Draft, revision 9.** Revisions 2–4 incorporate three design reviews; §8 records
 > how each point was handled. Revision 5 extends the catalog (§4.10) and adds a backlog
 > (§4.12). Revision 6 replans for the published beta.5: the version bump moves to a
 > prerequisite pull request, and each phase merges into `development` on its own (§4.8,
@@ -12,7 +12,10 @@
 > after 1.1.0, and where the two releases behave differently a recipe says so (§4.10, §8).
 > The runner also serves an empty app catalog
 > (D-14), Phase 0 gains a small follow-up (§4.9), and a later api-types version is adopted
-> the way beta.5 was (D-15). §9 lists what is settled and what is still open.
+> the way beta.5 was (D-15). §9 lists what is settled and what is still open. Revision 9
+> records Phase 3 as built: owner-bound and component recipes' cases live in the verification
+> app, which the runner installs together with a second, "rival" app that makes the duplicate
+> tab id (§4.1, §4.4, §4.6, D-17).
 >
 > Scope carved out of [`../developer-onboarding/developer-onboarding-roadmap.md`](../developer-onboarding/developer-onboarding-roadmap.md)
 > (items **B-2** recipes and **E-2** `llms.txt`). This document is self-contained and
@@ -145,8 +148,12 @@ cookbook/
     hosts.json            the supported releases and their tag commits (D-16)
     harness.ts            the part that runs inside the host page
     selftest-case.ts      a case that must fail (`--selftest`)
-    cases/<recipe-id>.ts
-    app/                  Phase 3: verification app, with its own package.json
+    cases/<recipe-id>.ts  host-wide recipes' cases, bundled by the runner
+    app/                  the verification app (§4.6), with its own package.json
+      src/                its entry, its tabs, and harness.ts (`harness.apis`)
+      cases/<recipe-id>.ts  owner-bound and component recipes' cases
+      behaviors/          cases of no recipe: duplicate tab id, disable
+      rival/              a second app, with a tab of the same id
 scripts/cookbook-index.mjs        index and llms generator, recipe checks
 scripts/cookbook-lib.mjs          what the generator and the runner share:
                                   the digest and the record check
@@ -261,18 +268,22 @@ satisfies `Pick<AppContextApis, 'panel'>`. Three checks cover this together:
    - `context.apis`, inside `mount(context)`;
    - the parameter of an `onClick` arrow function;
    - a `const` initialized from `useAppContext()?.apis`;
-   - in `runner/app` only, the single harness field assigned from `context.apis`.
+   - in `runner/app` only, `harness.apis`, where `harness` is imported from
+     `runner/app/src/harness.ts`. `mount()` assigns it from `context.apis`, and the generator
+     rejects any other write to it (`harness-assignment`, Phase 3).
 
    The generator recognizes those forms and nothing more. Aliases, destructuring, and passing
    `apis` through helper functions are rejected as untraceable, rather than traced. So the
    check stays small, and `window.CyWebApi` or an anonymous `use*Api` hook can never be
    the source. Each form is checked against the declaration the argument refers to,
    resolved through its lexical scopes, so a correct declaration in one function does not
-   vouch for the same name in another. In `runner/cases` no form is allowed yet: the
-   minimal runner gives every case `window.CyWebApi`. *(Both after the review of #27.)*
-3. **Behavior.** The verification app's cases (§4.6) include a duplicate tab id, where the
-   app's own tab must be selected, and a disable, after which the app's registrations must
-   be gone.
+   vouch for the same name in another. In `runner/cases` no form is allowed: the runner
+   gives those cases `window.CyWebApi`, and an owner-bound recipe's case lives in
+   `runner/app/cases` instead (`case-location`). *(After the review of #27, and Phase 3.)*
+3. **Behavior.** The verification app's behavior cases (§4.6) include a duplicate tab id,
+   where the app's own tab must be selected and the anonymous call selects the other app's,
+   and a disable, after which the app's registrations must be gone, an anonymous
+   registration must remain, and the app's `appData` must be kept.
 
 ### 4.5 Readiness
 
@@ -316,8 +327,10 @@ a use of `apis` that the `@apis` check cannot follow (anything but
 `apis.<domain>.<method>(…)`, or handing `apis` to another function of the same file); an
 `apis` type that is not a `Pick<…>` naming exactly the domains called; a recipe file with
 more or fewer than one exported function; a recipe without a case, and a case without a
-recipe. Every check has a fixture that `--selftest` sees failing, next to a control
-fixture that must pass.
+recipe. Phase 3 added two: a case in the wrong place for its recipe, or a second case
+(`case-location`), and a write to the verification app's `harness.apis` anywhere but the
+one in `mount()` (`harness-assignment`). Every check has a fixture that `--selftest` sees
+failing, next to a control fixture that must pass.
 
 **Runner** (minimal in Phase 1, extended in Phase 2):
 
@@ -358,33 +371,47 @@ which of those apps load. So, on every host:
   catalog is the means; this checks the end. Every entry is collected, whatever its
   origin, since an app can be served from the host's own. Only the host's own entry is
   set aside, by the exact URL it publishes in `window.__CYWEB_HOST__.remoteEntry` (both
-  supported releases do). In Phase 1 no app at all may load.
-- The verification app (below) is installed afterwards with `?installApp=`, so it is the
-  only app in the page.
+  supported releases do), and so are the verification app's and its rival's, which must
+  have loaded.
+- The verification app and its rival (below) are installed with `?installApp=`, so they
+  are the only apps in the page.
 
 **A run sends nothing to analytics.** A local host sends Google Analytics page views, and
 1.1.0 sends them without waiting for consent. The runner aborts those requests. It also
-closes the welcome dialog and the cookie banner that a fresh profile opens, by their own
-buttons, before it touches the toolbar.
+closes the cookie banner that a fresh profile opens, by its own button, and marks the
+welcome dialog as seen before the page loads (`localStorage`, `cyweb.onboarding`, the same
+on both releases). The welcome dialog opens when the host signals that it is ready, which
+can come after the install is confirmed: in Phase 3 it opened over a case's clicks.
+*(Phase 3; it was closed by its button before.)*
 
 **Verification app** (Phase 3), in `runner/app`, unpublished:
 
-1. The runner starts the app's dev server (§4.1), installs it with `?installApp=`, and
-   confirms the host's install dialog ("Install into this workspace?", **Install**).
-   Confirming an install link also turns the app on; this was seen on both releases.
-2. `mount()` only registers the app's resources and keeps `context.apis` on a test harness.
-   It runs no case and waits for no UI (§4.5).
-3. The runner waits until the app is active, using the pattern of the `smokeObservable`
-   checks in `apps.manifest.json`: open the right panel and wait for the app's panel to
-   render. Then it drives the cases through the harness. On 1.1.0 the right pane always
-   holds the Sub Network Viewer tab, first and selected by default, so the app's panel
-   renders only once its own tab is selected. The runner selects that tab by id. This is
-   also right on 1.1.1, where the Sub Network Viewer tab exists only for a hierarchy and
-   the app's panel comes first (#877).
-4. Component recipes render with React inside the app's panel or dialogs. Owner-bound
-   recipes run with the real per-app `apis`, including the duplicate tab id and disable
-   cases (§4.4). The runner disables the app through the host UI and asserts that its
-   registrations are gone.
+1. The runner starts the dev servers of the app and of its rival (§4.1) with Vite's
+   `createServer`, each app's directory as its root, and installs both with one
+   `?installApp=` link that names both manifests. It confirms the host's install dialog
+   ("Install into this workspace?", **Install**). Confirming an install link also turns
+   the apps on; this was seen on both releases.
+2. `mount()` registers the app's resources (two right-panel tabs and an Apps menu entry),
+   assigns `harness.apis = context.apis`, and publishes the app's cases on
+   `window.__cookbookApp`. It runs no case and waits for no UI (§4.5).
+3. The runner waits until the app is active: the app has published its cases, and its own
+   tab, opened by id, shows its panel. The pattern is the `smokeObservable` checks' of
+   `apps.manifest.json`, whose `openRightPanel` step is data that `preflight-apps.mjs` does
+   not perform, so the runner opens the tab itself. On 1.1.0 the right pane always holds
+   the Sub Network Viewer tab, first and selected by default, so the app's panel renders
+   only once its own tab is selected. Selecting by id is also right on 1.1.1, where the Sub
+   Network Viewer tab exists only for a hierarchy and the app's panel comes first (#877).
+4. The runner's bundle then runs the cases of `runner/cases` and those the app published,
+   with one context. The app's cases pass `harness.apis` to owner-bound recipes; component
+   recipes render with React, in the host's dialog. Cases that go through the host's UI
+   ask the runner for real input (`ctx.ui`: clicks, typing, right-clicks, the app's switch
+   in Apps ▸ Manage Apps...), which Playwright performs.
+5. **The rival app** has one tab with an id the verification app's second tab also uses,
+   ordered before it. It makes the duplicate tab id of §4.4 on both releases (D-17).
+6. The behavior cases run after the recipes' cases, and `behavior/disable` last: it turns
+   the app off through its switch and checks that its context menu item, layout, tabs and
+   menu entry are gone, that an item registered through `window.CyWebApi` is not, and that
+   its `appData` is kept.
 
 The public Cookbook app is a separate, optional Phase 6.
 
@@ -715,6 +742,21 @@ each asserted by a case or observed in a host of each release):
   (0, 0). 1.1.1 fixes both. `hide-by-threshold`'s case asserts the first by version; the
   second was seen by pressing Edit ▸ Undo on each host.
 
+**What Phase 3 found** (seen on 1.1.0 and 1.1.1 unless marked):
+
+- **`viewport.fit` fails with `APP5` right after a network is created**, until the renderer
+  has drawn it, and succeeds a few milliseconds later. Cases that need the network in view
+  retry it.
+- **What `appData` returns is the JSON round trip of what was stored, deeply frozen.**
+  `ui/persist-results-per-network` returns a copy of the stored form, the first time too, so
+  a fresh and a cached result look the same.
+- **An app's layout is named `<appId>::<id>`**, listed with its `appId` by
+  `layout.getAvailableLayouts`, and run by that name through `applyLayout`.
+- **Seen on 1.1.0, in the runner's browser:** a right-click that arrived with the pointer
+  straight from outside the canvas (from a dialog's button, or back from a link-out window)
+  opened no context menu. The runner moves the pointer over the node first, as a hand
+  does; it is not a claim about users.
+
 ### 4.11 Documents
 
 | Document | Contents |
@@ -802,7 +844,8 @@ the pinned commit and checks their structure. The README's `llms.txt` link follo
 merge into `main` that publishes it.
 
 **Phase 3 — Verification app** for the † recipes and component recipes, including the
-duplicate tab id and disable cases.
+duplicate tab id and disable cases. Built with a second, rival app for the duplicate tab id
+(D-17).
 
 **Phase 4 — Cross-links.** Link `hello-world` sections to their recipes. Update the roadmap's
 "Carved-out projects" table. (The tree in `design/README.md` was updated together with this
@@ -1060,6 +1103,13 @@ replaces (or, for the loop, seen hanging the page).
     then takes the place of 1.1.1 as the latest release; the floor's entry stays.
   - **Raising the floor** is a decision of its own, in one pull request that removes the
     old floor's entry and the version notes that no longer apply.
+
+- **D-17. A second unpublished app makes the duplicate tab id** (§4.4, §4.6). *(Revision 9.)*
+  The rival app in `runner/app/rival` registers a tab with the id of one of the
+  verification app's tabs, ordered first, so the anonymous `panel.open` selects the rival's
+  and the app's own selects its own, on both releases. Colliding with the host's Sub
+  Network Viewer tab (`sub-network-viewer`) was considered and not taken: it collides on
+  1.1.0 only, since from 1.1.1 that tab exists only for a hierarchy.
 
 **Open**
 

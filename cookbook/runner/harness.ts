@@ -1,12 +1,44 @@
 /**
  * The part of the runner that runs inside the host page.
  *
- * `run.mjs` bundles this file with every case, injects the bundle into a
- * running Cytoscape Web, and calls `window.__cookbookRunner.run(id, host)`
- * once per case. A case gets the anonymous `window.CyWebApi`, which is enough
- * for host-wide recipes. Owner-bound recipes run in the verification app.
+ * `run.mjs` bundles this file with the cases of `runner/cases`, injects the
+ * bundle into a running Cytoscape Web, and calls
+ * `window.__cookbookRunner.run(id, host)` once per case.
+ *
+ * The cases of owner-bound and component recipes live in the verification
+ * app (`runner/app`), which publishes them on `window.__cookbookApp` when it
+ * mounts. They run here too, with the same context: `ctx.apis` is the
+ * anonymous `window.CyWebApi`, and the app's own API object reaches those
+ * cases through the app's `harness.apis`, never through `ctx`.
  */
 import type { CyWebApiType, IdType } from 'cyweb/ApiTypes'
+
+/**
+ * What a user does, done by the runner with real mouse and keyboard events
+ * (Playwright). Selectors are Playwright's: `text="Apps"`,
+ * `[data-testid="…"]`, `role=menuitem[name="…"]`. Each action waits for its
+ * target, and fails the case if it does not appear.
+ */
+export interface CaseUi {
+  click: (selector: string) => Promise<void>
+  fill: (selector: string, text: string) => Promise<void>
+  press: (key: string) => Promise<void>
+  /** Whether `selector` names a visible element now. Does not wait. */
+  visible: (selector: string) => Promise<boolean>
+  /** Wait until `selector` names a visible element, or none. */
+  waitFor: (selector: string, state: 'visible' | 'hidden') => Promise<void>
+  /** Open the host's context menu on a node of the current network. */
+  rightClickNode: (nodeId: IdType) => Promise<void>
+  /**
+   * Click, and return the address of the window the click opened, or null
+   * when none opens within two seconds. The window is closed again. The
+   * runner answers `https://cookbook.invalid/` itself: nothing leaves the
+   * machine.
+   */
+  clickForPopup: (selector: string) => Promise<string | null>
+  /** Turn an app on or off with its switch in Apps ▸ Manage Apps.... */
+  setAppEnabled: (appId: string, enabled: boolean) => Promise<void>
+}
 
 export interface CaseContext {
   apis: CyWebApiType
@@ -38,13 +70,30 @@ export interface CaseContext {
   check: (condition: boolean, what: string) => void
   /** Wait until `condition` holds, or fail the case with `what`. */
   waitFor: (condition: () => boolean, what: string) => Promise<void>
+  /** Real user input, for cases that go through the host's own UI. */
+  ui: CaseUi
 }
 
 export interface RecipeCase {
-  /** The recipe's id: `<category>/<file name without extension>`. */
+  /**
+   * The recipe's id: `<category>/<file name without extension>`. A behavior
+   * case of the verification app, which belongs to no recipe, is
+   * `behavior/<file name>`.
+   */
   id: string
   run: (ctx: CaseContext) => void | Promise<void>
 }
+
+/** What the verification app publishes when it mounts. */
+export interface VerificationApp {
+  /** The app's id: its Module Federation name and `CyApp.id`. */
+  id: string
+  /** The cases of `runner/app/cases` and `runner/app/behaviors`. */
+  cases: RecipeCase[]
+}
+
+/** The runner's side of `CaseUi`, exposed by `run.mjs`. */
+type UiAction = (action: keyof CaseUi, ...args: unknown[]) => Promise<unknown>
 
 export interface CaseOutcome {
   id: string
@@ -63,7 +112,46 @@ export interface CookbookRunner {
 declare global {
   interface Window {
     __cookbookRunner?: CookbookRunner
+    __cookbookApp?: VerificationApp
+    __cookbookUi?: UiAction
   }
+}
+
+const uiAction = async (
+  action: keyof CaseUi,
+  ...args: unknown[]
+): Promise<unknown> => {
+  const perform = window.__cookbookUi
+  if (perform === undefined) {
+    throw new Error('the runner exposes no UI actions to this page')
+  }
+  return await perform(action, ...args)
+}
+
+const ui: CaseUi = {
+  click: async (selector) => {
+    await uiAction('click', selector)
+  },
+  fill: async (selector, text) => {
+    await uiAction('fill', selector, text)
+  },
+  press: async (key) => {
+    await uiAction('press', key)
+  },
+  visible: async (selector) => (await uiAction('visible', selector)) === true,
+  waitFor: async (selector, state) => {
+    await uiAction('waitFor', selector, state)
+  },
+  rightClickNode: async (nodeId) => {
+    await uiAction('rightClickNode', nodeId)
+  },
+  clickForPopup: async (selector) => {
+    const url = await uiAction('clickForPopup', selector)
+    return typeof url === 'string' ? url : null
+  },
+  setAppEnabled: async (appId, enabled) => {
+    await uiAction('setAppEnabled', appId, enabled)
+  },
 }
 
 /**
@@ -160,6 +248,7 @@ const runCase = async (
         await new Promise((resolve) => setTimeout(resolve, WAIT_STEP_MS))
       }
     },
+    ui,
   }
 
   let message = ''
@@ -188,16 +277,24 @@ const runCase = async (
   }
 }
 
+/** The bundled cases, then the verification app's, once it has mounted. */
+const allCases = (bundled: RecipeCase[]): RecipeCase[] => [
+  ...bundled,
+  ...(window.__cookbookApp?.cases ?? []),
+]
+
 export const installRunner = (cases: RecipeCase[]): void => {
   window.__cookbookRunner = {
-    ids: cases.map((c) => c.id),
+    get ids() {
+      return allCases(cases).map((c) => c.id)
+    },
     run: async (id, host) => {
-      const recipeCase = cases.find((c) => c.id === id)
+      const recipeCase = allCases(cases).find((c) => c.id === id)
       if (recipeCase === undefined) {
         return {
           id,
           pass: false,
-          message: `no case named ${id} in the bundle`,
+          message: `no case named ${id} in the bundle or the verification app`,
           cleanupErrors: [],
         }
       }
