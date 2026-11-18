@@ -43,7 +43,9 @@ import {
   readApiTypes,
   readHosts,
   uncommittedSources,
+  CASE_DIRS,
   COOKBOOK_DIR,
+  listBehaviors,
   listCases,
   listFiles,
   listRecipes,
@@ -370,9 +372,11 @@ const bindsName = (nameNode, name) => {
 /**
  * The declaration an identifier refers to, found by walking out through its
  * lexical scopes, as the compiler would. Returns
- * `{ kind: 'parameter', fn }`, `{ kind: 'const', declaration }`, `{ kind:
- * 'other' }` for any other binding (let, var, a destructured name, an import,
- * a loop or catch variable), or null when nothing in the file declares it.
+ * `{ kind: 'parameter', fn }`, `{ kind: 'const', declaration }`,
+ * `{ kind: 'import', from, imported }` (`imported` is the exported name,
+ * `'default'` or `'*'`), `{ kind: 'other' }` for any other binding (let, var,
+ * a destructured name, a loop or catch variable), or null when nothing in the
+ * file declares it.
  */
 const resolveBinding = (identifier) => {
   const name = identifier.text
@@ -424,20 +428,48 @@ const resolveBinding = (identifier) => {
       }
       if (
         ts.isImportDeclaration(statement) &&
-        statement.importClause !== undefined &&
-        (statement.importClause.name?.text === name ||
-          (statement.importClause.namedBindings !== undefined &&
-            (ts.isNamespaceImport(statement.importClause.namedBindings)
-              ? statement.importClause.namedBindings.name.text === name
-              : statement.importClause.namedBindings.elements.some(
-                  (element) => element.name.text === name,
-                ))))
+        statement.importClause !== undefined
       ) {
-        return { kind: 'other' }
+        const clause = statement.importClause
+        const from = statement.moduleSpecifier.text
+        if (clause.name?.text === name) {
+          return { kind: 'import', from, imported: 'default' }
+        }
+        const bindings = clause.namedBindings
+        if (bindings !== undefined && ts.isNamespaceImport(bindings)) {
+          if (bindings.name.text === name) {
+            return { kind: 'import', from, imported: '*' }
+          }
+        } else if (bindings !== undefined) {
+          const element = bindings.elements.find((e) => e.name.text === name)
+          if (element !== undefined) {
+            return {
+              kind: 'import',
+              from,
+              imported: (element.propertyName ?? element.name).text,
+            }
+          }
+        }
       }
     }
   }
   return null
+}
+
+/** The verification app's harness module, where `harness.apis` lives. */
+const HARNESS_MODULE = 'runner/app/src/harness'
+
+/** `context.apis`, where `context` is the parameter of mount(). */
+const isMountContextApis = (node) => {
+  if (
+    !ts.isPropertyAccessExpression(node) ||
+    node.name.text !== 'apis' ||
+    !ts.isIdentifier(node.expression)
+  ) {
+    return false
+  }
+  const owner = resolveBinding(node.expression)
+  return owner?.kind === 'parameter' && functionName(owner.fn) === 'mount'
 }
 
 /**
@@ -446,21 +478,29 @@ const resolveBinding = (identifier) => {
  * destructured name, `window.CyWebApi`, a `use*Api` hook. Each form is checked
  * against the declaration the argument actually refers to, so a name declared
  * correctly in one function does not vouch for the same name in another.
+ *
+ * `file` is the call site's path in the cookbook. `allowHarness` is true in
+ * the verification app only.
  */
-const isAllowedApisSource = (argument, allowHarness) => {
+const isAllowedApisSource = (argument, file, allowHarness) => {
   // 1. `context.apis`, where `context` is the parameter of mount().
+  if (isMountContextApis(argument)) return true
+  // 4. In the verification app only: `harness.apis`, where `harness` is the
+  //    object of the app's harness module. mount() assigns its one field
+  //    from context.apis (checked by readHarnessAssignments).
   if (
+    allowHarness &&
     ts.isPropertyAccessExpression(argument) &&
     argument.name.text === 'apis' &&
     ts.isIdentifier(argument.expression)
   ) {
-    const owner = resolveBinding(argument.expression)
-    if (owner?.kind === 'parameter' && functionName(owner.fn) === 'mount') {
-      return true
-    }
-    // 4. In the verification app only: the one harness field that mount()
-    //    assigned from context.apis.
-    return allowHarness && argument.expression.text === 'harness'
+    const binding = resolveBinding(argument.expression)
+    return (
+      binding?.kind === 'import' &&
+      binding.imported === 'harness' &&
+      binding.from.startsWith('.') &&
+      posix.join(posix.dirname(file), binding.from) === HARNESS_MODULE
+    )
   }
   if (!ts.isIdentifier(argument)) return false
 
@@ -515,7 +555,7 @@ const readCallSites = (cookbookDir, dir, recipes, problems) => {
         if (
           recipe?.ownerBound === true &&
           argument !== undefined &&
-          !isAllowedApisSource(argument, allowHarness)
+          !isAllowedApisSource(argument, path, allowHarness)
         ) {
           const { line } = source.getLineAndCharacterOfPosition(
             node.getStart(),
@@ -527,7 +567,10 @@ const readCallSites = (cookbookDir, dir, recipes, problems) => {
               `line ${line + 1}: ${recipe.functionName} needs an app's own ` +
               `API object, and "${argument.getText()}" is not one of the ` +
               `allowed forms (context.apis in mount, the onClick parameter, ` +
-              `a const from useAppContext()?.apis)`,
+              `a const from useAppContext()?.apis` +
+              (allowHarness
+                ? `, harness.apis imported from ${HARNESS_MODULE})`
+                : ')'),
           })
         }
       }
@@ -535,6 +578,71 @@ const readCallSites = (cookbookDir, dir, recipes, problems) => {
     }
     visit(source)
   }
+}
+
+/**
+ * The verification app's `harness.apis` is the app's own API object only if
+ * `mount()` is the one place that writes it, from `context.apis`. Every write
+ * to a `harness`'s `apis` in the app counts, whatever the operator, and so
+ * does `Object.assign(harness, …)`. Exactly one is allowed:
+ * `harness.apis = context.apis`, inside `mount(context)`.
+ */
+const readHarnessAssignments = (cookbookDir, problems) => {
+  const dir = 'runner/app'
+  if (!existsSync(join(cookbookDir, dir))) return
+  const writes = []
+  const files = listFiles(join(cookbookDir, dir)).filter((path) =>
+    /\.tsx?$/.test(path),
+  )
+  for (const file of files) {
+    const path = `${dir}/${file}`
+    const source = parse(path, readFileSync(join(cookbookDir, path), 'utf8'))
+    const at = (node) =>
+      `${path}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`
+    const isHarnessApis = (node) =>
+      (ts.isPropertyAccessExpression(node) && node.name.text === 'apis') ||
+      (ts.isElementAccessExpression(node) &&
+        ts.isStringLiteral(node.argumentExpression) &&
+        node.argumentExpression.text === 'apis')
+    const visit = (node) => {
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+        isHarnessApis(node.left) &&
+        ts.isIdentifier(node.left.expression) &&
+        node.left.expression.text === 'harness'
+      ) {
+        writes.push({
+          at: at(node),
+          allowed:
+            node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+            ts.isPropertyAccessExpression(node.left) &&
+            isMountContextApis(node.right),
+        })
+      }
+      if (
+        ts.isCallExpression(node) &&
+        node.expression.getText() === 'Object.assign' &&
+        node.arguments[0]?.getText() === 'harness'
+      ) {
+        writes.push({ at: at(node), allowed: false })
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(source)
+  }
+  if (writes.length === 1 && writes[0].allowed) return
+  problems.push({
+    code: 'harness-assignment',
+    file: dir,
+    message:
+      writes.length === 0
+        ? 'nothing assigns harness.apis: mount(context) must, from context.apis'
+        : `harness.apis is written ${writes.length === 1 ? 'once, but not as' : `${writes.length} times; only`} ` +
+          `"harness.apis = context.apis" in mount(context) is allowed ` +
+          `(${writes.map((w) => w.at).join(', ')})`,
+  })
 }
 
 // ── The whole tree ──────────────────────────────────────────────────────────
@@ -559,30 +667,50 @@ const readCookbook = (cookbookDir) => {
     }
   }
 
-  // Every recipe has a case, and every case has a recipe. A case file is
-  // named after its recipe and declares the recipe's id.
-  const cases = listCases(cookbookDir)
+  // Every recipe has one case, and every case has a recipe. A case file is
+  // named after its recipe and declares the recipe's id. A host-wide recipe's
+  // case is in runner/cases, which gets window.CyWebApi; an owner-bound or a
+  // component recipe's is in the verification app, which has the app's own
+  // API object and React.
+  const caseDirOf = (recipe) =>
+    recipe.ownerBound || recipe.isComponent ? CASE_DIRS.app : CASE_DIRS.core
+  const declaredId = (path) =>
+    /\bid:\s*'([^']+)'/.exec(readFileSync(join(cookbookDir, path), 'utf8'))?.[1]
+  const baseName = (path) => posix.basename(path).replace(/\.tsx?$/, '')
   const caseIds = new Set()
-  for (const file of cases) {
-    const text = readFileSync(
-      join(cookbookDir, 'runner', 'cases', file),
-      'utf8',
-    )
-    const id = /\bid:\s*'([^']+)'/.exec(text)?.[1]
-    if (id === undefined || !ids.has(id)) {
+  for (const path of listCases(cookbookDir)) {
+    const id = declaredId(path)
+    const recipe = recipes.find((r) => r.id === id)
+    if (recipe === undefined) {
       problems.push({
         code: 'orphan-case',
-        file: `runner/cases/${file}`,
+        file: path,
         message: `declares id ${id ?? '(none)'}, which is not a recipe`,
       })
-    } else if (id.split('/')[1] !== file.replace(/\.ts$/, '')) {
+    } else if (id.split('/')[1] !== baseName(path)) {
       problems.push({
         code: 'orphan-case',
-        file: `runner/cases/${file}`,
+        file: path,
         message: `is named differently from its recipe, ${id}`,
+      })
+    } else if (caseIds.has(id)) {
+      problems.push({
+        code: 'case-location',
+        file: path,
+        message: `is a second case for ${id}: a recipe has one`,
       })
     } else {
       caseIds.add(id)
+      const dir = caseDirOf(recipe)
+      if (!path.startsWith(`${dir}/`)) {
+        problems.push({
+          code: 'case-location',
+          file: path,
+          message:
+            `${id} is ${dir === CASE_DIRS.app ? 'owner-bound or a component' : 'host-wide'}, ` +
+            `so its case belongs in ${dir}/`,
+        })
+      }
     }
   }
   for (const recipe of recipes) {
@@ -591,18 +719,29 @@ const readCookbook = (cookbookDir) => {
         code: 'missing-case',
         file: recipe.path,
         message:
-          `no case at runner/cases/${recipe.id.split('/')[1]}.ts: a recipe ` +
-          `without a passing real-host case is not in the catalog`,
+          `no case at ${caseDirOf(recipe)}/${recipe.id.split('/')[1]}.ts: a ` +
+          `recipe without a passing real-host case is not in the catalog`,
+      })
+    }
+  }
+  // Behavior cases belong to no recipe. Each declares behavior/<file name>.
+  for (const path of listBehaviors(cookbookDir)) {
+    const id = declaredId(path)
+    if (id !== `behavior/${baseName(path)}`) {
+      problems.push({
+        code: 'orphan-case',
+        file: path,
+        message: `declares id ${id ?? '(none)'}, not behavior/${baseName(path)}`,
       })
     }
   }
 
   readCallSites(cookbookDir, 'wiring', recipes, problems)
-  // The minimal runner gives every case the anonymous window.CyWebApi, which
-  // is never an allowed source: an owner-bound recipe's case cannot live
-  // here until Phase 3 gives it an app's own API object.
+  // The runner gives these cases the anonymous window.CyWebApi, which is
+  // never an allowed source: no form is allowed here.
   readCallSites(cookbookDir, 'runner/cases', recipes, problems)
   readCallSites(cookbookDir, 'runner/app', recipes, problems)
+  readHarnessAssignments(cookbookDir, problems)
 
   return { recipes, problems }
 }

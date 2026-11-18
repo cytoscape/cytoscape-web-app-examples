@@ -41,7 +41,7 @@
       "cookbook/ is not a workspace (scripts/manifest.mjs would take it for an",
       "app), so its tsconfig is run here, after the workspaces' own."
     ],
-    "typecheck": "npm run typecheck --workspaces && tsc --noEmit -p cookbook",
+    "typecheck": "npm run typecheck --workspaces && tsc --noEmit -p cookbook && tsc --noEmit -p cookbook/runner/app",
     "test": "npm run test --workspaces --if-present",
     "verify:federation": "node scripts/verify-federation-build.mjs",
     "check:imports": "node scripts/check-imports.mjs",

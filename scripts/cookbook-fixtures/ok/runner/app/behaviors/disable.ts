@@ -1,4 +1,4 @@
 export default {
-  id: 'ui/open-panel',
+  id: 'behavior/disable',
   run: () => {},
 }

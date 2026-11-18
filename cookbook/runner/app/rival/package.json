@@ -1,0 +1,12 @@
+{
+  "name": "@cytoscape-web/cookbook-rival",
+  "description": "A second app for the cookbook's duplicate tab id case: it registers a right-panel tab with the same id as the verification app's. Unpublished.",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "cyweb": {
+    "id": "cookbookRival",
+    "displayName": "Cookbook rival",
+    "port": 6311
+  }
+}

@@ -9,7 +9,9 @@
     "cookbook/ is not an npm workspace (scripts/manifest.mjs would take it for",
     "an app), so the root `typecheck` script runs `tsc -p cookbook` itself.",
     "",
-    "runner/app (Phase 3) has its own tsconfig and is not included here."
+    "runner/app, the verification app, has its own tsconfig (it uses",
+    "vite/client and the virtual:cyweb-app-meta module, which a recipe must",
+    "not), and the root `typecheck` script runs it too."
   ],
   "include": ["recipes/**/*", "wiring/**/*", "runner/*.ts", "runner/cases/**/*"],
   "compilerOptions": {

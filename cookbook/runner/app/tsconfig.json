@@ -1,0 +1,32 @@
+{
+  "//": [
+    "The verification app, its rival, and their cases. Separate from",
+    "cookbook/tsconfig.json because these files use what an app has and a",
+    "recipe must not: import.meta.glob (vite/client) and the",
+    "virtual:cyweb-app-meta module. The recipes the cases import are checked",
+    "again here, with the same settings."
+  ],
+  "include": ["src/**/*", "cases/**/*", "behaviors/**/*", "rival/src/**/*"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": false,
+
+    "types": [
+      "@cytoscape-web/api-types",
+      "@cytoscape-web/app-runtime/meta",
+      "vite/client"
+    ]
+  }
+}
