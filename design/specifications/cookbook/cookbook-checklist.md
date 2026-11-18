@@ -5,14 +5,12 @@
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
-> #28; Phase 3 IMPLEMENTED (2026-11-18) in `591d91c`, all 27 cases passing on 1.1.0 and
-> 1.1.1, `docs/llms*.txt` regenerated in `7e5267f`, in review. Next: merge Phase 3; merge `development` into `main` so that Pages
-> serves `llms.txt`, then the README link.** The design is at
-> revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan for the
-> published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the reviews
-> of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of this
-> repository, which was level with `development` at `337d540`, the merge of #28, when
-> Phase 3 started.
+> #28; Phase 3 COMPLETE (2026-11-18), merged in #29. Next: Phase 4 (cross-links); merge
+> `development` into `main` so that Pages serves `llms.txt`, then the README link.** The
+> design is at revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan
+> for the published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the
+> reviews of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of
+> this repository, which is level with `development` at `e29574a`, the merge of #29.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -625,7 +623,7 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 
 ---
 
-## Phase 3: Verification app 🔄 **IMPLEMENTED (2026-11-18)** — `591d91c`, in review
+## Phase 3: Verification app ✅ **COMPLETE (2026-11-18)** — #29
 
 _Design: §4.1, §4.4, §4.5, §4.6, D-17_
 
@@ -704,7 +702,20 @@ Read at both tags on 2026-11-17. What they settled is noted.
       each release, 2026-11-18). The self-test passes on 1.1.0
 - [x] `docs/llms.txt` and `docs/llms-full.txt` regenerated for the pin `591d91c` in `7e5267f`;
       `--check` passes with them
-- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+- [x] The CI jobs pass on both a `push` and a `pull_request` run: on #29's head
+      ([44217971893](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44217971893),
+      `pull_request`, on the merge result) and on `development` after the merge
+      ([44226217946](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44226217946),
+      `push`). All nine jobs green each time, `Typecheck` now including `runner/app`; the
+      `Cookbook` job found the index, the record and `docs/llms*.txt` current
+- [x] **Merged into `development`**, with the current `verified.json` (D-12):
+      [#29](https://github.com/cytoscape/cytoscape-web-app-examples/pull/29), merge commit
+      `e29574a` (2026-11-18), a merge and not a squash. On `development` the last commit to
+      change `cookbook/` or `guides/` is still `591d91c`, the commit `docs/llms*.txt` pin,
+      `--check` passes there, and all 40 pinned GitHub links return 200. No review
+      comments: Codex reviewed the head (`a6ceb6b`) and found nothing, CodeRabbit skipped
+      the pull request (fewer than 10 stars), and Copilot did not run (its requester's
+      quota was used up)
 
 ---
 
