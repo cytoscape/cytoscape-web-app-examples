@@ -4,13 +4,13 @@
 > verification before starting the next phase.
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
-> Phase 1 COMPLETE (2026-11-17), merged in #27. Phase 2 BUILT and committed (2026-11-17):
-> 20 recipes pass on both hosts, `docs/llms*.txt` are generated; CI and the merge are
-> next.** The design is at revision 8: three
+> Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
+> #28. Next: merge `development` into `main` so that Pages serves `llms.txt`, then the
+> README link; Phase 3 can start in parallel.** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
-> `llms.txt` committed into `docs/`, a review after a pause, and the review of #27. Work
-> happens on the `cookbook` branch of this repository, which is level with `development`
-> at `4f1a2af`, the merge of #27.
+> `llms.txt` committed into `docs/`, a review after a pause, and the reviews of #27 and
+> #28. Work happens on the `cookbook` branch of this repository, which is level with
+> `development` at `337d540`, the merge of #28.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -479,7 +479,7 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
 
 ---
 
-## Phase 2: Catalog 🟡 **BUILT (2026-11-17)** — committed; CI and the merge are next
+## Phase 2: Catalog ✅ **COMPLETE (2026-11-18)** — #28
 
 _Design: §4.7, §4.10_
 
@@ -599,10 +599,22 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
       floor, a relative link, and a link to either repository's branch. A link-like text in
       code is not a link. `--selftest` runs these with the other 17 fixtures: 26 in all
 - [x] **The review of #28** (design §8): every fix seen failing on the code it replaces,
-      in its case, then the record refreshed on both hosts. Fourteen points from Codex,
-      Copilot and CodeRabbit, nine after merging duplicates
-- [ ] The CI jobs pass on both a `push` and a `pull_request` run
-- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+      in its case, then the record refreshed on both hosts. Nineteen comments from Codex,
+      Copilot and CodeRabbit, nine points after merging duplicates
+- [x] The CI jobs pass on both a `push` and a `pull_request` run: on #28's head
+      ([44183409444](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44183409444),
+      `pull_request`, including the merge-result check) and on `development` after the
+      merge ([44205429437](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44205429437),
+      `push`). All nine jobs green each time; the `Cookbook` job found the index, the record
+      and `docs/llms*.txt` current
+- [x] **Merged into `development`**, with the current `verified.json` (D-12):
+      [#28](https://github.com/cytoscape/cytoscape-web-app-examples/pull/28), merge commit
+      `337d540` (2026-11-18), a merge and not a squash. On `development` the last commit to
+      change `cookbook/` or `guides/` is still `d418a9c`, the commit `docs/llms*.txt` pin,
+      and all 35 pinned GitHub links return 200. Codex, Copilot and CodeRabbit raised 19
+      comments; all were answered and the 9 threads resolved. CodeRabbit does not review
+      later pushes in this repository (fewer than 10 stars), so the fixes were checked by
+      their cases and CI, not re-reviewed
 
 ### After the first merge into `main` that includes Phase 2
 
