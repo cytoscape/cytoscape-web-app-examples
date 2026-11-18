@@ -1,0 +1,74 @@
+# Cytoscape Web App Cookbook
+
+> Task-oriented recipes for Cytoscape Web apps: one TypeScript function per
+> task, with a header that says when to use it, what it changes, and what
+> not to do. Each compiles against the published API types and passed a
+> case in a running Cytoscape Web.
+
+- Examples commit: `d418a9c17121ae416a31bd7bcddbd8faba593051`. Every link below is pinned to it.
+- Verified on: Cytoscape Web 1.1.0 (`6619411b`) and Cytoscape Web 1.1.1 (`c3118c51`). Supported: 1.1.0 and later.
+- API types: `@cytoscape-web/api-types@1.0.0-beta.5`.
+
+Read [Using a recipe](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/USING-RECIPES.md) first: how to give a recipe `apis`, and what not to pass it.
+
+## Recipes: data
+
+- [Add a computed column: node degree](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/add-computed-column.ts): also asked as add a column, computed column, calculate degree, node degree, number of connections, count neighbors, derived attribute, write results to the table
+- [Join a table of values to the network by a key column](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/join-table-by-key.ts): also asked as import table, import data, join table, merge data, add attributes from a file, import TSV, load node attributes, map data onto nodes, attribute table
+- [Read a column's numbers safely](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/read-column-values-safely.ts): also asked as read column values, get numeric values, read a column, column to numbers, parse numbers from a column, column statistics, min and max of a column, missing values
+
+## Recipes: elements
+
+- [Connect the selected nodes to each other](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-edges-between-selected.ts): also asked as add edges between selected nodes, connect selected nodes, link selected nodes, make a clique, connect all pairs, fully connect selection
+- [Add nodes to a network, and connect them](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-nodes-to-network.ts): also asked as add nodes, create nodes, insert nodes, new nodes, add a chain of nodes, connect nodes, add edges between new nodes
+- [Delete the selected nodes and edges](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/delete-selected.ts): also asked as delete selection, remove selected, delete selected nodes, remove nodes, delete edges, clear selected elements
+
+## Recipes: events
+
+- [Follow the current network, and read it only when it is ready](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/events/follow-current-network.ts): also asked as current network changed, network switched, on network change, react to network switch, wait for network to load, network not loaded, APP1 after switching, refresh when the user opens another network
+
+## Recipes: layout
+
+- [Run a layout and wait for it to finish](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/layout/run-layout-and-wait.ts): also asked as apply layout, run layout, arrange nodes, layout network, wait for layout, force-directed layout, grid layout, re-layout, after layout
+
+## Recipes: network
+
+- [Create a network from a table of edges](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/create-network-from-table.ts): also asked as import network from table, network from rows, edge list with attributes, build a network from data, network from a spreadsheet, source target table, interaction table
+- [Create a new network from the selected nodes](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/subnetwork-from-selection.ts): also asked as subnetwork, extract selection, new network from selection, network from selected nodes, induced subgraph, sub-network, copy selection to a new network
+
+## Recipes: selection
+
+- [Select nodes or edges by a column's value](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-by-attribute.ts): also asked as select by attribute, select where, find nodes with, select matching nodes, filter selection, select by value, select by type, query nodes
+- [Select the neighbors of the selected nodes](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-neighbors.ts): also asked as first neighbors, select neighbors, expand selection, select adjacent nodes, second neighbors, neighborhood, n hops, k-hop neighborhood, grow selection
+
+## Recipes: style
+
+- [Color nodes by category](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-by-category.ts): also asked as color by type, color by group, color by class, categorical colors, discrete color mapping, one color per value, color by label, legend colors
+- [Color nodes by a numeric column](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-nodes-by-numeric-column.ts): also asked as color by score, color by value, heat map, heatmap, gradient, color scale, continuous color mapping, color nodes from blue to red, expression coloring
+- [Emphasize nodes past a threshold](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/emphasize-by-threshold.ts): also asked as highlight nodes above a value, mark significant nodes, threshold border, emphasize high scores, nodes over cutoff, outline nodes above a threshold, step mapping
+- [Hide nodes below a threshold](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/hide-by-threshold.ts): also asked as filter nodes, hide nodes, hide low values, show only nodes above, remove from view, cutoff filter, hide edges of hidden nodes, show again
+- [Highlight some nodes, and remove the highlight later](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/highlight-with-bypass.ts): also asked as highlight nodes, mark nodes, emphasize these nodes, flag nodes, outline nodes, temporary highlight, bypass, override style for some nodes
+- [Label nodes or edges from a column](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/label-from-column.ts): also asked as show labels, change label, label by column, display attribute, node label, edge label, show gene names, label mapping, passthrough mapping
+- [Set the style's defaults](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/set-style-defaults.ts): also asked as make every node red, change node color, change node shape, set default color, default size, background color, change the look of all nodes, style all edges
+- [Size nodes by their degree](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/size-nodes-by-degree.ts): also asked as size by degree, bigger nodes for hubs, node size by connections, scale nodes, hubs larger, node size mapping, size by number of edges
+
+## Wiring: where `apis` comes from
+
+- [wiring/from-apps-menu.ts](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-apps-menu.ts): Call site 2 of 4: the `onClick` of an `'apps-menu'` entry.
+- [wiring/from-mount.ts](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-mount.ts): Call site 1 of 4: `mount(context)` and `unmount()`.
+- [wiring/from-panel.tsx](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-panel.tsx): Call site 3 of 4: a React component, such as a `'right-panel'` panel.
+- [wiring/from-window.ts](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-window.ts): Call site 4 of 4: `window.CyWebApi`, from code that is not an app.
+
+## API reference
+
+- [App API reference](https://raw.githubusercontent.com/cytoscape/cytoscape-web/6619411b3e4f4367679cd69299c63abdb865121c/src/app-api/api_docs/Api.md): every method and event, as of Cytoscape Web 1.1.0
+
+## Optional
+
+- [Writing a recipe](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/WRITING-RECIPES.md): the contract every recipe meets
+- [getting-started.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/guides/getting-started.md): Scaffold, configure and run an app
+- [architecture-overview.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/guides/architecture-overview.md): Module Federation, the type system, API layers
+- [registration-patterns.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/guides/registration-patterns.md): Panels, menus and context menus
+- [lifecycle-and-cleanup.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/guides/lifecycle-and-cleanup.md): mount, unmount and what the host cleans up
+- [troubleshooting.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/guides/troubleshooting.md): Build and runtime errors
+- [llms-full.txt](https://cytoscape.org/cytoscape-web-app-examples/llms-full.txt): this file's recipes and wiring, in full

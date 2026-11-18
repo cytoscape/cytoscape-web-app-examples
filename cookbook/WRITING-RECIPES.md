@@ -124,6 +124,19 @@ passes one argument per element and throws a `RangeError` past about 120,000
 of them, and the host loads networks that large. Use a loop. A case can check
 this with a stubbed `apis` and 200,000 elements, as the two Phase 1 cases do.
 
+**Data is not code.** Values from the user's data, such as category names,
+column names and ids, become keys: build those objects with
+`Object.fromEntries` or `Object.create(null)`, not `obj[key] = value`, where
+`"__proto__"` sets the prototype instead of adding a key. Read a row's cells
+with `Object.hasOwn`: `row.toString` is a method, not a `toString` column.
+
+**Bound what the user's selection can cost.** Stop a quadratic loop as soon as
+its limit is passed, instead of listing everything and checking at the end.
+
+**A function a recipe returns keeps what it needs.** Copy the arrays it will
+use later (the caller may change them), and let an undo-like function (`clear`,
+`show`) act once: a second call must not remove what the user set since.
+
 **No React in a core recipe.** A component recipe is a React component that
 calls core functions of its own file and renders their results.
 
@@ -225,5 +238,47 @@ node scripts/cookbook-index.mjs --selftest # the checks themselves
 
 Then run the cases on both host releases, which refreshes
 [`verified.json`](verified.json): see [`runner/README.md`](runner/README.md).
-Commit the recipe, its case, the index and the record together. CI rejects a
-recipe whose record is stale.
+`node scripts/cookbook-index.mjs --check` must pass.
+
+### Two commits
+
+`docs/llms.txt` and `docs/llms-full.txt` link every recipe at a fixed commit:
+the last one that changed `cookbook/` or `guides/`. A file cannot name the
+commit that adds it, so they are regenerated after the sources are committed:
+
+1. Commit the recipe, its case, the index and the record together.
+2. Run `node scripts/cookbook-index.mjs --llms`. It refuses while `cookbook/`
+   or `guides/` has uncommitted changes, or while the record does not match.
+3. Commit `docs/llms.txt` and `docs/llms-full.txt` on their own.
+
+CI regenerates both files for the pinned commit and fails if they differ, so a
+forgotten step 2 is caught. A change to a guide moves the pin too. If the
+target branch also changed `cookbook/` or `guides/`, merge it into yours and
+regenerate: otherwise the merge itself would become the pinned commit.
+
+Do not squash these pull requests. A squash replaces the pinned commit with
+one the files do not name.
+
+## Host behaviors that surprise
+
+Seen on 1.1.0 and 1.1.1 while writing the Phase 2 recipes:
+
+- **A write to a row that does not exist reports success and does nothing.**
+  `setValue` and `setValues` change only existing rows. A network made with
+  `createNetworkFromEdgeList` has a row for every node and none for its edges.
+  `editRows` creates rows, and replaces a row whole.
+- **A mapping keeps its own fallback**, copied from the default when it was
+  made. Elements the mapping has no value for show that fallback, and a later
+  `setDefault` does not reach them.
+- **`createNetworkFromEdgeList` drops the third element** (`interaction`) of
+  each edge, and places every node at `[0, 0]`.
+- **Discrete mapping keys are text**, turned back into numbers for `integer`,
+  `long` and `double` columns only: a boolean column never matches.
+- **A column created later fills every row that exists then** with its default.
+  A row added afterwards has no value.
+- **A visibility bypass is `'none'` or `'element'`.** Only `'none'` hides; an
+  `'element'` bypass shows an element on purpose (from an import, the style
+  editor or an app).
+- **`importTableFromTsv` writes through `setValues`**, so it too reports a
+  match and writes nothing to an element without a row; and it skips a row
+  whose key cell is empty without reporting it.

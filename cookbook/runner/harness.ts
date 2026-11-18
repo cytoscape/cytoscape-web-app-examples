@@ -17,8 +17,21 @@ export interface CaseContext {
    * the current network, and it is deleted when the case ends, pass or fail.
    */
   createFixture: (edgeList: Array<[string, string]>) => IdType
+  /**
+   * Delete a network the recipe created when the case ends, pass or fail, as
+   * for a fixture.
+   */
+  adopt: (networkId: IdType) => void
   /** Map each node's `name` to its id. */
   nodeIdsByName: (networkId: IdType) => Record<string, IdType>
+  /**
+   * What the canvas shows for an element of the current network: one
+   * Cytoscape.js style property (`'display'`, `'border-width'`,
+   * `'background-color'`, …), read from the host's renderer, or null when
+   * the element is not drawn. Colors read as `rgb(r,g,b)`, sizes as `8px`.
+   * Only for checking what rendering does: recipes never touch the renderer.
+   */
+  rendered: (elementId: IdType, property: string) => string | null
   /** Run `undo` when the case ends, pass or fail. Last registered runs first. */
   onCleanup: (undo: () => void) => void
   /** Fail the case with `what` unless `condition` holds. */
@@ -53,6 +66,18 @@ declare global {
   }
 }
 
+/**
+ * The part of Cytoscape.js the cases read. The host publishes its renderer on
+ * `window.debug.cy` while debug is on, which the runner turns on; 1.1.0 and
+ * 1.1.1 both do.
+ */
+interface RenderedElements {
+  getElementById: (id: string) => {
+    length: number
+    style: (property: string) => unknown
+  }
+}
+
 const WAIT_LIMIT_MS = 5000
 const WAIT_STEP_MS = 25
 
@@ -68,6 +93,19 @@ const runCase = async (
   const apis = window.CyWebApi
   const cleanups: Array<() => void> = []
   let fixtureCount = 0
+
+  const deleteLater = (networkId: IdType): void => {
+    cleanups.push(() => {
+      // A case may delete the network itself. One that is gone needs nothing;
+      // run.mjs still fails the run on any network left behind.
+      const present = apis.workspace.getNetworkIds()
+      if (present.success && !present.data.networkIds.includes(networkId)) {
+        return
+      }
+      const deleted = apis.network.deleteNetwork(networkId)
+      if (!deleted.success) throw new Error(deleted.error.message)
+    })
+  }
 
   const check = (condition: boolean, what: string): void => {
     if (!condition) throw new CaseFailure(what)
@@ -90,17 +128,17 @@ const runCase = async (
         throw new CaseFailure(`fixture: ${created.error.message}`)
       }
       const { networkId } = created.data
-      cleanups.push(() => {
-        // A case may delete its own fixture. One that is gone needs nothing;
-        // run.mjs still fails the run on any network left behind.
-        const present = apis.workspace.getNetworkIds()
-        if (present.success && !present.data.networkIds.includes(networkId)) {
-          return
-        }
-        const deleted = apis.network.deleteNetwork(networkId)
-        if (!deleted.success) throw new Error(deleted.error.message)
-      })
+      deleteLater(networkId)
       return networkId
+    },
+    adopt: (networkId) => deleteLater(networkId),
+    rendered: (elementId, property) => {
+      const cy = (window as unknown as { debug?: { cy?: RenderedElements } })
+        .debug?.cy
+      const element = cy?.getElementById(elementId)
+      return element === undefined || element.length === 0
+        ? null
+        : String(element.style(property))
     },
     nodeIdsByName: (networkId) => {
       const table = apis.table.getTable(networkId, 'node', {

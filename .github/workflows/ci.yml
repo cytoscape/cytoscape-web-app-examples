@@ -323,13 +323,21 @@ jobs:
   # The cookbook's own gate. Types cannot see what this checks: a recipe header
   # that drifted from its code, a value import from the declarations-only
   # api-types package, an owner-bound domain reached through the wrong API
-  # object, a stale index, and a stale verification record.
+  # object, a stale index, a stale verification record, and a stale
+  # docs/llms.txt.
   #
   # The record is the point. CI cannot run the recipes: their cases need a
   # running Cytoscape Web of two releases (cookbook/runner/README.md). So a
   # change to cookbook/recipes, wiring or runner must arrive with a
   # cookbook/verified.json made from exactly those sources, and this job fails
   # when the digest, the api-types version or a supported host is missing.
+  #
+  # docs/llms.txt and docs/llms-full.txt pin every link to the last commit that
+  # changed cookbook/ or guides/. Pages serves main:/docs as committed, so both
+  # are committed, and this job regenerates them for that commit and compares.
+  # That needs full history (`git log -- cookbook guides`), and the commit the
+  # pull request actually contains: the default checkout of a pull_request is
+  # a merge commit that exists nowhere else.
   #
   # `tsc -p cookbook` itself runs in the Typecheck job, through the root
   # `typecheck` script.
@@ -339,6 +347,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
@@ -348,5 +359,14 @@ jobs:
       # everything looks the same as one that works.
       - name: Every generator check rejects its fixture
         run: node scripts/cookbook-index.mjs --selftest
-      - name: Recipes, index and verification record are current
+      - name: Recipes, index, verification record and docs/llms*.txt are current
         run: node scripts/cookbook-index.mjs --check
+      # If both sides changed cookbook/ or guides/, the merge commit becomes the
+      # last commit to change them, and the pin committed on the branch is
+      # stale the moment it merges. Ask for the target branch to be merged in
+      # first, and the files regenerated.
+      - name: The merge keeps the pin
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "+refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/merge"
+          node scripts/cookbook-index.mjs --check-merge refs/remotes/pull/merge

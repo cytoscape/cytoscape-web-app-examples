@@ -4,12 +4,13 @@
 > verification before starting the next phase.
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
-> Phase 1 DONE (2026-11-16), awaiting their merge into `development`. Next: Phase 2 —
-> start at its "Pre-read files".** The design is at revision 8: three
+> Phase 1 COMPLETE (2026-11-17), merged in #27. Phase 2 BUILT and committed (2026-11-17):
+> 20 recipes pass on both hosts, `docs/llms*.txt` are generated; CI and the merge are
+> next.** The design is at revision 8: three
 > reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
-> `llms.txt` committed into `docs/`, and a review after a pause. Work happens on the
-> `cookbook` branch of this repository, which is level with `development` at `1f1a902`
-> (#25 also removed an `npm pack` race from app-runtime's tests).
+> `llms.txt` committed into `docs/`, a review after a pause, and the review of #27. Work
+> happens on the `cookbook` branch of this repository, which is level with `development`
+> at `4f1a2af`, the merge of #27.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -194,7 +195,7 @@ listed here, and any other contradiction found on a page the cookbook will link 
 
 ---
 
-## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **DONE (2026-11-16)** — `4d38f6c`, not merged yet
+## Phase 0 follow-up: found in the review of 2026-11-16 ✅ **COMPLETE (2026-11-17)** — `4d38f6c`, merged in #27
 
 _Design: §4.9, §8 "Review after a pause", Goal 6, criterion 11, D-16_
 
@@ -255,13 +256,14 @@ Confirm each behavior in a running host of each release before changing the text
       (`grep -rni "enable" README.md CLAUDE.md guides/ */README.md`)
 - [x] `npm run typecheck` passes. `npm test` passes except the six `manifestCommand`
       tests of the known non-issue below; with `TMPDIR` resolved, all 413 pass
-- [ ] **Merged into `development`**, without a verification record (D-12), on its own or
-      together with Phase 1. Either way its commits come before the one that adds the
-      README link
+- [x] **Merged into `development`**, without a verification record (D-12), together with
+      Phase 1 in [#27](https://github.com/cytoscape/cytoscape-web-app-examples/pull/27)
+      (merge commit `4f1a2af`, 2026-11-17). Its commit `4d38f6c` comes before `1eac431`,
+      which adds the README link
 
 ---
 
-## Phase 1: Foundation and a minimal runner ✅ **DONE (2026-11-16)** — not committed or merged yet
+## Phase 1: Foundation and a minimal runner ✅ **COMPLETE (2026-11-17)** — #27
 
 _Design: §4.1–§4.6, §4.9 (README link), §4.10 (the three Phase 1 recipes), §4.11_
 
@@ -412,8 +414,14 @@ catalog grows.
 Hosts: dev servers from clean worktrees of the two tags, on `localhost:5500`, one at a
 time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
 
-- [ ] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5.
-      *(Passes locally. CI has not run yet: nothing is pushed)*
+- [x] `npm run typecheck`, including the cookbook, passes in CI on the registry beta.5:
+      on #27 (runs
+      [44148817210](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44148817210)
+      and
+      [44158581711](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44158581711)),
+      and on `development` after the merge
+      ([44161181883](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44161181883)),
+      all nine jobs green each time, the new `Cookbook` job included
 - [x] `node scripts/cookbook-index.mjs --check` passes, and every rejection fixture fails as
       expected
 - [x] The type check rejects an invented name: `'NODE_BACKGROUND_COLOR'` in place of
@@ -462,11 +470,16 @@ time. Their boot reports said `1.1.0` / `6619411b` and `1.1.1` / `c3118c51`.
         record as it was; the previous generator lets both new fixtures through
         (`apis-source-shadowed`, `apis-source-case`), and the new one rejects them;
         `--selftest` now runs 17 fixtures
-- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+- [x] **Merged into `development`**, with the current `verified.json` (D-12):
+      [#27](https://github.com/cytoscape/cytoscape-web-app-examples/pull/27), merge commit
+      `4f1a2af` (2026-11-17), a merge and not a squash, as §4.7 relies on. The record's
+      digest `c4f40a9f` matched on `development`: its `Cookbook` job passed. Codex,
+      Copilot and CodeRabbit raised 21 comments; all were answered and their 11 threads
+      resolved (design §8, "Review of #27")
 
 ---
 
-## Phase 2: Catalog ⬜ **NOT STARTED**
+## Phase 2: Catalog 🟡 **BUILT (2026-11-17)** — committed; CI and the merge are next
 
 _Design: §4.7, §4.10_
 
@@ -489,84 +502,105 @@ The other 17 host-wide recipes, and the generation path for `llms.txt` and
 ### Deliverables — recipes (§4.10)
 
 Each recipe has a complete header, covers the pitfall topics for its kind, and has a case
-(see the Recipe status table below), which passes on 1.1.0 and on 1.1.1. The notes marked
-"Releases:" come from the review of 2026-11-16 (design §4.10): the recipe's code behaves
-the same on both, and its header states the host's difference by version. "Check" means:
-observe it on a host of each release before the header states it.
+(see the Recipe status table below), which passes on 1.1.0 and on 1.1.1. What the host did
+that the recipes had to handle is in design §4.10, "What the host does that the Phase 2
+recipes had to handle".
 
-- [ ] `network/create-network-from-table`. Releases: on 1.1.0, after the call makes the
-      network current, the table browser and layout tools still act on the network shown
-      before; 1.1.1 fixes it (#927). A pitfall, by version
-- [ ] `network/subnetwork-from-selection`. Choose between `createNetworkFromNodeList` and
-      the CX2 round trip, and say why in the header. Releases: the same pitfall as above
-- [ ] `elements/add-edges-between-selected`
-- [ ] `elements/delete-selected`. Releases: 1.1.0 binds no Delete or Backspace key, 1.1.1
-      does (#867). Check what Edit ▸ Undo restores after the deletion on each (#857 is in
-      1.1.1 only)
-- [ ] `data/add-computed-column`, with degree as its example. Releases: names are compared
-      exactly on 1.1.0 and ignoring case on 1.1.1, where a clash fails with `AC6`. The
-      header says to choose a name that differs from existing ones by more than case
-- [ ] `data/read-column-values-safely`
-- [ ] `data/join-table-by-key`. Releases: TSV columns match existing ones exactly on 1.1.0
-      and ignoring case on 1.1.1. The case uses the existing columns' exact spelling, so it
-      passes on both
-- [ ] `style/size-nodes-by-degree`
-- [ ] `style/color-by-category`
-- [ ] `style/label-from-column`
-- [ ] `style/highlight-with-bypass`
-- [ ] `style/set-style-defaults`, whose "Don't" covers a bypass on every node
-- [ ] `style/emphasize-by-threshold`
-- [ ] `style/hide-by-threshold`. Releases: say what the FILTER tab's show mode (both) and
-      the Select menu's Show All (1.1.1 only) do to the elements the recipe hid. Check
-      whether selecting a hidden element shows it again on each (`0f8b7f42` is in 1.1.1
-      only)
-- [ ] `selection/select-neighbors`, taking a hop count
-- [ ] `selection/select-by-attribute`
-- [ ] `layout/run-layout-and-wait`. The example lays out the current network. Check which
-      view is fitted for a network that is not current; the fix (#964) is in neither
-      release, so both should behave alike. Name `fitAfterLayout: false` for that use
-- [ ] No recipe or case uses two column names that differ only by case (design §4.10)
+- [x] `network/create-network-from-table`. Releases: the 1.1.0 pitfall (#927) is stated by
+      version. **Writes edge values with `editRows`**: `setValues` reports success and
+      writes nothing on an edge-list network's edges, which have no rows (both releases)
+- [x] `network/subnetwork-from-selection`. Uses `createNetworkFromNodeList`, and copies
+      the source's style with `getVisualStyle` / `applyVisualStyle`: the host gives the
+      subnetwork a default style. Bypasses are not copied (asserted)
+- [x] `elements/add-edges-between-selected`
+- [x] `elements/delete-selected`. Releases: Edit ▸ Undo after a deletion, pressed on a
+      host of each release: 1.1.1 restores the nodes where they were; 1.1.0 restores them
+      without views, drawn at (0, 0), and its `deleteNodes` reports `[0, 0]` (#857)
+- [x] `data/add-computed-column`, with degree as its example. Refuses a name that differs
+      from an existing column only by case, on both releases
+- [x] `data/read-column-values-safely`
+- [x] `data/join-table-by-key`. Takes the file as TSV text and imports it by `keyColumn`;
+      refuses case clashes, duplicate keys and a typed header that contradicts an existing
+      column, on both releases. Converts Windows line endings
+- [x] `style/size-nodes-by-degree`
+- [x] `style/color-by-category`. Refuses boolean columns: discrete keys are text, and only
+      numeric columns get them converted back
+- [x] `style/label-from-column`
+- [x] `style/highlight-with-bypass`. `clear()` restores earlier bypasses instead of
+      deleting them (asserted)
+- [x] `style/set-style-defaults`, whose "Don't" covers a bypass on every node. Also
+      states, and its case shows on the canvas, that a mapping keeps the fallback it copied
+      when it was made: a later default does not reach mapped elements
+- [x] `style/emphasize-by-threshold`. A single control point makes a step; a value at the
+      threshold is emphasized (asserted on the canvas)
+- [x] `style/hide-by-threshold`. Releases: on 1.1.0 a selection change from code shows the
+      hidden node on the canvas again; on 1.1.1 it stays hidden. The case asserts each, by
+      version, through `window.debug.cy`
+- [x] `selection/select-neighbors`, taking a hop count
+- [x] `selection/select-by-attribute`
+- [x] `layout/run-layout-and-wait`. Which view is fitted, read at both tags: `applyLayout`
+      fits the laid-out network's own canvas, and a network without one is not fitted. The
+      recipe fits only a current network
+- [x] No recipe or case uses two column names that differ only by case (design §4.10)
+- [x] Added: the case harness gains `ctx.adopt` (delete a network the recipe made) and
+      `ctx.rendered` (read the canvas through `window.debug.cy`, which both releases
+      publish while debug is on), so cases check what is drawn, not only what is stored
 
 ### Deliverables — `llms.txt` and `llms-full.txt` (§4.7)
 
 Pages serves `main:/docs` **as committed** (`build_type: legacy`), so the files are generated
 and committed into `docs/`, never generated in a workflow (design D-13).
 
-- [ ] The generator writes `docs/llms.txt` and `docs/llms-full.txt`:
-  - [ ] The pinned commit is the last one that changed `cookbook/` or `guides/`
-        (`git log -1 -- cookbook guides`). Regenerate in a commit **after** the source change
-  - [ ] `llms.txt` links every recipe and wiring file through `raw.githubusercontent.com`
-        URLs pinned to that commit, and links the API reference pinned to the host commit in
-        `verified.json`
-  - [ ] `llms-full.txt` = `USING-RECIPES.md` + every wiring file + every recipe + pinned API
+- [x] The generator writes `docs/llms.txt` and `docs/llms-full.txt`
+      (`node scripts/cookbook-index.mjs --llms`):
+  - [x] The pinned commit is the last one that changed `cookbook/` or `guides/`
+        (`git log -1 -- cookbook guides`). `--llms` refuses while either has uncommitted
+        changes, so it is always run in a commit **after** the source change
+  - [x] `llms.txt` links every recipe and wiring file through `raw.githubusercontent.com`
+        URLs pinned to that commit, and links the API reference pinned to the floor
+        release's tag commit (design D-16). It also links `WRITING-RECIPES.md` and the five
+        guides under "Optional"
+  - [x] `llms-full.txt` = `USING-RECIPES.md` + every wiring file + every recipe + pinned API
         reference links. It does not copy the API reference
-  - [ ] Both open with the pinned examples commit, the host commit and the api-types version
-- [ ] The generator **refuses** when the digest does not match `verified.json`, or when the
-      api-types source is not the registry
-- [ ] `ci.yml`: a job that checks out **full history** (`fetch-depth: 0`), runs `--check` on
-      the index, regenerates `docs/llms*.txt` in memory for the pinned commit, fails on any
-      difference from the committed files, and runs the structure checks (§4.7). On
-      `pull_request` it checks out `github.event.pull_request.head.sha` explicitly
-- [ ] On `pull_request`, the same job inspects the default merge checkout and fails when the
-      last commit to change `cookbook/` or `guides/` there is the merge itself (both sides
-      changed linked sources)
-- [ ] `scripts/manifest.mjs`: add `llms.txt` and `llms-full.txt` to `RESERVED_PUBLISH_PATHS`,
-      because `copy-dist.mjs` deletes `docs/<publishPath>` before copying an app
-- [ ] `deploy-pages.yml` is **not** changed: its output is never served
+  - [x] Both open with the pinned examples commit, the host commits and the api-types
+        version
+- [x] The generator **refuses** when the digest does not match `verified.json`, when the
+      api-types source is not the registry, or when a supported host has no entry
+- [x] `ci.yml`: the `Cookbook` job checks out **full history** (`fetch-depth: 0`), runs
+      `--check` (index, record, `docs/llms*.txt` regenerated and compared, structure
+      checks). On `pull_request` it checks out `github.event.pull_request.head.sha`
+      explicitly
+- [x] On `pull_request`, the same job fetches `refs/pull/<n>/merge` and runs
+      `--check-merge` on it, which fails when the merge is the last commit to change
+      `cookbook/` or `guides/`
+- [x] `scripts/manifest.mjs`: `llms.txt` and `llms-full.txt` join `RESERVED_PUBLISH_PATHS`
+- [x] `deploy-pages.yml` is **not** changed: its output is never served
+- [x] **The files are committed**, in two steps as WRITING-RECIPES.md describes: the
+      sources, then the two files alone. First pinned to `46ebe17` (`3a8ec14`); after the
+      review of #28, regenerated for `d418a9c` (`0b66856`). `--check` finds them current
 
 ### Verification (Phase 2)
 
-- [ ] 20 recipes (Phases 1 and 2), and all their cases pass on 1.1.0 and on 1.1.1
-- [ ] The generator refuses a `verified.json` whose digest does not match, and one recorded
-      from a local tarball (**seen failing**, both)
-- [ ] The CI check fails when a recipe changes without regenerating `docs/llms*.txt`
-      (**seen failing**)
-- [ ] The merge-result check fails when `development` and the branch both changed a linked
-      source (**seen failing**)
-- [ ] `npm run manifest:validate` rejects an app whose `publishPath` is `llms.txt` or
-      `llms-full.txt` (**seen failing**)
-- [ ] The structure check fails on a fixture with a missing recipe, and on one with a link to
-      a nonexistent path
+Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
+
+- [x] 20 recipes (Phases 1 and 2), and all their cases pass on 1.1.0 and on 1.1.1. Two
+      consecutive runs on 1.1.0 left nothing behind. `--selftest` fails as it must on both
+- [x] The generator refuses a `verified.json` whose digest does not match, and one recorded
+      from a local tarball (**seen failing**, both, with scratch commits in a scratch
+      worktree; also uncommitted sources)
+- [x] The CI check fails when a linked source changes without regenerating
+      `docs/llms*.txt` (**seen failing**: a guide changed in a scratch commit)
+- [x] The merge-result check fails when both sides changed a linked source, and passes when
+      one side did (**seen**, with scratch branches and merges)
+- [x] `npm run manifest:validate` rejects an app whose `publishPath` is `llms.txt` or
+      `llms-full.txt` (**seen failing**, both)
+- [x] The structure check fails on a fixture with a missing recipe, and on one with a link
+      to a nonexistent path; also on a link with another pin, a host link not pinned to the
+      floor, a relative link, and a link to either repository's branch. A link-like text in
+      code is not a link. `--selftest` runs these with the other 17 fixtures: 26 in all
+- [x] **The review of #28** (design §8): every fix seen failing on the code it replaces,
+      in its case, then the record refreshed on both hosts. Fourteen points from Codex,
+      Copilot and CodeRabbit, nine after merging duplicates
 - [ ] The CI jobs pass on both a `push` and a `pull_request` run
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
@@ -739,23 +773,23 @@ the minimal runner; "App" means the Phase 3 verification app. Recipes still in t
 | ★ `elements/add-nodes-to-network` | Mutation | Runner | 1 | [x] | [x] |
 | ★ `style/color-nodes-by-numeric-column` | Numeric mapping | Runner | 1 | [x] | [x] |
 | `events/follow-current-network` | Events and async | Runner | 1 | [x] | [x] |
-| `network/create-network-from-table` | Mutation | Runner | 2 | [ ] | [ ] |
-| `network/subnetwork-from-selection` | Mutation | Runner | 2 | [ ] | [ ] |
-| `elements/add-edges-between-selected` | Mutation | Runner | 2 | [ ] | [ ] |
-| `elements/delete-selected` | Mutation | Runner | 2 | [ ] | [ ] |
-| `data/add-computed-column` | Mutation | Runner | 2 | [ ] | [ ] |
-| `data/read-column-values-safely` | Numeric mapping | Runner | 2 | [ ] | [ ] |
-| `data/join-table-by-key` | Mutation | Runner | 2 | [ ] | [ ] |
-| `style/size-nodes-by-degree` | Numeric mapping | Runner | 2 | [ ] | [ ] |
-| `style/color-by-category` | — | Runner | 2 | [ ] | [ ] |
-| `style/label-from-column` | — | Runner | 2 | [ ] | [ ] |
-| `style/highlight-with-bypass` | Mutation | Runner | 2 | [ ] | [ ] |
-| `style/set-style-defaults` | Mutation | Runner | 2 | [ ] | [ ] |
-| `style/emphasize-by-threshold` | Numeric mapping | Runner | 2 | [ ] | [ ] |
-| `style/hide-by-threshold` | Numeric mapping, Mutation | Runner | 2 | [ ] | [ ] |
-| `selection/select-neighbors` | — | Runner | 2 | [ ] | [ ] |
-| `selection/select-by-attribute` | — | Runner | 2 | [ ] | [ ] |
-| `layout/run-layout-and-wait` | Events and async | Runner | 2 | [ ] | [ ] |
+| `network/create-network-from-table` | Mutation | Runner | 2 | [x] | [x] |
+| `network/subnetwork-from-selection` | Mutation | Runner | 2 | [x] | [x] |
+| `elements/add-edges-between-selected` | Mutation | Runner | 2 | [x] | [x] |
+| `elements/delete-selected` | Mutation | Runner | 2 | [x] | [x] |
+| `data/add-computed-column` | Mutation | Runner | 2 | [x] | [x] |
+| `data/read-column-values-safely` | Numeric mapping | Runner | 2 | [x] | [x] |
+| `data/join-table-by-key` | Mutation | Runner | 2 | [x] | [x] |
+| `style/size-nodes-by-degree` | Numeric mapping | Runner | 2 | [x] | [x] |
+| `style/color-by-category` | — | Runner | 2 | [x] | [x] |
+| `style/label-from-column` | — | Runner | 2 | [x] | [x] |
+| `style/highlight-with-bypass` | Mutation | Runner | 2 | [x] | [x] |
+| `style/set-style-defaults` | Mutation | Runner | 2 | [x] | [x] |
+| `style/emphasize-by-threshold` | Numeric mapping | Runner | 2 | [x] | [x] |
+| `style/hide-by-threshold` | Numeric mapping, Mutation | Runner | 2 | [x] | [x] |
+| `selection/select-neighbors` | — | Runner | 2 | [x] | [x] |
+| `selection/select-by-attribute` | — | Runner | 2 | [x] | [x] |
+| `layout/run-layout-and-wait` | Events and async | Runner | 2 | [x] | [x] |
 | † `layout/register-app-layout` | — | App | 3 | [ ] | [ ] |
 | † `ui/menu-action-with-dialog` | — | App | 3 | [ ] | [ ] |
 | † `ui/link-out-from-node` | — | App | 3 | [ ] | [ ] |
@@ -769,10 +803,10 @@ Copy the record here each time it is refreshed.
 | Field | Value |
 |---|---|
 | api-types version and source | `1.0.0-beta.5`, registry |
-| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 3 cases |
-| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 3 cases |
-| Cookbook digest | `sha256:c4f40a9f13710d947c191d8ed2d5fbc89a17e2939c29f83cef00eb5061804bb9` |
-| Run date | 2026-11-17 (Phase 1, after the review of #27) |
+| Host entry for the floor (1.1.0, `6619411b`) | `1.1.0` / `6619411b`, 20 cases |
+| Host entry for the latest release (1.1.1, `c3118c51`) | `1.1.1` / `c3118c51`, 20 cases |
+| Cookbook digest | `sha256:a5de1c4d0592cfc37e500c9f2522adb0df0a0454fc7755a21bfa0cb7779c7260` |
+| Run date | 2026-11-17 (Phase 2, after the review of #28) |
 
 ---
 
@@ -808,7 +842,7 @@ Copy the record here each time it is refreshed.
       the scaffolder's version was bumped
 - [ ] 9 — A project scaffolded outside the monorepo pins the verified version and builds
 - [ ] 10 — The agent acceptance test is recorded above
-- [ ] 11 — The Phase 0 corrections and the follow-up landed before the README linked the
+- [x] 11 — The Phase 0 corrections and the follow-up landed before the README linked the
       cookbook
 
 ### Deferred, deliberately

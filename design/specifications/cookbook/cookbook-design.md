@@ -490,7 +490,28 @@ The same job runs the structure checks:
 
 - every recipe and wiring file appears;
 - every raw link names a path that exists at the pinned commit;
-- every API reference link uses the host commit from `verified.json`.
+- every API reference link uses the floor release's tag commit (D-16).
+
+**How it is built** (Phase 2). `node scripts/cookbook-index.mjs --llms` writes both files;
+`--check` regenerates them in memory and compares; `--check-merge <ref>` is the merge-result
+check, so that CI and a developer run the same code.
+
+- **Content comes from the working tree, which must equal the pinned commit.** `--llms`
+  refuses while `cookbook/` or `guides/` has uncommitted changes, so what it reads is what
+  the pinned commit holds. A fresh CI checkout is clean by construction. `--check` skips the
+  comparison, with a notice, on a working tree that is not.
+- **The structure checks run on what the sources generate**, and the comparison with the
+  committed files reports a stale file once, not once per link.
+- **`llms.txt` follows the llms.txt layout**: a summary, the three facts of the header, a
+  section per recipe category, the wiring, the API reference, and an "Optional" section with
+  `WRITING-RECIPES.md` and the guides. The guides are linked, which is why a change to
+  `guides/` moves the pin.
+- **`llms-full.txt`** fences every file in four backticks, so that a recipe's own code
+  spans cannot close the fence.
+- Every check was seen failing in a scratch worktree with scratch commits: a guide changed
+  without regenerating; a record with another digest; a record from a local install;
+  uncommitted sources; a merge whose sides both changed linked sources. A merge where only
+  one side did passes.
 
 **CI also rejects a stale verification record.** It recomputes the cookbook digest and the
 resolved api-types version, and fails when either differs from `verified.json`, when the
@@ -644,7 +665,11 @@ them.
   still act on the network shown before. 1.1.1 fixes it (#927).
   `network/create-network-from-table` and `network/subnetwork-from-selection` state the
   1.1.0 behavior as a pitfall, by version. Calls that take a `networkId` are not affected.
-- **`network/subnetwork-from-selection` has two possible bodies, and Phase 2 chooses.**
+- **`network/subnetwork-from-selection` uses `createNetworkFromNodeList`** *(decided in
+  Phase 2)*, then copies the source's active style with `getVisualStyle` and
+  `applyVisualStyle`: the host gives the subnetwork a default style. The text below records
+  the choice as it stood before.
+- **`network/subnetwork-from-selection` had two possible bodies, and Phase 2 chose.**
   `network.createNetworkFromNodeList` (in the types since beta.3, and in 1.1.0) makes the
   subnetwork in one call and copies ids, columns, attribute rows and positions; the
   reference does not say that it copies the visual style. Earlier revisions planned
@@ -669,6 +694,26 @@ them.
   names `fitAfterLayout: false` for any other.
 - **Keyboard shortcuts** (Undo, Redo, Select All, Delete) exist from 1.1.1. No catalog
   recipe handles keys, so nothing is needed on either.
+
+**What the host does that the Phase 2 recipes had to handle** (seen on 1.1.0 and 1.1.1,
+each asserted by a case or observed in a host of each release):
+
+- **`setValue` and `setValues` change only rows that exist, and report success either way.**
+  An edge-list network has no edge rows, so a write to an edge does nothing. `editRows`
+  creates rows, and replaces a row whole. `create-network-from-table` uses it, and the
+  failing case is how this was found. *A host defect: worth an issue upstream.*
+- **`createNetworkFromEdgeList` drops the third element of each edge** (`interaction`), and
+  puts every node at `[0, 0]`.
+- **A mapping keeps the fallback it copied from the default when it was made.** Elements it
+  has no value for show that fallback; a later `setDefault` does not reach them, so
+  "make every node red" does nothing to a mapped property.
+- **Discrete mapping keys are text,** converted back to numbers for numeric columns only.
+- **`applyLayout` fits the laid-out network's own canvas**; a network without one is laid
+  out and not fitted (#964 changed the menu's path, not the API's).
+- **On 1.1.0, a selection change from code shows hidden elements on the canvas** while the
+  style still hides them; and **undoing a deletion restores the nodes without views**, at
+  (0, 0). 1.1.1 fixes both. `hide-by-threshold`'s case asserts the first by version; the
+  second was seen by pressing Edit ▸ Undo on each host.
 
 ### 4.11 Documents
 
@@ -928,6 +973,24 @@ The other seven were checked and accepted:
 | 9 | `wiring/from-panel.tsx` does not refresh after its own button adds nodes | Accepted. It also reads on `network:changed` |
 | 10 | D-15 had the next phase merge carry the beta.6 record, but the adoption pull request itself would fail CI without one | Accepted. D-15 corrected |
 | 11 | On 1.1.1, an app the user turned off stays off; the READMEs said the apps turn on by themselves. The project-template README's `cd cytoscape-web` cannot work from `my-app` | Accepted. Both corrected in the READMEs and `CLAUDE.md` |
+
+### Review of #28, Phase 2 (2026-11-17)
+
+Codex and Copilot reviewed the head of #28, and CodeRabbit the same commit later. Every
+point was checked and accepted; each fix has a check in a case, seen failing on the code it
+replaces (or, for the loop, seen hanging the page).
+
+| # | Point | Disposition |
+|---|---|---|
+| 1 | `hide-by-threshold` took any visibility bypass for "hidden", so an element with an `'element'` bypass stayed visible (all three) | Only `'none'` counts. An `'element'` bypass is replaced while hidden and put back by `show()` |
+| 2 | `add-edges-between-selected` listed every missing pair before checking the limit: 10,000 nodes make 50 million (all three) | It stops at the limit. The previous code hung the page in the case's 20,000-node check |
+| 3 | A category named `__proto__` was dropped by `color-by-category` (all three); the same in `create-network-from-table`'s rows and `read-column-values-safely`'s values (CodeRabbit) | Objects keyed by data are built with `Object.fromEntries` or `Object.create(null)` |
+| 4 | `join-table-by-key` by `id` reported a match and stored nothing on edges with no row (Copilot) | With key `id`, missing rows are created first, and only those (`editRows`); the case reads the value back |
+| 5 | `llms-full.txt` kept `USING-RECIPES.md`'s relative links and a link to the host's `development` branch (Copilot, CodeRabbit) | Links are pinned when embedded; the structure check rejects relative links and unpinned GitHub links (four new fixtures) |
+| 6 | `create-network-from-table` read inherited properties as cells (`toString`) | It reads own cells only |
+| 7 | `highlight-with-bypass` kept the caller's array; `clear()` and `show()` acted again on a second call | A private copy; each acts once |
+| 8 | `join-table-by-key` let the host skip an empty key unreported, and refused a file over two unrelated old columns that clash with each other | An empty key is refused; only the file's own columns are checked for case clashes |
+| 9 | The layout case filtered events by the fixture's network, so it could not see an event for the failed call | It records every event, and asserts none for the failed call |
 
 ## 9. Decisions
 
