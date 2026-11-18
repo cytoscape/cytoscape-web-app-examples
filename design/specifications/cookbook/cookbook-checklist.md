@@ -6,7 +6,7 @@
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
 > #28; Phase 3 IMPLEMENTED (2026-11-18) in `591d91c`, all 27 cases passing on 1.1.0 and
-> 1.1.1, in review. Next: merge Phase 3; merge `development` into `main` so that Pages
+> 1.1.1, `docs/llms*.txt` regenerated in `7e5267f`, in review. Next: merge Phase 3; merge `development` into `main` so that Pages
 > serves `llms.txt`, then the README link.** The design is at
 > revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan for the
 > published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the reviews
@@ -702,6 +702,8 @@ Read at both tags on 2026-11-17. What they settled is noted.
       (`apis-source-app-*`); `--selftest` passes 31 fixtures
 - [x] `verified.json` is refreshed; its digest now covers `runner/app` (`e0e5c1f2…`, 27 cases on
       each release, 2026-11-18). The self-test passes on 1.1.0
+- [x] `docs/llms.txt` and `docs/llms-full.txt` regenerated for the pin `591d91c` in `7e5267f`;
+      `--check` passes with them
 - [ ] **Merged into `development`**, with the current `verified.json` (D-12)
 
 ---
