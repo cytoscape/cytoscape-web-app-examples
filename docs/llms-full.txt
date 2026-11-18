@@ -5,7 +5,7 @@
 > not to do. Each compiles against the published API types and passed a
 > case in a running Cytoscape Web.
 
-- Examples commit: `d418a9c17121ae416a31bd7bcddbd8faba593051`. Every link below is pinned to it.
+- Examples commit: `591d91c01c29da1566070f20e4240dd50f05e48d`. Every link below is pinned to it.
 - Verified on: Cytoscape Web 1.1.0 (`6619411b`) and Cytoscape Web 1.1.1 (`c3118c51`). Supported: 1.1.0 and later.
 - API types: `@cytoscape-web/api-types@1.0.0-beta.5`.
 
@@ -18,7 +18,7 @@ A recipe is one TypeScript file that performs one task in Cytoscape Web, such as
 says when to use it, what it changes, and what goes wrong.
 
 This page is for developers and for coding agents. The index is
-[README.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/README.md).
+[README.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/README.md).
 
 ## 1. Find the recipe
 
@@ -40,19 +40,22 @@ Copy the file as it is, for example to `src/recipes/`, and import its function.
   code, so importing a value from it (`ok`, `fail`, `VisualPropertyName`)
   compiles and then fails in the browser.
 - A recipe imports nothing else, so one file is all you need.
+- A `.tsx` recipe is a React component, or opens one. It also imports React
+  and `@mui/material`, which an app built with `defineCyWebApp` gets from the
+  host. Import MUI from its root, as the recipe does.
 
 ## 3. Give it `apis`
 
 Every recipe takes `apis` as its first argument. Where `apis` comes from
-depends on where you call the recipe. [`wiring/`](https://github.com/cytoscape/cytoscape-web-app-examples/tree/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring) has one compiled
+depends on where you call the recipe. [`wiring/`](https://github.com/cytoscape/cytoscape-web-app-examples/tree/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring) has one compiled
 example per call site.
 
 | You are in | `apis` is | Example |
 |---|---|---|
-| `mount(context)` | `context.apis` | [`wiring/from-mount.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-mount.ts) |
-| the `onClick` of an `'apps-menu'` entry | the `apis` parameter | [`wiring/from-apps-menu.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-apps-menu.ts) |
-| a React component | `useAppContext()?.apis`, or the `use*Api` hooks | [`wiring/from-panel.tsx`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-panel.tsx) |
-| a script that is not an app | `await window.CyWebApi.whenReady()` | [`wiring/from-window.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-window.ts) |
+| `mount(context)` | `context.apis` | [`wiring/from-mount.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-mount.ts) |
+| the `onClick` of an `'apps-menu'` entry | the `apis` parameter | [`wiring/from-apps-menu.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-apps-menu.ts) |
+| a React component | `useAppContext()?.apis`, or the `use*Api` hooks | [`wiring/from-panel.tsx`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-panel.tsx) |
+| a script that is not an app | `await window.CyWebApi.whenReady()` | [`wiring/from-window.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-window.ts) |
 
 **Look at the type of the recipe's `apis` parameter.** It decides which of
 these you may use.
@@ -94,14 +97,14 @@ Four different things are easy to take for one.
 3. **A network's data is loaded.** This is per network. After a page reload,
    `network:switched` arrives before the network's tables do, and a read made
    then fails with `APP1`. Use
-   [`events/follow-current-network`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/events/follow-current-network.ts).
+   [`events/follow-current-network`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/events/follow-current-network.ts).
 4. **Your app is active.** The host calls `mount()`, waits for it to return,
    and only then shows the app's panels and dialogs. So `mount()` must never
    wait for the app's own UI.
 
 ## 6. What "verified" means
 
-[`verified.json`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/verified.json) records what the recipes were checked with:
+[`verified.json`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/verified.json) records what the recipes were checked with:
 
 - the `@cytoscape-web/api-types` version every file compiles against, with
   library checking on;
@@ -145,7 +148,7 @@ network, and choose your entry in the **Apps** menu.
 
 ## cookbook/wiring/from-apps-menu.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-apps-menu.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-apps-menu.ts
 
 ````typescript
 /**
@@ -161,6 +164,9 @@ import type { ResourceDeclaration } from 'cyweb/ApiTypes'
 
 import { addNodesToNetwork } from '../recipes/elements/add-nodes-to-network'
 import { colorNodesByNumericColumn } from '../recipes/style/color-nodes-by-numeric-column'
+import { openSelectByNameDialog } from '../recipes/ui/menu-action-with-dialog'
+import { openOwnPanel } from '../recipes/ui/open-own-panel-after-action'
+import { computeOncePerNetwork } from '../recipes/ui/persist-results-per-network'
 
 export const menuEntries: ResourceDeclaration[] = [
   {
@@ -201,12 +207,57 @@ export const menuEntries: ResourceDeclaration[] = [
       if (!colored.success) console.error(colored.error.message)
     },
   },
+  {
+    // An action that needs input opens a dialog, and returns.
+    slot: 'apps-menu',
+    id: 'SelectByName',
+    label: 'Select nodes by name…',
+    requires: { network: true },
+    onClick: (apis) => {
+      const opened = openSelectByNameDialog(apis)
+      if (!opened.success) console.error(opened.error.message)
+    },
+  },
+  {
+    // A result kept per network, then shown in this app's own tab: a
+    // 'right-panel' resource with the id 'Summary', which reads the stored
+    // result for the current network.
+    slot: 'apps-menu',
+    id: 'Summarize',
+    label: 'Summarize the network',
+    requires: { network: true },
+    onClick: (apis) => {
+      const current = apis.workspace.getCurrentNetworkId()
+      if (!current.success) return
+      const { networkId } = current.data
+
+      const summary = computeOncePerNetwork(apis, networkId, 'summary', () => {
+        const nodes = apis.element.getNodeIds(networkId)
+        const edges = apis.element.getEdgeIds(networkId)
+        if (!nodes.success) return nodes
+        if (!edges.success) return edges
+        return {
+          success: true,
+          data: {
+            nodes: nodes.data.nodeIds.length,
+            edges: edges.data.edgeIds.length,
+          },
+        }
+      })
+      if (!summary.success) {
+        console.error(summary.error.message)
+        return
+      }
+      const shown = openOwnPanel(apis, 'Summary')
+      if (!shown.success) console.error(shown.error.message)
+    },
+  },
 ]
 ````
 
 ## cookbook/wiring/from-mount.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-mount.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-mount.ts
 
 ````typescript
 /**
@@ -222,11 +273,28 @@ Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d
 import type { AppContext, CyAppWithLifecycle, IdType } from 'cyweb/ApiTypes'
 
 import { followCurrentNetwork } from '../recipes/events/follow-current-network'
+import { registerGridLayout } from '../recipes/layout/register-app-layout'
+import { addLinkOut } from '../recipes/ui/link-out-from-node'
 
 let stopFollowing: (() => void) | null = null
 
 export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
   mount(context: AppContext): void {
+    // Owner-bound registrations: made for this app, so the host removes them
+    // when the app is disabled. Registering is synchronous; nothing here
+    // waits for anything.
+    const layout = registerGridLayout(context.apis, {
+      id: 'grid',
+      displayName: 'Grid (selected nodes)',
+    })
+    if (!layout.success) console.error(layout.error.message)
+    const linkOut = addLinkOut(context.apis, {
+      label: 'Open in NCBI Gene',
+      column: 'name',
+      url: (term) => `https://www.ncbi.nlm.nih.gov/gene/?term=${term}`,
+    })
+    if (!linkOut.success) console.error(linkOut.error.message)
+
     const read = (networkId: IdType): boolean => {
       const nodes = context.apis.element.getNodeIds(networkId)
       // false: the data has not arrived yet, so the recipe reads again when
@@ -242,6 +310,8 @@ export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
     if (following.success) stopFollowing = following.data.stop
   },
 
+  // The host removes the layout and the context menu item itself. Only what
+  // the host does not know about is undone here.
   unmount(): void {
     stopFollowing?.()
     stopFollowing = null
@@ -251,7 +321,7 @@ export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
 
 ## cookbook/wiring/from-panel.tsx
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-panel.tsx
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-panel.tsx
 
 ````typescript
 /**
@@ -376,7 +446,7 @@ export default ExamplePanel
 
 ## cookbook/wiring/from-window.ts
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/wiring/from-window.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-window.ts
 
 ````typescript
 /**
@@ -420,7 +490,7 @@ export async function addChainFromPage(): Promise<ApiResult<AddedElements>> {
 
 ## Add a computed column: node degree
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/add-computed-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/add-computed-column.ts
 
 ````typescript
 /**
@@ -571,7 +641,7 @@ export function addDegreeColumn(
 
 ## Join a table of values to the network by a key column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/join-table-by-key.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/join-table-by-key.ts
 
 ````typescript
 /**
@@ -822,7 +892,7 @@ export function joinTableByKey(
 
 ## Read a column's numbers safely
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/data/read-column-values-safely.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/read-column-values-safely.ts
 
 ````typescript
 /**
@@ -973,7 +1043,7 @@ export function readNumericColumn(
 
 ## Connect the selected nodes to each other
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-edges-between-selected.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/add-edges-between-selected.ts
 
 ````typescript
 /**
@@ -1107,7 +1177,7 @@ export function addEdgesBetweenSelected(
 
 ## Add nodes to a network, and connect them
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/add-nodes-to-network.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/add-nodes-to-network.ts
 
 ````typescript
 /**
@@ -1267,7 +1337,7 @@ export function addNodesToNetwork(
 
 ## Delete the selected nodes and edges
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/elements/delete-selected.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/delete-selected.ts
 
 ````typescript
 /**
@@ -1384,7 +1454,7 @@ export function deleteSelected(
 
 ## Follow the current network, and read it only when it is ready
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/events/follow-current-network.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/events/follow-current-network.ts
 
 ````typescript
 /**
@@ -1512,9 +1582,178 @@ export function followCurrentNetwork(
 }
 ````
 
+## Add a layout of your own to the Layout menu
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/layout/register-app-layout.ts
+
+````typescript
+/**
+ * @recipe Add a layout of your own to the Layout menu
+ * @aliases custom layout, register a layout, layout algorithm, my own layout,
+ *   grid layout, lay out the selected nodes, arrange selected nodes, layout
+ *   plugin
+ * @apis resource.registerLayout
+ * @related layout/run-layout-and-wait, selection/select-neighbors,
+ *   selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * The user wants an arrangement the host does not offer, picked from the
+ * Layout menu like a built-in one or run from code. This one puts the
+ * selected nodes in a grid and leaves every other node where it is, which no
+ * built-in layout can do: `layout.applyLayout` lays out the whole network.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object, normally `context.apis` in `mount()`.
+ *   Registering is synchronous: register before anything `mount()` awaits.
+ * - `id` is unique among this app's layouts.
+ *
+ * ## Side effects
+ *
+ * - Adds `displayName` to the Layout menu and to Layout ▸ Settings..., where
+ *   the user can change `Spacing` and `Selected only`. Registering the same
+ *   `id` again replaces the layout and resets both to their defaults.
+ * - The host removes the layout when the app is disabled. The app removes it
+ *   itself with `apis.resource.unregisterLayout(id)`.
+ * - A run changes no position until `run` returns. Through
+ *   `layout.applyLayout`, the host then moves every node in the result at
+ *   once and records **one** undo entry, as for a built-in layout.
+ *
+ * ## Pitfalls
+ *
+ * - **The algorithm's name is qualified.** To run it from code, pass
+ *   `<appId>::<id>` as `algorithmName` to `layout.applyLayout`.
+ *   `layout.getAvailableLayouts()` lists it with its `appId`.
+ * - **`run` sees snapshots,** taken when the run starts: positions, the
+ *   selection and the parameter values. `context.networkId` is the network
+ *   being laid out, which need not be the current one: read nothing else.
+ * - **Return only the nodes you move.** A node missing from the result keeps
+ *   its position. Ids that are not nodes of the network, and positions that
+ *   are not two finite numbers, are ignored.
+ * - **A throw or a rejection aborts the run**: no node moves, and no undo
+ *   entry is recorded. The recipe's `run` does not throw.
+ * - **A parameter's key is its `displayName`,** and its value is typed by its
+ *   declaration: a `checkBox` gives a boolean, a `text` with
+ *   `validationType: 'number'` a number. Read it with a fallback anyway.
+ * - **An empty selection** lays out every node: "Selected only" with nothing
+ *   selected would otherwise do nothing, and look broken.
+ * - Mutation topics: the host applies the result in one step, so a batch is
+ *   already what happens; a failed run leaves everything as it was; the undo
+ *   unit is the run.
+ *
+ * ## Don't
+ *
+ * - Don't move nodes with `viewport.updateNodePositions` from a menu item to
+ *   imitate a layout: it is not in the Layout menu, has no settings, and
+ *   records no undo entry.
+ * - Don't register it in a panel component's effect. Register it in
+ *   `mount()`, which runs once each time the app is turned on.
+ * - Don't keep state between runs in `run`'s closure: the same layout may run
+ *   on several networks.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: `context.apis` in
+ * `mount()` (`wiring/from-mount.ts`), or the `onClick` parameter of an
+ * `'apps-menu'` entry (`wiring/from-apps-menu.ts`). `window.CyWebApi` has no
+ * `resource` domain.
+ */
+import type {
+  AppContextApis,
+  ApiResult,
+  LayoutPositions,
+  LayoutRunContext,
+} from 'cyweb/ApiTypes'
+
+export interface GridLayoutOptions {
+  /** Slot-local id. The algorithm's name is `<appId>::<id>`. */
+  id: string
+  /** The Layout menu's text. */
+  displayName: string
+  /** Distance between neighboring nodes, until the user changes it. */
+  spacing?: number
+}
+
+const SPACING = 'Spacing'
+const SELECTED_ONLY = 'Selected only'
+
+/** The selected nodes (all of them when none is) in a grid. */
+const gridOfSelection = (
+  context: LayoutRunContext,
+  defaultSpacing: number,
+): LayoutPositions => {
+  const spacingValue = context.parameters[SPACING]
+  const spacing =
+    typeof spacingValue === 'number' && spacingValue > 0
+      ? spacingValue
+      : defaultSpacing
+  const selectedOnly = context.parameters[SELECTED_ONLY] !== false
+  const ids =
+    selectedOnly && context.selectedNodeIds.length > 0
+      ? context.selectedNodeIds
+      : context.nodes.map((node) => node.id)
+
+  // The grid starts where the top-left of these nodes is now. A loop, not
+  // Math.min(...xs): a network-sized spread throws.
+  let left = Infinity
+  let top = Infinity
+  for (const id of ids) {
+    const position = context.positions[id]
+    if (position === undefined) continue
+    left = Math.min(left, position[0])
+    top = Math.min(top, position[1])
+  }
+  if (!Number.isFinite(left) || !Number.isFinite(top)) {
+    left = 0
+    top = 0
+  }
+
+  const columns = Math.max(1, Math.ceil(Math.sqrt(ids.length)))
+  return Object.fromEntries(
+    ids.map((id, index) => [
+      id,
+      [
+        left + (index % columns) * spacing,
+        top + Math.floor(index / columns) * spacing,
+      ],
+    ]),
+  )
+}
+
+export function registerGridLayout(
+  apis: Pick<AppContextApis, 'resource'>,
+  options: GridLayoutOptions,
+): ApiResult<{ resourceId: string }> {
+  const spacing = options.spacing ?? 80
+  return apis.resource.registerLayout({
+    id: options.id,
+    displayName: options.displayName,
+    description: 'Puts the selected nodes in a grid. Other nodes stay put.',
+    type: 'geometric',
+    parameters: [
+      {
+        displayName: SPACING,
+        description: 'Distance between neighboring nodes',
+        type: 'text',
+        validationType: 'number',
+        defaultValue: spacing,
+      },
+      {
+        displayName: SELECTED_ONLY,
+        description: 'Lay out only the selected nodes, if any are selected',
+        type: 'checkBox',
+        defaultValue: true,
+      },
+    ],
+    run: (context) => gridOfSelection(context, spacing),
+  })
+}
+````
+
 ## Run a layout and wait for it to finish
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/layout/run-layout-and-wait.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/layout/run-layout-and-wait.ts
 
 ````typescript
 /**
@@ -1633,7 +1872,7 @@ export async function runLayoutAndWait(
 
 ## Create a network from a table of edges
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/create-network-from-table.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/network/create-network-from-table.ts
 
 ````typescript
 /**
@@ -1859,7 +2098,7 @@ export function createNetworkFromTable(
 
 ## Create a new network from the selected nodes
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/network/subnetwork-from-selection.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/network/subnetwork-from-selection.ts
 
 ````typescript
 /**
@@ -2014,7 +2253,7 @@ export function subnetworkFromSelection(
 
 ## Select nodes or edges by a column's value
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-by-attribute.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/selection/select-by-attribute.ts
 
 ````typescript
 /**
@@ -2135,7 +2374,7 @@ export function selectByAttribute(
 
 ## Select the neighbors of the selected nodes
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/selection/select-neighbors.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/selection/select-neighbors.ts
 
 ````typescript
 /**
@@ -2268,7 +2507,7 @@ export function selectNeighbors(
 
 ## Color nodes by category
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-by-category.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/color-by-category.ts
 
 ````typescript
 /**
@@ -2420,7 +2659,7 @@ export function colorByCategory(
 
 ## Color nodes by a numeric column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/color-nodes-by-numeric-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/color-nodes-by-numeric-column.ts
 
 ````typescript
 /**
@@ -2596,7 +2835,7 @@ export function colorNodesByNumericColumn(
 
 ## Emphasize nodes past a threshold
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/emphasize-by-threshold.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/emphasize-by-threshold.ts
 
 ````typescript
 /**
@@ -2749,7 +2988,7 @@ export function emphasizeByThreshold(
 
 ## Hide nodes below a threshold
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/hide-by-threshold.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/hide-by-threshold.ts
 
 ````typescript
 /**
@@ -2956,7 +3195,7 @@ export function hideByThreshold(
 
 ## Highlight some nodes, and remove the highlight later
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/highlight-with-bypass.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/highlight-with-bypass.ts
 
 ````typescript
 /**
@@ -3100,7 +3339,7 @@ export function highlightWithBypass(
 
 ## Label nodes or edges from a column
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/label-from-column.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/label-from-column.ts
 
 ````typescript
 /**
@@ -3200,7 +3439,7 @@ export function labelFromColumn(
 
 ## Set the style's defaults
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/set-style-defaults.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/set-style-defaults.ts
 
 ````typescript
 /**
@@ -3322,7 +3561,7 @@ export function setStyleDefaults(
 
 ## Size nodes by their degree
 
-Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/d418a9c17121ae416a31bd7bcddbd8faba593051/cookbook/recipes/style/size-nodes-by-degree.ts
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/size-nodes-by-degree.ts
 
 ````typescript
 /**
@@ -3488,6 +3727,490 @@ export function sizeNodesByDegree(
     return height
   }
   return { success: true, data: { min, max } }
+}
+````
+
+## Open a node's page in an external database from its context menu
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/link-out-from-node.ts
+
+````typescript
+/**
+ * @recipe Open a node's page in an external database from its context menu
+ * @aliases link out, linkout, external link, open in NCBI, open in UniProt,
+ *   look up a gene, right-click menu, node context menu, open a web page for
+ *   a node
+ * @apis contextMenu.addContextMenuItem, table.getValue
+ * @related ui/menu-action-with-dialog, data/read-column-values-safely
+ *
+ * ## When to use
+ *
+ * The user right-clicks a node and wants to look it up elsewhere: "open this
+ * gene in NCBI", "show its UniProt entry". Cytoscape's "External Links".
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object; register in `mount()`.
+ * - The node table has a column whose value names the node in the database:
+ *   a gene symbol, an accession. Its name is an argument.
+ *
+ * ## Side effects
+ *
+ * - Adds one item to the context menu of every node, in every network.
+ *   Choosing it opens the page in a new browser tab. Nothing in the network
+ *   changes, and no undo entry is recorded.
+ * - The host removes the item when the app is disabled. The app removes it
+ *   itself with `apis.contextMenu.removeContextMenuItem(itemId)`.
+ *
+ * ## Pitfalls
+ *
+ * - **Open the tab in the handler, before anything is awaited.** A browser
+ *   opens a new tab only while it is handling the user's click. An `await`
+ *   before `window.open` (a fetch, a timer) gets the tab blocked as a popup.
+ *   `table.getValue` is synchronous, so the recipe reads and opens at once.
+ * - **Read from the network the handler names.** The handler gets the
+ *   clicked node's `id` and `networkId`; use those, not the current network.
+ * - **A node without a value opens nothing**: an empty text, a missing value,
+ *   a list. A column the network lacks opens nothing either. Check the column
+ *   first if the user should be told; see `data/read-column-values-safely`.
+ * - **Encode the value.** A symbol may contain `/`, `#` or a space. `url`
+ *   receives the value already passed through `encodeURIComponent`.
+ * - **The item is on nodes only.** `targetTypes` defaults to nodes and edges;
+ *   the recipe passes `['node']`.
+ * - **Through `window.CyWebApi` the item stays.** An item registered without
+ *   an app has no owner, so disabling the app leaves it in every node's menu,
+ *   where clicking it still runs the app's code.
+ *
+ * ## Don't
+ *
+ * - Don't build the address from the node's label: the label comes from a
+ *   style mapping, and may show another column, or text the style shortened.
+ * - Don't open the tab without `noopener`: the database page would get a
+ *   handle on the Cytoscape Web window.
+ * - Don't add one item per node: one item reads the clicked node's value.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: `context.apis` in
+ * `mount()` (`wiring/from-mount.ts`).
+ */
+import type { ApiResult, AppContextApis } from 'cyweb/ApiTypes'
+
+export interface LinkOut {
+  /** The context menu's text: "Open in NCBI Gene". */
+  label: string
+  /** The node column whose value names the node in the database. */
+  column: string
+  /** The page for one value, given already URL-encoded. */
+  url: (encodedValue: string) => string
+}
+
+export function addLinkOut(
+  apis: Pick<AppContextApis, 'contextMenu' | 'table'>,
+  link: LinkOut,
+): ApiResult<{ itemId: string }> {
+  // Copied now: the handler runs later, and the caller's object may change.
+  const { column, url } = link
+  return apis.contextMenu.addContextMenuItem({
+    label: link.label,
+    targetTypes: ['node'],
+    handler: (target) => {
+      if (target.id === undefined) return
+      const read = apis.table.getValue(
+        target.networkId,
+        'node',
+        target.id,
+        column,
+      )
+      if (!read.success) return
+      const value = read.data.value
+      if (typeof value !== 'string' && typeof value !== 'number') return
+      const text = String(value).trim()
+      if (text === '') return
+      window.open(url(encodeURIComponent(text)), '_blank', 'noopener,noreferrer')
+    },
+  })
+}
+````
+
+## Ask for input in a dialog from an Apps menu item
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/menu-action-with-dialog.tsx
+
+````typescript
+/**
+ * @recipe Ask for input in a dialog from an Apps menu item
+ * @aliases menu item with a dialog, prompt the user, input dialog, form
+ *   dialog, apps menu action, ask for a value, find nodes by name, search
+ *   dialog
+ * @apis workspace.getCurrentNetworkId, dialog.open, table.getTable,
+ *   selection.exclusiveSelect
+ * @related ui/open-own-panel-after-action, selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * An Apps menu item needs something from the user before it acts: a text, a
+ * number, a choice. This one asks for part of a node name, and selects the
+ * nodes of the current network whose name contains it.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the `onClick` parameter of an `'apps-menu'` entry: the app's
+ *   own object.
+ * - A network is open. Give the entry `requires: { network: true }`, and the
+ *   host greys it out until one is.
+ *
+ * ## Side effects
+ *
+ * - Opens a dialog in the host's frame: the host draws the title bar and its
+ *   Close "X", and the recipe's component is the body.
+ * - **Select** replaces the network's selection with the matches
+ *   (`selection:changed`, no undo entry) and closes the dialog. With no
+ *   match, the dialog stays open and says so, and the selection is unchanged.
+ * - **Cancel**, the "X" and Escape close it and change nothing. A click
+ *   outside the dialog does not close it.
+ * - The host closes the dialog when the app is disabled.
+ *
+ * ## Pitfalls
+ *
+ * - **A menu entry is plain data.** It has no component and renders nothing:
+ *   its `onClick` opens the dialog with `apis.dialog.open` and returns. The
+ *   host closes the menu before `onClick` runs.
+ * - **The form is a component.** `render` returns an element; the state
+ *   (`useState`) lives in the component it renders, which re-renders on its
+ *   own.
+ * - **The dialog acts on the network it was opened for.** The recipe reads
+ *   the current network when the item is chosen, and keeps that id. If the
+ *   network is gone when the user confirms, the host's failure is shown in
+ *   the dialog.
+ * - **One dialog per id.** Opening again with the same `id` replaces the open
+ *   dialog instead of stacking a second one: choosing the item twice shows
+ *   one dialog.
+ * - **Nobody sees what `onClick` returns.** The host only logs a rejected
+ *   promise. Report a failure in the dialog, where the user is looking.
+ * - Mutation topics: one `exclusiveSelect` call, so there is no partial
+ *   result; selecting records no undo entry.
+ *
+ * ## Don't
+ *
+ * - Don't use `window.prompt`: it stops the whole page, and cannot be styled
+ *   or validated.
+ * - Don't look for a `component` on an `'apps-menu'` entry: it has none. The
+ *   host draws the entry from its `label`, `tooltip` and `icon`.
+ * - Don't call hooks in `render` itself: it is a function, not a component.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` is the `onClick` parameter (`wiring/from-apps-menu.ts`).
+ * `useAppContext()?.apis` in a component also works (`wiring/from-panel.tsx`).
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppContextApis,
+  IdType,
+} from 'cyweb/ApiTypes'
+import { Box, Button, TextField, Typography } from '@mui/material'
+import { useState } from 'react'
+
+const DIALOG_ID = 'select-by-name'
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+/** Select the nodes whose name contains `text`, ignoring case. */
+function selectByName(
+  apis: Pick<AppContextApis, 'table' | 'selection'>,
+  networkId: IdType,
+  text: string,
+): ApiResult<{ selected: number }> {
+  const table = apis.table.getTable(networkId, 'node', { columns: ['name'] })
+  if (!table.success) return table
+  const wanted = text.trim().toLowerCase()
+  const ids: IdType[] = []
+  for (const row of table.data.rows) {
+    const name = row.name
+    if (typeof name === 'string' && name.toLowerCase().includes(wanted)) {
+      ids.push(String(row.id))
+    }
+  }
+  if (ids.length === 0) return { success: true, data: { selected: 0 } }
+  const selected = apis.selection.exclusiveSelect(networkId, ids, [])
+  if (!selected.success) return selected
+  return { success: true, data: { selected: ids.length } }
+}
+
+interface FormProps {
+  select: (text: string) => ApiResult<{ selected: number }>
+  close: () => void
+}
+
+function SelectByNameForm({ select, close }: FormProps) {
+  const [text, setText] = useState('')
+  const [message, setMessage] = useState('')
+
+  const submit = (): void => {
+    const result = select(text)
+    if (!result.success) setMessage(result.error.message)
+    else if (result.data.selected === 0) {
+      setMessage(`No node name contains "${text.trim()}".`)
+    } else close()
+  }
+
+  return (
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <TextField
+        autoFocus
+        fullWidth
+        margin="dense"
+        label="Part of a node name"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+      />
+      {message !== '' && (
+        <Typography role="alert" color="error" variant="body2">
+          {message}
+        </Typography>
+      )}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button onClick={close}>Cancel</Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={text.trim() === ''}
+        >
+          Select
+        </Button>
+      </Box>
+    </Box>
+  )
+}
+
+export function openSelectByNameDialog(
+  apis: Pick<AppContextApis, 'workspace' | 'dialog' | 'table' | 'selection'>,
+): ApiResult<{ dialogId: string }> {
+  const current = apis.workspace.getCurrentNetworkId()
+  if (!current.success) return current
+  const { networkId } = current.data
+  if (networkId === '') return failure('RECIPE_NO_NETWORK', 'no network is open')
+
+  return apis.dialog.open({
+    id: DIALOG_ID,
+    title: 'Select nodes by name',
+    render: ({ close }) => (
+      <SelectByNameForm
+        close={close}
+        select={(text) => selectByName(apis, networkId, text)}
+      />
+    ),
+  })
+}
+````
+
+## Show your app's panel after an action
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/open-own-panel-after-action.ts
+
+````typescript
+/**
+ * @recipe Show your app's panel after an action
+ * @aliases open my panel, show results panel, switch to my tab, open the
+ *   right panel, reveal the app panel, focus my panel
+ * @apis panel.open
+ * @related ui/menu-action-with-dialog, ui/persist-results-per-network
+ *
+ * ## When to use
+ *
+ * An action finished (a menu item ran, a computation ended) and its results
+ * are in the app's own right-panel tab. The user should see that tab without
+ * looking for it.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object.
+ * - The app registered a `'right-panel'` resource with the id `tabId`, and
+ *   the tab is shown: a panel with `requires: { network: true }` has no tab
+ *   while no network is open.
+ *
+ * ## Side effects
+ *
+ * - Opens the right pane if it is closed, and selects the app's tab, as a
+ *   click on the tab does. Nothing else changes; no undo entry is recorded.
+ * - On failure, nothing changes: an unknown tab does not open the pane.
+ *
+ * ## Pitfalls
+ *
+ * - **Pass your tab's id.** Without one, `panel.open('right')` opens the pane
+ *   on whatever tab was selected. On 1.1.0 the first tab is the host's Sub
+ *   Network Viewer, which is empty for most networks. On 1.1.1 that tab
+ *   exists only for a hierarchy, and the pane shows only while it has a tab.
+ * - **Tab ids are not unique across apps.** Two apps may both call their tab
+ *   `results`. The app's own `apis.panel` selects the app's own tab, and says
+ *   so in `appId`. `window.CyWebApi.panel` cannot know who is asking, and
+ *   selects the first tab with that id in the strip: another app's.
+ * - **`APP7` (`RESOURCE_NOT_FOUND`)** means the tab is not shown: it was never
+ *   registered, it requires a network and none is open, or the app is not
+ *   active.
+ * - **Results first, then the panel.** Put the results where the panel reads
+ *   them (see `ui/persist-results-per-network`) before opening it.
+ *
+ * ## Don't
+ *
+ * - Don't call `panel.open` from `mount()`: the user turned the app on, and
+ *   did not ask for its panel.
+ * - Don't select a tab by its position in the strip: other apps add tabs.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: the `onClick` parameter
+ * of an `'apps-menu'` entry (`wiring/from-apps-menu.ts`), `context.apis` in
+ * `mount()`, or `useAppContext()?.apis` in a component
+ * (`wiring/from-panel.tsx`).
+ */
+import type { ApiResult, AppContextApis, OpenPanelResult } from 'cyweb/ApiTypes'
+
+export function openOwnPanel(
+  apis: Pick<AppContextApis, 'panel'>,
+  tabId: string,
+): ApiResult<OpenPanelResult> {
+  return apis.panel.open('right', tabId)
+}
+````
+
+## Keep an app's results for each network
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/persist-results-per-network.ts
+
+````typescript
+/**
+ * @recipe Keep an app's results for each network
+ * @aliases cache results, save results per network, remember results,
+ *   persist analysis results, app data, store results with the network,
+ *   compute once
+ * @apis appData.get, appData.set
+ * @related ui/open-own-panel-after-action, data/add-computed-column
+ *
+ * ## When to use
+ *
+ * The app computed something about a network (a score, a clustering, a
+ * report) that is not a column, and the user should find it again when they
+ * come back to that network, after a reload, or after turning the app off and
+ * on. Optionally, the result travels with the network when it is shared.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object.
+ * - The network is in the workspace.
+ * - The result is plain data that survives a JSON round trip: no `Map`,
+ *   `Set`, `Date`, class instance or `BigInt`.
+ *
+ * ## Side effects
+ *
+ * - Without `share`, the result is stored in this browser only, keyed to the
+ *   network's id. It is in no export and no NDEx save.
+ * - With `share: true`, it is stored in the network's `cyAppData` aspect: it
+ *   is in every CX2 export and NDEx save, and the network is marked modified.
+ *   Storing a key with the other `share` moves it; it is never in both.
+ * - Records no undo entry. Deleting the network deletes its results. Turning
+ *   the app off does not.
+ * - If `compute` fails, or the store refuses its result, nothing is stored.
+ *
+ * ## Pitfalls
+ *
+ * - **What the store returns is frozen**, deeply: writing to it throws a
+ *   `TypeError`. The recipe returns a copy (`structuredClone`) the caller may
+ *   change; the stored value stays as it was until `set` again.
+ * - **The store keeps what JSON keeps.** A value is stored as its JSON round
+ *   trip: an `undefined` field disappears, a `Date` comes back as a string.
+ *   The recipe always returns the stored form, the first time too, so a
+ *   cached and a fresh result look the same. A `BigInt` or a cycle is refused
+ *   (`APP12`); a value over the size limit too (`APP13`).
+ * - **A cached result can be stale.** The store does not know when the
+ *   network changes. Pass `refresh: true` after the user edits it, or put a
+ *   fingerprint (a node count, an edge count) in the key.
+ * - **Keys are this app's own,** per network: another app cannot read or
+ *   overwrite them, and they need no app prefix.
+ * - **Nothing stored is `APP11`**, which is not an error here: the recipe
+ *   computes. Any other failure is returned as it is.
+ * - Persistence topics: local by default and in CX2 only with `share`, and
+ *   frozen reads, are covered above.
+ *
+ * ## Don't
+ *
+ * - Don't keep per-network results in `localStorage` or a module variable:
+ *   they would outlive the network, or be lost on reload.
+ * - Don't share a cache that can be recomputed. `share` puts it in every
+ *   copy of the network the user sends to anyone.
+ * - Don't write into the value `appData.get` returns.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: the `onClick` parameter
+ * of an `'apps-menu'` entry (`wiring/from-apps-menu.ts`), `useAppContext()?.apis`
+ * in a component (`wiring/from-panel.tsx`), or `context.apis` in `mount()`.
+ */
+import type { ApiResult, AppContextApis, IdType } from 'cyweb/ApiTypes'
+
+export interface PersistOptions {
+  /** Store in the network's `cyAppData` aspect, which travels with it. */
+  share?: boolean
+  /** Compute and store again, even if a result is stored. */
+  refresh?: boolean
+}
+
+export interface PersistedResult<T> {
+  /** A copy of the stored value: the caller may change it. */
+  value: T
+  /** Whether it came from the store rather than from `compute`. */
+  cached: boolean
+}
+
+/** The stored value, as a copy the caller may write to. */
+function readBack<T>(
+  apis: Pick<AppContextApis, 'appData'>,
+  networkId: IdType,
+  key: string,
+): ApiResult<T> {
+  const stored = apis.appData.get(networkId, key)
+  if (!stored.success) return stored
+  return { success: true, data: structuredClone(stored.data.value) as T }
+}
+
+export function computeOncePerNetwork<T>(
+  apis: Pick<AppContextApis, 'appData'>,
+  networkId: IdType,
+  key: string,
+  compute: () => ApiResult<T>,
+  options: PersistOptions = {},
+): ApiResult<PersistedResult<T>> {
+  if (options.refresh !== true) {
+    const cached = readBack<T>(apis, networkId, key)
+    if (cached.success) {
+      return { success: true, data: { value: cached.data, cached: true } }
+    }
+    // APP11: nothing stored yet. Anything else is a real failure.
+    if (cached.error.code !== 'APP11') return cached
+  }
+
+  const computed = compute()
+  if (!computed.success) return computed
+  const stored = apis.appData.set(networkId, key, computed.data, {
+    export: options.share === true,
+  })
+  if (!stored.success) return stored
+
+  // The stored form, not the caller's object: see Pitfalls.
+  const fresh = readBack<T>(apis, networkId, key)
+  if (!fresh.success) return fresh
+  return { success: true, data: { value: fresh.data, cached: false } }
 }
 ````
 
