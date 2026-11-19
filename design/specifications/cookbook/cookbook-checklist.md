@@ -737,6 +737,10 @@ _Design: §4.9, §5_
       committed into `docs/`, linking the host's `Api.md` rather than copying it
 - [x] `design/README.md` tree — done at planning time (2026-10-01), together with this
       checklist
+- [x] Design §6, "The cookbook duplicates `hello-world`": the mitigation said each links to
+      the other, but the cookbook does not link back. Phase 4 does not add a link there (a
+      link from `cookbook/` would also mean regenerating `docs/llms*.txt`); the row now says
+      what is linked instead (decided 2026-11-18)
 
 ### Verification (Phase 4)
 

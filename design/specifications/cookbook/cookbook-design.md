@@ -874,7 +874,7 @@ with a Run button.
 | A recipe works on one supported release and not on the other | Every case runs on the floor, 1.1.0, and on the latest release, 1.1.1; the record is incomplete without both, and CI and the generator reject an incomplete record (D-16). "Pre-read files" are read at both tags |
 | A recipe uses, or describes as general, something only the newer release has | The types are the floor's, so a call the floor lacks does not compile. Behavior differences are listed in §4.10, stated by version in the header, and observed on both releases first |
 | A build that reports `1.1.1` is taken for the release | An entry is matched by the tag's commit, not by the version: `development` and dev1's pre-release build report the same version (§4.6) |
-| The cookbook duplicates `hello-world` | Separate roles: `hello-world` tours the APIs, the cookbook answers tasks. Each links to the other |
+| The cookbook duplicates `hello-world` | Separate roles: `hello-world` tours the APIs, the cookbook answers tasks. Each `hello-world` example links the recipes that use the same calls (Phase 4), and the root README introduces both. The cookbook does not link back to `hello-world` (decided in Phase 4) |
 | Maintenance load on one maintainer | Small, independent recipes; every derived artifact is generated |
 
 ## 7. Acceptance criteria
