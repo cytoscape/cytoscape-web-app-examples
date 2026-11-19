@@ -5,8 +5,9 @@
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
-> #28; Phase 3 COMPLETE (2026-11-18), merged in #29. Next: Phase 4 (cross-links); merge
-> `development` into `main` so that Pages serves `llms.txt`, then the README link.** The
+> #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 BUILT (2026-11-18): the
+> cross-links are written and resolve. Next: merge Phase 4; merge `development` into `main`
+> so that Pages serves `llms.txt`, then the README link.** The
 > design is at revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan
 > for the published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the
 > reviews of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of
@@ -719,21 +720,30 @@ Read at both tags on 2026-11-17. What they settled is noted.
 
 ---
 
-## Phase 4: Cross-links ⬜ **NOT STARTED**
+## Phase 4: Cross-links 🟡 **BUILT (2026-11-18)** — the merge is next
 
 _Design: §4.9, §5_
 
 ### Deliverables
 
-- [ ] `hello-world/README.md`, "Examples walkthrough": each example links its related recipes
-- [ ] Roadmap: a Cookbook row in "Carved-out projects" (B-2, E-2 → `cookbook-design.md`), and
-      the B-2 and E-2 sections point to it
+- [x] `hello-world/README.md`, "Examples walkthrough": an opening paragraph says what the
+      cookbook is for, and each of the 13 examples ends with "In the cookbook:" and its
+      recipes, by title, plus the wiring file for the examples about `mount()`, an Apps menu
+      entry and a component. Examples 0, 10 and 12 have no recipe for what they show (MUI
+      and the chunk URL, CX2 export, TSV download) and say so, naming the closest recipe
+- [x] Roadmap: a Cookbook row in "Carved-out projects" (B-2, E-2 → `cookbook-design.md`), and
+      the B-2 and E-2 sections open with a note pointing to it, with what changed: recipes
+      under `cookbook/recipes/<area>/`, verified before entering the catalog; `llms*.txt`
+      committed into `docs/`, linking the host's `Api.md` rather than copying it
 - [x] `design/README.md` tree — done at planning time (2026-10-01), together with this
       checklist
 
 ### Verification (Phase 4)
 
-- [ ] Every new relative link resolves
+- [x] Every new relative link resolves: 26 new, 42 in the two files, paths and heading
+      anchors, checked by a script that was seen failing on a broken path and a broken anchor.
+      No file under `cookbook/` or `guides/` changed, so the `docs/llms*.txt` pin stays
+      `591d91c`, and `--check` passes
 - [ ] **Merged into `development`** (D-12)
 
 ---

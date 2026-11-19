@@ -12,6 +12,7 @@
 | Project | Covers | Document |
 |---|---|---|
 | **App SDK & Scaffolding** | A-1, A-2, A-3b, P-1's final wiring, and a standalone `cyweb-app verify` (no roadmap item of its own) | [`../app-sdk/app-sdk-design.md`](../app-sdk/app-sdk-design.md) |
+| **Cookbook** | B-2 recipes and E-2 `llms.txt` / `llms-full.txt`, with a runner that verifies each recipe in a running host | [`../cookbook/cookbook-design.md`](../cookbook/cookbook-design.md) |
 
 Items listed above are summarized here for context but are **specified in their own document**;
 that document is authoritative for scope, design, and acceptance. Where this roadmap and a
@@ -241,6 +242,11 @@ set-equality between declarations and exposes. Alongside that:
 
 #### B-2. `recipes/` — single-file, copy-pasteable snippets 【examples】
 
+> **Carved out** into the [Cookbook](../cookbook/cookbook-design.md), which is
+> authoritative. The recipes live in `cookbook/recipes/<area>/`, not a top-level
+> `recipes/`; each opens with a structured header, and each passes a case in a running
+> host before it enters the catalog.
+
 `hello-world` is comprehensive at 1,977 lines, far too much for someone who just wants to
 color nodes by degree. Add 15–20 standalone snippets:
 
@@ -408,6 +414,11 @@ audience being targeted. Splitting accordingly:
   items; panels use `lazy()`; what `unmount` must clean up.
 
 #### E-2. Generate and publish `llms.txt` / `llms-full.txt` 【examples】
+
+> **Carved out** into the [Cookbook](../cookbook/cookbook-design.md), which is
+> authoritative. Both files are generated from `cookbook/` and `guides/`, committed into
+> `docs/` (Pages serves the tracked tree), and checked by CI. They link the host's `Api.md`,
+> pinned to the oldest supported release, rather than copying it.
 
 Serve at `https://cytoscape.org/cytoscape-web-app-examples/llms.txt`.
 
