@@ -245,7 +245,7 @@ set-equality between declarations and exposes. Alongside that:
 > **Carved out** into the [Cookbook](../cookbook/cookbook-design.md), which is
 > authoritative. The recipes live in `cookbook/recipes/<area>/`, not a top-level
 > `recipes/`; each opens with a structured header, and each passes a case in a running
-> host before it enters the catalog.
+> host before it enters the catalog. The proposal below is kept as it was written.
 
 `hello-world` is comprehensive at 1,977 lines, far too much for someone who just wants to
 color nodes by degree. Add 15–20 standalone snippets:
@@ -418,7 +418,8 @@ audience being targeted. Splitting accordingly:
 > **Carved out** into the [Cookbook](../cookbook/cookbook-design.md), which is
 > authoritative. Both files are generated from `cookbook/` and `guides/`, committed into
 > `docs/` (Pages serves the tracked tree), and checked by CI. They link the host's `Api.md`,
-> pinned to the oldest supported release, rather than copying it.
+> pinned to the oldest supported release, rather than copying it. The proposal below is kept
+> as it was written.
 
 Serve at `https://cytoscape.org/cytoscape-web-app-examples/llms.txt`.
 

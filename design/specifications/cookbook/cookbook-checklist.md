@@ -748,6 +748,10 @@ _Design: §4.9, §5_
       anchors, checked by a script that was seen failing on a broken path and a broken anchor.
       No file under `cookbook/` or `guides/` changed, so the `docs/llms*.txt` pin stays
       `591d91c`, and `--check` passes
+- [x] **The review of #30**: Copilot's two comments (the B-2 and E-2 notes contradicted the
+      original proposal under them). Each note now says the proposal below is kept as it was
+      written; the proposal stays, as the roadmap's other carved-out items do. Codex found
+      nothing; CodeRabbit skipped the pull request
 - [ ] **Merged into `development`** (D-12)
 
 ---
