@@ -217,6 +217,11 @@ See `VisualStyleSection.tsx` for a complete in-panel error display example.
 
 ## Examples walkthrough
 
+Each example tours one API. To do one task with it, start from a recipe in the
+[cookbook](../cookbook/README.md) instead: a function to copy, with what it
+changes and what goes wrong written down, verified in a running Cytoscape Web.
+Each example below ends with the recipes that use the same calls.
+
 ### Example 0 — MUI components + finding your own chunk URL (`HelloHeader.tsx`)
 
 **What it shows:**
@@ -241,6 +246,10 @@ const moduleUrl = import.meta.url // URL of THIS chunk
 > production build lives under `assets/` — appending to it yields
 > `…/assets/remoteEntry.js`, a 404. Reconstructing the entry URL from a chunk
 > path is guessing, so the example shows the chunk URL for what it is.
+
+**In the cookbook:** no recipe for this one. A component recipe imports MUI the
+same way:
+[Ask for input in a dialog from an Apps menu item](../cookbook/recipes/ui/menu-action-with-dialog.tsx).
 
 ---
 
@@ -273,6 +282,12 @@ const handleUpdateStyle = () => {
 not during component initialisation. The active network may change between
 renders.
 
+**In the cookbook:**
+- [Set the style's defaults](../cookbook/recipes/style/set-style-defaults.ts)
+- [Color nodes by a numeric column](../cookbook/recipes/style/color-nodes-by-numeric-column.ts)
+- [Color nodes by category](../cookbook/recipes/style/color-by-category.ts)
+- [Highlight some nodes, and remove the highlight later](../cookbook/recipes/style/highlight-with-bypass.ts)
+
 ---
 
 ### Example 2 — EventBus + `SelectionApi` (`SelectionSection.tsx`)
@@ -302,6 +317,11 @@ const handleSelectionChanged = useCallback(({ selectedNodes, selectedEdges }) =>
 useCyWebEvent('selection:changed', handleSelectionChanged)
 ```
 
+**In the cookbook:**
+- [Follow the current network, and read it only when it is ready](../cookbook/recipes/events/follow-current-network.ts)
+- [Select nodes or edges by a column's value](../cookbook/recipes/selection/select-by-attribute.ts)
+- [Select the neighbors of the selected nodes](../cookbook/recipes/selection/select-neighbors.ts)
+
 ---
 
 ### Example 3 — `LayoutApi` + EventBus (`LayoutSection.tsx`)
@@ -330,6 +350,10 @@ const handleApply = () => {
   })
 }
 ```
+
+**In the cookbook:**
+- [Run a layout and wait for it to finish](../cookbook/recipes/layout/run-layout-and-wait.ts)
+- [Add a layout of your own to the Layout menu](../cookbook/recipes/layout/register-app-layout.ts)
 
 ---
 
@@ -399,6 +423,12 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 | React context required | Yes | No |
 | Typical use | UI event reactions | Background tasks, SDKs, analytics |
 
+**In the cookbook:**
+- [Follow the current network, and read it only when it is ready](../cookbook/recipes/events/follow-current-network.ts),
+  from `mount()` or from a component
+- [`wiring/from-mount.ts`](../cookbook/wiring/from-mount.ts): calling recipes
+  from `mount(context)`, and stopping what they started in `unmount()`
+
 ---
 
 ### Example 5 — Apps-menu entry (`MenuSection.tsx`)
@@ -406,6 +436,13 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 Explains how `'apps-menu'` entries work: plain data with `label` and
 `onClick(apis)`, rendered by the host, with any UI opened from the action
 through `apis.dialog.open({ title, render })`.
+
+**In the cookbook:**
+- [Ask for input in a dialog from an Apps menu item](../cookbook/recipes/ui/menu-action-with-dialog.tsx)
+- [Show your app's panel after an action](../cookbook/recipes/ui/open-own-panel-after-action.ts)
+- [Keep an app's results for each network](../cookbook/recipes/ui/persist-results-per-network.ts)
+- [`wiring/from-apps-menu.ts`](../cookbook/wiring/from-apps-menu.ts): calling
+  recipes from an entry's `onClick`
 
 ---
 
@@ -416,6 +453,11 @@ through `apis.dialog.open({ title, render })`.
 - Interactive toggle: add/remove context menu items for node, edge, and canvas.
 - `ApiResult<{ itemId }>` pattern for tracking registered items.
 - `useEffect` cleanup for removing items when the component unmounts.
+
+**In the cookbook:**
+- [Open a node's page in an external database from its context menu](../cookbook/recipes/ui/link-out-from-node.ts)
+- [`wiring/from-panel.tsx`](../cookbook/wiring/from-panel.tsx): calling recipes
+  with `useAppContext()?.apis` from a component
 
 ---
 
@@ -429,6 +471,11 @@ through `apis.dialog.open({ title, render })`.
   are deleted automatically).
 - Each operation adds an undo entry automatically.
 
+**In the cookbook:**
+- [Add nodes to a network, and connect them](../cookbook/recipes/elements/add-nodes-to-network.ts)
+- [Connect the selected nodes to each other](../cookbook/recipes/elements/add-edges-between-selected.ts)
+- [Delete the selected nodes and edges](../cookbook/recipes/elements/delete-selected.ts)
+
 ---
 
 ### Example 8 — `TableApi` (`TableSection.tsx`)
@@ -441,6 +488,11 @@ through `apis.dialog.open({ title, render })`.
 - Combines `selectionApi.getSelection()` to pick the target node.
 - Write operations fire `data:changed` events automatically.
 
+**In the cookbook:**
+- [Add a computed column: node degree](../cookbook/recipes/data/add-computed-column.ts)
+- [Read a column's numbers safely](../cookbook/recipes/data/read-column-values-safely.ts)
+- [Join a table of values to the network by a key column](../cookbook/recipes/data/join-table-by-key.ts)
+
 ---
 
 ### Example 9 — `ViewportApi` (`ViewportSection.tsx`)
@@ -451,6 +503,12 @@ through `apis.dialog.open({ title, render })`.
   for selected nodes.
 - Positions are plain `[x, y, z?]` tuples in a `Record<IdType, number[]>`.
 
+**In the cookbook:**
+- [Add nodes to a network, and connect them](../cookbook/recipes/elements/add-nodes-to-network.ts)
+  reads positions to place new nodes
+- [Add a layout of your own to the Layout menu](../cookbook/recipes/layout/register-app-layout.ts)
+  moves nodes in one undoable step; `updateNodePositions` records no undo entry
+
 ---
 
 ### Example 10 — `ExportApi` (`ExportSection.tsx`)
@@ -460,6 +518,10 @@ through `apis.dialog.open({ title, render })`.
   the host's stores (network, tables, visual style, view model).
 - The returned `Cx2` is a JSON-serializable array of aspect objects.
 - Display a summary (aspect count, byte size) instead of the full document.
+
+**In the cookbook:** no recipe for exporting yet.
+[Keep an app's results for each network](../cookbook/recipes/ui/persist-results-per-network.ts)
+puts an app's results into the CX2 export with `share: true`.
 
 ---
 
@@ -472,6 +534,10 @@ through `apis.dialog.open({ title, render })`.
 - `workspaceApi.getWorkspaceInfo()` — read workspace metadata (name, network
   count, current network ID).
 - Network creation fires `network:created` and `network:switched` events.
+
+**In the cookbook:**
+- [Create a network from a table of edges](../cookbook/recipes/network/create-network-from-table.ts)
+- [Create a new network from the selected nodes](../cookbook/recipes/network/subnetwork-from-selection.ts)
 
 ---
 
@@ -496,6 +562,10 @@ if (result.success) {
   URL.revokeObjectURL(url)
 }
 ```
+
+**In the cookbook:** no recipe for downloading a table yet. The other
+direction, a TSV into the table, is
+[Join a table of values to the network by a key column](../cookbook/recipes/data/join-table-by-key.ts).
 
 ---
 

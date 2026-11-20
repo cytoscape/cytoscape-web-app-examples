@@ -5,14 +5,13 @@
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
-> #28; Phase 3 IMPLEMENTED (2026-11-18) in `591d91c`, all 27 cases passing on 1.1.0 and
-> 1.1.1, `docs/llms*.txt` regenerated in `7e5267f`, in review. Next: merge Phase 3; merge `development` into `main` so that Pages
-> serves `llms.txt`, then the README link.** The design is at
-> revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan for the
-> published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the reviews
-> of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of this
-> repository, which was level with `development` at `337d540`, the merge of #28, when
-> Phase 3 started.
+> #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 BUILT (2026-11-18): the
+> cross-links are written and resolve. Next: merge Phase 4; merge `development` into `main`
+> so that Pages serves `llms.txt`, then the README link.** The
+> design is at revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan
+> for the published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the
+> reviews of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of
+> this repository, which is level with `development` at `e29574a`, the merge of #29.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -625,7 +624,7 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 
 ---
 
-## Phase 3: Verification app 🔄 **IMPLEMENTED (2026-11-18)** — `591d91c`, in review
+## Phase 3: Verification app ✅ **COMPLETE (2026-11-18)** — #29
 
 _Design: §4.1, §4.4, §4.5, §4.6, D-17_
 
@@ -704,25 +703,55 @@ Read at both tags on 2026-11-17. What they settled is noted.
       each release, 2026-11-18). The self-test passes on 1.1.0
 - [x] `docs/llms.txt` and `docs/llms-full.txt` regenerated for the pin `591d91c` in `7e5267f`;
       `--check` passes with them
-- [ ] **Merged into `development`**, with the current `verified.json` (D-12)
+- [x] The CI jobs pass on both a `push` and a `pull_request` run: on #29's head
+      ([44217971893](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44217971893),
+      `pull_request`, on the merge result) and on `development` after the merge
+      ([44226217946](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44226217946),
+      `push`). All nine jobs green each time, `Typecheck` now including `runner/app`; the
+      `Cookbook` job found the index, the record and `docs/llms*.txt` current
+- [x] **Merged into `development`**, with the current `verified.json` (D-12):
+      [#29](https://github.com/cytoscape/cytoscape-web-app-examples/pull/29), merge commit
+      `e29574a` (2026-11-18), a merge and not a squash. On `development` the last commit to
+      change `cookbook/` or `guides/` is still `591d91c`, the commit `docs/llms*.txt` pin,
+      `--check` passes there, and all 40 pinned GitHub links return 200. No review
+      comments: Codex reviewed the head (`a6ceb6b`) and found nothing, CodeRabbit skipped
+      the pull request (fewer than 10 stars), and Copilot did not run (its requester's
+      quota was used up)
 
 ---
 
-## Phase 4: Cross-links ⬜ **NOT STARTED**
+## Phase 4: Cross-links 🟡 **BUILT (2026-11-18)** — the merge is next
 
 _Design: §4.9, §5_
 
 ### Deliverables
 
-- [ ] `hello-world/README.md`, "Examples walkthrough": each example links its related recipes
-- [ ] Roadmap: a Cookbook row in "Carved-out projects" (B-2, E-2 → `cookbook-design.md`), and
-      the B-2 and E-2 sections point to it
+- [x] `hello-world/README.md`, "Examples walkthrough": an opening paragraph says what the
+      cookbook is for, and each of the 13 examples ends with "In the cookbook:" and its
+      recipes, by title, plus the wiring file for the examples about `mount()`, an Apps menu
+      entry and a component. Examples 0, 10 and 12 have no recipe for what they show (MUI
+      and the chunk URL, CX2 export, TSV download) and say so, naming the closest recipe
+- [x] Roadmap: a Cookbook row in "Carved-out projects" (B-2, E-2 → `cookbook-design.md`), and
+      the B-2 and E-2 sections open with a note pointing to it, with what changed: recipes
+      under `cookbook/recipes/<area>/`, verified before entering the catalog; `llms*.txt`
+      committed into `docs/`, linking the host's `Api.md` rather than copying it
 - [x] `design/README.md` tree — done at planning time (2026-10-01), together with this
       checklist
+- [x] Design §6, "The cookbook duplicates `hello-world`": the mitigation said each links to
+      the other, but the cookbook does not link back. Phase 4 does not add a link there (a
+      link from `cookbook/` would also mean regenerating `docs/llms*.txt`); the row now says
+      what is linked instead (decided 2026-11-18)
 
 ### Verification (Phase 4)
 
-- [ ] Every new relative link resolves
+- [x] Every new relative link resolves: 26 new, 42 in the two files, paths and heading
+      anchors, checked by a script that was seen failing on a broken path and a broken anchor.
+      No file under `cookbook/` or `guides/` changed, so the `docs/llms*.txt` pin stays
+      `591d91c`, and `--check` passes
+- [x] **The review of #30**: Copilot's two comments (the B-2 and E-2 notes contradicted the
+      original proposal under them). Each note now says the proposal below is kept as it was
+      written; the proposal stays, as the roadmap's other carved-out items do. Codex found
+      nothing; CodeRabbit skipped the pull request
 - [ ] **Merged into `development`** (D-12)
 
 ---
