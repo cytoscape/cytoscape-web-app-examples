@@ -5,13 +5,15 @@
 >
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
-> #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 BUILT (2026-11-18): the
-> cross-links are written and resolve. Next: merge Phase 4; merge `development` into `main`
-> so that Pages serves `llms.txt`, then the README link.** The
-> design is at revision 9: three reviews, a catalog of 25 recipes with a backlog, a plan
-> for the published beta.5, `llms.txt` committed into `docs/`, a review after a pause, the
-> reviews of #27 and #28, and Phase 3 as built. Work happens on the `cookbook` branch of
-> this repository, which is level with `development` at `e29574a`, the merge of #29.
+> #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 COMPLETE (2026-11-20), merged
+> in #30; Phase 5 STARTED (2026-11-20): the Pages landing page corrected before the merge
+> into `main`. Next: merge `development` into `main` so that Pages serves `llms.txt`; then
+> the README link, and the rest of Phase 5, which needs `llms.txt` live.** The design is at
+> revision 9:
+> three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
+> `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
+> and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
+> level with `development` at `fb5fad8`, the merge of #30.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -619,6 +621,13 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 
 ### After the first merge into `main` that includes Phase 2
 
+- [x] **Before that merge**, what it publishes besides the two files was read. In `docs/`
+      it changes only `index.html`, the Pages landing page, which is hand-written; no app
+      build changes. The page said to enable an example app under "Apps → App Settings":
+      the menu item is "Manage Apps..." on 1.1.0 and on 1.1.1, and from 1.1.1 the listed apps
+      are on already. Reworded to hold on both, as the README was in the Phase 0 follow-up
+      (2026-11-20). Its other claims (the install allowlist, the manifest the install form
+      takes) hold at both tags
 - [ ] `llms.txt` and `llms-full.txt` are served from Pages, and their links resolve
 - [ ] The README's "Building with an AI assistant" section gains the `llms.txt` link
 
@@ -720,7 +729,7 @@ Read at both tags on 2026-11-17. What they settled is noted.
 
 ---
 
-## Phase 4: Cross-links 🟡 **BUILT (2026-11-18)** — the merge is next
+## Phase 4: Cross-links ✅ **COMPLETE (2026-11-20)** — #30
 
 _Design: §4.9, §5_
 
@@ -752,11 +761,21 @@ _Design: §4.9, §5_
       original proposal under them). Each note now says the proposal below is kept as it was
       written; the proposal stays, as the roadmap's other carved-out items do. Codex found
       nothing; CodeRabbit skipped the pull request
-- [ ] **Merged into `development`** (D-12)
+- [x] The CI jobs pass on both a `push` and a `pull_request` run: on #30's head
+      ([44690111828](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44690111828),
+      `pull_request`, on the merge result) and on `development` after the merge
+      ([44690734339](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44690734339),
+      `push`). All nine jobs green each time; the `Cookbook` job found the index, the record
+      and `docs/llms*.txt` current
+- [x] **Merged into `development`** (D-12):
+      [#30](https://github.com/cytoscape/cytoscape-web-app-examples/pull/30), merge commit
+      `fb5fad8` (2026-11-20), a merge and not a squash. On `development` the last commit to
+      change `cookbook/` or `guides/` is still `591d91c`, the commit `docs/llms*.txt` pin, and
+      `--check` passes there. Copilot's two threads were answered and resolved
 
 ---
 
-## Phase 5: Point the scaffolder at the cookbook ⬜ **NOT STARTED**
+## Phase 5: Point the scaffolder at the cookbook 🔄 **STARTED (2026-11-20)** — waiting for the merge into `main`
 
 _Design: §4.7, §4.8, §7_
 
