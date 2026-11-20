@@ -6,8 +6,10 @@
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
 > #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 COMPLETE (2026-11-20), merged
-> in #30. Next: merge `development` into `main` so that Pages serves `llms.txt`; then the
-> README link, and Phase 5, which needs `llms.txt` live.** The design is at revision 9:
+> in #30; Phase 5 STARTED (2026-11-20): the Pages landing page corrected before the merge
+> into `main`. Next: merge `development` into `main` so that Pages serves `llms.txt`; then
+> the README link, and the rest of Phase 5, which needs `llms.txt` live.** The design is at
+> revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
 > and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
@@ -619,6 +621,13 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
 
 ### After the first merge into `main` that includes Phase 2
 
+- [x] **Before that merge**, what it publishes besides the two files was read. In `docs/`
+      it changes only `index.html`, the Pages landing page, which is hand-written; no app
+      build changes. The page said to enable an example app under "Apps → App Settings":
+      the menu item is "Manage Apps..." on 1.1.0 and on 1.1.1, and from 1.1.1 the listed apps
+      are on already. Reworded to hold on both, as the README was in the Phase 0 follow-up
+      (2026-11-20). Its other claims (the install allowlist, the manifest the install form
+      takes) hold at both tags
 - [ ] `llms.txt` and `llms-full.txt` are served from Pages, and their links resolve
 - [ ] The README's "Building with an AI assistant" section gains the `llms.txt` link
 
@@ -766,7 +775,7 @@ _Design: §4.9, §5_
 
 ---
 
-## Phase 5: Point the scaffolder at the cookbook ⬜ **NOT STARTED**
+## Phase 5: Point the scaffolder at the cookbook 🔄 **STARTED (2026-11-20)** — waiting for the merge into `main`
 
 _Design: §4.7, §4.8, §7_
 
