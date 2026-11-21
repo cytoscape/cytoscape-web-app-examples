@@ -12,7 +12,7 @@ const __mfImport = (src) =>
 
 
 (async () => {
-  const __mfHostInit = await __mfImport("./hostInit-MWZ0LyMZ.js");
+  const __mfHostInit = await __mfImport("./hostInit-Dey29Viu.js");
   await __mfHostInit.__tla;
   const { initHost } = __mfHostInit;
   
