@@ -7,8 +7,8 @@ events combine into a single user-facing feature.
 | Field | Value |
 |---|---|
 | Federation name | `networkWorkflows` |
-| Dev server port | `7000` |
-| Entry point (local dev) | `networkWorkflows@http://localhost:7000/remoteEntry.js` |
+| Dev server port | `7001` (7000 is macOS's AirPlay Receiver) |
+| Entry point (local dev) | `networkWorkflows@http://localhost:7001/remoteEntry.js` |
 
 ---
 
@@ -31,9 +31,8 @@ network-workflows/
 ├── src/
 │   ├── index.ts                          ← exposed as ./AppConfig; re-exports the app config
 │   ├── NetworkWorkflowsApp.tsx           ← app config + resource declarations
+│   ├── menuActions.ts                    ← apps-menu actions: build a sample network, import remote CX2
 │   └── components/
-│       ├── CreateNetworkMenu.tsx         ← apps-menu: build a sample network
-│       ├── CreateNetworkFromCx2Menu.tsx  ← apps-menu: import remote CX2
 │       └── JupyterConnectorPanel.tsx     ← right-panel: receive CX2 via postMessage
 ├── vite.config.ts                        ← Module Federation config
 ├── tsconfig.json
@@ -48,21 +47,22 @@ network-workflows/
 # Terminal 1 — start the host with the local app registry
 cd ../cytoscape-web
 npm install
-npm run dev:local           # → http://localhost:5500
+npm run dev                 # → http://localhost:5500
 
 # Terminal 2 — start this plugin
 cd cytoscape-web-app-examples/network-workflows
 npm install
-npm run dev                  # → http://localhost:7000
+npm run dev                  # → http://localhost:7001
 ```
 
-Open `http://localhost:5500`, then **Apps → App Settings** to enable
-**Network Workflow Examples**. The two menu items appear under the
-**Apps** dropdown; the **Jupyter Link** tab appears in the right-side
-panel.
+Open `http://localhost:5500`. Cytoscape Web 1.1.1 and later turn
+**Network Workflow Examples** on by themselves. On 1.1.0, or if you turned it
+off earlier in this workspace, enable it under **Apps → Manage Apps...**. The
+two menu items appear under the **Apps** dropdown; the **Jupyter Link** tab
+appears in the right-side panel.
 
-> Use `npm run dev:local` (not `npm run dev`) so the host loads
-> `src/assets/apps.local.json` and discovers the locally running plugin.
+> The host's dev server serves `src/assets/apps.local.json` as its app catalog,
+> and that file already lists this app at `localhost:7001`.
 
 ---
 

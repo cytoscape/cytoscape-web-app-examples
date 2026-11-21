@@ -1,0 +1,4219 @@
+# Cytoscape Web App Cookbook
+
+> Task-oriented recipes for Cytoscape Web apps: one TypeScript function per
+> task, with a header that says when to use it, what it changes, and what
+> not to do. Each compiles against the published API types and passed a
+> case in a running Cytoscape Web.
+
+- Examples commit: `591d91c01c29da1566070f20e4240dd50f05e48d`. Every link below is pinned to it.
+- Verified on: Cytoscape Web 1.1.0 (`6619411b`) and Cytoscape Web 1.1.1 (`c3118c51`). Supported: 1.1.0 and later.
+- API types: `@cytoscape-web/api-types@1.0.0-beta.5`.
+
+---
+
+# Using a recipe
+
+A recipe is one TypeScript file that performs one task in Cytoscape Web, such as
+"color nodes by a numeric column". It exports one function. Its header comment
+says when to use it, what it changes, and what goes wrong.
+
+This page is for developers and for coding agents. The index is
+[README.md](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/README.md).
+
+## 1. Find the recipe
+
+Look in the index for the task in the user's own words. The "Also asked as"
+column lists them: "heat map" and "color by score" both lead to
+`style/color-nodes-by-numeric-column`.
+
+If no recipe fits, do not adapt one by guessing. Read the
+[API reference](https://raw.githubusercontent.com/cytoscape/cytoscape-web/6619411b3e4f4367679cd69299c63abdb865121c/src/app-api/api_docs/Api.md)
+and let the type checker tell you what exists.
+
+## 2. Copy it into your app
+
+Copy the file as it is, for example to `src/recipes/`, and import its function.
+
+- Keep the header. It is the documentation.
+- Keep the imports as they are: `import type { … } from 'cyweb/ApiTypes'`.
+  They are types only. `@cytoscape-web/api-types` ships declarations and no
+  code, so importing a value from it (`ok`, `fail`, `VisualPropertyName`)
+  compiles and then fails in the browser.
+- A recipe imports nothing else, so one file is all you need.
+- A `.tsx` recipe is a React component, or opens one. It also imports React
+  and `@mui/material`, which an app built with `defineCyWebApp` gets from the
+  host. Import MUI from its root, as the recipe does.
+
+## 3. Give it `apis`
+
+Every recipe takes `apis` as its first argument. Where `apis` comes from
+depends on where you call the recipe. [`wiring/`](https://github.com/cytoscape/cytoscape-web-app-examples/tree/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring) has one compiled
+example per call site.
+
+| You are in | `apis` is | Example |
+|---|---|---|
+| `mount(context)` | `context.apis` | [`wiring/from-mount.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-mount.ts) |
+| the `onClick` of an `'apps-menu'` entry | the `apis` parameter | [`wiring/from-apps-menu.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-apps-menu.ts) |
+| a React component | `useAppContext()?.apis`, or the `use*Api` hooks | [`wiring/from-panel.tsx`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-panel.tsx) |
+| a script that is not an app | `await window.CyWebApi.whenReady()` | [`wiring/from-window.ts`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-window.ts) |
+
+**Look at the type of the recipe's `apis` parameter.** It decides which of
+these you may use.
+
+- `Pick<CyWebApiType, …>` is a **host-wide** recipe. Any of the four works.
+- `Pick<AppContextApis, …>` is an **owner-bound** recipe. It uses `resource`,
+  `dialog`, `appData`, `contextMenu`, `nodeGraphics` or `panel`, which belong
+  to one app. Pass it only `context.apis`, the `onClick` parameter, or
+  `useAppContext()?.apis`. **Never `window.CyWebApi`, and never a `use*Api`
+  hook.** The types accept them, and the result is wrong: what the recipe
+  registers is not removed when the app is disabled, and `panel.open` may
+  select another app's tab.
+
+## 4. Check the result
+
+A recipe returns `ApiResult<T>` (a `Promise` of one where the API is
+asynchronous). It does not throw.
+
+```typescript
+const colored = colorNodesByNumericColumn(apis, networkId, 'score')
+if (!colored.success) {
+  console.error(colored.error.code, colored.error.message)
+  return
+}
+console.info(`colored ${colored.data.mappedCount} nodes`)
+```
+
+A failure is either the host's own, passed on unchanged, or the recipe's. A
+recipe's own codes start with `RECIPE_` and are listed in its header.
+
+## 5. Know when the host is ready
+
+Four different things are easy to take for one.
+
+1. **`window.CyWebApi` exists.** It does before the host has finished
+   starting. Do not call it yet.
+2. **The API is ready.** `await window.CyWebApi.whenReady()`. Inside an app
+   this has already happened.
+3. **A network's data is loaded.** This is per network. After a page reload,
+   `network:switched` arrives before the network's tables do, and a read made
+   then fails with `APP1`. Use
+   [`events/follow-current-network`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/events/follow-current-network.ts).
+4. **Your app is active.** The host calls `mount()`, waits for it to return,
+   and only then shows the app's panels and dialogs. So `mount()` must never
+   wait for the app's own UI.
+
+## 6. What "verified" means
+
+[`verified.json`](https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/verified.json) records what the recipes were checked with:
+
+- the `@cytoscape-web/api-types` version every file compiles against, with
+  library checking on;
+- the Cytoscape Web releases on which every recipe's case passed, in a real
+  host. The cookbook supports **Cytoscape Web 1.1.0 and later**, and is run on
+  1.1.0 and on the latest release.
+
+Where the releases behave differently, the recipe's header says so by version.
+If your host is older than 1.1.0, or runs a build that is not a release,
+nothing here was checked against it.
+
+## 7. The shortest way to see one work
+
+```bash
+npm create cytoscape-app my-app
+cd my-app
+```
+
+Copy a recipe to `src/recipes/`, call it from the `onClick` in
+`src/menuActions.ts`, then:
+
+```bash
+npm run dev
+```
+
+Open the install link the dev server prints, confirm the install, open a
+network, and choose your entry in the **Apps** menu.
+
+## Rules for a coding agent
+
+- Use the recipe's function. Do not rewrite it from memory.
+- If the type checker rejects a name, that name does not exist. Do not cast
+  your way past it.
+- Do not invent visual property names, event names or error codes. They are
+  string literals that the types check.
+- Read the "Don't" section of the recipe before you change anything in it.
+
+---
+
+# Wiring
+
+## cookbook/wiring/from-apps-menu.ts
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-apps-menu.ts
+
+````typescript
+/**
+ * Call site 2 of 4: the `onClick` of an `'apps-menu'` entry.
+ *
+ * The host passes this app's own API object to `onClick`. Like
+ * `context.apis`, it has every domain, including the owner-bound ones.
+ *
+ * A menu entry is plain data: it has no component. An action that needs a
+ * form or a progress display opens it with `apis.dialog.open(...)`.
+ */
+import type { ResourceDeclaration } from 'cyweb/ApiTypes'
+
+import { addNodesToNetwork } from '../recipes/elements/add-nodes-to-network'
+import { colorNodesByNumericColumn } from '../recipes/style/color-nodes-by-numeric-column'
+import { openSelectByNameDialog } from '../recipes/ui/menu-action-with-dialog'
+import { openOwnPanel } from '../recipes/ui/open-own-panel-after-action'
+import { computeOncePerNetwork } from '../recipes/ui/persist-results-per-network'
+
+export const menuEntries: ResourceDeclaration[] = [
+  {
+    slot: 'apps-menu',
+    id: 'AddChain',
+    label: 'Add a chain of three nodes',
+    requires: { network: true },
+    onClick: (apis) => {
+      const current = apis.workspace.getCurrentNetworkId()
+      if (!current.success) return
+
+      const added = addNodesToNetwork(
+        apis,
+        current.data.networkId,
+        [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+        [
+          [0, 1],
+          [1, 2],
+        ],
+      )
+      if (!added.success) console.error(added.error.message)
+    },
+  },
+  {
+    slot: 'apps-menu',
+    id: 'ColorByScore',
+    label: 'Color nodes by score',
+    requires: { network: true },
+    onClick: (apis) => {
+      const current = apis.workspace.getCurrentNetworkId()
+      if (!current.success) return
+
+      const colored = colorNodesByNumericColumn(
+        apis,
+        current.data.networkId,
+        'score',
+      )
+      if (!colored.success) console.error(colored.error.message)
+    },
+  },
+  {
+    // An action that needs input opens a dialog, and returns.
+    slot: 'apps-menu',
+    id: 'SelectByName',
+    label: 'Select nodes by name…',
+    requires: { network: true },
+    onClick: (apis) => {
+      const opened = openSelectByNameDialog(apis)
+      if (!opened.success) console.error(opened.error.message)
+    },
+  },
+  {
+    // A result kept per network, then shown in this app's own tab: a
+    // 'right-panel' resource with the id 'Summary', which reads the stored
+    // result for the current network.
+    slot: 'apps-menu',
+    id: 'Summarize',
+    label: 'Summarize the network',
+    requires: { network: true },
+    onClick: (apis) => {
+      const current = apis.workspace.getCurrentNetworkId()
+      if (!current.success) return
+      const { networkId } = current.data
+
+      const summary = computeOncePerNetwork(apis, networkId, 'summary', () => {
+        const nodes = apis.element.getNodeIds(networkId)
+        const edges = apis.element.getEdgeIds(networkId)
+        if (!nodes.success) return nodes
+        if (!edges.success) return edges
+        return {
+          success: true,
+          data: {
+            nodes: nodes.data.nodeIds.length,
+            edges: edges.data.edgeIds.length,
+          },
+        }
+      })
+      if (!summary.success) {
+        console.error(summary.error.message)
+        return
+      }
+      const shown = openOwnPanel(apis, 'Summary')
+      if (!shown.success) console.error(shown.error.message)
+    },
+  },
+]
+````
+
+## cookbook/wiring/from-mount.ts
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-mount.ts
+
+````typescript
+/**
+ * Call site 1 of 4: `mount(context)` and `unmount()`.
+ *
+ * `context.apis` is this app's own API object. It has every domain, including
+ * the owner-bound ones (`resource`, `dialog`, `appData`, `contextMenu`,
+ * `nodeGraphics`, `panel`), so every recipe can be called from here.
+ *
+ * `mount()` must return without waiting for the app's own panel or dialog:
+ * the host shows them only after `mount()` has returned.
+ */
+import type { AppContext, CyAppWithLifecycle, IdType } from 'cyweb/ApiTypes'
+
+import { followCurrentNetwork } from '../recipes/events/follow-current-network'
+import { registerGridLayout } from '../recipes/layout/register-app-layout'
+import { addLinkOut } from '../recipes/ui/link-out-from-node'
+
+let stopFollowing: (() => void) | null = null
+
+export const lifecycle: Pick<CyAppWithLifecycle, 'mount' | 'unmount'> = {
+  mount(context: AppContext): void {
+    // Owner-bound registrations: made for this app, so the host removes them
+    // when the app is disabled. Registering is synchronous; nothing here
+    // waits for anything.
+    const layout = registerGridLayout(context.apis, {
+      id: 'grid',
+      displayName: 'Grid (selected nodes)',
+    })
+    if (!layout.success) console.error(layout.error.message)
+    const linkOut = addLinkOut(context.apis, {
+      label: 'Open in NCBI Gene',
+      column: 'name',
+      url: (term) => `https://www.ncbi.nlm.nih.gov/gene/?term=${term}`,
+    })
+    if (!linkOut.success) console.error(linkOut.error.message)
+
+    const read = (networkId: IdType): boolean => {
+      const nodes = context.apis.element.getNodeIds(networkId)
+      // false: the data has not arrived yet, so the recipe reads again when
+      // it does.
+      if (!nodes.success) return false
+      console.info(`${networkId} has ${nodes.data.nodeIds.length} nodes`)
+      return true
+    }
+
+    const following = followCurrentNetwork(context.apis, read, () => {
+      console.info('no network is open')
+    })
+    if (following.success) stopFollowing = following.data.stop
+  },
+
+  // The host removes the layout and the context menu item itself. Only what
+  // the host does not know about is undone here.
+  unmount(): void {
+    stopFollowing?.()
+    stopFollowing = null
+  },
+}
+````
+
+## cookbook/wiring/from-panel.tsx
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-panel.tsx
+
+````typescript
+/**
+ * Call site 3 of 4: a React component, such as a `'right-panel'` panel.
+ *
+ * Two sources, for two kinds of domain:
+ *
+ * - **Host-wide domains** (`element`, `network`, `selection`, `viewport`,
+ *   `table`, `visualStyle`, `layout`, `export`, `workspace`): the `use*Api`
+ *   hooks, one per domain.
+ * - **Owner-bound domains** (`resource`, `dialog`, `appData`, `contextMenu`,
+ *   `nodeGraphics`, `panel`): `useAppContext()?.apis`, and nothing else. A
+ *   recipe that needs one of them takes that object.
+ *
+ * To follow the current network in a component, read it once when the
+ * component mounts, then on its events through the `useCyWebEvent` hook, which
+ * subscribes on mount and unsubscribes on unmount. Clear what you show when no
+ * network is current.
+ */
+import { useCallback, useEffect, useState } from 'react'
+
+import { useAppContext } from 'cyweb/AppIdContext'
+import { useElementApi } from 'cyweb/ElementApi'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useViewportApi } from 'cyweb/ViewportApi'
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+
+import { addNodesToNetwork } from '../recipes/elements/add-nodes-to-network'
+import { colorNodesByNumericColumn } from '../recipes/style/color-nodes-by-numeric-column'
+
+const ExamplePanel = (): JSX.Element => {
+  // Host-wide domains, from their hooks.
+  const element = useElementApi()
+  const viewport = useViewportApi()
+  const workspace = useWorkspaceApi()
+  // This app's own API object. It is null outside an app's own tree.
+  const apis = useAppContext()?.apis
+
+  const [message, setMessage] = useState('')
+  const [nodeCount, setNodeCount] = useState<number | null>(null)
+
+  // Always show the network that is current now, whatever event asked.
+  // No network, or one whose data has not arrived yet, shows nothing.
+  const readNodeCount = useCallback((): void => {
+    const current = workspace.getCurrentNetworkId()
+    if (!current.success) {
+      setNodeCount(null)
+      return
+    }
+    const nodes = element.getNodeIds(current.data.networkId)
+    setNodeCount(nodes.success ? nodes.data.nodeIds.length : null)
+  }, [element, workspace])
+
+  // 1. When the panel opens: a network may already be on screen, and no
+  //    event will announce it.
+  useEffect(() => {
+    readNodeCount()
+  }, [readNodeCount])
+  // 2. On every switch, including to no network at all (an empty id).
+  useCyWebEvent('network:switched', readNodeCount)
+  // 3. When data arrives: a read made on the switch alone can fail with APP1.
+  useCyWebEvent('network:loaded', readNodeCount)
+  // 4. When nodes or edges are added or removed: by this panel's own button,
+  //    by another app, or by Edit ▸ Undo.
+  useCyWebEvent('network:changed', readNodeCount)
+
+  const addChain = (): void => {
+    const current = workspace.getCurrentNetworkId()
+    if (!current.success) {
+      setMessage(current.error.message)
+      return
+    }
+    const added = addNodesToNetwork(
+      { element, viewport },
+      current.data.networkId,
+      [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+      [
+        [0, 1],
+        [1, 2],
+      ],
+    )
+    setMessage(
+      added.success
+        ? `Added ${added.data.nodeIds.length} nodes`
+        : added.error.message,
+    )
+  }
+
+  // The app's own API object has every domain, so it serves a host-wide
+  // recipe too. A recipe typed Pick<AppContextApis, …> accepts only this.
+  const colorByScore = (): void => {
+    if (apis === undefined) return
+    const current = apis.workspace.getCurrentNetworkId()
+    if (!current.success) {
+      setMessage(current.error.message)
+      return
+    }
+    const colored = colorNodesByNumericColumn(
+      apis,
+      current.data.networkId,
+      'score',
+    )
+    setMessage(
+      colored.success
+        ? `Colored ${colored.data.mappedCount} nodes`
+        : colored.error.message,
+    )
+  }
+
+  return (
+    <div>
+      <p>{nodeCount === null ? 'No network' : `${nodeCount} nodes`}</p>
+      <button onClick={addChain}>Add a chain of three nodes</button>
+      <button onClick={colorByScore}>Color nodes by score</button>
+      <p>{message}</p>
+    </div>
+  )
+}
+
+export default ExamplePanel
+````
+
+## cookbook/wiring/from-window.ts
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/wiring/from-window.ts
+
+````typescript
+/**
+ * Call site 4 of 4: `window.CyWebApi`, from code that is not an app.
+ *
+ * Use it from a script on the page, a bookmarklet or a test. Two limits:
+ *
+ * - **Wait for `whenReady()`.** `window.CyWebApi` exists before the host has
+ *   finished starting, and its methods may not work until then.
+ * - **Host-wide domains only.** `window.CyWebApi` has no `resource`, `dialog`
+ *   or `appData`. Its `contextMenu`, `nodeGraphics` and `panel` belong to no
+ *   app: what they register is not removed when an app is disabled. Never
+ *   pass it to a recipe that takes `Pick<AppContextApis, …>`.
+ */
+import type { ApiResult } from 'cyweb/ApiTypes'
+
+import {
+  addNodesToNetwork,
+  type AddedElements,
+} from '../recipes/elements/add-nodes-to-network'
+
+export async function addChainFromPage(): Promise<ApiResult<AddedElements>> {
+  const api = await window.CyWebApi.whenReady()
+
+  const current = api.workspace.getCurrentNetworkId()
+  if (!current.success) return current
+
+  return addNodesToNetwork(
+    api,
+    current.data.networkId,
+    [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+    [
+      [0, 1],
+      [1, 2],
+    ],
+  )
+}
+````
+
+# Recipes
+
+## Add a computed column: node degree
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/add-computed-column.ts
+
+````typescript
+/**
+ * @recipe Add a computed column: node degree
+ * @aliases add a column, computed column, calculate degree, node degree,
+ *   number of connections, count neighbors, derived attribute, write
+ *   results to the table
+ * @apis element.getNodeIds, element.getEdges, table.getColumns,
+ *   table.createColumn, table.setValues, table.deleteColumn
+ * @related data/read-column-values-safely, style/size-nodes-by-degree,
+ *   data/join-table-by-key
+ *
+ * ## When to use
+ *
+ * The user asks for a value computed from the network to be added to the
+ * node table, here each node's degree, so that it can be sorted, filtered or
+ * mapped to a style. Replace the computation to write anything else.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - No node column has the chosen name in another type, or in another
+ *   spelling of the same letters.
+ *
+ * ## Side effects
+ *
+ * - Creates an `integer` column named `column` (default `degree`) when there
+ *   is none, and writes every node's value in one batch.
+ * - Writing the values records **one** undo entry. Creating the column
+ *   records none: after an undo the column stays, holding its previous
+ *   values (`0` for a new one).
+ * - If writing fails, the recipe deletes the column it created. Deleting a
+ *   column records an undo entry of its own.
+ *
+ * ## Pitfalls
+ *
+ * - **Read the topology once.** `getEdges` returns every edge with its ends.
+ *   One `getConnectedEdges` call per node does the same work node by node.
+ * - **A self-loop counts twice**, as in Cytoscape Desktop.
+ * - **Use the batch call.** One `setValues` validates every value first and
+ *   writes all or nothing. A loop of `setValue` records one undo entry per
+ *   node and can stop halfway.
+ * - **Column names and case.** 1.1.0 compares column names exactly and would
+ *   create `degree` next to an existing `Degree`; 1.1.1 compares them
+ *   ignoring case and refuses it with `AC6`. The recipe checks itself and
+ *   refuses such a name on both, before changing anything.
+ * - **Running it again updates the column** when it is `integer` or `long`.
+ *   A column of that name in another type is refused.
+ * - **The column is a snapshot.** It does not follow later edits to the
+ *   network: run the recipe again after adding or deleting edges.
+ *
+ * ## Don't
+ *
+ * - Don't create the column with a type the values do not have: a degree is
+ *   a whole number, and `setValues` refuses `2.5` in an `integer` column.
+ * - Don't name the column `id`: the host refuses it.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CellEdit,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface ComputedColumn {
+  column: string
+  /** Whether the recipe created the column, or updated an existing one. */
+  created: boolean
+  min: number
+  max: number
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function addDegreeColumn(
+  apis: Pick<CyWebApiType, 'element' | 'table'>,
+  networkId: IdType,
+  column = 'degree',
+): ApiResult<ComputedColumn> {
+  const nodes = apis.element.getNodeIds(networkId)
+  if (!nodes.success) return nodes
+  const edges = apis.element.getEdges(networkId)
+  if (!edges.success) return edges
+
+  // Compute first: nothing is written until the values exist.
+  const degree = new Map<IdType, number>()
+  for (const id of nodes.data.nodeIds) degree.set(id, 0)
+  for (const edge of edges.data.edges) {
+    degree.set(edge.sourceId, (degree.get(edge.sourceId) ?? 0) + 1)
+    degree.set(edge.targetId, (degree.get(edge.targetId) ?? 0) + 1)
+  }
+
+  const columns = apis.table.getColumns(networkId, 'node')
+  if (!columns.success) return columns
+  const same = columns.data.columns.find(
+    (c) => c.name.toLowerCase() === column.toLowerCase(),
+  )
+  if (same !== undefined && same.name !== column) {
+    return failure(
+      'RECIPE_NAME_CLASH',
+      `a column named ${same.name} exists; choose a name that differs by ` +
+        `more than case`,
+    )
+  }
+  if (same !== undefined && same.type !== 'integer' && same.type !== 'long') {
+    return failure(
+      'RECIPE_COLUMN_TYPE',
+      `${column} exists as a ${same.type} column`,
+    )
+  }
+
+  const created = same === undefined
+  if (created) {
+    const made = apis.table.createColumn(networkId, 'node', column, 'integer', 0)
+    if (!made.success) return made
+  }
+
+  const edits: CellEdit[] = []
+  let min = Infinity
+  let max = -Infinity
+  for (const [id, value] of degree) {
+    edits.push({ id, column, value })
+    min = Math.min(min, value)
+    max = Math.max(max, value)
+  }
+  const written = apis.table.setValues(networkId, 'node', edits)
+  if (!written.success) {
+    if (created) apis.table.deleteColumn(networkId, 'node', column)
+    return written
+  }
+
+  return {
+    success: true,
+    data: { column, created, min: edits.length ? min : 0, max: edits.length ? max : 0 },
+  }
+}
+````
+
+## Join a table of values to the network by a key column
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/join-table-by-key.ts
+
+````typescript
+/**
+ * @recipe Join a table of values to the network by a key column
+ * @aliases import table, import data, join table, merge data, add
+ *   attributes from a file, import TSV, load node attributes, map data onto
+ *   nodes, attribute table
+ * @apis table.getColumns, element.getNodeIds, element.getEdgeIds,
+ *   table.getTable, table.editRows, table.importTableFromTsv
+ * @related data/add-computed-column, data/read-column-values-safely,
+ *   network/create-network-from-table
+ *
+ * ## When to use
+ *
+ * The user has a tab-separated table, such as expression values per gene,
+ * and asks to attach it to the network's nodes (or edges) by a shared key:
+ * Cytoscape's "Import Table From File".
+ *
+ * ## Preconditions
+ *
+ * - The first line names the columns. The key column holds the same values as
+ *   a column of the network's table, such as `name`, or the element ids
+ *   (key `id`).
+ * - Values contain no tabs and no line breaks: the host does not read
+ *   quotes.
+ *
+ * ## Side effects
+ *
+ * - Creates every column of the file that the table lacks, and writes the
+ *   values of every row whose key matches.
+ * - The import records **no** undo entry: Edit ▸ Undo does not remove
+ *   imported data.
+ * - With key `id`, an element the file names that has no table row gets an
+ *   empty one first, in one batch (`createdRows`): **one** undo entry.
+ * - A row whose key matches nothing is skipped and reported in
+ *   `unmatchedKeys`. A key that matches several elements, two nodes with the
+ *   same `name`, writes to all of them.
+ *
+ * ## Pitfalls
+ *
+ * - **Give each column a type in the header**, as Cytoscape Desktop does:
+ *   `score:double`. Without one the host infers the type from the first few
+ *   rows, and a later value that does not fit is skipped and reported in
+ *   `skippedCells`.
+ * - **Line endings.** A file saved on Windows ends its lines with `\r\n`,
+ *   and the host splits on `\n` alone: every last value would end in `\r`.
+ *   The recipe converts the line endings first.
+ * - **Column names and case.** 1.1.0 matches a file column to a table column
+ *   by its exact name, and would create `Score` next to an existing `score`;
+ *   1.1.1 matches ignoring case and writes `Score` into `score`. The recipe
+ *   refuses such a file on both, before changing anything.
+ * - **An empty cell** leaves a number or boolean as it was, and writes an
+ *   empty string into a text column.
+ * - **An element with no row takes no value.** The import writes through
+ *   `setValues`, which changes only rows that exist and reports a match
+ *   either way, on 1.1.0 and 1.1.1. An edge-list network has no edge rows. So
+ *   with key `id`, the recipe creates empty rows for the elements that lack
+ *   one; `editRows` would replace a row that exists, so only missing ones are
+ *   created. With any other key such an element has no key value, and
+ *   cannot match.
+ * - **Duplicate keys in the file** would leave the last row's values, and a
+ *   row with an empty key would be skipped without being reported. The
+ *   recipe refuses both.
+ * - **A typed header must match an existing column's type.** 1.1.0 would
+ *   write `score:long` values into a `double` column as they are; 1.1.1
+ *   refuses them with `A1`. The recipe refuses such a file on both.
+ *
+ * ## Don't
+ *
+ * - Don't loop over the rows with `setValue`: the import resolves the keys,
+ *   creates the columns and writes everything in one call.
+ * - Don't parse the file yourself to map names to node ids: pass `keyColumn`.
+ * - Don't write CSV: the host reads tabs only.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppTableType,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface Joined {
+  /** Elements that received values. */
+  matchedElements: number
+  /** Empty rows created first, for elements the file names that had none. */
+  createdRows: number
+  /** Key values in the file that match no element. */
+  unmatchedKeys: string[]
+  /** Columns the import created. */
+  newColumns: string[]
+  /** Values that could not be read as their column's type. */
+  skippedCells: Array<{ key: string; column: string; value: string }>
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+const TYPES = [
+  'string', 'long', 'integer', 'double', 'boolean', 'list_of_string',
+  'list_of_long', 'list_of_integer', 'list_of_double', 'list_of_boolean',
+]
+
+/**
+ * A header field is `name` or `name:type`. As in the host, only a known type
+ * after the last colon is one: `time:sec` is a column named `time:sec`.
+ */
+const columnName = (field: string): string => {
+  const colon = field.lastIndexOf(':')
+  return colon > 0 && TYPES.includes(field.slice(colon + 1))
+    ? field.slice(0, colon)
+    : field
+}
+
+export function joinTableByKey(
+  apis: Pick<CyWebApiType, 'table' | 'element'>,
+  networkId: IdType,
+  tsvText: string,
+  key: string,
+  tableType: AppTableType = 'node',
+): ApiResult<Joined> {
+  const text = tsvText.replace(/\r\n?/g, '\n')
+  const lines = text.split('\n').filter((line) => line.trim() !== '')
+  if (lines.length < 2) {
+    return failure('RECIPE_NO_ROWS', 'the file has no row under its header')
+  }
+  const header = lines[0].split('\t').map(columnName)
+  const keyIndex = header.indexOf(key)
+  if (keyIndex === -1) {
+    return failure('RECIPE_NO_KEY_IN_FILE', `the file has no ${key} column`)
+  }
+
+  const columns = apis.table.getColumns(networkId, tableType)
+  if (!columns.success) return columns
+  if (key !== 'id' && !columns.data.columns.some((c) => c.name === key)) {
+    return failure(
+      'RECIPE_NO_KEY_COLUMN',
+      `the ${tableType} table has no ${key} column to match`,
+    )
+  }
+
+  // Same letters, other case: 1.1.0 and 1.1.1 would do different things.
+  // Only the file's columns matter; two old table columns that clash with
+  // each other, and with nothing in the file, are left alone.
+  for (const [i, name] of header.entries()) {
+    const other =
+      header.slice(0, i).find((h) => h.toLowerCase() === name.toLowerCase() && h !== name) ??
+      columns.data.columns
+        .map((c) => c.name)
+        .find((c) => c.toLowerCase() === name.toLowerCase() && c !== name)
+    if (other !== undefined) {
+      return failure(
+        'RECIPE_NAME_CLASH',
+        `${name} and ${other} differ only by case`,
+      )
+    }
+  }
+  if (new Set(header).size !== header.length) {
+    return failure('RECIPE_NAME_CLASH', 'the file names a column twice')
+  }
+
+  // A typed header field for an existing column must keep its type: 1.1.0
+  // would write the values as the file's type, and 1.1.1 refuses them (A1).
+  for (const field of lines[0].split('\t')) {
+    const name = columnName(field)
+    const declared = field.slice(name.length + 1)
+    const existing = columns.data.columns.find((c) => c.name === name)
+    if (declared !== '' && existing !== undefined && existing.type !== declared) {
+      return failure(
+        'RECIPE_COLUMN_TYPE',
+        `the file declares ${name} as ${declared}, and the table holds it ` +
+          `as ${existing.type}`,
+      )
+    }
+  }
+
+  const keys = new Set<string>()
+  for (const [index, line] of lines.slice(1).entries()) {
+    const value = line.split('\t')[keyIndex] ?? ''
+    if (value === '') {
+      return failure(
+        'RECIPE_EMPTY_KEY',
+        `row ${index + 1} has no ${key}: the host would skip it unreported`,
+      )
+    }
+    if (keys.has(value)) {
+      return failure('RECIPE_DUPLICATE_KEY', `the key ${value} appears twice`)
+    }
+    keys.add(value)
+  }
+
+  // With key `id`, an element without a row would be matched and written
+  // nothing: see Pitfalls. Create the missing rows, and only those.
+  let createdRows = 0
+  if (key === 'id') {
+    let elementIds: IdType[]
+    if (tableType === 'node') {
+      const read = apis.element.getNodeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.nodeIds
+    } else {
+      const read = apis.element.getEdgeIds(networkId)
+      if (!read.success) return read
+      elementIds = read.data.edgeIds
+    }
+    const table = apis.table.getTable(networkId, tableType)
+    if (!table.success) return table
+    const withRow = new Set(table.data.rows.map((row) => String(row.id)))
+    const missing = elementIds.filter((id) => keys.has(id) && !withRow.has(id))
+    if (missing.length > 0) {
+      const made = apis.table.editRows(
+        networkId,
+        tableType,
+        Object.fromEntries(missing.map((id) => [id, {}])),
+      )
+      if (!made.success) return made
+      createdRows = missing.length
+    }
+  }
+
+  const imported = apis.table.importTableFromTsv(
+    networkId,
+    tableType,
+    lines.join('\n'),
+    { keyColumn: key },
+  )
+  if (!imported.success) return imported
+  return {
+    success: true,
+    data: {
+      matchedElements: imported.data.rowCount,
+      createdRows,
+      unmatchedKeys: imported.data.skippedRows,
+      newColumns: imported.data.newColumns,
+      skippedCells: imported.data.skippedCells,
+    },
+  }
+}
+````
+
+## Read a column's numbers safely
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/data/read-column-values-safely.ts
+
+````typescript
+/**
+ * @recipe Read a column's numbers safely
+ * @aliases read column values, get numeric values, read a column, column to
+ *   numbers, parse numbers from a column, column statistics, min and max of
+ *   a column, missing values
+ * @apis table.getTable
+ * @related data/add-computed-column, style/color-nodes-by-numeric-column,
+ *   style/emphasize-by-threshold
+ *
+ * ## When to use
+ *
+ * An app needs the numbers in a node or edge column, for a chart, a
+ * statistic, a threshold or a mapping, and must not be fooled by missing,
+ * textual or odd values.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ *
+ * ## Side effects
+ *
+ * - None. The recipe only reads.
+ *
+ * ## Pitfalls
+ *
+ * - **Missing values.** A row with no value for the column, or an empty
+ *   string, is reported in `missing`, not read as `0`.
+ * - **A default is not missing.** A column created with a default value
+ *   (`createColumn(…, 0)`) holds that value in every row it was not given
+ *   another one. The table cannot tell the two apart.
+ * - **Non-numeric values.** In a `double`, `long` or `integer` column every
+ *   value is a number; `NaN` and the infinities are reported in `invalid`.
+ *   In a `string` column the recipe parses each value strictly (`"1.5"` and
+ *   `"2e3"` are numbers, `"1.5 kg"` and `"n/a"` are not) and reports what
+ *   does not parse in `invalid`. `fromText` says that parsing happened.
+ *   Boolean and list columns are refused.
+ * - **An empty column** gives `range: null`. Check it before dividing by the
+ *   width of the range.
+ * - **All values equal** gives `min === max`. A gradient or a scale needs at
+ *   least two different values.
+ * - **Find the range with a loop.** `Math.min(...values)` passes one argument
+ *   per row and throws a `RangeError` past about 120,000 of them.
+ * - Ids come from the table's `id` field, which `getTable` adds by default.
+ *
+ * ## Don't
+ *
+ * - Don't use `Number(value)` on its own: `Number('')` is `0` and
+ *   `Number(null)` is `0`.
+ * - Don't use `parseFloat`: `parseFloat('1.5 kg')` is `1.5`.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppTableType,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface NumericColumn {
+  /** The column's declared type. */
+  type: string
+  /** Every finite number, by element id. */
+  values: Record<IdType, number>
+  /** Elements with no value. */
+  missing: IdType[]
+  /** Elements whose value is not a finite number. */
+  invalid: IdType[]
+  /** Whether the values were parsed from a text column. */
+  fromText: boolean
+  /** Null when no element has a number. */
+  range: { min: number; max: number } | null
+}
+
+const NUMERIC_TYPES = ['double', 'long', 'integer']
+const NUMBER_TEXT = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function readNumericColumn(
+  apis: Pick<CyWebApiType, 'table'>,
+  networkId: IdType,
+  tableType: AppTableType,
+  column: string,
+): ApiResult<NumericColumn> {
+  const table = apis.table.getTable(networkId, tableType, {
+    columns: [column],
+  })
+  if (!table.success) return table
+  const info = table.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no ${tableType} column ${column}`)
+  }
+  const fromText = info.type === 'string'
+  if (!fromText && !NUMERIC_TYPES.includes(info.type)) {
+    return failure(
+      'RECIPE_COLUMN_TYPE',
+      `${column} is a ${info.type} column, which holds no numbers`,
+    )
+  }
+
+  const result: NumericColumn = {
+    type: info.type,
+    // No prototype: an element id is data, and "__proto__" would not stick.
+    values: Object.create(null) as Record<IdType, number>,
+    missing: [],
+    invalid: [],
+    fromText,
+    range: null,
+  }
+  let min = Infinity
+  let max = -Infinity
+  for (const row of table.data.rows) {
+    const id = String(row.id)
+    const raw = row[column]
+    if (raw === undefined || raw === null || raw === '') {
+      result.missing.push(id)
+      continue
+    }
+    const value =
+      typeof raw === 'number'
+        ? raw
+        : typeof raw === 'string' && NUMBER_TEXT.test(raw)
+          ? Number(raw)
+          : NaN
+    if (!Number.isFinite(value)) {
+      result.invalid.push(id)
+      continue
+    }
+    result.values[id] = value
+    min = Math.min(min, value)
+    max = Math.max(max, value)
+  }
+  if (min !== Infinity) result.range = { min, max }
+  return { success: true, data: result }
+}
+````
+
+## Connect the selected nodes to each other
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/add-edges-between-selected.ts
+
+````typescript
+/**
+ * @recipe Connect the selected nodes to each other
+ * @aliases add edges between selected nodes, connect selected nodes, link
+ *   selected nodes, make a clique, connect all pairs, fully connect
+ *   selection
+ * @apis selection.getSelection, element.getEdges, element.createEdges
+ * @related elements/add-nodes-to-network, elements/delete-selected,
+ *   selection/select-neighbors
+ *
+ * ## When to use
+ *
+ * The user has selected some nodes and asks to connect them: every pair of
+ * selected nodes gets an edge, unless it already has one.
+ *
+ * ## Preconditions
+ *
+ * - At least two nodes of `networkId` are selected.
+ * - The network's data is loaded; see `events/follow-current-network`.
+ *
+ * ## Side effects
+ *
+ * - Adds one edge for each pair of selected nodes that no edge connects yet,
+ *   in either direction. The source is the node selected first, in the order
+ *   the host reports the selection.
+ * - Records **one** undo entry for all the new edges.
+ * - Does not change the selection, and adds no edge when every pair is
+ *   already connected.
+ *
+ * ## Pitfalls
+ *
+ * - **The number of pairs grows with the square of the selection.** 50 nodes
+ *   make up to 1,225 edges. The recipe refuses more than `maxEdges` (100 by
+ *   default) before creating anything, and stops counting as soon as the
+ *   limit is passed: listing every pair of a large selection first would
+ *   freeze the page.
+ * - **Use the batch call.** `createEdges` validates every edge first, creates
+ *   all or none, and records one undo entry. A loop over `createEdge` records
+ *   one per edge and can stop halfway. A failure here therefore leaves
+ *   nothing behind.
+ * - **Existing edges are read once**, with `getEdges`, not with one
+ *   `getConnectedEdges` call per node.
+ * - **`autoSelect` defaults to true** in the host. Left at the default, the
+ *   new edges would replace the selection. The recipe passes `false`.
+ *
+ * ## Don't
+ *
+ * - Don't connect the selected nodes in a chain when the user asked for them
+ *   to be connected to each other, or the reverse.
+ * - Don't add an edge where one already exists, unless the user asks for
+ *   parallel edges.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface ConnectOptions {
+  /** Refuse to create more edges than this. Defaults to 100. */
+  maxEdges?: number
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+const pairKey = (a: IdType, b: IdType): string =>
+  a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`
+
+export function addEdgesBetweenSelected(
+  apis: Pick<CyWebApiType, 'selection' | 'element'>,
+  networkId: IdType,
+  options: ConnectOptions = {},
+): ApiResult<{ edgeIds: IdType[] }> {
+  const selection = apis.selection.getSelection(networkId)
+  if (!selection.success) return selection
+  const nodes = selection.data.selectedNodes
+  if (nodes.length < 2) {
+    return failure('RECIPE_TOO_FEW_NODES', 'select at least two nodes')
+  }
+
+  const existing = apis.element.getEdges(networkId)
+  if (!existing.success) return existing
+  const connected = new Set(
+    existing.data.edges.map((e) => pairKey(e.sourceId, e.targetId)),
+  )
+
+  // Stop as soon as the limit is passed: 10,000 selected nodes would make
+  // 50 million pairs before a check at the end could refuse them.
+  const maxEdges = options.maxEdges ?? 100
+  const pairs: Array<[IdType, IdType]> = []
+  for (let i = 0; i < nodes.length; i += 1) {
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      if (connected.has(pairKey(nodes[i], nodes[j]))) continue
+      pairs.push([nodes[i], nodes[j]])
+      if (pairs.length > maxEdges) {
+        return failure(
+          'RECIPE_TOO_MANY_EDGES',
+          `more than ${maxEdges} edges would be created`,
+        )
+      }
+    }
+  }
+  if (pairs.length === 0) return { success: true, data: { edgeIds: [] } }
+
+  const created = apis.element.createEdges(
+    networkId,
+    pairs.map(([sourceNodeId, targetNodeId]) => ({
+      sourceNodeId,
+      targetNodeId,
+    })),
+    { autoSelect: false },
+  )
+  if (!created.success) return created
+  return {
+    success: true,
+    data: { edgeIds: created.data.edges.map((e) => e.edgeId) },
+  }
+}
+````
+
+## Add nodes to a network, and connect them
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/add-nodes-to-network.ts
+
+````typescript
+/**
+ * @recipe Add nodes to a network, and connect them
+ * @aliases add nodes, create nodes, insert nodes, new nodes, add a chain of
+ *   nodes, connect nodes, add edges between new nodes
+ * @apis viewport.getNodePositions, element.createNodes, element.createEdges
+ * @related style/color-nodes-by-numeric-column, events/follow-current-network
+ *
+ * ## When to use
+ *
+ * The user asks to add one or more nodes to an existing network, with or
+ * without edges between the new nodes: "add three nodes A, B and C and connect
+ * them in a chain".
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded. A network that has just become current may
+ *   not be readable yet; see `events/follow-current-network`.
+ * - Each `link` is a pair of indexes into `nodes`: `[0, 1]` connects the first
+ *   new node to the second.
+ *
+ * ## Side effects
+ *
+ * - Adds the nodes, each with its `name` and any other `attributes`.
+ * - Adds one edge per link.
+ * - Records one undo entry for all the nodes and, when there are links, a
+ *   second one for all the edges. The user then undoes twice to remove
+ *   everything.
+ * - Does not change the selection.
+ *
+ * ## Pitfalls
+ *
+ * - **Use the batch calls.** `createNodes` validates every node before it
+ *   creates any, and records one undo entry. A loop over `createNode` records
+ *   one entry per node and can stop halfway.
+ * - **Every node needs a position.** Nodes created at the same position sit
+ *   on top of each other. This recipe puts the new nodes in a row below the
+ *   existing ones.
+ * - **Find the extent with a loop.** `Math.min(...xs)` passes one argument
+ *   per node, and throws a `RangeError` past about 120,000 of them. The host
+ *   does not stop a network of that size from loading.
+ * - **If the edges fail, the nodes stay.** The two batches are separate
+ *   calls. The recipe returns the failure and leaves the nodes in place; one
+ *   undo removes them. That cannot happen for a link that names a missing
+ *   node, because the links are checked before anything is created.
+ * - **`autoSelect` defaults to true** in the host. Left at the default, the
+ *   new nodes replace the user's selection. This recipe passes `false`.
+ * - An attribute must not be named `id`. The host assigns ids; read them from
+ *   the result.
+ *
+ * ## Don't
+ *
+ * - Don't invent node ids, and don't guess them from `generateNextNodeId`:
+ *   use the ids that `createNodes` returns.
+ * - Don't call `createNode` in a loop.
+ * - Don't create edges before the nodes exist.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+  ValueType,
+} from 'cyweb/ApiTypes'
+
+export interface NewNode {
+  /** Shown as the node's label in a network created by the host. */
+  name: string
+  /** Other columns to fill. Must not contain `id`. */
+  attributes?: Record<string, ValueType>
+}
+
+export interface AddedElements {
+  /** Ids of the created nodes, in the order of `nodes`. */
+  nodeIds: IdType[]
+  /** Ids of the created edges, in the order of `links`. */
+  edgeIds: IdType[]
+}
+
+const SPACING = 120
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function addNodesToNetwork(
+  apis: Pick<CyWebApiType, 'element' | 'viewport'>,
+  networkId: IdType,
+  nodes: NewNode[],
+  links: Array<[number, number]> = [],
+): ApiResult<AddedElements> {
+  if (nodes.length === 0) {
+    return failure('RECIPE_NO_NODES', 'nodes must not be empty')
+  }
+  const isIndex = (i: number): boolean =>
+    Number.isInteger(i) && i >= 0 && i < nodes.length
+  const badLink = links.find(([from, to]) => !isIndex(from) || !isIndex(to))
+  if (badLink !== undefined) {
+    return failure(
+      'RECIPE_BAD_LINK',
+      `link [${badLink.join(', ')}] does not name two of the new nodes`,
+    )
+  }
+
+  // Place the new nodes in a row below everything that is already there.
+  const existing = apis.viewport.getNodePositions(networkId)
+  if (!existing.success) return existing
+  // A loop, not Math.min(...xs): see Pitfalls.
+  let left = 0
+  let bottom = 0
+  let first = true
+  for (const [x, y] of Object.values(existing.data.positions)) {
+    left = first ? x : Math.min(left, x)
+    bottom = first ? y : Math.max(bottom, y)
+    first = false
+  }
+
+  const created = apis.element.createNodes(
+    networkId,
+    nodes.map((node, index) => ({
+      position: [left + index * SPACING, bottom + SPACING],
+      attributes: { ...node.attributes, name: node.name },
+    })),
+    { autoSelect: false },
+  )
+  if (!created.success) return created
+  const nodeIds = created.data.nodes.map((n) => n.nodeId)
+  if (links.length === 0) {
+    return { success: true, data: { nodeIds, edgeIds: [] } }
+  }
+
+  const connected = apis.element.createEdges(
+    networkId,
+    links.map(([from, to]) => ({
+      sourceNodeId: nodeIds[from],
+      targetNodeId: nodeIds[to],
+    })),
+    { autoSelect: false },
+  )
+  // The nodes stay if this fails; see Pitfalls.
+  if (!connected.success) return connected
+
+  return {
+    success: true,
+    data: { nodeIds, edgeIds: connected.data.edges.map((e) => e.edgeId) },
+  }
+}
+````
+
+## Delete the selected nodes and edges
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/elements/delete-selected.ts
+
+````typescript
+/**
+ * @recipe Delete the selected nodes and edges
+ * @aliases delete selection, remove selected, delete selected nodes, remove
+ *   nodes, delete edges, clear selected elements
+ * @apis selection.getSelection, element.deleteNodes, element.deleteEdges
+ * @related elements/add-edges-between-selected,
+ *   selection/select-by-attribute, network/subnetwork-from-selection
+ *
+ * ## When to use
+ *
+ * An app deletes what the user selected, from code: a menu action, a button
+ * in a panel, or as one step of a larger edit.
+ *
+ * The user can also choose Edit ▸ Delete Selected Nodes (or Edges), and on
+ * 1.1.1 press Delete or Backspace on the canvas. This recipe does the same
+ * from code, on both releases.
+ *
+ * ## Preconditions
+ *
+ * - Something in `networkId` is selected.
+ *
+ * ## Side effects
+ *
+ * - Deletes the selected nodes, every edge that touches them, and the
+ *   selected edges.
+ * - Records **one undo entry for the nodes and one for the edges** that
+ *   remain to delete after them: the user undoes twice to restore a mixed
+ *   selection.
+ * - What Edit ▸ Undo restores differs by release. On 1.1.1 the nodes come
+ *   back where they were. On 1.1.0 they come back without their views:
+ *   `viewport.getNodePositions` lists them as missing, and the canvas draws
+ *   them at (0, 0). 1.1.0's `deleteNodes` also reports every deleted node at
+ *   `[0, 0]`. Both are fixed in 1.1.1 (host #857); both were seen by pressing
+ *   Edit ▸ Undo on a host of each release.
+ *
+ * ## Pitfalls
+ *
+ * - **Delete the nodes first.** Deleting a node deletes its edges, so the
+ *   recipe then deletes only the selected edges that are still there.
+ *   Deleting those edges first would work too, but leaves one more undo
+ *   entry for edges the node deletion would have removed anyway.
+ * - **Use the batch calls.** `deleteNodes` and `deleteEdges` each take every
+ *   id at once and record one undo entry. A loop records one per element.
+ * - **If the edges fail, the nodes stay deleted.** The recipe returns the
+ *   failure; one undo restores the nodes.
+ * - The two calls report ids that no longer exist in `missing` instead of
+ *   failing, and fail only when none exists.
+ *
+ * ## Don't
+ *
+ * - Don't delete nodes one at a time.
+ * - Don't delete the selection of a network other than the one you mean:
+ *   pass the current network's id, from `workspace.getCurrentNetworkId`.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface Deleted {
+  nodeIds: IdType[]
+  /** Every edge deleted: the selected ones and those of deleted nodes. */
+  edgeIds: IdType[]
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function deleteSelected(
+  apis: Pick<CyWebApiType, 'selection' | 'element'>,
+  networkId: IdType,
+): ApiResult<Deleted> {
+  const selection = apis.selection.getSelection(networkId)
+  if (!selection.success) return selection
+  const { selectedNodes, selectedEdges } = selection.data
+  if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+    return failure('RECIPE_NOTHING_SELECTED', 'nothing is selected')
+  }
+
+  const deleted: Deleted = { nodeIds: [], edgeIds: [] }
+  if (selectedNodes.length > 0) {
+    const nodes = apis.element.deleteNodes(networkId, selectedNodes)
+    if (!nodes.success) return nodes
+    deleted.nodeIds = nodes.data.deletedNodes.map((n) => n.id)
+    deleted.edgeIds = nodes.data.deletedEdges.map((e) => e.id)
+  }
+
+  const gone = new Set(deleted.edgeIds)
+  const remaining = selectedEdges.filter((id) => !gone.has(id))
+  if (remaining.length > 0) {
+    const edges = apis.element.deleteEdges(networkId, remaining)
+    if (!edges.success) return edges
+    // concat, not push(...ids): a spread throws on a large selection.
+    deleted.edgeIds = deleted.edgeIds.concat(
+      edges.data.deletedEdges.map((e) => e.id),
+    )
+  }
+
+  return { success: true, data: deleted }
+}
+````
+
+## Follow the current network, and read it only when it is ready
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/events/follow-current-network.ts
+
+````typescript
+/**
+ * @recipe Follow the current network, and read it only when it is ready
+ * @aliases current network changed, network switched, on network change,
+ *   react to network switch, wait for network to load, network not loaded,
+ *   APP1 after switching, refresh when the user opens another network
+ * @apis workspace.getCurrentNetworkId
+ * @related elements/add-nodes-to-network, style/color-nodes-by-numeric-column
+ *
+ * ## When to use
+ *
+ * The app shows or computes something about the network on screen and must
+ * keep up when the user switches to another one.
+ *
+ * ## Preconditions
+ *
+ * - The API is ready. Inside an app it always is. On a plain page, wait for
+ *   `await window.CyWebApi.whenReady()` first.
+ * - `read` returns `false` when it could not read the network yet, and `true`
+ *   when it could. A failed read is how the recipe learns that the data has
+ *   not arrived.
+ * - `onNone`, if given, clears whatever the app shows about a network.
+ *
+ * ## Side effects
+ *
+ * - Adds two listeners on `window`: `network:switched` and `network:loaded`.
+ *   `stop()` removes both.
+ * - Calls `read` once at the start if a network is current, once for every
+ *   switch, and once more when the data of a network it could not read
+ *   arrives.
+ * - Calls `onNone` at the start if no network is current, and whenever the
+ *   last network is closed.
+ * - Changes nothing in the host.
+ *
+ * ## Pitfalls
+ *
+ * - **Switching is not loading.** After a page reload the workspace holds
+ *   only summaries. A network's tables load the first time it becomes
+ *   current, and `network:switched` fires before they arrive: a read made
+ *   then fails with `APP1`. Read again on `network:loaded`.
+ * - **Ignore events for other networks.** `network:loaded` also fires for
+ *   networks that are not on screen. The recipe reads again only for the
+ *   network it is waiting for.
+ * - **Discard what arrives after a switch.** Each switch replaces the network
+ *   being waited for, so a late `network:loaded` for the previous one is
+ *   ignored. If `read` starts asynchronous work, check on completion that the
+ *   network is still current before using the result.
+ * - **Unsubscribe.** Call `stop()` in `unmount()`, or in the cleanup of a
+ *   React effect. A listener that outlives its app keeps running after the
+ *   app is disabled.
+ * - **No network is a state too.** When the last network is closed, the
+ *   host fires `network:switched` with an empty `networkId`. There is nothing
+ *   to read, and what the app shows describes a network that is gone: the
+ *   recipe calls `onNone` so that the app can clear it. At the start,
+ *   `getCurrentNetworkId` fails when no network is open; that is the same
+ *   state, not an error.
+ * - Do not use a timer to wait for a load. There is no safe duration.
+ *
+ * ## Don't
+ *
+ * - Don't read a network on `network:switched` and assume the read worked.
+ * - Don't poll `getCurrentNetworkId`.
+ * - Don't wait for the app's own panel or dialog inside `mount()`: the host
+ *   shows them only after `mount()` returns.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. In an app, start it in
+ * `mount()` and stop it in `unmount()`: see `wiring/from-mount.ts`. In a
+ * component, the `useCyWebEvent` hook from `cyweb/EventBus` subscribes and
+ * unsubscribes for you: see `wiring/from-panel.tsx`.
+ */
+import type { ApiResult, CyWebApiType, IdType } from 'cyweb/ApiTypes'
+
+export interface FollowedNetwork {
+  /** Removes both listeners. Safe to call more than once. */
+  stop: () => void
+}
+
+export function followCurrentNetwork(
+  apis: Pick<CyWebApiType, 'workspace'>,
+  read: (networkId: IdType) => boolean,
+  onNone: () => void = () => {},
+): ApiResult<FollowedNetwork> {
+  // The network whose data had not arrived when `read` was last called.
+  let waitingFor: IdType | null = null
+
+  const deliver = (networkId: IdType): void => {
+    waitingFor = read(networkId) ? null : networkId
+  }
+
+  const onSwitched = (event: WindowEventMap['network:switched']): void => {
+    const { networkId } = event.detail
+    if (networkId === '') {
+      // The last network was closed: nothing is current.
+      waitingFor = null
+      onNone()
+      return
+    }
+    deliver(networkId)
+  }
+
+  const onLoaded = (event: WindowEventMap['network:loaded']): void => {
+    if (event.detail.networkId === waitingFor) deliver(event.detail.networkId)
+  }
+
+  window.addEventListener('network:switched', onSwitched)
+  window.addEventListener('network:loaded', onLoaded)
+
+  // 1. The network that is already on screen, if any.
+  const current = apis.workspace.getCurrentNetworkId()
+  if (current.success) deliver(current.data.networkId)
+  else onNone()
+
+  return {
+    success: true,
+    data: {
+      stop: () => {
+        window.removeEventListener('network:switched', onSwitched)
+        window.removeEventListener('network:loaded', onLoaded)
+      },
+    },
+  }
+}
+````
+
+## Add a layout of your own to the Layout menu
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/layout/register-app-layout.ts
+
+````typescript
+/**
+ * @recipe Add a layout of your own to the Layout menu
+ * @aliases custom layout, register a layout, layout algorithm, my own layout,
+ *   grid layout, lay out the selected nodes, arrange selected nodes, layout
+ *   plugin
+ * @apis resource.registerLayout
+ * @related layout/run-layout-and-wait, selection/select-neighbors,
+ *   selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * The user wants an arrangement the host does not offer, picked from the
+ * Layout menu like a built-in one or run from code. This one puts the
+ * selected nodes in a grid and leaves every other node where it is, which no
+ * built-in layout can do: `layout.applyLayout` lays out the whole network.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object, normally `context.apis` in `mount()`.
+ *   Registering is synchronous: register before anything `mount()` awaits.
+ * - `id` is unique among this app's layouts.
+ *
+ * ## Side effects
+ *
+ * - Adds `displayName` to the Layout menu and to Layout ▸ Settings..., where
+ *   the user can change `Spacing` and `Selected only`. Registering the same
+ *   `id` again replaces the layout and resets both to their defaults.
+ * - The host removes the layout when the app is disabled. The app removes it
+ *   itself with `apis.resource.unregisterLayout(id)`.
+ * - A run changes no position until `run` returns. Through
+ *   `layout.applyLayout`, the host then moves every node in the result at
+ *   once and records **one** undo entry, as for a built-in layout.
+ *
+ * ## Pitfalls
+ *
+ * - **The algorithm's name is qualified.** To run it from code, pass
+ *   `<appId>::<id>` as `algorithmName` to `layout.applyLayout`.
+ *   `layout.getAvailableLayouts()` lists it with its `appId`.
+ * - **`run` sees snapshots,** taken when the run starts: positions, the
+ *   selection and the parameter values. `context.networkId` is the network
+ *   being laid out, which need not be the current one: read nothing else.
+ * - **Return only the nodes you move.** A node missing from the result keeps
+ *   its position. Ids that are not nodes of the network, and positions that
+ *   are not two finite numbers, are ignored.
+ * - **A throw or a rejection aborts the run**: no node moves, and no undo
+ *   entry is recorded. The recipe's `run` does not throw.
+ * - **A parameter's key is its `displayName`,** and its value is typed by its
+ *   declaration: a `checkBox` gives a boolean, a `text` with
+ *   `validationType: 'number'` a number. Read it with a fallback anyway.
+ * - **An empty selection** lays out every node: "Selected only" with nothing
+ *   selected would otherwise do nothing, and look broken.
+ * - Mutation topics: the host applies the result in one step, so a batch is
+ *   already what happens; a failed run leaves everything as it was; the undo
+ *   unit is the run.
+ *
+ * ## Don't
+ *
+ * - Don't move nodes with `viewport.updateNodePositions` from a menu item to
+ *   imitate a layout: it is not in the Layout menu, has no settings, and
+ *   records no undo entry.
+ * - Don't register it in a panel component's effect. Register it in
+ *   `mount()`, which runs once each time the app is turned on.
+ * - Don't keep state between runs in `run`'s closure: the same layout may run
+ *   on several networks.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: `context.apis` in
+ * `mount()` (`wiring/from-mount.ts`), or the `onClick` parameter of an
+ * `'apps-menu'` entry (`wiring/from-apps-menu.ts`). `window.CyWebApi` has no
+ * `resource` domain.
+ */
+import type {
+  AppContextApis,
+  ApiResult,
+  LayoutPositions,
+  LayoutRunContext,
+} from 'cyweb/ApiTypes'
+
+export interface GridLayoutOptions {
+  /** Slot-local id. The algorithm's name is `<appId>::<id>`. */
+  id: string
+  /** The Layout menu's text. */
+  displayName: string
+  /** Distance between neighboring nodes, until the user changes it. */
+  spacing?: number
+}
+
+const SPACING = 'Spacing'
+const SELECTED_ONLY = 'Selected only'
+
+/** The selected nodes (all of them when none is) in a grid. */
+const gridOfSelection = (
+  context: LayoutRunContext,
+  defaultSpacing: number,
+): LayoutPositions => {
+  const spacingValue = context.parameters[SPACING]
+  const spacing =
+    typeof spacingValue === 'number' && spacingValue > 0
+      ? spacingValue
+      : defaultSpacing
+  const selectedOnly = context.parameters[SELECTED_ONLY] !== false
+  const ids =
+    selectedOnly && context.selectedNodeIds.length > 0
+      ? context.selectedNodeIds
+      : context.nodes.map((node) => node.id)
+
+  // The grid starts where the top-left of these nodes is now. A loop, not
+  // Math.min(...xs): a network-sized spread throws.
+  let left = Infinity
+  let top = Infinity
+  for (const id of ids) {
+    const position = context.positions[id]
+    if (position === undefined) continue
+    left = Math.min(left, position[0])
+    top = Math.min(top, position[1])
+  }
+  if (!Number.isFinite(left) || !Number.isFinite(top)) {
+    left = 0
+    top = 0
+  }
+
+  const columns = Math.max(1, Math.ceil(Math.sqrt(ids.length)))
+  return Object.fromEntries(
+    ids.map((id, index) => [
+      id,
+      [
+        left + (index % columns) * spacing,
+        top + Math.floor(index / columns) * spacing,
+      ],
+    ]),
+  )
+}
+
+export function registerGridLayout(
+  apis: Pick<AppContextApis, 'resource'>,
+  options: GridLayoutOptions,
+): ApiResult<{ resourceId: string }> {
+  const spacing = options.spacing ?? 80
+  return apis.resource.registerLayout({
+    id: options.id,
+    displayName: options.displayName,
+    description: 'Puts the selected nodes in a grid. Other nodes stay put.',
+    type: 'geometric',
+    parameters: [
+      {
+        displayName: SPACING,
+        description: 'Distance between neighboring nodes',
+        type: 'text',
+        validationType: 'number',
+        defaultValue: spacing,
+      },
+      {
+        displayName: SELECTED_ONLY,
+        description: 'Lay out only the selected nodes, if any are selected',
+        type: 'checkBox',
+        defaultValue: true,
+      },
+    ],
+    run: (context) => gridOfSelection(context, spacing),
+  })
+}
+````
+
+## Run a layout and wait for it to finish
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/layout/run-layout-and-wait.ts
+
+````typescript
+/**
+ * @recipe Run a layout and wait for it to finish
+ * @aliases apply layout, run layout, arrange nodes, layout network, wait for
+ *   layout, force-directed layout, grid layout, re-layout, after layout
+ * @apis layout.getAvailableLayouts, workspace.getCurrentNetworkId,
+ *   layout.applyLayout
+ * @related network/create-network-from-table,
+ *   network/subnetwork-from-selection, events/follow-current-network
+ *
+ * ## When to use
+ *
+ * An app lays out a network and does something once the nodes have moved:
+ * after building a network, after adding nodes, or as one step of an
+ * analysis.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `algorithmName`, if given, is one of `getAvailableLayouts()`'s
+ *   `algorithmName`s. An app's own algorithm is named `<appId>::<id>`.
+ *
+ * ## Side effects
+ *
+ * - Moves the network's nodes, and records **one** undo entry.
+ * - Fires `layout:started`, then `layout:completed` on success only.
+ * - Fits the network's view when it is the current one, unless
+ *   `fit: false`.
+ *
+ * ## Pitfalls
+ *
+ * - **Await the promise, not the event.** `applyLayout` resolves once the
+ *   nodes have moved, after `layout:completed`. It never rejects: a failure
+ *   resolves to `success: false`, and no `layout:completed` follows it. Code
+ *   that waits for the event waits forever on a failure.
+ * - **Ignore events for other networks.** If you do listen to `layout:*`,
+ *   compare `networkId`: another app, or the user, can lay out another
+ *   network at the same time.
+ * - **Discard what arrives after a switch.** The user can switch networks
+ *   while a layout runs. `stillCurrent` says whether the network is still on
+ *   screen; if not, do not move the user's view to it.
+ * - **No network at all.** If the user closes the last network meanwhile,
+ *   `stillCurrent` is false too.
+ * - **The fit is the laid-out network's own.** On 1.1.0 and 1.1.1,
+ *   `applyLayout` fits the canvas of `networkId` itself; a network with no
+ *   canvas is laid out and not fitted, and the host logs a warning. The
+ *   recipe asks for a fit only when the network is current, so that laying
+ *   out a network in the background never moves a view.
+ * - **Unsubscribe.** This recipe listens to nothing; if you add a listener,
+ *   remove it when done.
+ *
+ * ## Don't
+ *
+ * - Don't wait with a timer: layouts take from milliseconds to minutes.
+ * - Don't write positions yourself to "lay out" a network the host can lay
+ *   out.
+ * - Don't guess algorithm names: read them from `getAvailableLayouts`.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface LayoutOptions {
+  /** Defaults to the host's preferred layout. */
+  algorithmName?: string
+  /** Fit the view afterwards. Defaults to true when the network is current. */
+  fit?: boolean
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export async function runLayoutAndWait(
+  apis: Pick<CyWebApiType, 'layout' | 'workspace'>,
+  networkId: IdType,
+  options: LayoutOptions = {},
+): Promise<ApiResult<{ stillCurrent: boolean }>> {
+  const { algorithmName } = options
+  if (algorithmName !== undefined) {
+    const available = apis.layout.getAvailableLayouts()
+    if (!available.success) return available
+    const names = available.data.layouts.map((l) => l.algorithmName)
+    if (!names.includes(algorithmName)) {
+      return failure(
+        'RECIPE_UNKNOWN_LAYOUT',
+        `no layout named ${algorithmName}; available: ${names.join(', ')}`,
+      )
+    }
+  }
+
+  const isCurrent = (): boolean => {
+    const current = apis.workspace.getCurrentNetworkId()
+    return current.success && current.data.networkId === networkId
+  }
+
+  const laidOut = await apis.layout.applyLayout(networkId, {
+    algorithmName,
+    fitAfterLayout: options.fit ?? isCurrent(),
+  })
+  if (!laidOut.success) return laidOut
+  return { success: true, data: { stillCurrent: isCurrent() } }
+}
+````
+
+## Create a network from a table of edges
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/network/create-network-from-table.ts
+
+````typescript
+/**
+ * @recipe Create a network from a table of edges
+ * @aliases import network from table, network from rows, edge list with
+ *   attributes, build a network from data, network from a spreadsheet,
+ *   source target table, interaction table
+ * @apis network.createNetworkFromEdgeList, table.createColumn,
+ *   table.editRows, network.deleteNetwork
+ * @related network/subnetwork-from-selection, data/join-table-by-key,
+ *   layout/run-layout-and-wait
+ *
+ * ## When to use
+ *
+ * The user has rows that each describe one edge, a source and a target plus
+ * other values such as an interaction type or a weight, and asks for a
+ * network from them: Cytoscape's "Import Network From Table".
+ *
+ * ## Preconditions
+ *
+ * - Every row has a non-empty `source` and `target` value (the names of the
+ *   two columns are arguments). Nodes are identified by these values.
+ * - Every other column holds one type throughout: text, numbers or booleans.
+ *   A row may leave a column out.
+ *
+ * ## Side effects
+ *
+ * - Adds a network to the workspace and makes it current (`network:created`,
+ *   then `network:switched`). Its nodes get a `name` column holding the
+ *   source and target values, shown as their labels.
+ * - Creates one edge column per other column, and writes every edge's row in
+ *   one batch: **one** undo entry on the new network. Creating a column
+ *   records none.
+ * - If writing a column fails, the recipe deletes the network it created:
+ *   nothing is left behind.
+ *
+ * ## Pitfalls
+ *
+ * - **The host keeps nothing but the endpoints.** `createNetworkFromEdgeList`
+ *   takes `[source, target, interaction?]`, and the edge table it creates is
+ *   empty on both 1.1.0 and 1.1.1: the third element is dropped. The recipe
+ *   writes every other column, `interaction` included, itself.
+ * - **Edges are matched to rows by order.** The host creates the edges in the
+ *   order of the edge list, and returns them in that order; the recipe pairs
+ *   row `i` with edge `i`. Its case checks this on both releases.
+ * - **The edges have no table rows, so `setValues` writes nothing.** On both
+ *   1.1.0 and 1.1.1, `setValue` and `setValues` change only rows that
+ *   exist, and report success either way; an edge-list network has a row
+ *   for every node and none for its edges. `editRows` creates the rows. It
+ *   also replaces a row whole, dropping values it is not given: use it only
+ *   for rows written completely, as these new ones are.
+ * - **One batch.** `editRows` validates every value first and writes all or
+ *   nothing, with one undo entry.
+ * - **A row that leaves a column out has no value in it**, not the column's
+ *   default.
+ * - **Column names.** `id`, `s`, `t`, `source` and `target` are refused, and
+ *   so are two names that differ only by case: 1.1.0 would create two
+ *   columns, and 1.1.1 refuses the second with `AC6`.
+ * - **The new network is current, and on 1.1.0 the table browser and layout
+ *   tools still act on the one shown before** until the user picks the new
+ *   one in the workspace. 1.1.1 fixes this (host #927). Calls that take a
+ *   `networkId` are not affected on either.
+ * - The nodes have no layout yet. Run one: `layout/run-layout-and-wait`.
+ *
+ * ## Don't
+ *
+ * - Don't pass edge attributes as the third element of the edge list and
+ *   expect to find them in the edge table.
+ * - Don't create one network per row, or add edges one by one to an empty
+ *   network.
+ * - Don't guess edge ids (`e0`, `e1`, …): use the ones the host returns.
+ * - Don't write edge values with `setValues` after `createNetworkFromEdgeList`:
+ *   it reports success and writes nothing.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+  ValueTypeName,
+} from 'cyweb/ApiTypes'
+
+export type Cell = string | number | boolean
+
+export interface EdgeTableColumns {
+  /** The column that names each edge's source node. */
+  source: string
+  /** The column that names each edge's target node. */
+  target: string
+}
+
+export interface CreatedNetwork {
+  networkId: IdType
+  /** The edges' ids, in the order of the rows. */
+  edgeIds: IdType[]
+  /** The edge columns created, with their types. */
+  columns: Record<string, ValueTypeName>
+}
+
+const RESERVED = ['id', 's', 't', 'source', 'target']
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+const defaultFor = (type: ValueTypeName): Cell =>
+  type === 'string' ? '' : type === 'boolean' ? false : 0
+
+export function createNetworkFromTable(
+  apis: Pick<CyWebApiType, 'network' | 'table'>,
+  name: string,
+  rows: Array<Record<string, Cell | undefined>>,
+  columns: EdgeTableColumns,
+): ApiResult<CreatedNetwork> {
+  if (rows.length === 0) return failure('RECIPE_NO_ROWS', 'rows is empty')
+
+  // Check everything before creating anything.
+  const edgeList: Array<[string, string]> = []
+  const types = new Map<string, ValueTypeName>()
+  // A row's own cells only: row.toString is not a "toString" column.
+  const cell = (row: Record<string, Cell | undefined>, column: string) =>
+    Object.hasOwn(row, column) ? row[column] : undefined
+  for (const [index, row] of rows.entries()) {
+    const source = cell(row, columns.source)
+    const target = cell(row, columns.target)
+    if (source === undefined || source === '' || target === undefined ||
+        target === '') {
+      return failure(
+        'RECIPE_MISSING_ENDPOINT',
+        `row ${index} has no ${columns.source} or no ${columns.target}`,
+      )
+    }
+    edgeList.push([String(source), String(target)])
+
+    for (const [column, value] of Object.entries(row)) {
+      if (column === columns.source || column === columns.target) continue
+      if (value === undefined) continue
+      const type: ValueTypeName =
+        typeof value === 'boolean'
+          ? 'boolean'
+          : typeof value === 'number'
+            ? Number.isInteger(value) ? 'long' : 'double'
+            : 'string'
+      const known = types.get(column)
+      if (known === undefined || (known === 'long' && type === 'double')) {
+        types.set(column, type)
+      } else if (known !== type && !(known === 'double' && type === 'long')) {
+        return failure(
+          'RECIPE_MIXED_TYPES',
+          `column ${column} holds both ${known} and ${type} values`,
+        )
+      }
+    }
+  }
+  const lowered = new Set<string>()
+  for (const column of types.keys()) {
+    const key = column.toLowerCase()
+    if (RESERVED.includes(key) || lowered.has(key)) {
+      return failure(
+        'RECIPE_COLUMN_NAME',
+        `${column} is reserved, or differs from another column only by case`,
+      )
+    }
+    lowered.add(key)
+  }
+
+  const created = apis.network.createNetworkFromEdgeList({ name, edgeList })
+  if (!created.success) return created
+  const { networkId } = created.data
+  const edgeIds = created.data.cyNetwork.network.edges.map((e) => e.id)
+
+  // From here on, a failure removes the network again.
+  const undo = (result: ApiFailure): ApiFailure => {
+    apis.network.deleteNetwork(networkId)
+    return result
+  }
+  if (edgeIds.length !== rows.length) {
+    return undo(
+      failure(
+        'RECIPE_EDGE_COUNT',
+        `${rows.length} rows made ${edgeIds.length} edges`,
+      ),
+    )
+  }
+
+  for (const [column, type] of types) {
+    const made = apis.table.createColumn(
+      networkId,
+      'edge',
+      column,
+      type,
+      defaultFor(type),
+    )
+    if (!made.success) return undo(made)
+  }
+  // One row per edge, holding the row's own values: see Pitfalls.
+  const edgeRows: Record<IdType, Record<string, Cell>> = {}
+  rows.forEach((row, index) => {
+    // fromEntries, not values[column] = …: a column named "__proto__" would
+    // set the object's prototype instead of adding a value.
+    edgeRows[edgeIds[index]] = Object.fromEntries(
+      [...types.keys()]
+        .filter((column) => cell(row, column) !== undefined)
+        .map((column) => [column, cell(row, column) as Cell]),
+    )
+  })
+  const written = apis.table.editRows(networkId, 'edge', edgeRows)
+  if (!written.success) return undo(written)
+
+  return {
+    success: true,
+    data: { networkId, edgeIds, columns: Object.fromEntries(types) },
+  }
+}
+````
+
+## Create a new network from the selected nodes
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/network/subnetwork-from-selection.ts
+
+````typescript
+/**
+ * @recipe Create a new network from the selected nodes
+ * @aliases subnetwork, extract selection, new network from selection,
+ *   network from selected nodes, induced subgraph, sub-network, copy
+ *   selection to a new network
+ * @apis selection.getSelection, element.getEdges,
+ *   network.createNetworkFromNodeList, visualStyle.getVisualStyle,
+ *   visualStyle.applyVisualStyle, network.deleteNetwork
+ * @related network/create-network-from-table,
+ *   selection/select-neighbors, selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * The user has selected part of a network and wants it as a network of its
+ * own: Cytoscape's "New Network From Selection".
+ *
+ * ## Preconditions
+ *
+ * - At least one node of `networkId` is selected.
+ * - The network's data is loaded; see `events/follow-current-network`.
+ *
+ * ## Side effects
+ *
+ * - Adds a network to the workspace and makes it current. Its nodes and edges
+ *   keep their ids, columns, values and positions.
+ * - `edges: 'induced'` (the default) takes every edge between two selected
+ *   nodes. `edges: 'selected'` takes only the selected edges among them.
+ * - With `copyStyle` (the default), the new network gets a copy of the source
+ *   network's active style: one undo entry on the new network. Without it, it
+ *   has the host's default style and a label mapping from `name`.
+ * - If copying the style fails, the recipe deletes the network it created.
+ * - The source network is not changed.
+ *
+ * ## Pitfalls
+ *
+ * - **Style is not copied by the host.** `createNetworkFromNodeList` gives
+ *   the new network a default style on both 1.1.0 and 1.1.1. The recipe
+ *   copies it with `getVisualStyle` and `applyVisualStyle`.
+ * - **Bypasses are not copied.** `applyVisualStyle` drops them, although the
+ *   ids would match. A node highlighted in the source is not highlighted in
+ *   the subnetwork.
+ * - **One call, not a loop.** `createNetworkFromNodeList` copies everything
+ *   in one step, and fails without creating anything if an id is unknown.
+ *   The other way, `export.exportToCx2` and `createNetworkFromCx2`, takes
+ *   two calls and a whole CX2 document to make the same network.
+ * - **`'selected'` edges must connect selected nodes**, or the host refuses
+ *   the call (`APP9`). The recipe leaves out a selected edge with an
+ *   unselected end.
+ * - **The new network is current, and on 1.1.0 the table browser and layout
+ *   tools still act on the one shown before** until the user picks the new
+ *   one in the workspace. 1.1.1 fixes this (host #927).
+ *
+ * ## Don't
+ *
+ * - Don't rebuild the subnetwork with `createNetworkFromEdgeList`: it loses
+ *   every column, the ids and the positions.
+ * - Don't copy the style by setting the same defaults and mappings again.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface SubnetworkOptions {
+  /** Defaults to "Subnetwork of <source name>". */
+  name?: string
+  /** Which edges to take. Defaults to every edge between selected nodes. */
+  edges?: 'induced' | 'selected'
+  /** Copy the source network's active style. Defaults to true. */
+  copyStyle?: boolean
+}
+
+export interface Subnetwork {
+  networkId: IdType
+  nodeCount: number
+  edgeCount: number
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function subnetworkFromSelection(
+  apis: Pick<CyWebApiType, 'selection' | 'element' | 'network' | 'visualStyle'>,
+  networkId: IdType,
+  options: SubnetworkOptions = {},
+): ApiResult<Subnetwork> {
+  const selection = apis.selection.getSelection(networkId)
+  if (!selection.success) return selection
+  const { selectedNodes, selectedEdges } = selection.data
+  if (selectedNodes.length === 0) {
+    return failure('RECIPE_NOTHING_SELECTED', 'no node is selected')
+  }
+
+  let edgeIds: IdType[] | 'all' = 'all'
+  if (options.edges === 'selected') {
+    const chosen = new Set(selectedNodes)
+    const edges = apis.element.getEdges(networkId, selectedEdges)
+    if (!edges.success) return edges
+    edgeIds = edges.data.edges
+      .filter((e) => chosen.has(e.sourceId) && chosen.has(e.targetId))
+      .map((e) => e.id)
+  }
+
+  // Read the style first, so that a failure here creates nothing.
+  const copyStyle = options.copyStyle ?? true
+  const style = copyStyle ? apis.visualStyle.getVisualStyle(networkId) : null
+  if (style !== null && !style.success) return style
+
+  const created = apis.network.createNetworkFromNodeList(
+    networkId,
+    selectedNodes,
+    edgeIds,
+    { name: options.name },
+  )
+  if (!created.success) return created
+  const subnetwork = created.data.cyNetwork.network
+
+  if (style !== null) {
+    const copied = apis.visualStyle.applyVisualStyle(
+      subnetwork.id,
+      style.data.visualStyle,
+      { name: 'Copied style' },
+    )
+    if (!copied.success) {
+      apis.network.deleteNetwork(subnetwork.id)
+      return copied
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      networkId: subnetwork.id,
+      nodeCount: subnetwork.nodes.length,
+      edgeCount: subnetwork.edges.length,
+    },
+  }
+}
+````
+
+## Select nodes or edges by a column's value
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/selection/select-by-attribute.ts
+
+````typescript
+/**
+ * @recipe Select nodes or edges by a column's value
+ * @aliases select by attribute, select where, find nodes with, select
+ *   matching nodes, filter selection, select by value, select by type,
+ *   query nodes
+ * @apis table.getTable, selection.exclusiveSelect, selection.additiveSelect
+ * @related selection/select-neighbors, network/subnetwork-from-selection,
+ *   style/highlight-with-bypass
+ *
+ * ## When to use
+ *
+ * The user asks to select the nodes (or edges) whose value in a column meets
+ * a condition: "select all kinases", "select edges with weight over 0.8".
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `test` is a function of one value that returns `true` to select.
+ *
+ * ## Side effects
+ *
+ * - `mode: 'replace'` (the default) makes the matches the whole selection.
+ *   `'add'` adds them to it.
+ * - Fires `selection:changed`. Records no undo entry.
+ *
+ * ## Pitfalls
+ *
+ * - **Values keep their column's type.** In a `long` column, `5` is a
+ *   number: `(v) => v === '5'` matches nothing. Compare with the type the
+ *   column has.
+ * - **Text is compared exactly.** `"Kinase"` is not `"kinase"`; lower-case
+ *   both sides in `test` if that is what the user means.
+ * - **Missing values never match.** `test` sees only elements that have a
+ *   value; `missing` counts the others.
+ * - **A list column** passes the whole list to `test`.
+ * - **`test` must not throw.** If it does, the recipe stops before selecting
+ *   anything and returns `RECIPE_TEST_THREW`.
+ * - **On 1.1.0, changing the selection from code shows hidden elements again
+ *   on the canvas.** See `style/hide-by-threshold`. 1.1.1 fixes this.
+ *
+ * ## Don't
+ *
+ * - Don't read the values one `getValue` call at a time.
+ * - Don't select by matching a node's label: labels come from a mapping, and
+ *   may show another column than the one meant.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppTableType,
+  CyWebApiType,
+  IdType,
+  ValueType,
+} from 'cyweb/ApiTypes'
+
+export interface SelectOptions {
+  /** Defaults to `'node'`. */
+  tableType?: AppTableType
+  /** Replace the selection, or add to it. Defaults to `'replace'`. */
+  mode?: 'replace' | 'add'
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function selectByAttribute(
+  apis: Pick<CyWebApiType, 'table' | 'selection'>,
+  networkId: IdType,
+  column: string,
+  test: (value: ValueType) => boolean,
+  options: SelectOptions = {},
+): ApiResult<{ selectedIds: IdType[]; missing: number }> {
+  const tableType = options.tableType ?? 'node'
+  const table = apis.table.getTable(networkId, tableType, { columns: [column] })
+  if (!table.success) return table
+  if (!table.data.columns.some((c) => c.name === column)) {
+    return failure('RECIPE_NO_COLUMN', `no ${tableType} column ${column}`)
+  }
+
+  const matches: IdType[] = []
+  let missing = 0
+  for (const row of table.data.rows) {
+    const value = row[column]
+    if (value === undefined || value === null) {
+      missing += 1
+      continue
+    }
+    try {
+      if (test(value)) matches.push(String(row.id))
+    } catch (cause) {
+      return failure(
+        'RECIPE_TEST_THREW',
+        `test threw on ${String(row.id)}: ${String(cause)}`,
+      )
+    }
+  }
+
+  const nodes = tableType === 'node' ? matches : []
+  const edges = tableType === 'edge' ? matches : []
+  const selected =
+    options.mode === 'add'
+      ? apis.selection.additiveSelect(networkId, nodes, edges)
+      : apis.selection.exclusiveSelect(networkId, nodes, edges)
+  if (!selected.success) return selected
+  return { success: true, data: { selectedIds: matches, missing } }
+}
+````
+
+## Select the neighbors of the selected nodes
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/selection/select-neighbors.ts
+
+````typescript
+/**
+ * @recipe Select the neighbors of the selected nodes
+ * @aliases first neighbors, select neighbors, expand selection, select
+ *   adjacent nodes, second neighbors, neighborhood, n hops, k-hop
+ *   neighborhood, grow selection
+ * @apis selection.getSelection, element.getEdges, selection.additiveSelect
+ * @related selection/select-by-attribute, network/subnetwork-from-selection,
+ *   elements/add-edges-between-selected
+ *
+ * ## When to use
+ *
+ * The user asks to select what is connected to the current selection:
+ * Cytoscape's "First Neighbors of Selected Nodes", or neighbors up to a
+ * number of hops away.
+ *
+ * ## Preconditions
+ *
+ * - At least one node of `networkId` is selected.
+ * - The network's data is loaded; see `events/follow-current-network`.
+ *
+ * ## Side effects
+ *
+ * - Adds every node within `hops` edges of a selected node to the selection.
+ *   The nodes and edges selected before stay selected.
+ * - Fires `selection:changed`. Records no undo entry.
+ *
+ * ## Pitfalls
+ *
+ * - **Hops count from the starting selection.** `hops: 2` selects the first
+ *   neighbors and their neighbors. Each round starts only from the nodes the
+ *   last round added.
+ * - **Direction.** `'any'` (the default) follows edges both ways.
+ *   `'outgoing'` follows an edge from its source to its target only, and
+ *   `'incoming'` the other way.
+ * - **Read the edges once.** One `getEdges` call returns every edge with its
+ *   ends. One `getConnectedNodes` call per node per hop does the same work a
+ *   node at a time.
+ * - **On 1.1.0, changing the selection from code shows hidden elements again
+ *   on the canvas.** See `style/hide-by-threshold`. 1.1.1 fixes this.
+ *
+ * ## Don't
+ *
+ * - Don't replace the selection with the neighbors alone, unless the user
+ *   asks for that: `exclusiveSelect` drops the nodes they started from.
+ * - Don't select the edges between the neighbors unless asked: the host's
+ *   own command selects nodes only.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface NeighborOptions {
+  /** How many edges away. Defaults to 1. */
+  hops?: number
+  /** Which way to follow edges. Defaults to `'any'`. */
+  direction?: 'any' | 'outgoing' | 'incoming'
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function selectNeighbors(
+  apis: Pick<CyWebApiType, 'selection' | 'element'>,
+  networkId: IdType,
+  options: NeighborOptions = {},
+): ApiResult<{ addedNodeIds: IdType[] }> {
+  const hops = options.hops ?? 1
+  const direction = options.direction ?? 'any'
+  if (!Number.isInteger(hops) || hops < 1) {
+    return failure('RECIPE_BAD_HOPS', 'hops must be a whole number, 1 or more')
+  }
+
+  const selection = apis.selection.getSelection(networkId)
+  if (!selection.success) return selection
+  const start = selection.data.selectedNodes
+  if (start.length === 0) {
+    return failure('RECIPE_NOTHING_SELECTED', 'no node is selected')
+  }
+
+  const edges = apis.element.getEdges(networkId)
+  if (!edges.success) return edges
+  const next = new Map<IdType, IdType[]>()
+  const link = (from: IdType, to: IdType): void => {
+    const list = next.get(from)
+    if (list === undefined) next.set(from, [to])
+    else list.push(to)
+  }
+  for (const edge of edges.data.edges) {
+    if (direction !== 'incoming') link(edge.sourceId, edge.targetId)
+    if (direction !== 'outgoing') link(edge.targetId, edge.sourceId)
+  }
+
+  const reached = new Set<IdType>(start)
+  const added: IdType[] = []
+  let frontier = start
+  for (let hop = 0; hop < hops && frontier.length > 0; hop += 1) {
+    const found: IdType[] = []
+    for (const node of frontier) {
+      for (const neighbor of next.get(node) ?? []) {
+        if (!reached.has(neighbor)) {
+          reached.add(neighbor)
+          found.push(neighbor)
+        }
+      }
+    }
+    for (const id of found) added.push(id)
+    frontier = found
+  }
+
+  if (added.length > 0) {
+    const selected = apis.selection.additiveSelect(networkId, added, [])
+    if (!selected.success) return selected
+  }
+  return { success: true, data: { addedNodeIds: added } }
+}
+````
+
+## Color nodes by category
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/color-by-category.ts
+
+````typescript
+/**
+ * @recipe Color nodes by category
+ * @aliases color by type, color by group, color by class, categorical
+ *   colors, discrete color mapping, one color per value, color by label,
+ *   legend colors
+ * @apis table.getTable, visualStyle.createDiscreteMapping
+ * @related style/color-nodes-by-numeric-column, style/label-from-column,
+ *   style/set-style-defaults
+ *
+ * ## When to use
+ *
+ * The user asks for each kind of node to have its own color: by a column of
+ * names, types or group numbers, not by a quantity.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `column` is a node column of type `string`, `integer` or `long`.
+ *
+ * ## Side effects
+ *
+ * - Replaces any mapping on the node fill color (`nodeBackgroundColor`) with
+ *   a discrete mapping: one palette color per distinct value, in sorted
+ *   order. Mappings record no undo entry.
+ * - Changes no table data and no bypass.
+ *
+ * ## Pitfalls
+ *
+ * - **More categories than colors.** The palette has eight colors, chosen to
+ *   stay distinct for color-blind readers (Okabe and Ito). Values past the
+ *   eighth keep the default color and are listed in `uncolored`. Pass a
+ *   longer palette, or color only what matters.
+ * - **Boolean columns never match.** The host keys a discrete mapping by the
+ *   text of each key, and converts it back to a number for `integer`, `long`
+ *   and `double` columns only. `true` stays the string `"true"` and matches
+ *   no boolean value. The recipe refuses boolean columns.
+ * - **Values are compared exactly.** `"Kinase"` and `"kinase"` are two
+ *   categories. Normalize the column first if they are the same thing.
+ * - **List columns** are matched by their first item only. The recipe
+ *   refuses them.
+ * - **Missing values**, and values past the palette, show the mapping's
+ *   fallback: the default color as it was when the mapping was made. A later
+ *   default does not reach them (`style/set-style-defaults`).
+ * - **Order is sorted, not by frequency,** so the same values get the same
+ *   colors every time the recipe runs.
+ * - **Values are data, not keys you chose.** `colors["__proto__"] = …` sets
+ *   the object's prototype instead of adding a category. The recipe builds
+ *   the mapping with `Object.fromEntries`.
+ *
+ * ## Don't
+ *
+ * - Don't use a continuous mapping for categories: group 3 is not "between"
+ *   groups 2 and 4.
+ * - Don't set a fill bypass on every node: it does not follow the data.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+/** A color as the host stores it: `#rrggbb`. */
+export type HexColor = `#${string}`
+
+export interface CategoryColors {
+  /** The color of each value, by the value's text. */
+  colors: Record<string, HexColor>
+  /** Values that got no color: they keep the default. */
+  uncolored: string[]
+}
+
+/** Okabe and Ito's palette, distinct for the common forms of color blindness. */
+export const CATEGORY_PALETTE: HexColor[] = [
+  '#e69f00', '#56b4e9', '#009e73', '#f0e442',
+  '#0072b2', '#d55e00', '#cc79a7', '#000000',
+]
+
+const ALLOWED_TYPES = ['string', 'integer', 'long']
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function colorByCategory(
+  apis: Pick<CyWebApiType, 'table' | 'visualStyle'>,
+  networkId: IdType,
+  column: string,
+  palette: HexColor[] = CATEGORY_PALETTE,
+): ApiResult<CategoryColors> {
+  const table = apis.table.getTable(networkId, 'node', { columns: [column] })
+  if (!table.success) return table
+  const info = table.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no node column named ${column}`)
+  }
+  if (!ALLOWED_TYPES.includes(info.type)) {
+    return failure(
+      'RECIPE_COLUMN_TYPE',
+      `${column} is a ${info.type} column; use string, integer or long`,
+    )
+  }
+
+  const distinct = new Set<string | number>()
+  for (const row of table.data.rows) {
+    const value = row[column]
+    if (typeof value === 'string' ? value !== '' : typeof value === 'number') {
+      distinct.add(value as string | number)
+    }
+  }
+  if (distinct.size === 0) {
+    return failure('RECIPE_NO_VALUES', `${column} has no value`)
+  }
+  const values = [...distinct].sort((a, b) =>
+    typeof a === 'number' && typeof b === 'number'
+      ? a - b
+      : String(a).localeCompare(String(b)),
+  )
+
+  // fromEntries, not colors[value] = …: a category named "__proto__" would
+  // set the object's prototype instead of adding a key.
+  const colors: Record<string, HexColor> = Object.fromEntries(
+    values
+      .slice(0, palette.length)
+      .map((value, index) => [String(value), palette[index]]),
+  )
+  const uncolored = values.slice(palette.length).map(String)
+
+  const mapped = apis.visualStyle.createDiscreteMapping(
+    networkId,
+    'nodeBackgroundColor',
+    column,
+    info.type,
+    colors,
+  )
+  if (!mapped.success) return mapped
+  return { success: true, data: { colors, uncolored } }
+}
+````
+
+## Color nodes by a numeric column
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/color-nodes-by-numeric-column.ts
+
+````typescript
+/**
+ * @recipe Color nodes by a numeric column
+ * @aliases color by score, color by value, heat map, heatmap, gradient,
+ *   color scale, continuous color mapping, color nodes from blue to red,
+ *   expression coloring
+ * @apis table.getTable, visualStyle.createContinuousMapping
+ * @related elements/add-nodes-to-network, events/follow-current-network
+ *
+ * ## When to use
+ *
+ * The user asks to color nodes along a gradient by a number in the node
+ * table: "color the nodes from blue to red by their `score` column".
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `column` is a node column of type `double`, `long` or `integer`.
+ * - At least two nodes have different, finite values in it.
+ *
+ * ## Side effects
+ *
+ * - Replaces any mapping on the node fill color (`nodeBackgroundColor`) of
+ *   the network's active style with a continuous mapping.
+ * - Marks the network as modified.
+ * - Changes no table data and no bypass. A node with a color bypass keeps its
+ *   bypass color: a bypass wins over a mapping.
+ *
+ * ## Pitfalls
+ *
+ * - **Missing values.** A node with no value in the column is not colored by
+ *   the mapping. It keeps the style's default color. The recipe reports how
+ *   many nodes that is in `unmappedCount`.
+ * - **Non-numeric values.** A `string` column cannot drive a continuous
+ *   mapping, even when its cells look like numbers. The recipe fails with
+ *   `RECIPE_COLUMN_NOT_NUMERIC` before it changes anything. Values that are
+ *   not finite (`NaN`, `Infinity`) are left out of the range.
+ * - **An empty column.** With no finite value there is no range, and the
+ *   recipe fails with `RECIPE_NO_VALUES`.
+ * - **All values equal.** A range of zero width has no gradient, and the
+ *   recipe fails with `RECIPE_SINGLE_VALUE`. Set one default color instead
+ *   (`visualStyle.setDefault`).
+ * - **`attributeType` must be the column's own type.** Read it from the
+ *   table. Passing `'long'` for a `double` column fails with `MI2`.
+ * - **Find the range with a loop.** `Math.min(...values)` passes one argument
+ *   per node, and throws a `RangeError` past about 120,000 of them. The host
+ *   does not stop a network of that size from loading.
+ * - **Pass the two control points yourself.** Without them the host uses its
+ *   own three-color scheme, and takes the first and last entries of
+ *   `attributeValues` as the range, whatever their order.
+ * - Visual property names are camelCase strings such as
+ *   `'nodeBackgroundColor'`, checked by the `VisualPropertyName` type.
+ *
+ * ## Don't
+ *
+ * - Don't set a bypass on every node to color a network. Bypasses are for
+ *   exceptions, and they hide every later mapping.
+ * - Don't invent a visual property name such as `'NODE_FILL_COLOR'`.
+ * - Don't hard-code the range. Read the values first.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+/** A color as the host stores it: `#rrggbb`. */
+export type HexColor = `#${string}`
+
+export interface NodeColorScale {
+  /** Color of the lowest value. Defaults to blue. */
+  low?: HexColor
+  /** Color of the highest value. Defaults to red. */
+  high?: HexColor
+}
+
+export interface ColoredNodes {
+  min: number
+  max: number
+  /** Nodes with a finite value: the mapping colors these. */
+  mappedCount: number
+  /** Nodes without one: these keep the default color. */
+  unmappedCount: number
+}
+
+const NUMERIC_TYPES = ['double', 'long', 'integer']
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function colorNodesByNumericColumn(
+  apis: Pick<CyWebApiType, 'table' | 'visualStyle'>,
+  networkId: IdType,
+  column: string,
+  scale: NodeColorScale = {},
+): ApiResult<ColoredNodes> {
+  const table = apis.table.getTable(networkId, 'node', { columns: [column] })
+  if (!table.success) return table
+
+  const info = table.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no node column named "${column}"`)
+  }
+  if (!NUMERIC_TYPES.includes(info.type)) {
+    return failure(
+      'RECIPE_COLUMN_NOT_NUMERIC',
+      `"${column}" is of type ${info.type}; a gradient needs a number`,
+    )
+  }
+
+  // A loop, not Math.min(...values): see Pitfalls.
+  let min = Infinity
+  let max = -Infinity
+  let mappedCount = 0
+  for (const row of table.data.rows) {
+    const value = row[column]
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
+    mappedCount += 1
+    min = Math.min(min, value)
+    max = Math.max(max, value)
+  }
+  if (mappedCount === 0) {
+    return failure('RECIPE_NO_VALUES', `"${column}" has no numeric value`)
+  }
+  if (min === max) {
+    return failure(
+      'RECIPE_SINGLE_VALUE',
+      `every value of "${column}" is ${min}; there is nothing to grade`,
+    )
+  }
+
+  const low: HexColor = scale.low ?? '#2166ac'
+  const high: HexColor = scale.high ?? '#b2182b'
+  const mapped = apis.visualStyle.createContinuousMapping(
+    networkId,
+    'nodeBackgroundColor',
+    {
+      vpType: 'color',
+      attribute: column,
+      attributeType: info.type,
+      attributeValues: [min, max],
+      controlPoints: [
+        { value: min, vpValue: low },
+        { value: max, vpValue: high },
+      ],
+      ltMinVpValue: low,
+      gtMaxVpValue: high,
+    },
+  )
+  if (!mapped.success) return mapped
+
+  return {
+    success: true,
+    data: {
+      min,
+      max,
+      mappedCount,
+      unmappedCount: table.data.rows.length - mappedCount,
+    },
+  }
+}
+````
+
+## Emphasize nodes past a threshold
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/emphasize-by-threshold.ts
+
+````typescript
+/**
+ * @recipe Emphasize nodes past a threshold
+ * @aliases highlight nodes above a value, mark significant nodes, threshold
+ *   border, emphasize high scores, nodes over cutoff, outline nodes above a
+ *   threshold, step mapping
+ * @apis table.getTable, visualStyle.getDefault,
+ *   visualStyle.createContinuousMapping, visualStyle.deleteMapping
+ * @related style/hide-by-threshold, style/highlight-with-bypass,
+ *   style/color-nodes-by-numeric-column
+ *
+ * ## When to use
+ *
+ * The user asks for nodes at or above a value to stand out, "outline the
+ * genes with fold change of at least 2", while the rest stay as they are.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `column` is a node column of type `double`, `long` or `integer`.
+ *
+ * ## Side effects
+ *
+ * - Replaces any mapping on the node border color and border width with a
+ *   step: below the threshold, the current default; at or above it, the
+ *   emphasis. Mappings record no undo entry.
+ * - If the second mapping fails, the recipe deletes the first again.
+ * - Changes no table data and no bypass.
+ *
+ * ## Pitfalls
+ *
+ * - **A mapping, not a bypass.** The emphasis follows the data: when a value
+ *   changes, so does its node. A bypass would mark the nodes that passed
+ *   once, and stay.
+ * - **One control point makes a step.** The host's continuous mapping uses
+ *   `ltMinVpValue` below the point, the point's own value at it, and
+ *   `gtMaxVpValue` above it. A value exactly at the threshold is emphasized.
+ * - **Missing values** get the mapping's fallback, the default border when
+ *   the mapping was made: a node with no value is not emphasized.
+ * - **Non-numeric values.** A text column is refused, even when it holds
+ *   digits. Convert it first (`data/read-column-values-safely`).
+ * - **An empty column** emphasizes nothing; **all values equal** emphasizes
+ *   all or none. Both are reported by `emphasized`.
+ * - **The low side is the default at the time of the call.** If the defaults
+ *   change later, nodes below the threshold keep the old border. Run the
+ *   recipe again.
+ *
+ * ## Don't
+ *
+ * - Don't loop over the nodes and set a bypass on those that pass.
+ * - Don't change the fill color to emphasize: it hides a color mapping.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+/** A color as the host stores it: `#rrggbb`. */
+export type HexColor = `#${string}`
+
+export interface EmphasisOptions {
+  /** Border color at or above the threshold. Defaults to vermillion. */
+  color?: HexColor
+  /** Border width at or above the threshold. Defaults to 8. */
+  width?: number
+}
+
+const NUMERIC_TYPES = ['double', 'long', 'integer']
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function emphasizeByThreshold(
+  apis: Pick<CyWebApiType, 'table' | 'visualStyle'>,
+  networkId: IdType,
+  column: string,
+  threshold: number,
+  options: EmphasisOptions = {},
+): ApiResult<{ emphasized: number }> {
+  if (!Number.isFinite(threshold)) {
+    return failure('RECIPE_BAD_THRESHOLD', 'threshold must be a number')
+  }
+  const table = apis.table.getTable(networkId, 'node', { columns: [column] })
+  if (!table.success) return table
+  const info = table.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no node column named ${column}`)
+  }
+  if (!NUMERIC_TYPES.includes(info.type)) {
+    return failure(
+      'RECIPE_COLUMN_NOT_NUMERIC',
+      `${column} is a ${info.type} column`,
+    )
+  }
+
+  const baseColor = apis.visualStyle.getDefault(networkId, 'nodeBorderColor')
+  if (!baseColor.success) return baseColor
+  const baseWidth = apis.visualStyle.getDefault(networkId, 'nodeBorderWidth')
+  if (!baseWidth.success) return baseWidth
+
+  const step = (
+    vpName: 'nodeBorderColor' | 'nodeBorderWidth',
+    below: string | number,
+    atOrAbove: string | number,
+  ): ApiResult =>
+    apis.visualStyle.createContinuousMapping(networkId, vpName, {
+      vpType: vpName === 'nodeBorderColor' ? 'color' : 'number',
+      attribute: column,
+      attributeType: info.type,
+      attributeValues: [threshold],
+      controlPoints: [{ value: threshold, vpValue: atOrAbove }],
+      ltMinVpValue: below,
+      gtMaxVpValue: atOrAbove,
+    })
+  const colored = step(
+    'nodeBorderColor',
+    baseColor.data.value as string,
+    options.color ?? '#d55e00',
+  )
+  if (!colored.success) return colored
+  const widened = step(
+    'nodeBorderWidth',
+    baseWidth.data.value as number,
+    options.width ?? 8,
+  )
+  if (!widened.success) {
+    apis.visualStyle.deleteMapping(networkId, 'nodeBorderColor')
+    return widened
+  }
+
+  let emphasized = 0
+  for (const row of table.data.rows) {
+    const value = row[column]
+    if (typeof value === 'number' && value >= threshold) emphasized += 1
+  }
+  return { success: true, data: { emphasized } }
+}
+````
+
+## Hide nodes below a threshold
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/hide-by-threshold.ts
+
+````typescript
+/**
+ * @recipe Hide nodes below a threshold
+ * @aliases filter nodes, hide nodes, hide low values, show only nodes above,
+ *   remove from view, cutoff filter, hide edges of hidden nodes, show again
+ * @apis table.getTable, element.getEdges, visualStyle.getBypasses,
+ *   visualStyle.setBypass, visualStyle.deleteBypass
+ * @related style/emphasize-by-threshold, selection/select-by-attribute,
+ *   elements/delete-selected
+ *
+ * ## When to use
+ *
+ * The user asks to see only the nodes at or above a value, without deleting
+ * the others: "hide everything with a score below 0.5".
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `column` is a node column of type `double`, `long` or `integer`.
+ *
+ * ## Side effects
+ *
+ * - Sets a `nodeVisibility` bypass of `'none'` on every node below the
+ *   threshold, and an `edgeVisibility` one on every edge that touches such a
+ *   node, as the host's own Hide Selected does on 1.1.1.
+ * - Leaves elements that were already hidden as they were, and returns
+ *   `show()`, which shows again only what the recipe hid; a second call does
+ *   nothing. An element with an
+ *   `'element'` bypass (shown on purpose, by an import, the style editor or
+ *   an app) is hidden too, and `show()` puts its `'element'` back.
+ * - Records **no** undo entry. Bypasses are saved with the network until
+ *   removed.
+ *
+ * ## Pitfalls
+ *
+ * - **Missing values.** A node with no value is kept by default; pass
+ *   `hideMissing: true` to hide it too.
+ * - **Non-numeric values.** A text column is refused.
+ * - **An empty column** hides nothing, or everything with `hideMissing`.
+ *   **All values equal** hides all or none.
+ * - **Hiding is a bypass, so it does not follow the data.** A node whose
+ *   value rises later stays hidden: call `show()` and run the recipe again.
+ * - **The host can show the nodes again.** The FILTER tab, in its show mode,
+ *   replaces every visibility bypass of the network on both releases, and
+ *   on 1.1.1 Select ▸ Show All removes them all. Both undo the recipe's
+ *   hiding.
+ * - **On 1.1.0 a selection change can show hidden elements on the canvas**,
+ *   while the style still says they are hidden. The host's renderer showed
+ *   every element whenever the selection changed from outside the canvas,
+ *   for example by the selection API. 1.1.1 fixes this (`0f8b7f42`). The
+ *   case sees both behaviors.
+ * - **A visibility bypass is not always "hidden".** Its value is `'none'` or
+ *   `'element'`. Only `'none'` hides; skipping every element that has a
+ *   bypass would leave the `'element'` ones on screen, with success
+ *   reported.
+ * - **Use one call per property.** `setBypass` takes every id at once. If
+ *   the edges fail, the recipe restores the nodes, so nothing is left
+ *   half-hidden.
+ *
+ * ## Don't
+ *
+ * - Don't delete the nodes to hide them: the user cannot get them back
+ *   without undo.
+ * - Don't hide nodes and leave their edges: a hidden node's edges would
+ *   point at nothing.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface Hidden {
+  nodeIds: IdType[]
+  edgeIds: IdType[]
+  /** Show again what this call hid, and nothing else. */
+  show: () => ApiResult
+}
+
+const NUMERIC_TYPES = ['double', 'long', 'integer']
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function hideByThreshold(
+  apis: Pick<CyWebApiType, 'table' | 'element' | 'visualStyle'>,
+  networkId: IdType,
+  column: string,
+  threshold: number,
+  options: { hideMissing?: boolean } = {},
+): ApiResult<Hidden> {
+  if (!Number.isFinite(threshold)) {
+    return failure('RECIPE_BAD_THRESHOLD', 'threshold must be a number')
+  }
+  const table = apis.table.getTable(networkId, 'node', { columns: [column] })
+  if (!table.success) return table
+  const info = table.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no node column named ${column}`)
+  }
+  if (!NUMERIC_TYPES.includes(info.type)) {
+    return failure(
+      'RECIPE_COLUMN_NOT_NUMERIC',
+      `${column} is a ${info.type} column`,
+    )
+  }
+
+  const nodeBypasses = apis.visualStyle.getBypasses(networkId, 'nodeVisibility')
+  if (!nodeBypasses.success) return nodeBypasses
+  const edgeBypasses = apis.visualStyle.getBypasses(networkId, 'edgeVisibility')
+  if (!edgeBypasses.success) return edgeBypasses
+  const before = {
+    nodeVisibility: nodeBypasses.data.bypasses,
+    edgeVisibility: edgeBypasses.data.bypasses,
+  }
+  // Only 'none' is hidden. An 'element' bypass shows an element on purpose:
+  // it is replaced while hidden, and put back by show().
+  const notHidden =
+    (vpName: 'nodeVisibility' | 'edgeVisibility') => (id: IdType) =>
+      before[vpName][id] !== 'none'
+
+  const below = new Set<IdType>()
+  for (const row of table.data.rows) {
+    const value = row[column]
+    const fails =
+      typeof value === 'number'
+        ? value < threshold
+        : options.hideMissing === true
+    if (fails) below.add(String(row.id))
+  }
+  const nodeIds = [...below].filter(notHidden('nodeVisibility'))
+
+  const edges = apis.element.getEdges(networkId)
+  if (!edges.success) return edges
+  const edgeIds = edges.data.edges
+    .filter((e) => below.has(e.sourceId) || below.has(e.targetId))
+    .map((e) => e.id)
+    .filter(notHidden('edgeVisibility'))
+
+  // What each property still has to put back. Emptied once restored, so a
+  // second show() never touches a bypass set after the first.
+  const pending = { nodeVisibility: nodeIds, edgeVisibility: edgeIds }
+  /** Put back what the pending ids had: no bypass, or their own one. */
+  const restore = (vpName: 'nodeVisibility' | 'edgeVisibility'): ApiResult => {
+    const ids = pending[vpName]
+    const unset = ids.filter((id) => !(id in before[vpName]))
+    if (unset.length > 0) {
+      const shown = apis.visualStyle.deleteBypass(networkId, vpName, unset)
+      if (!shown.success) return shown
+    }
+    const visible = ids.filter((id) => id in before[vpName])
+    if (visible.length > 0) {
+      const shown = apis.visualStyle.setBypass(
+        networkId,
+        vpName,
+        visible,
+        'element',
+      )
+      if (!shown.success) return shown
+    }
+    pending[vpName] = []
+    return { success: true, data: undefined }
+  }
+  const show = (): ApiResult => {
+    const nodes = restore('nodeVisibility')
+    if (!nodes.success) return nodes
+    return restore('edgeVisibility')
+  }
+
+  if (nodeIds.length > 0) {
+    const hid = apis.visualStyle.setBypass(
+      networkId,
+      'nodeVisibility',
+      nodeIds,
+      'none',
+    )
+    if (!hid.success) return hid
+  }
+  if (edgeIds.length > 0) {
+    const hid = apis.visualStyle.setBypass(
+      networkId,
+      'edgeVisibility',
+      edgeIds,
+      'none',
+    )
+    if (!hid.success) {
+      restore('nodeVisibility')
+      return hid
+    }
+  }
+  return { success: true, data: { nodeIds, edgeIds, show } }
+}
+````
+
+## Highlight some nodes, and remove the highlight later
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/highlight-with-bypass.ts
+
+````typescript
+/**
+ * @recipe Highlight some nodes, and remove the highlight later
+ * @aliases highlight nodes, mark nodes, emphasize these nodes, flag nodes,
+ *   outline nodes, temporary highlight, bypass, override style for some
+ *   nodes
+ * @apis visualStyle.getBypasses, visualStyle.setBypasses,
+ *   visualStyle.setBypass, visualStyle.deleteBypass
+ * @related style/emphasize-by-threshold, style/set-style-defaults,
+ *   selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * An app marks particular nodes for the user to see, such as the hits of a
+ * search or the result of an analysis, and takes the mark away again.
+ *
+ * ## Preconditions
+ *
+ * - `nodeIds` name nodes of `networkId`.
+ *
+ * ## Side effects
+ *
+ * - Sets a border color and width bypass on those nodes. Their fill, label
+ *   and any mapping stay as they are.
+ * - Returns `clear()`, which puts back exactly the bypasses those nodes had
+ *   before: none, or the earlier values. A second call does nothing.
+ * - Records **no** undo entry. Edit ▸ Undo does not remove a highlight; only
+ *   `clear()` does.
+ * - Bypasses are part of the network's style: they are saved with the
+ *   workspace and exported with the network until cleared.
+ *
+ * ## Pitfalls
+ *
+ * - **A bypass wins over a mapping and over the default**, for the elements
+ *   it names. That is why it suits a highlight, and why it must be removed.
+ * - **Use the batch call.** `setBypasses` checks every property and every id
+ *   first, and sets all or none. Nothing is left half-highlighted.
+ * - **Remember what was there.** `deleteBypass` removes a bypass the user set
+ *   too. `clear()` restores earlier values instead of deleting them.
+ * - **Highlight the border, not the fill.** A fill bypass hides the colors
+ *   of a category or numeric mapping on exactly the nodes the user is asked
+ *   to look at.
+ *
+ * ## Don't
+ *
+ * - Don't use a bypass to color every node: set a default
+ *   (`style/set-style-defaults`) or a mapping.
+ * - Don't select nodes to highlight them: the selection belongs to the user,
+ *   and changes with the next click.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+/** A color as the host stores it: `#rrggbb`. */
+export type HexColor = `#${string}`
+
+export interface HighlightOptions {
+  /** Border color. Defaults to orange. */
+  color?: HexColor
+  /** Border width. Defaults to 6. */
+  width?: number
+}
+
+export interface Highlight {
+  /** Put back the bypasses these nodes had before. */
+  clear: () => ApiResult
+}
+
+const PROPERTIES = ['nodeBorderColor', 'nodeBorderWidth'] as const
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function highlightWithBypass(
+  apis: Pick<CyWebApiType, 'visualStyle'>,
+  networkId: IdType,
+  nodeIds: IdType[],
+  options: HighlightOptions = {},
+): ApiResult<Highlight> {
+  if (nodeIds.length === 0) {
+    return failure('RECIPE_NO_NODES', 'nodeIds is empty')
+  }
+  // A private copy: the caller may reuse its array.
+  const ids = [...nodeIds]
+
+  // What these nodes have now, to restore it.
+  const before = new Map<string, Record<IdType, unknown>>()
+  for (const vpName of PROPERTIES) {
+    const read = apis.visualStyle.getBypasses(networkId, vpName)
+    if (!read.success) return read
+    before.set(vpName, read.data.bypasses)
+  }
+
+  const set = apis.visualStyle.setBypasses(networkId, ids, {
+    nodeBorderColor: options.color ?? '#e69f00',
+    nodeBorderWidth: options.width ?? 6,
+  })
+  if (!set.success) return set
+
+  // What each property still has to put back. Emptied once restored, so a
+  // second clear() never touches a bypass set after the first.
+  const pending = new Map<string, IdType[]>(PROPERTIES.map((vp) => [vp, ids]))
+  const clear = (): ApiResult => {
+    for (const vpName of PROPERTIES) {
+      const targets = pending.get(vpName) ?? []
+      const earlier = before.get(vpName) ?? {}
+      const unset = targets.filter((id) => !(id in earlier))
+      if (unset.length > 0) {
+        const removed = apis.visualStyle.deleteBypass(networkId, vpName, unset)
+        if (!removed.success) return removed
+      }
+      for (const id of targets.filter((id) => id in earlier)) {
+        const restored = apis.visualStyle.setBypass(
+          networkId,
+          vpName,
+          [id],
+          earlier[id] as string | number,
+        )
+        if (!restored.success) return restored
+      }
+      pending.set(vpName, [])
+    }
+    return { success: true, data: undefined }
+  }
+  return { success: true, data: { clear } }
+}
+````
+
+## Label nodes or edges from a column
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/label-from-column.ts
+
+````typescript
+/**
+ * @recipe Label nodes or edges from a column
+ * @aliases show labels, change label, label by column, display attribute,
+ *   node label, edge label, show gene names, label mapping, passthrough
+ *   mapping
+ * @apis table.getColumns, visualStyle.createPassthroughMapping
+ * @related style/color-by-category, style/set-style-defaults,
+ *   data/join-table-by-key
+ *
+ * ## When to use
+ *
+ * The user asks for nodes (or edges) to show another column as their label:
+ * a gene symbol instead of an id, a score, a type.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - `column` is a column of the node (or edge) table that holds one value
+ *   per element, not a list.
+ *
+ * ## Side effects
+ *
+ * - Replaces the label mapping (`nodeLabel` or `edgeLabel`) with a
+ *   passthrough mapping: each element shows its own value. Mappings record
+ *   no undo entry.
+ * - Changes no table data.
+ *
+ * ## Pitfalls
+ *
+ * - **It replaces the existing label.** A network made from an edge list, or
+ *   by most imports, already labels nodes from `name`. To go back, run the
+ *   recipe with `name`.
+ * - **Numbers are shown as they are stored**: `0.123456789`, not `0.12`. To
+ *   format them, write the formatted text to a `string` column and label from
+ *   that.
+ * - **Missing values** show the mapping's fallback: the default label as it
+ *   was when the mapping was made (empty unless set). A later default does
+ *   not reach them.
+ * - **List columns are refused.** A passthrough mapping hands the list to
+ *   the renderer as it is.
+ * - **The column's type must be passed exactly**: the host refuses a mapping
+ *   whose `attributeType` differs from the column's (`MI2`). The recipe reads
+ *   it from the table.
+ *
+ * ## Don't
+ *
+ * - Don't set a label bypass on every element: it does not follow the data.
+ * - Don't copy the column's values into `name` to change the labels.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppTableType,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function labelFromColumn(
+  apis: Pick<CyWebApiType, 'table' | 'visualStyle'>,
+  networkId: IdType,
+  column: string,
+  tableType: AppTableType = 'node',
+): ApiResult<{ column: string; type: string }> {
+  const columns = apis.table.getColumns(networkId, tableType)
+  if (!columns.success) return columns
+  const info = columns.data.columns.find((c) => c.name === column)
+  if (info === undefined) {
+    return failure('RECIPE_NO_COLUMN', `no ${tableType} column ${column}`)
+  }
+  if (info.type.startsWith('list_of_')) {
+    return failure('RECIPE_COLUMN_TYPE', `${column} is a ${info.type} column`)
+  }
+
+  const mapped = apis.visualStyle.createPassthroughMapping(
+    networkId,
+    tableType === 'node' ? 'nodeLabel' : 'edgeLabel',
+    column,
+    info.type,
+  )
+  if (!mapped.success) return mapped
+  return { success: true, data: { column, type: info.type } }
+}
+````
+
+## Set the style's defaults
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/set-style-defaults.ts
+
+````typescript
+/**
+ * @recipe Set the style's defaults
+ * @aliases make every node red, change node color, change node shape, set
+ *   default color, default size, background color, change the look of all
+ *   nodes, style all edges
+ * @apis visualStyle.setDefaults, visualStyle.getVisualProperties,
+ *   visualStyle.getBypasses
+ * @related style/highlight-with-bypass, style/color-by-category,
+ *   style/size-nodes-by-degree
+ *
+ * ## When to use
+ *
+ * The user asks to change how all nodes or edges look, "make every node
+ * red", "use round nodes", "thicker edges": that is a default, not a value
+ * per element.
+ *
+ * ## Preconditions
+ *
+ * - `defaults` names properties of the network's style, with values of their
+ *   type: a `#rrggbb` color, a number, or one of the property's names
+ *   (`'ellipse'`).
+ *
+ * ## Side effects
+ *
+ * - Sets each default on the network's active style, all or none.
+ * - Records **no** undo entry.
+ * - Returns which of the properties a mapping or bypasses still override,
+ *   so the caller can tell the user why some elements did not change.
+ *
+ * ## Pitfalls
+ *
+ * - **Precedence: bypass, then mapping, then default.** After "make every
+ *   node red", nodes with a bypass stay as they were: `bypassed` counts them.
+ * - **A mapping hides the default from every element, not only those it
+ *   lists.** Where a mapping has no value for an element (a discrete mapping
+ *   without its key, a missing number), the host uses the mapping's own
+ *   fallback, copied from the default when the mapping was created. Setting
+ *   the default later does not change it, on 1.1.0 or 1.1.1. So with a
+ *   mapping on the fill, no node turns red: `shadowedByMapping` lists such
+ *   properties. Delete the mapping, or make it again after the default.
+ * - **Use the batch call.** `setDefaults` checks every property and value
+ *   first and applies all or none. A bad value cannot leave a half-changed
+ *   style.
+ * - **No undo.** To let the user go back, read the old defaults first
+ *   (`getDefault`) and keep them.
+ * - Property names are camelCase strings such as `'nodeBackgroundColor'`,
+ *   checked by the type of `defaults`.
+ *
+ * ## Don't
+ *
+ * - **Don't set a bypass on every node** to change them all. It hides every
+ *   later mapping and default on those nodes, it is saved with the network,
+ *   and nodes added later do not get it. Set the default.
+ * - Don't delete the user's mapping to make a default show without asking.
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CyWebApiType,
+  IdType,
+  VisualPropertyName,
+} from 'cyweb/ApiTypes'
+
+/** Property names to values, as `setDefaults` takes them. */
+export type StyleDefaults = Parameters<
+  CyWebApiType['visualStyle']['setDefaults']
+>[1]
+
+export interface DefaultsSet {
+  /** Properties whose default a mapping overrides. */
+  shadowedByMapping: VisualPropertyName[]
+  /** Elements whose bypass overrides the default, per property. */
+  bypassed: Partial<Record<VisualPropertyName, number>>
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function setStyleDefaults(
+  apis: Pick<CyWebApiType, 'visualStyle'>,
+  networkId: IdType,
+  defaults: StyleDefaults,
+): ApiResult<DefaultsSet> {
+  const names = Object.keys(defaults) as VisualPropertyName[]
+  if (names.length === 0) {
+    return failure('RECIPE_NO_DEFAULTS', 'defaults is empty')
+  }
+
+  const set = apis.visualStyle.setDefaults(networkId, defaults)
+  if (!set.success) return set
+
+  const properties = apis.visualStyle.getVisualProperties(networkId)
+  if (!properties.success) return properties
+  const mapped = new Set(
+    properties.data.properties.filter((p) => p.hasMapping).map((p) => p.name),
+  )
+
+  const result: DefaultsSet = { shadowedByMapping: [], bypassed: {} }
+  for (const name of names) {
+    if (mapped.has(name)) result.shadowedByMapping.push(name)
+    const bypasses = apis.visualStyle.getBypasses(networkId, name)
+    if (!bypasses.success) return bypasses
+    const count = Object.keys(bypasses.data.bypasses).length
+    if (count > 0) result.bypassed[name] = count
+  }
+  return { success: true, data: result }
+}
+````
+
+## Size nodes by their degree
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/style/size-nodes-by-degree.ts
+
+````typescript
+/**
+ * @recipe Size nodes by their degree
+ * @aliases size by degree, bigger nodes for hubs, node size by connections,
+ *   scale nodes, hubs larger, node size mapping, size by number of edges
+ * @apis element.getNodeIds, element.getEdges, table.getColumns,
+ *   table.createColumn, table.setValues, visualStyle.createContinuousMapping,
+ *   visualStyle.deleteMapping
+ * @related data/add-computed-column, style/color-nodes-by-numeric-column,
+ *   style/color-by-category
+ *
+ * ## When to use
+ *
+ * The user asks for well-connected nodes to look bigger: the size of each
+ * node grows with its number of edges.
+ *
+ * ## Preconditions
+ *
+ * - The network's data is loaded; see `events/follow-current-network`.
+ * - Not every node has the same degree.
+ *
+ * ## Side effects
+ *
+ * - Writes each node's degree to an `integer` column (default `degree`),
+ *   creating it if there is none: **one** undo entry for the values, none for
+ *   the column.
+ * - Replaces any mapping on node width and node height with a continuous
+ *   mapping from that column. Mappings record no undo entry.
+ * - If the second mapping fails, the recipe deletes the first again; the
+ *   column keeps its values.
+ *
+ * ## Pitfalls
+ *
+ * - **A mapping reads a column, not the topology.** So the degree is written
+ *   to the table first. The sizes follow the column, and the column does not
+ *   follow later edits: run the recipe again after adding or deleting edges.
+ * - **Missing values.** A node without a value gets the mapping's fallback,
+ *   the default size when the mapping was made. Every node gets a value here;
+ *   a node added later has none until the recipe runs again.
+ * - **Non-numeric values.** A degree is always a whole number. An existing
+ *   column of that name in another type is refused.
+ * - **An empty network** has no degree to map: `RECIPE_NO_NODES`.
+ * - **All values equal**, a ring or a grid, leaves no range to scale:
+ *   `RECIPE_SINGLE_VALUE`, before anything is written. Set one default size
+ *   instead (`style/set-style-defaults`).
+ * - **Map width and height both.** Mapping one makes ellipses.
+ * - **Column names and case** are checked as in `data/add-computed-column`:
+ *   a name that differs from an existing column only by case is refused on
+ *   both releases.
+ * - **Find the range with a loop.** `Math.min(...values)` throws a
+ *   `RangeError` past about 120,000 values.
+ *
+ * ## Don't
+ *
+ * - Don't set a width bypass on every node: it does not follow the data, and
+ *   it hides any later mapping.
+ * - Don't pass `attributeType: 'double'` for an `integer` column: the host
+ *   refuses it (`MI2`).
+ *
+ * ## Wiring
+ *
+ * Host-wide: `apis` may come from any call site. See `wiring/from-mount.ts`,
+ * `wiring/from-apps-menu.ts`, `wiring/from-panel.tsx` and
+ * `wiring/from-window.ts`.
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  CellEdit,
+  CyWebApiType,
+  IdType,
+} from 'cyweb/ApiTypes'
+
+export interface SizeOptions {
+  /** The column the degree is written to. Defaults to `degree`. */
+  column?: string
+  /** Size of the least connected nodes. Defaults to 20. */
+  smallest?: number
+  /** Size of the most connected nodes. Defaults to 80. */
+  largest?: number
+}
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+export function sizeNodesByDegree(
+  apis: Pick<CyWebApiType, 'element' | 'table' | 'visualStyle'>,
+  networkId: IdType,
+  options: SizeOptions = {},
+): ApiResult<{ min: number; max: number }> {
+  const column = options.column ?? 'degree'
+  const smallest = options.smallest ?? 20
+  const largest = options.largest ?? 80
+
+  const nodes = apis.element.getNodeIds(networkId)
+  if (!nodes.success) return nodes
+  const edges = apis.element.getEdges(networkId)
+  if (!edges.success) return edges
+  if (nodes.data.nodeIds.length === 0) {
+    return failure('RECIPE_NO_NODES', 'the network has no node')
+  }
+
+  const degree = new Map<IdType, number>()
+  for (const id of nodes.data.nodeIds) degree.set(id, 0)
+  for (const edge of edges.data.edges) {
+    degree.set(edge.sourceId, (degree.get(edge.sourceId) ?? 0) + 1)
+    degree.set(edge.targetId, (degree.get(edge.targetId) ?? 0) + 1)
+  }
+  let min = Infinity
+  let max = -Infinity
+  for (const value of degree.values()) {
+    min = Math.min(min, value)
+    max = Math.max(max, value)
+  }
+  if (min === max) {
+    return failure(
+      'RECIPE_SINGLE_VALUE',
+      `every node has degree ${min}; there is nothing to scale`,
+    )
+  }
+
+  const columns = apis.table.getColumns(networkId, 'node')
+  if (!columns.success) return columns
+  const same = columns.data.columns.find(
+    (c) => c.name.toLowerCase() === column.toLowerCase(),
+  )
+  if (same !== undefined && same.name !== column) {
+    return failure('RECIPE_NAME_CLASH', `a column named ${same.name} exists`)
+  }
+  if (same !== undefined && same.type !== 'integer' && same.type !== 'long') {
+    return failure('RECIPE_COLUMN_TYPE', `${column} is a ${same.type} column`)
+  }
+  if (same === undefined) {
+    const made = apis.table.createColumn(networkId, 'node', column, 'integer', 0)
+    if (!made.success) return made
+  }
+  const edits: CellEdit[] = []
+  for (const [id, value] of degree) edits.push({ id, column, value })
+  const written = apis.table.setValues(networkId, 'node', edits)
+  if (!written.success) return written
+
+  const sizeBy = (vpName: 'nodeWidth' | 'nodeHeight'): ApiResult =>
+    apis.visualStyle.createContinuousMapping(networkId, vpName, {
+      vpType: 'number',
+      attribute: column,
+      attributeType: same?.type ?? 'integer',
+      attributeValues: [min, max],
+      controlPoints: [
+        { value: min, vpValue: smallest },
+        { value: max, vpValue: largest },
+      ],
+      ltMinVpValue: smallest,
+      gtMaxVpValue: largest,
+    })
+  const width = sizeBy('nodeWidth')
+  if (!width.success) return width
+  const height = sizeBy('nodeHeight')
+  if (!height.success) {
+    apis.visualStyle.deleteMapping(networkId, 'nodeWidth')
+    return height
+  }
+  return { success: true, data: { min, max } }
+}
+````
+
+## Open a node's page in an external database from its context menu
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/link-out-from-node.ts
+
+````typescript
+/**
+ * @recipe Open a node's page in an external database from its context menu
+ * @aliases link out, linkout, external link, open in NCBI, open in UniProt,
+ *   look up a gene, right-click menu, node context menu, open a web page for
+ *   a node
+ * @apis contextMenu.addContextMenuItem, table.getValue
+ * @related ui/menu-action-with-dialog, data/read-column-values-safely
+ *
+ * ## When to use
+ *
+ * The user right-clicks a node and wants to look it up elsewhere: "open this
+ * gene in NCBI", "show its UniProt entry". Cytoscape's "External Links".
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object; register in `mount()`.
+ * - The node table has a column whose value names the node in the database:
+ *   a gene symbol, an accession. Its name is an argument.
+ *
+ * ## Side effects
+ *
+ * - Adds one item to the context menu of every node, in every network.
+ *   Choosing it opens the page in a new browser tab. Nothing in the network
+ *   changes, and no undo entry is recorded.
+ * - The host removes the item when the app is disabled. The app removes it
+ *   itself with `apis.contextMenu.removeContextMenuItem(itemId)`.
+ *
+ * ## Pitfalls
+ *
+ * - **Open the tab in the handler, before anything is awaited.** A browser
+ *   opens a new tab only while it is handling the user's click. An `await`
+ *   before `window.open` (a fetch, a timer) gets the tab blocked as a popup.
+ *   `table.getValue` is synchronous, so the recipe reads and opens at once.
+ * - **Read from the network the handler names.** The handler gets the
+ *   clicked node's `id` and `networkId`; use those, not the current network.
+ * - **A node without a value opens nothing**: an empty text, a missing value,
+ *   a list. A column the network lacks opens nothing either. Check the column
+ *   first if the user should be told; see `data/read-column-values-safely`.
+ * - **Encode the value.** A symbol may contain `/`, `#` or a space. `url`
+ *   receives the value already passed through `encodeURIComponent`.
+ * - **The item is on nodes only.** `targetTypes` defaults to nodes and edges;
+ *   the recipe passes `['node']`.
+ * - **Through `window.CyWebApi` the item stays.** An item registered without
+ *   an app has no owner, so disabling the app leaves it in every node's menu,
+ *   where clicking it still runs the app's code.
+ *
+ * ## Don't
+ *
+ * - Don't build the address from the node's label: the label comes from a
+ *   style mapping, and may show another column, or text the style shortened.
+ * - Don't open the tab without `noopener`: the database page would get a
+ *   handle on the Cytoscape Web window.
+ * - Don't add one item per node: one item reads the clicked node's value.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: `context.apis` in
+ * `mount()` (`wiring/from-mount.ts`).
+ */
+import type { ApiResult, AppContextApis } from 'cyweb/ApiTypes'
+
+export interface LinkOut {
+  /** The context menu's text: "Open in NCBI Gene". */
+  label: string
+  /** The node column whose value names the node in the database. */
+  column: string
+  /** The page for one value, given already URL-encoded. */
+  url: (encodedValue: string) => string
+}
+
+export function addLinkOut(
+  apis: Pick<AppContextApis, 'contextMenu' | 'table'>,
+  link: LinkOut,
+): ApiResult<{ itemId: string }> {
+  // Copied now: the handler runs later, and the caller's object may change.
+  const { column, url } = link
+  return apis.contextMenu.addContextMenuItem({
+    label: link.label,
+    targetTypes: ['node'],
+    handler: (target) => {
+      if (target.id === undefined) return
+      const read = apis.table.getValue(
+        target.networkId,
+        'node',
+        target.id,
+        column,
+      )
+      if (!read.success) return
+      const value = read.data.value
+      if (typeof value !== 'string' && typeof value !== 'number') return
+      const text = String(value).trim()
+      if (text === '') return
+      window.open(url(encodeURIComponent(text)), '_blank', 'noopener,noreferrer')
+    },
+  })
+}
+````
+
+## Ask for input in a dialog from an Apps menu item
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/menu-action-with-dialog.tsx
+
+````typescript
+/**
+ * @recipe Ask for input in a dialog from an Apps menu item
+ * @aliases menu item with a dialog, prompt the user, input dialog, form
+ *   dialog, apps menu action, ask for a value, find nodes by name, search
+ *   dialog
+ * @apis workspace.getCurrentNetworkId, dialog.open, table.getTable,
+ *   selection.exclusiveSelect
+ * @related ui/open-own-panel-after-action, selection/select-by-attribute
+ *
+ * ## When to use
+ *
+ * An Apps menu item needs something from the user before it acts: a text, a
+ * number, a choice. This one asks for part of a node name, and selects the
+ * nodes of the current network whose name contains it.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the `onClick` parameter of an `'apps-menu'` entry: the app's
+ *   own object.
+ * - A network is open. Give the entry `requires: { network: true }`, and the
+ *   host greys it out until one is.
+ *
+ * ## Side effects
+ *
+ * - Opens a dialog in the host's frame: the host draws the title bar and its
+ *   Close "X", and the recipe's component is the body.
+ * - **Select** replaces the network's selection with the matches
+ *   (`selection:changed`, no undo entry) and closes the dialog. With no
+ *   match, the dialog stays open and says so, and the selection is unchanged.
+ * - **Cancel**, the "X" and Escape close it and change nothing. A click
+ *   outside the dialog does not close it.
+ * - The host closes the dialog when the app is disabled.
+ *
+ * ## Pitfalls
+ *
+ * - **A menu entry is plain data.** It has no component and renders nothing:
+ *   its `onClick` opens the dialog with `apis.dialog.open` and returns. The
+ *   host closes the menu before `onClick` runs.
+ * - **The form is a component.** `render` returns an element; the state
+ *   (`useState`) lives in the component it renders, which re-renders on its
+ *   own.
+ * - **The dialog acts on the network it was opened for.** The recipe reads
+ *   the current network when the item is chosen, and keeps that id. If the
+ *   network is gone when the user confirms, the host's failure is shown in
+ *   the dialog.
+ * - **One dialog per id.** Opening again with the same `id` replaces the open
+ *   dialog instead of stacking a second one: choosing the item twice shows
+ *   one dialog.
+ * - **Nobody sees what `onClick` returns.** The host only logs a rejected
+ *   promise. Report a failure in the dialog, where the user is looking.
+ * - Mutation topics: one `exclusiveSelect` call, so there is no partial
+ *   result; selecting records no undo entry.
+ *
+ * ## Don't
+ *
+ * - Don't use `window.prompt`: it stops the whole page, and cannot be styled
+ *   or validated.
+ * - Don't look for a `component` on an `'apps-menu'` entry: it has none. The
+ *   host draws the entry from its `label`, `tooltip` and `icon`.
+ * - Don't call hooks in `render` itself: it is a function, not a component.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` is the `onClick` parameter (`wiring/from-apps-menu.ts`).
+ * `useAppContext()?.apis` in a component also works (`wiring/from-panel.tsx`).
+ */
+import type {
+  ApiFailure,
+  ApiResult,
+  AppContextApis,
+  IdType,
+} from 'cyweb/ApiTypes'
+import { Box, Button, TextField, Typography } from '@mui/material'
+import { useState } from 'react'
+
+const DIALOG_ID = 'select-by-name'
+
+const failure = (code: string, message: string): ApiFailure => ({
+  success: false,
+  error: { code, severity: 'error', message },
+})
+
+/** Select the nodes whose name contains `text`, ignoring case. */
+function selectByName(
+  apis: Pick<AppContextApis, 'table' | 'selection'>,
+  networkId: IdType,
+  text: string,
+): ApiResult<{ selected: number }> {
+  const table = apis.table.getTable(networkId, 'node', { columns: ['name'] })
+  if (!table.success) return table
+  const wanted = text.trim().toLowerCase()
+  const ids: IdType[] = []
+  for (const row of table.data.rows) {
+    const name = row.name
+    if (typeof name === 'string' && name.toLowerCase().includes(wanted)) {
+      ids.push(String(row.id))
+    }
+  }
+  if (ids.length === 0) return { success: true, data: { selected: 0 } }
+  const selected = apis.selection.exclusiveSelect(networkId, ids, [])
+  if (!selected.success) return selected
+  return { success: true, data: { selected: ids.length } }
+}
+
+interface FormProps {
+  select: (text: string) => ApiResult<{ selected: number }>
+  close: () => void
+}
+
+function SelectByNameForm({ select, close }: FormProps) {
+  const [text, setText] = useState('')
+  const [message, setMessage] = useState('')
+
+  const submit = (): void => {
+    const result = select(text)
+    if (!result.success) setMessage(result.error.message)
+    else if (result.data.selected === 0) {
+      setMessage(`No node name contains "${text.trim()}".`)
+    } else close()
+  }
+
+  return (
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <TextField
+        autoFocus
+        fullWidth
+        margin="dense"
+        label="Part of a node name"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+      />
+      {message !== '' && (
+        <Typography role="alert" color="error" variant="body2">
+          {message}
+        </Typography>
+      )}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button onClick={close}>Cancel</Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={text.trim() === ''}
+        >
+          Select
+        </Button>
+      </Box>
+    </Box>
+  )
+}
+
+export function openSelectByNameDialog(
+  apis: Pick<AppContextApis, 'workspace' | 'dialog' | 'table' | 'selection'>,
+): ApiResult<{ dialogId: string }> {
+  const current = apis.workspace.getCurrentNetworkId()
+  if (!current.success) return current
+  const { networkId } = current.data
+  if (networkId === '') return failure('RECIPE_NO_NETWORK', 'no network is open')
+
+  return apis.dialog.open({
+    id: DIALOG_ID,
+    title: 'Select nodes by name',
+    render: ({ close }) => (
+      <SelectByNameForm
+        close={close}
+        select={(text) => selectByName(apis, networkId, text)}
+      />
+    ),
+  })
+}
+````
+
+## Show your app's panel after an action
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/open-own-panel-after-action.ts
+
+````typescript
+/**
+ * @recipe Show your app's panel after an action
+ * @aliases open my panel, show results panel, switch to my tab, open the
+ *   right panel, reveal the app panel, focus my panel
+ * @apis panel.open
+ * @related ui/menu-action-with-dialog, ui/persist-results-per-network
+ *
+ * ## When to use
+ *
+ * An action finished (a menu item ran, a computation ended) and its results
+ * are in the app's own right-panel tab. The user should see that tab without
+ * looking for it.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object.
+ * - The app registered a `'right-panel'` resource with the id `tabId`, and
+ *   the tab is shown: a panel with `requires: { network: true }` has no tab
+ *   while no network is open.
+ *
+ * ## Side effects
+ *
+ * - Opens the right pane if it is closed, and selects the app's tab, as a
+ *   click on the tab does. Nothing else changes; no undo entry is recorded.
+ * - On failure, nothing changes: an unknown tab does not open the pane.
+ *
+ * ## Pitfalls
+ *
+ * - **Pass your tab's id.** Without one, `panel.open('right')` opens the pane
+ *   on whatever tab was selected. On 1.1.0 the first tab is the host's Sub
+ *   Network Viewer, which is empty for most networks. On 1.1.1 that tab
+ *   exists only for a hierarchy, and the pane shows only while it has a tab.
+ * - **Tab ids are not unique across apps.** Two apps may both call their tab
+ *   `results`. The app's own `apis.panel` selects the app's own tab, and says
+ *   so in `appId`. `window.CyWebApi.panel` cannot know who is asking, and
+ *   selects the first tab with that id in the strip: another app's.
+ * - **`APP7` (`RESOURCE_NOT_FOUND`)** means the tab is not shown: it was never
+ *   registered, it requires a network and none is open, or the app is not
+ *   active.
+ * - **Results first, then the panel.** Put the results where the panel reads
+ *   them (see `ui/persist-results-per-network`) before opening it.
+ *
+ * ## Don't
+ *
+ * - Don't call `panel.open` from `mount()`: the user turned the app on, and
+ *   did not ask for its panel.
+ * - Don't select a tab by its position in the strip: other apps add tabs.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: the `onClick` parameter
+ * of an `'apps-menu'` entry (`wiring/from-apps-menu.ts`), `context.apis` in
+ * `mount()`, or `useAppContext()?.apis` in a component
+ * (`wiring/from-panel.tsx`).
+ */
+import type { ApiResult, AppContextApis, OpenPanelResult } from 'cyweb/ApiTypes'
+
+export function openOwnPanel(
+  apis: Pick<AppContextApis, 'panel'>,
+  tabId: string,
+): ApiResult<OpenPanelResult> {
+  return apis.panel.open('right', tabId)
+}
+````
+
+## Keep an app's results for each network
+
+Source: https://raw.githubusercontent.com/cytoscape/cytoscape-web-app-examples/591d91c01c29da1566070f20e4240dd50f05e48d/cookbook/recipes/ui/persist-results-per-network.ts
+
+````typescript
+/**
+ * @recipe Keep an app's results for each network
+ * @aliases cache results, save results per network, remember results,
+ *   persist analysis results, app data, store results with the network,
+ *   compute once
+ * @apis appData.get, appData.set
+ * @related ui/open-own-panel-after-action, data/add-computed-column
+ *
+ * ## When to use
+ *
+ * The app computed something about a network (a score, a clustering, a
+ * report) that is not a column, and the user should find it again when they
+ * come back to that network, after a reload, or after turning the app off and
+ * on. Optionally, the result travels with the network when it is shared.
+ *
+ * ## Preconditions
+ *
+ * - `apis` is the app's own object.
+ * - The network is in the workspace.
+ * - The result is plain data that survives a JSON round trip: no `Map`,
+ *   `Set`, `Date`, class instance or `BigInt`.
+ *
+ * ## Side effects
+ *
+ * - Without `share`, the result is stored in this browser only, keyed to the
+ *   network's id. It is in no export and no NDEx save.
+ * - With `share: true`, it is stored in the network's `cyAppData` aspect: it
+ *   is in every CX2 export and NDEx save, and the network is marked modified.
+ *   Storing a key with the other `share` moves it; it is never in both.
+ * - Records no undo entry. Deleting the network deletes its results. Turning
+ *   the app off does not.
+ * - If `compute` fails, or the store refuses its result, nothing is stored.
+ *
+ * ## Pitfalls
+ *
+ * - **What the store returns is frozen**, deeply: writing to it throws a
+ *   `TypeError`. The recipe returns a copy (`structuredClone`) the caller may
+ *   change; the stored value stays as it was until `set` again.
+ * - **The store keeps what JSON keeps.** A value is stored as its JSON round
+ *   trip: an `undefined` field disappears, a `Date` comes back as a string.
+ *   The recipe always returns the stored form, the first time too, so a
+ *   cached and a fresh result look the same. A `BigInt` or a cycle is refused
+ *   (`APP12`); a value over the size limit too (`APP13`).
+ * - **A cached result can be stale.** The store does not know when the
+ *   network changes. Pass `refresh: true` after the user edits it, or put a
+ *   fingerprint (a node count, an edge count) in the key.
+ * - **Keys are this app's own,** per network: another app cannot read or
+ *   overwrite them, and they need no app prefix.
+ * - **Nothing stored is `APP11`**, which is not an error here: the recipe
+ *   computes. Any other failure is returned as it is.
+ * - Persistence topics: local by default and in CX2 only with `share`, and
+ *   frozen reads, are covered above.
+ *
+ * ## Don't
+ *
+ * - Don't keep per-network results in `localStorage` or a module variable:
+ *   they would outlive the network, or be lost on reload.
+ * - Don't share a cache that can be recomputed. `share` puts it in every
+ *   copy of the network the user sends to anyone.
+ * - Don't write into the value `appData.get` returns.
+ *
+ * ## Wiring
+ *
+ * Owner-bound: `apis` must be the app's own object: the `onClick` parameter
+ * of an `'apps-menu'` entry (`wiring/from-apps-menu.ts`), `useAppContext()?.apis`
+ * in a component (`wiring/from-panel.tsx`), or `context.apis` in `mount()`.
+ */
+import type { ApiResult, AppContextApis, IdType } from 'cyweb/ApiTypes'
+
+export interface PersistOptions {
+  /** Store in the network's `cyAppData` aspect, which travels with it. */
+  share?: boolean
+  /** Compute and store again, even if a result is stored. */
+  refresh?: boolean
+}
+
+export interface PersistedResult<T> {
+  /** A copy of the stored value: the caller may change it. */
+  value: T
+  /** Whether it came from the store rather than from `compute`. */
+  cached: boolean
+}
+
+/** The stored value, as a copy the caller may write to. */
+function readBack<T>(
+  apis: Pick<AppContextApis, 'appData'>,
+  networkId: IdType,
+  key: string,
+): ApiResult<T> {
+  const stored = apis.appData.get(networkId, key)
+  if (!stored.success) return stored
+  return { success: true, data: structuredClone(stored.data.value) as T }
+}
+
+export function computeOncePerNetwork<T>(
+  apis: Pick<AppContextApis, 'appData'>,
+  networkId: IdType,
+  key: string,
+  compute: () => ApiResult<T>,
+  options: PersistOptions = {},
+): ApiResult<PersistedResult<T>> {
+  if (options.refresh !== true) {
+    const cached = readBack<T>(apis, networkId, key)
+    if (cached.success) {
+      return { success: true, data: { value: cached.data, cached: true } }
+    }
+    // APP11: nothing stored yet. Anything else is a real failure.
+    if (cached.error.code !== 'APP11') return cached
+  }
+
+  const computed = compute()
+  if (!computed.success) return computed
+  const stored = apis.appData.set(networkId, key, computed.data, {
+    export: options.share === true,
+  })
+  if (!stored.success) return stored
+
+  // The stored form, not the caller's object: see Pitfalls.
+  const fresh = readBack<T>(apis, networkId, key)
+  if (!fresh.success) return fresh
+  return { success: true, data: { value: fresh.data, cached: false } }
+}
+````
+
+# API reference
+
+- App API reference, as of Cytoscape Web 1.1.0: https://raw.githubusercontent.com/cytoscape/cytoscape-web/6619411b3e4f4367679cd69299c63abdb865121c/src/app-api/api_docs/Api.md

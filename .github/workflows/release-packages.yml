@@ -1,0 +1,360 @@
+name: Release packages
+
+# Publishes @cytoscape-web/app-runtime and create-cytoscape-app to npm.
+#
+# From CI rather than a workstation, for one reason above the others: the SDK is
+# a Vite plugin, so it runs as CODE on every app author's build machine. A
+# compromised release rewrites the output of every app built with it. That is a
+# higher-value target than a runtime library, and it is why this repository —
+# whose whole subject is what an installed app is trusted with — should not ship
+# its own tooling from an unattested source.
+#
+# Provenance needs `id-token: write` and a supported CI, so a manual `npm
+# publish` cannot produce it at all. Doing this once also makes it the default
+# for every later release; the manual path is a cost paid again every time.
+#
+# Prerequisites, one-time, in repository settings:
+#   1. An environment named `release`, with required reviewers. That is the
+#      "protected release environment" — it is what stops a push from
+#      publishing without a human.
+#   2. npm Trusted Publishing, configured on BOTH packages (done 2026-08-18):
+#      GitHub Actions / cytoscape / cytoscape-web-app-examples /
+#      release-packages.yml / environment `release` / action `npm publish`.
+#
+#      There is no token any more. 0.1.0 needed one — a trusted publisher is
+#      configured on a package's settings page, which exists only once the
+#      package has been published, so the first release could not use OIDC —
+#      and it was revoked as soon as both packages existed.
+#
+#      The environment name in that configuration is what binds the trust to a
+#      REVIEWED run rather than to any run of this workflow. Leave it set.
+#
+#      NOTE for the next release: setup-node's registry-url writes
+#      `_authToken=${NODE_AUTH_TOKEN}` into .npmrc. With no such variable that
+#      becomes an empty token, and npm may treat it as "credentials present but
+#      wrong" rather than falling back to OIDC. If a publish fails with a 401,
+#      dropping registry-url from setup-node is the first thing to try.
+#   3. The repository must be public for provenance to be attestable.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag. `latest` is allowed; `next` for a pre-release.'
+        required: true
+        default: latest
+      dry_run:
+        description: 'Rehearse without publishing'
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: release-packages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    # Two registry waits below, each bounded by a single 15-minute deadline, on
+    # top of a build and test pass of a few minutes. 25 left no room for either
+    # wait.
+    timeout-minutes: 45
+    environment: release
+    env:
+      # The deadline for each registry wait, in seconds: 900 = 15 minutes.
+      # One deadline per STEP, not per package. The read-back checks two
+      # packages in turn, and a budget per package would let it take 30.
+      #
+      # Was 30 polls (5 minutes). On 2026-10-07 the read-back of
+      # create-cytoscape-app@0.4.2 saw the previous packument for all of those
+      # 5 minutes, cache buster and all, although the publish had succeeded;
+      # a re-run some 20 minutes later passed at once. Both waits time out on a
+      # registry that is slow, not wrong, and a re-run of the failed job is
+      # safe: the publish steps skip a version that is already on npm.
+      REGISTRY_WAIT_SECONDS: '900'
+    permissions:
+      contents: read
+      id-token: write # provenance
+    steps:
+      # `latest` may be moved. It used to be refused here, gated on roadmap
+      # Theme G, on the reasoning that a Preview must not become the default
+      # install. Holding it at 0.1.0 turned out to achieve the opposite: 0.1.0
+      # is a Preview with IDENTICAL security properties, so nothing was
+      # protected and the documented install commands simply served an older,
+      # less capable build. "The current Preview is the default" is the honest
+      # state; 0.x and the README say what it is.
+      #
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          # Required for npm to authenticate on publish.
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # The same battery the runbook's pre-flight describes. It runs HERE rather
+      # than being trusted to have been run: a release is exactly the moment
+      # someone skips a check because they ran it an hour ago.
+      - run: npm run build
+      - run: npm run verify:federation
+      - run: npm run typecheck --workspaces
+      - run: npm test
+
+      # Provenance is validated by the REGISTRY, against package.json's
+      # repository field. `npm publish --dry-run` never contacts the registry,
+      # so it cannot catch a missing or mismatched url — the 0.1.0 attempt
+      # passed every local check and every dry run, then failed with a 422 after
+      # burning an approval. Checking it here costs a second and fails before
+      # anything is uploaded.
+      - name: Check the repository field provenance will be validated against
+        run: |
+          set -euo pipefail
+          expected="https://github.com/${{ github.repository }}"
+          for dir in packages/app-runtime packages/create-cytoscape-app; do
+            url=$(node -p "require('./$dir/package.json').repository?.url ?? ''")
+            normalized=${url#git+}
+            normalized=${normalized%.git}
+            if [ "$normalized" != "$expected" ]; then
+              echo "::error::$dir/package.json repository.url is '$url'," \
+                   "which normalizes to '$normalized'. Provenance will reject" \
+                   "anything that is not '$expected'."
+              exit 1
+            fi
+            echo "  $dir -> $normalized"
+          done
+
+      # What is actually about to be uploaded. `files` is an allowlist, so a
+      # missing entry produces a package that installs and then fails at use.
+      - name: Show the tarball contents
+        run: |
+          npm pack -w @cytoscape-web/app-runtime --dry-run
+          npm pack -w create-cytoscape-app --dry-run
+
+      # Which versions are already on the registry. npm refuses to republish a
+      # version, so a run that failed halfway could otherwise never be resumed:
+      # the first package would 403 before the second one was reached. Skipping
+      # is not a shortcut — it is exactly equivalent to the failure npm would
+      # produce, minus the dead end.
+      #
+      # Output names are WRITTEN OUT, not derived from the package name. Deriving
+      # them is what broke the first attempt: `echo "$name" | tr -c 'a-zA-Z0-9'
+      # '_'` also converts echo's trailing newline, so the outputs were
+      # `publish_cytoscape_web_app_runtime_` and `publishcreate_cytoscape_app_`
+      # while the `if:` conditions read the names without those artefacts. Both
+      # publishes were skipped, silently, and the run still went green until a
+      # later step failed. Two literals cannot do that.
+      - name: Decide what still needs publishing
+        id: todo
+        run: |
+          set -uo pipefail
+          decide() {
+            local name="$1" dir="$2" out="$3"
+            local version
+            version=$(node -p "require('./packages/$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "  $name@$version — already published, will skip"
+              echo "$out=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "  $name@$version — not on the registry, will publish"
+              echo "$out=true" >> "$GITHUB_OUTPUT"
+            fi
+          }
+          decide @cytoscape-web/app-runtime app-runtime          runtime
+          decide create-cytoscape-app       create-cytoscape-app scaffolder
+
+      - name: Publish @cytoscape-web/app-runtime
+        if: ${{ steps.todo.outputs.runtime == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          npm publish -w @cytoscape-web/app-runtime \
+            --provenance --access public --tag "$TAG" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # Second, deliberately. The scaffolder does not depend on the SDK, but
+      # publishing the SDK first means the first project anyone scaffolds
+      # installs cleanly rather than racing the registry.
+      - name: Publish create-cytoscape-app
+        if: ${{ steps.todo.outputs.scaffolder == 'true' }}
+        # The tag reaches the shell as data, never as script. See the
+        # read-back step below for why.
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          npm publish -w create-cytoscape-app \
+            --provenance --access public --tag "$TAG" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # No deprecation step, deliberately.
+      #
+      # Both Previews used to be marked deprecated, so npm would print the
+      # trust-boundary notice on every install. It was the wrong field. npm's
+      # `deprecated` means superseded or going away; a Preview is the newest
+      # thing and is meant to be used, and the notice appeared in install logs
+      # beside genuinely abandoned packages with nothing to tell them apart.
+      # Dependency tooling treats a deprecated dependency as something to
+      # remediate, which would have flagged app authors for following the
+      # documentation.
+      #
+      # It was also the wrong scope: "no sandbox, no signature verification" is
+      # a property of the product until Theme G lands, not of one version, and
+      # keeping it in that field leaves no way to say "superseded by x.y.z" when
+      # a version actually is.
+      #
+      # The Preview status is carried by 0.x versioning, the package READMEs
+      # (which npm renders on the package page) and the guides.
+      #
+      # What the registry actually has, read back after publishing — and
+      # asserted, not merely printed. The previous version checked that the
+      # version EXISTED and printed the dist-tags beside it, so a publish that
+      # landed under the wrong tag looked identical to one that landed right.
+      #
+      # WAITED FOR, not read once. `npm publish` returns before the packument
+      # shows the new version: the 0.4.0 release read the runtime back 5.7 s
+      # after its publish and saw it, then read the scaffolder back 0.5 s after
+      # its publish and saw 0.3.1 — the registry recorded that version 54 s
+      # later. Same defect class as the smoke step's, one step earlier.
+      - name: Read back the registry, and assert the tag moved
+        if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          # -e, deliberately. Without it a `process.exit(1)` inside the loop only
+          # ends that iteration, and a successful SECOND package would leave the
+          # step green — letting a mis-tagged runtime release through the one
+          # check that exists to catch it.
+          set -euo pipefail
+          # One deadline for the whole step, shared by both packages.
+          deadline=$(( $(date +%s) + REGISTRY_WAIT_SECONDS ))
+          for dir in packages/app-runtime packages/create-cytoscape-app; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            encoded=$(node -p "encodeURIComponent('$name')")
+
+            # Poll until the version is in the packument, then assert the tag.
+            # Only the version's EXISTENCE is waited for: a tag that points
+            # elsewhere once the version is there is a real failure, not a
+            # propagation delay.
+            while :; do
+              curl -s "https://registry.npmjs.org/$encoded?cb=$RANDOM" -o /tmp/pkg.json || true
+              if node -e '
+                const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
+                process.exit(d.versions?.[process.argv[1]] ? 0 : 1)
+              ' "$version" 2>/dev/null; then break; fi
+              if [ "$(date +%s)" -ge "$deadline" ]; then break; fi
+              echo "  waiting for the registry to show $name@$version"
+              sleep 10
+            done
+
+            node -e '
+              const d = JSON.parse(require("fs").readFileSync("/tmp/pkg.json", "utf8"))
+              const [version, name, tag] = process.argv.slice(1)
+              const v = d.versions[version]
+              const tagged = d["dist-tags"][tag]
+              console.log("  " + name + "@" + version)
+              console.log("    published:  " + (v ? "yes" : "NO"))
+              console.log("    dist-tags:  " + JSON.stringify(d["dist-tags"]))
+              console.log("    " + tag + " points at: " + tagged)
+              console.log("    deprecated: " + (v?.deprecated ?? "no"))
+              if (!v) {
+                const minutes = Number(process.env.REGISTRY_WAIT_SECONDS) / 60
+                console.error("::error::" + name + "@" + version + " is still not in the packument after the step waited " + minutes + " minutes")
+                process.exit(1)
+              }
+              if (tagged !== version) {
+                console.error("::error::" + tag + " points at " + tagged + ", not " + version)
+                process.exit(1)
+              }
+            ' "$version" "$name" "$TAG"
+          done
+
+      # Install THROUGH the selected tag, scaffold, and read a manifest out of a
+      # real archive. Everything before this proves the tarball was built; only
+      # this proves the published one works. The tag is the input's, not a
+      # hard-coded `next` — this workflow can publish `latest`.
+      - name: Smoke-test the published packages through their dist-tag
+        if: ${{ !inputs.dry_run }}
+        # `tag` is a free-form workflow input, and GitHub expands `${{ … }}`
+        # BEFORE the shell parses this block — so shell syntax in the value
+        # would run as code in the release job. Passed through the
+        # environment, it is data the shell never re-parses.
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          SCAFFOLDER=$(node -p "require('./packages/create-cytoscape-app/package.json').version")
+          RUNTIME=$(node -p "require('./packages/app-runtime/package.json').version")
+
+          # WAIT, through the path npm actually uses.
+          #
+          # The read-back above asks registry.npmjs.org directly with a cache
+          # buster; `npm install` resolves through a CDN edge and npm's own
+          # cache, and the two disagreed for long enough that the first run of
+          # this step installed the PREVIOUS `next`. It then built an archive
+          # with no manifest and failed here as "Unexpected end of JSON input" —
+          # a symptom three commands away from the cause. Asserting the tag on
+          # one path and installing on another is the mistake; this waits on the
+          # path that matters.
+          deadline=$(( $(date +%s) + REGISTRY_WAIT_SECONDS ))
+          while :; do
+            SEEN=$(npm view --prefer-online "create-cytoscape-app@$TAG" version 2>/dev/null || true)
+            SEEN_RUNTIME=$(npm view --prefer-online "@cytoscape-web/app-runtime@$RUNTIME" version 2>/dev/null || true)
+            if [ "$SEEN" = "$SCAFFOLDER" ] && [ "$SEEN_RUNTIME" = "$RUNTIME" ]; then break; fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then break; fi
+            echo "waiting for npm: $TAG sees ${SEEN:-nothing} (want $SCAFFOLDER), runtime sees ${SEEN_RUNTIME:-nothing}"
+            sleep 10
+          done
+          if [ "$SEEN" != "$SCAFFOLDER" ] || [ "$SEEN_RUNTIME" != "$RUNTIME" ]; then
+            echo "::error::npm still resolves $TAG to ${SEEN:-nothing} and the runtime to ${SEEN_RUNTIME:-nothing}"
+            exit 1
+          fi
+
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          npm install --silent "create-cytoscape-app@$TAG"
+
+          # What actually landed. A stale resolve now fails by NAME here, rather
+          # than as a parse error after a build that quietly used an old SDK.
+          GOT=$(node -p "require('./node_modules/create-cytoscape-app/package.json').version")
+          if [ "$GOT" != "$SCAFFOLDER" ]; then
+            echo "::error::installed create-cytoscape-app@$GOT through $TAG, expected $SCAFFOLDER"
+            exit 1
+          fi
+
+          node node_modules/create-cytoscape-app/dist/index.js smoke --yes \
+            --id smokeApp --template panel --port 6499 --no-install
+          cd smoke
+          npm install --silent
+          GOT_RUNTIME=$(node -p "require('./node_modules/@cytoscape-web/app-runtime/package.json').version")
+          if [ "$GOT_RUNTIME" != "$RUNTIME" ]; then
+            echo "::error::scaffolded project installed app-runtime@$GOT_RUNTIME, expected $RUNTIME"
+            exit 1
+          fi
+
+          npm run build:zip
+          node -e '
+            const AdmZip = require("adm-zip")
+            const fs = require("fs")
+            const zip = fs.readdirSync(".").find((f) => f.endsWith(".zip"))
+            if (!zip) { console.error("::error::no archive"); process.exit(1) }
+            const names = new AdmZip(zip).getEntries().map((e) => e.entryName)
+            if (!names.includes("cy-manifest.json")) {
+              console.error("::error::archive has no cy-manifest.json: " + names.join(", "))
+              process.exit(1)
+            }
+            const manifest = JSON.parse(new AdmZip(zip).readAsText("cy-manifest.json"))
+            if (manifest.id !== "smokeApp") {
+              console.error("::error::manifest id " + manifest.id); process.exit(1)
+            }
+            console.log("published smoke ok: " + zip + ", generator " + manifest.generator)
+          '

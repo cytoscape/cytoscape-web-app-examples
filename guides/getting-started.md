@@ -11,96 +11,92 @@ a context menu action — all loaded into the host via Module Federation.
 
 ## 1. Scaffold a New App
 
-The fastest way to start is to copy the **project-template** from
-[cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples):
-
 ```bash
-cp -r project-template my-app
+npm create cytoscape-app my-app
 cd my-app
 ```
 
-Update the following in `package.json`:
+Templates: `panel` (the default), `menu`, `context-menu`, `non-react`, `full`.
+Every prompt has a flag, and `--yes` never asks:
+
+```bash
+npm create cytoscape-app my-app -- \
+  --yes --id myApp --display-name "My App" --template panel --port 6001
+```
+
+> Copying `project-template` from
+> [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples)
+> by hand still works, and gives you the same shape.
+
+The generator writes your app's identity into `package.json` — **once**, in one
+place:
 
 ```jsonc
 {
-  "name": "@cytoscape-web/my-app",
+  "name": "@you/my-app",
   "version": "0.1.0",
-  "private": true
+  "description": "What your app does — shown in Manage Apps",
+  "private": true,
+  "cyweb": {
+    "id": "myApp",          // Module Federation container name AND CyApp.id
+    "displayName": "My App",
+    "port": 6001            // must be free, and not one browsers block (6000 is X11)
+  }
 }
 ```
 
-Install dependencies (including the type package):
-
-```bash
-npm install
-npm install --save-dev @cytoscape-web/api-types
-```
+`cyweb.id` has to be a valid JavaScript identifier — the host applies the same
+rule when it installs the app, so anything else is rejected there.
 
 ---
 
 ## 2. Configure Module Federation
 
-Edit `vite.config.ts`. If you copied `project-template`, most of this is
-already correct — change the port and the federation `name`:
+You do not. `vite.config.ts` is three lines and reads the block above:
 
 ```typescript
-federation({
-  // Unique name — must match the `id` field in your CyApp object
-  // and the `id` field in apps.json / apps.local.json.
-  name: 'myApp',
+import { defineCyWebApp } from '@cytoscape-web/app-runtime/vite'
 
-  filename: 'remoteEntry.js',
-  dts: false,
+export default defineCyWebApp(import.meta.url)
+```
 
-  // Rewrites the `cyweb` entry below with the URL the running host publishes.
-  // Without this line the resolver file is inert — see step 2b.
-  runtimePlugins: [mfRuntimePlugin],
+That one call sets up the whole federation configuration. Four parts of it are
+load-bearing, and each fails in a way that is hard to read — which is why they
+are in a package rather than in your config:
 
-  remotes: {
-    cyweb: {
-      // REQUIRED. The host emits an ESM remoteEntry.js; the plugin's default
-      // ('var') resolves no exports against it and fails silently.
-      type: 'module',
-      name: 'cyweb',
-      entryGlobalName: 'cyweb',
-      shareScope: 'default',
-      entry: command === 'serve'
-        ? 'http://localhost:5500/remoteEntry.js'
-        : CYWEB_HOST_REQUIRED,
-    },
-  },
+| What | Why it matters |
+| --- | --- |
+| `remotes.cyweb.type: 'module'` | The host emits an ESM `remoteEntry.js`. The plugin's default (`'var'`) resolves **no exports** against it and fails **silently** — the remote appears to load and exports nothing |
+| A production entry that is a **sentinel**, not a URL | So one build works against every deployment. Shipping `localhost:5500` would point a deployed app at the end user's own loopback |
+| `runtimePlugins` | The load-bearing half of the sentinel. The resolver is inert unless it is registered; the app then keeps whatever entry was compiled in |
+| `shared`, exact keys, `import: false` | Five singletons the host provides. Import from `@mui/material`, never `@mui/material/Box`, or a second MUI ends up inside your bundle |
 
-  exposes: {
-    // The host loads this entry point to discover your app
-    './AppConfig': './src/index.ts',
-  },
+The host publishes its own `remoteEntry.js` address on `window.__CYWEB_HOST__`
+at boot, and the runtime plugin substitutes it before any remote resolves. That
+is what makes one artifact work against production, a staging host, or a
+colleague's laptop.
 
-  shared: {
-    // Singletons provided by the host — `import: false` means you bundle no
-    // copy at all. Keys are EXACT: import from '@mui/material', never
-    // '@mui/material/Box', or MUI ends up inside your app.
-    react: { singleton: true, import: false, requiredVersion: '^18.3.1' },
-    'react-dom': { singleton: true, import: false, requiredVersion: '^18.3.1' },
-    '@mui/material': { singleton: true, import: false, requiredVersion: '^5.18.0' },
-    '@emotion/react': { singleton: true, import: false, requiredVersion: '^11.10.4' },
-    '@emotion/styled': { singleton: true, import: false, requiredVersion: '^11.10.4' },
-  },
+Need to add a plugin, an alias or a `define`?
+
+```typescript
+export default defineCyWebApp(import.meta.url, {
+  vite: { resolve: { alias: { '@': '/src' } } },
 })
 ```
 
-Choose a unique dev server port (e.g. 3333) in the `server` section.
+It is merged last. Setting a field the SDK owns fails the build and names the
+path, rather than silently winning or silently losing.
 
-### 2b. Why the host URL is not written here
+A non-React app passes `{ react: false }`; an app that federates more than
+`./AppConfig` passes `{ exposes: { … } }`.
 
-Your production build ships a **sentinel** rather than a host URL. The host
-publishes its own `remoteEntry.js` address on `window.__CYWEB_HOST__` when it
-boots, and `src/mfRuntimePlugin.ts` substitutes it before any remote resolves.
+After a build, `npx cyweb-app verify` asserts all four against the built output,
+because every one of them looks correct in a config file when it is wrong. It
+reads your app directory and nothing else, so it works in your own project:
 
-The point is that **one build of your app works against every deployment** —
-production, a staging host, or a colleague's `localhost:5500` — instead of
-being compiled against one of them. Copy `src/mfRuntimePlugin.ts` and
-`src/cywebHostSentinel.ts` from the template unchanged, and keep the
-`runtimePlugins` line above.
+```bash
+npm run build && npx cyweb-app verify
+```
 
 ---
 
@@ -116,13 +112,18 @@ import type {
   ResourceDeclaration,
 } from 'cyweb/ApiTypes'
 
-const version = '0.1.0'
+// Identity from package.json — the `cyweb` block and the standard fields,
+// handed over by the build. Do NOT `import packageJson from '../package.json'`:
+// that pulls the whole file, devDependencies included, into your browser bundle
+// to read one string.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
-  // Must match the federation `name` in vite.config.ts
-  id: 'myApp',
-  name: 'My App',
-  description: 'A sample Cytoscape Web plugin.',
+  // Written once, in package.json. `id` is the federation container name, this
+  // CyApp's id and the id the host registers, all at the same time.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 
@@ -139,9 +140,8 @@ export const MyApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      closeOnAction: true,  // auto-close the dropdown after click
+      label: 'My Action',
+      onClick: myAction,    // src/menuActions.ts — the host renders the row
     },
   ],
 
@@ -195,94 +195,311 @@ const MainPanel = () => {
 export default MainPanel
 ```
 
-### Menu Item Component (`src/components/MyMenuItem.tsx`)
+### Menu Action (`src/menuActions.ts`)
+
+An `'apps-menu'` entry is plain data, not a component. The host renders the
+row from `label` and closes the dropdown itself after calling `onClick(apis)`
+— there is nothing to mount and no `handleClose` to manage.
+
+```typescript
+import type { AppContextApis } from 'cyweb/ApiTypes'
+
+export const myAction = (apis: AppContextApis): void => {
+  console.info('Menu action triggered!')
+  // `apis` is the same per-app API object your panels get from useAppContext().
+}
+```
+
+Need a form, a table, or any other UI behind the item? Open a dialog from the
+action. The host owns the frame (title bar, Close "X", dismissal rules); you
+render only the body, and `render` receives `close`:
 
 ```tsx
-import type { MenuItemHostProps } from 'cyweb/ApiTypes'
-
-const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
-  const handleClick = () => {
-    console.info('Menu action triggered!')
-    // If closeOnAction: true was set, the dropdown closes automatically.
-    // Otherwise, call handleClose() manually.
-  }
-
-  return (
-    <li onClick={handleClick} style={{ padding: '8px 16px', cursor: 'pointer' }}>
-      My Action
-    </li>
-  )
+export const myAction = (apis: AppContextApis): void => {
+  apis.dialog.open({
+    title: 'My Action',
+    render: ({ close }) => <MyForm onDone={close} />,
+  })
 }
-
-export default MyMenuItem
 ```
+
+Import it in `MyApp.tsx` — `import { myAction } from './menuActions'` — and
+reference it as `onClick`. Optional fields: `tooltip`, `icon` (an image URI;
+an SVG is painted in the row's text color), `isEnabled(apis)`, `order`,
+`group`, `requires`.
 
 ---
 
-## 5. Register with the Host
+## 5. Install into a Local Host
 
-Add your app to the host's plugin registry. For local development,
-edit `src/assets/apps.local.json` in the `cytoscape-web` repo (a JSON array):
+**You do not edit anything in the host repository.** Your dev server serves a
+one-entry app manifest at `/cyweb-app.json`, generated from your `package.json`
+on every request, and prints the link that installs it:
 
-```json
-[
-  {
-    "id": "hello",
-    "name": "Hello Cytoscape World App",
-    "url": "http://localhost:2222/remoteEntry.js",
-    "version": "1.0.0"
-  },
-  {
-    "id": "networkWorkflows",
-    "name": "Network Workflow Examples",
-    "url": "http://localhost:7000/remoteEntry.js",
-    "version": "1.0.0"
-  },
-  {
-    "id": "myApp",
-    "name": "My App",
-    "url": "http://localhost:3333/remoteEntry.js",
-    "version": "0.1.0"
-  }
-]
+```
+  Cytoscape Web app myApp — http://localhost:6001
+
+  Install it into http://localhost:5500/:
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
-> The `id` field is the unique identifier and must match your app's `id`
-> (in `CyApp`) and the federation `name` in `vite.config.ts`. The
-> `name` field is the human-readable label shown in App Settings.
-> Optional fields: `author`, `description`, `tags`, `license`, `repository`.
+Open that URL with the host running and confirm the install. The app lands in
+your workspace already turned on. **Apps → Manage Apps...** lists it, with a
+switch to turn it off.
+
+The host has accepted `?installApp=<manifestUrl>` all along — it is the same
+path the App Store will use. `installGate` allows a localhost app URL when the
+host is itself on localhost, which is what makes this work with no
+configuration. A deployed host can opt in to the same thing for its own origin;
+that is §5d, and it is off unless the deployment sets it.
+
+Because the manifest is generated rather than written to a file, changing
+`cyweb.port` or your version updates it on the next request; there is no second
+copy to keep in step.
+
+> **Two other routes exist**, both in **Apps → Manage Apps...**, and both take the
+> same `/cyweb-app.json` URL: *Install from URL* for a single app, and
+> *Manifest Source* to point the host at a catalog of several. The deep link is
+> just the one that needs no clicking.
 
 ---
 
 ## 5b. Package for the App Store
 
-`npm run build` writes **`<appId>-<version>.zip`** next to your `package.json`
-— e.g. `myApp-0.1.0.zip`. That is the file the App Store submission page takes;
-no separate packaging step.
+```bash
+npm run build:zip
+```
 
-It contains the browser publish set rather than all of `dist/`, so the build
-machine's absolute paths (`mf-manifest.json`), build metadata (`mf-stats.json`)
-and the Node-only SSR artifacts stay out of a public upload. The list is an
-allowlist in `vite.config.ts`, and an unrecognised file fails the build instead
-of being shipped.
+writes **`<appId>-<version>.zip`** next to your `package.json` — e.g.
+`myApp-0.1.0.zip`. That is the file the App Store submission page takes.
+
+**`npm run build` does not write it.** The zip used to run on every build, which
+left stale archives beside every package.json; it has been opt-in since, and
+this section said otherwise for longer than it should have. Three ways to ask
+for one:
+
+```bash
+npm run build:zip                    # the script your project ships
+CYWEB_APP_ZIP=1 npm run build        # the same thing, for CI
+```
+
+```ts
+defineCyWebApp(import.meta.url, { appStoreZip: true })   // every build
+```
+
+`CYWEB_APP_ZIP` overrides the config field in **both** directions, so an app
+that has it on can still skip the zip for a quick build with `CYWEB_APP_ZIP=0`.
+
+### What is in it
+
+The browser publish set, not all of `dist/`: the build machine's absolute paths
+(`mf-manifest.json`), build metadata (`mf-stats.json`), the Node-only SSR
+artifacts, HTML and source maps all stay out of a public upload. The allowlist
+lives in `@cytoscape-web/app-runtime`, and **an unrecognised file fails the
+build** instead of being shipped — so a new file class is never uploaded by
+accident.
+
+Packaging also **verifies the build first**, with the same checks
+`cyweb-app verify` runs. A build that does not satisfy the federation contract
+is not packaged at all.
+
+### `cy-manifest.json`
+
+At the root of the archive, generated from your `package.json`:
+
+```json
+{
+  "formatVersion": 1,
+  "id": "myApp",
+  "name": "My App",
+  "version": "0.1.0",
+  "type": "client",
+  "entry": "remoteEntry.js",
+  "description": "Colors nodes by degree",
+  "author": "Jane Doe",
+  "license": "MIT",
+  "generator": "@cytoscape-web/app-runtime@0.4.0"
+}
+```
+
+It exists because the App Store's submission form has **no application id field**
+— it derives one from the display name, and `My App` becomes `myapp`, which can
+never equal a `cyweb.id` of `myApp`. The host registers a remote under the
+catalog id and rejects an app whose exported `CyApp.id` differs, so the mismatch
+surfaces in the user's browser at install time.
+
+**Never edit it, and never commit one.** It is derived; `cyweb-app manifest`
+prints the same bytes if you want to look at it without building an archive.
+
+### Fill these in before you submit
+
+None of them is needed to build or run, and packaging warns about each one it
+does not find:
+
+| `package.json` | Becomes |
+| --- | --- |
+| `author` | the public author name — a display name only. An email is never published, and an author that IS an email is omitted with a warning |
+| `license` | the licence on the listing. SPDX identifiers, SPDX expressions and `UNLICENSED` all pass through as written |
+| `repository` | the source link. `git@…`, `github:owner/repo` and a `.git` suffix are all accepted and normalized; the object form's `directory` is kept for monorepos |
+| `homepage` | the project's own page |
+| `cyweb.compatibleHostVersions` | the host versions this app declares itself compatible with |
+
+Two rules are worth knowing before they surprise you. **A malformed value fails
+packaging rather than going missing** — a `homepage` of `ftp://…`, a repository
+with a query string, a non-string `description`. And **an explicit port, query
+or fragment in `repository` is rejected rather than stripped**, because dropping
+part of a URL changes what it addresses.
+
+---
+
+## 5c. Check a Deployed App Against a Real Host
+
+Everything above runs against a host on `localhost`. Three things that break in
+production cannot happen there, and one of them has bitten this project before:
+
+- **HTTPS, and a real web server's MIME types and cache headers.** A dev server
+  is not Apache.
+- **A base path that is not `/`.** If the host is served from a subdirectory,
+  anything that drops or doubles that segment is invisible on localhost and
+  fatal in production.
+- **Cross-origin loading for real** — CORS on `remoteEntry.js` *and every
+  transitive chunk*.
+
+**`https://dev1.ndexbio.org/cytoscape` is the staging host to use for this.** It
+is a Vite + Module Federation build, served by Apache over HTTPS, from the
+subpath `/cytoscape/` — which makes it the only environment that exercises the
+based-deployment case at all. It publishes a correct host descriptor:
+
+```json
+{ "name": "cyweb",
+  "remoteEntry": "https://dev1.ndexbio.org/cytoscape/remoteEntry.js",
+  "apiVersion": "1.0" }
+```
+
+Once your app is deployed somewhere, check it against dev1 from a clone of
+[cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples):
+
+```bash
+# Does that host publish a descriptor your app can use?
+npm run preflight:host -- https://dev1.ndexbio.org/cytoscape
+
+# Do the DEPLOYED apps actually load in it?
+npm run preflight:apps -- https://dev1.ndexbio.org/cytoscape <yourAppsBaseUrl>
+```
+
+`preflight:apps` runs a real dynamic `import()` inside a real host page and
+initialises against the host's own share scope, so a missing transitive chunk,
+a wrong MIME type or a broken CORS header shows up as a failure rather than as a
+silent blank panel.
+
+> This section is about an app you have already **deployed**. To develop against
+> dev1 with your app still on `localhost`, see §5d.
+
+---
+
+## 5d. Develop Against a Shared Host
+
+You can point your dev server at dev1 and skip running a host altogether. Your
+app stays on `localhost`; only the host is remote.
+
+```bash
+CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
+```
+
+> **Requires `@cytoscape-web/app-runtime` 0.2.0 or newer.** `0.1.0` ignores the
+> variable *silently*: no error, the banner just still names `localhost:5500`.
+> If that is what you see, check the version rather than the spelling.
+
+The banner then prints an install link for that host instead of the local one:
+
+```
+  Cytoscape Web app myApp — http://localhost:6001
+
+  Install it into https://dev1.ndexbio.org/cytoscape/ (CYWEB_DEV_HOST):
+  https://dev1.ndexbio.org/cytoscape/?installApp=http://localhost:6001/cyweb-app.json
+```
+
+Nothing in your committed config changes, so there is nothing to remember to
+undo. Both the link **and** the host `remoteEntry.js` your app loads come from
+that one variable — pointing only one of them elsewhere is the kind of mismatch
+that produces an app running against a host it is not reporting.
+
+### The browser will ask for permission — say yes
+
+Your app is on `localhost` and dev1 is not, so the host is making a request from
+a public site to your own machine. Chrome asks before allowing that:
+
+```
+  ┌──────────────────────────────────────────────┐
+  │  dev1.ndexbio.org wants to               ✕   │
+  │                                              │
+  │  🖥  Access other apps and services on       │
+  │      this device                             │
+  │                                              │
+  │                     [ Block ]   [ Allow ]    │
+  └──────────────────────────────────────────────┘
+```
+
+**Click Allow.** Nothing in that wording mentions localhost, ports or dev
+servers — it is written for the case it normally guards against, a website
+reaching devices on your network — so the correct answer here looks like the
+unsafe one. The "other app or service on this device" is your own dev server.
+
+**If you see `Failed to fetch`, that is this permission.** The message the host
+shows is:
+
+> Failed to install app from http://localhost:6001/cyweb-app.json: **Failed to
+> fetch**
+
+which names neither the permission nor the fix. The grant is remembered **per
+site, not per port**, so a Block you clicked months ago — quite possibly for the
+unrelated Cytoscape Desktop prompt, which this host also raises — is still in
+force. Reset it from the icon at the left of the address bar, reload, and answer
+Allow.
+
+This flow was measured on **Chrome**. Edge shares the engine and should behave
+the same, but was not tested. Firefox and Safari have not been measured and are
+not claimed either way.
+
+### What you are trusting
+
+dev1 is a **shared** host: an app you install there is installed for whoever
+uses that browser profile, and pointing it at your own `localhost` is asking
+your own browser to trust your own machine. Both are small, and worth knowing
+rather than worrying about.
+
+The host has to permit this — it is a per-deployment opt-in naming the one
+origin it applies to, and dev1 sets it. A host that has not opted in refuses the
+install and says so.
+
+### Production is not this, yet
+
+`https://web.cytoscape.org` will not work this way. It is still a Webpack build
+and predates the descriptor the SDK's runtime resolver reads, so an app built
+with this toolchain resolves **no exports** against it and fails silently — the
+remote appears to load and provides nothing. Production gains this when the
+current `development` branch ships there and the same opt-in is enabled for it;
+until then, dev1 is the shared host to use.
 
 ---
 
 ## 6. Run Both Dev Servers
 
 ```bash
-# Terminal 1 — Host (port 5500) with the local app registry
-cd cytoscape-web && npm run dev:local
+# Terminal 1 — Host (port 5500)
+cd cytoscape-web && npm run dev
 
-# Terminal 2 — Your app (port 3333)
+# Terminal 2 — Your app
 cd my-app && npm run dev
 ```
 
-> Use `npm run dev:local` so the host reads `apps.local.json` instead of
-> the production `apps.json` registry.
+Then open the install link your app printed (step 5). Your panel appears in the
+right-side panel area, and your menu item under the **Apps** dropdown.
 
-Your panel should appear in the right-side panel area, and your menu item
-under the **Apps** dropdown.
+> One terminal is enough if you use a shared host instead — see §5d.
+
+> Reloading the host page picks up app changes; Vite's HMR does not cross the
+> federation boundary.
 
 ---
 

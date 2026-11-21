@@ -1,0 +1,50 @@
+{
+  "name": "create-cytoscape-app",
+  "version": "0.4.2",
+  "description": "Scaffold a Cytoscape Web app: npm create cytoscape-app my-app",
+  "license": "MIT",
+  "//repository": [
+    "REQUIRED for provenance, not decoration. npm validates that this",
+    "matches the repository the sigstore bundle attests to; an absent or",
+    "mismatched url fails the publish with a 422 \u2014 and `npm publish",
+    "--dry-run` cannot catch it, because a dry run never contacts the",
+    "registry and so never runs that validation."
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cytoscape/cytoscape-web-app-examples.git",
+    "directory": "packages/create-cytoscape-app"
+  },
+  "homepage": "https://github.com/cytoscape/cytoscape-web-app-examples#readme",
+  "bugs": "https://github.com/cytoscape/cytoscape-web-app-examples/issues",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "bin": {
+    "create-cytoscape-app": "dist/index.js"
+  },
+  "//scripts": [
+    "sync-templates copies the template sources OUT of the working example apps",
+    "before the package is built or published, so a template cannot drift from",
+    "an app that is actually built, verified and loaded in a host on every CI",
+    "run. prepack runs it again because `npm pack` does not run `build`."
+  ],
+  "scripts": {
+    "build": "node scripts/sync-templates.mjs && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "clean": "rm -rf dist templates"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.8"
+  }
+}

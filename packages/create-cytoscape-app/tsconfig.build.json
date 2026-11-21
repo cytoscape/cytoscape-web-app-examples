@@ -1,0 +1,25 @@
+{
+  "//": [
+    "Relative imports carry explicit .js extensions so the output is valid Node",
+    "ESM without a resolver step — this package runs as a bin, straight from",
+    "node_modules, with nothing to rewrite specifiers for it."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "strict": true,
+    "declaration": false,
+    "outDir": "dist",
+    "rootDir": "src",
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}

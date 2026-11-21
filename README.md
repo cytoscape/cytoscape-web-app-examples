@@ -1,11 +1,27 @@
 # Developing Apps for _[Cytoscape Web](https://github.com/cytoscape/cytoscape-web/)_
 
+> ## ⚠️ Developer Preview
+>
+> The SDK and scaffolder are published at **`0.x`**. An app runs inside
+> Cytoscape Web with **the host's full privileges — no sandbox, no signature
+> verification**, so nothing here is ready to carry production work. That is a
+> property of the platform today, not of this tooling.
+>
+> **An app runs inside Cytoscape Web with the host's full privileges** — same
+> origin, DOM, storage and network identity. There is no sandbox and no
+> signature verification, and an app can read the user's credentials. Install
+> only apps you trust, and understand that asking someone to install yours asks
+> the same of them.
+>
+> The API may change before `1.0`. What is missing before it can be called ready
+> is host-side: app isolation, a capability API, and artifact integrity.
+
+Reference implementations and documentation for building apps for
+[Cytoscape Web](https://web.cytoscape.org).
+
 - Targets Cytoscape Web **App API 1.0** ([`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types))
-
-> Reference implementations and documentation for Cytoscape Web app development
-
 - [Live examples](https://cytoscape.org/cytoscape-web-app-examples/)
-- [API types package (`@cytoscape-web/api-types`)](https://www.npmjs.com/package/@cytoscape-web/api-types)
+- [`create-cytoscape-app`](https://www.npmjs.com/package/create-cytoscape-app) · [`@cytoscape-web/app-runtime`](https://www.npmjs.com/package/@cytoscape-web/app-runtime)
 
 ## Introduction
 
@@ -19,88 +35,159 @@ through Module Federation (Vite). Apps can add:
 - menu items in the **Apps** dropdown
 - context menu actions for right-click workflows
 
+> **Building a service app instead?** Cytoscape Web also supports *service
+> apps*: web services that receive network or table data from Cytoscape Web and
+> return a result for it to apply. They are not built with this repository; see
+> the [service app specification](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>).
+
+## Building with an AI assistant
+
+Most apps are now written with a coding agent. Point it at the
+[**cookbook**](cookbook/README.md): one file per task, such as "color nodes by a
+numeric column" or "add nodes to a network". Each recipe is a function to copy
+into your app, with a header that says what it changes and what not to do.
+
+Every recipe compiles against the published API types, and has passed a case
+in a running Cytoscape Web 1.1.0 and 1.1.1. Start at
+[Using a recipe](cookbook/USING-RECIPES.md).
+
 ---
 
 ## Quick Start
 
-### Set up the local workspace
-
-Both the **host application** and this **examples repository** are needed side by side.
-The host runs the Cytoscape Web UI at `localhost:5500` and loads your app from
-your own dev server, so you never rebuild the host to work on your app.
-
-> **Editing your app does not hot-reload inside the host.** Vite's HMR does not
-> cross the federation boundary — that is a separate feature (`dev.remoteHmr`),
-> off by default. Your dev server rebuilds the changed module immediately, but
-> you reload the host page to pick it up.
-
 ```bash
-mkdir cytoscape-web-dev && cd cytoscape-web-dev
-git clone https://github.com/cytoscape/cytoscape-web.git
-git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
-```
-
-### 1. Run the example apps
-
-```bash
-cd cytoscape-web-app-examples
-npm install
+npm create cytoscape-app my-app
+cd my-app
 npm run dev
 ```
 
-### 2. Run the host with the local app registry
+The dev server prints the link that installs your app into a running local host:
 
-```bash
-cd cytoscape-web
-npm install
-npm run dev:local
+```
+  Cytoscape Web app myApp — http://localhost:6001
+
+  Install it into http://localhost:5500/:
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
 ```
 
-### 3. Check that it works
+Start a host (`npm run dev` in a [cytoscape-web](https://github.com/cytoscape/cytoscape-web)
+checkout), open that link, and confirm the install. The app is on as soon as you
+confirm; **Apps → Manage Apps...** lists it, with a switch to turn it off.
 
-1. Open `http://localhost:5500`
-2. Open **Apps** -> **App Settings**
-3. Enable one of the example apps
-4. Open the **Apps** menu or the right-side **App Panel**
+**Or skip the host checkout entirely** and develop against the shared staging
+host, with your app still on `localhost`:
+
+```bash
+CYWEB_DEV_HOST=https://dev1.ndexbio.org/cytoscape npm run dev
+```
+
+The printed link then points at dev1. Your browser asks once for permission to
+reach your own machine — click **Allow**; see
+[getting-started §5d](guides/getting-started.md#5d-develop-against-a-shared-host)
+for what that prompt says and what to do if you have already dismissed it.
+
+> **Needs `@cytoscape-web/app-runtime` 0.2.0 or newer.** `0.1.0` ignores the
+> variable *silently* — the banner still names `localhost:5500` and the app
+> still loads the local host, which is the only tell.
+
+**Nothing in the host repository is edited.** Your dev server serves a one-entry
+app manifest at `/cyweb-app.json`, generated from your `package.json` on every
+request, and the host has accepted `?installApp=` all along.
+
+> **If it behaves like an older version, it probably is one.** `npm create` can
+> run a cached copy of the scaffolder without checking the registry, so anyone
+> who ran it before keeps that one. `npm create cytoscape-app@latest my-app`
+> names the tag explicitly —
+> [how to tell, and how to clear it](guides/troubleshooting.md#create-cytoscape-app-behaves-like-an-older-version).
+
+> **Your app does not hot-reload inside the host.** Vite's HMR does not cross the
+> federation boundary — that is a separate feature (`dev.remoteHmr`), off by
+> default. Your dev server rebuilds the changed module immediately; reload the
+> host page to pick it up.
+
+### Working on this repository instead
+
+If you want to run the four example apps rather than build your own:
+
+```bash
+git clone https://github.com/cytoscape/cytoscape-web.git
+git clone https://github.com/cytoscape/cytoscape-web-app-examples.git
+
+cd cytoscape-web-app-examples && npm install && npm run dev   # all four apps
+cd ../cytoscape-web          && npm install && npm run dev    # the host, :5500
+```
+
+Then open `http://localhost:5500`. The dev server reads
+`src/assets/apps.local.json`, which already lists them. What happens next
+depends on the host's version:
+
+- **Cytoscape Web 1.1.1 and later** turn all four on by themselves, except one
+  you turned off earlier in this workspace: turn it back on under
+  **Apps → Manage Apps...**. An app whose dev server is not running is
+  reported when the host starts ("apps failed to load") and marked *failed*
+  there: start its dev server and reload the page, or turn the app off.
+- **Cytoscape Web 1.1.0** starts them off: enable one under
+  **Apps → Manage Apps...**.
 
 ### Publishing to the public Cytoscape Web site
 
-The production instance of Cytoscape Web loads apps from a curated allowlist
-(`apps.json`) maintained by the core team. There are plans for a dynamic loading mechanism and the public App
-store in the future, but for now public app registration is manual. If you would like
-to publish your app, please
+Still manual, and deliberately so. The production instance loads apps from a
+curated allowlist (`apps.json`) maintained by the core team; a self-service App
+Store is designed but not built, and its launch is gated on the same host-side
+isolation work as the banner above. To publish, please
 [contact the Cytoscape team](https://github.com/cytoscape/cytoscape-web/issues).
 
 ---
 
 ## Build Your First App
 
-Copy [project-template/](project-template/) and follow the 5 steps:
-
 ```bash
-cp -r project-template my-app && cd my-app
+npm create cytoscape-app my-app
+cd my-app
 ```
 
-1. **`package.json`** — change `name` and `version`
-2. **`vite.config.ts`** — change `name` in `federation()` and `DEV_SERVER_PORT`
-3. **`src/TemplateApp.tsx`** — change `id` (must match MF name), `name`, `resources`
-4. **Host registry** — add an entry for your app in `cytoscape-web/src/assets/apps.local.json`:
-   ```json
-   {
-     "id": "myApp",
-     "name": "My App (display name)",
-     "url": "http://localhost:6000/remoteEntry.js",
-     "version": "0.1.0"
-   }
-   ```
-   > `id` is the unique identifier (must match the federation `name` and your
-   > `CyApp.id`); `name` is the human-readable label shown in App Settings.
-   >
-   > To test the template before copying, add:
-   > ```json
-   > { "id": "template", "name": "App Template", "url": "http://localhost:5555/remoteEntry.js", "version": "0.1.0" }
-   > ```
-5. **Verify** — `npm run dev`, then confirm in browser
+That is the whole setup — it installs dependencies and leaves a project that
+builds, verifies and tests as it stands. Add `--yes` with `--id`, `--port` and
+`--template` to skip the prompts entirely; every prompt has a flag, so an agent
+can drive it without a terminal.
+
+> Prefer to start from a worked example? `cp -r project-template my-app` still
+> works and gives you the same shape by hand.
+
+Then two things:
+
+**1. Your identity, in `package.json`.** Written once, and read from there by
+the build, by the app config, and by the install manifest:
+
+```json
+{
+  "name": "@you/my-app",
+  "version": "0.1.0",
+  "description": "What your app does — shown in Manage Apps",
+  "cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
+}
+```
+
+`cyweb.id` is the Module Federation container name, the `CyApp.id` and the id
+the host registers, all at the same time.
+
+**2. Your app, in `src/`.** Replace the panel and menu components, and adjust
+`resources` in `src/MyApp.tsx`. `vite.config.ts` is three lines and needs no
+edits.
+
+Then `npm run dev`. It prints the link that installs your app into a running
+local host:
+
+```
+  Cytoscape Web app myApp — http://localhost:6001
+
+  Install it into http://localhost:5500/:
+  http://localhost:5500/?installApp=http://localhost:6001/cyweb-app.json
+```
+
+**Nothing in the host repository is edited.** The dev server serves a one-entry
+manifest at `/cyweb-app.json`, generated from your `package.json` on each
+request, and the host has accepted `?installApp=` all along.
 
 See [project-template/README.md](project-template/README.md) for details.
 
@@ -113,14 +200,20 @@ Every app exports one `CyAppWithLifecycle` object:
 ```typescript
 import { lazy } from 'react'
 import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'
-
-const { version } = packageJson
+// Identity, from the `cyweb` block and the standard fields in package.json.
+// Do NOT `import packageJson from '../package.json'` — that pulls the whole
+// file, devDependencies included, into your browser bundle to read one string.
+// `cyweb-app verify` fails a build that does.
+import { description, displayName, id, version } from 'virtual:cyweb-app-meta'
 
 export const MyApp: CyAppWithLifecycle = {
-  id: 'myApp',
-  name: 'My App',
-  description: 'Short description of your app',
+  // Written once, in package.json:
+  //   "cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
+  // `id` is the Module Federation container name, this CyApp's id and the id
+  // the host registers, all at the same time.
+  id,
+  name: displayName,
+  description,
   version,
   apiVersion: '1.0',
 
@@ -132,12 +225,16 @@ export const MyApp: CyAppWithLifecycle = {
       title: 'My Panel',
       component: lazy(() => import('./components/MyPanel')),
     },
+    // An 'apps-menu' entry is plain data: the host renders the row and
+    // closes the dropdown itself. Put any UI behind it in a dialog opened
+    // from onClick via apis.dialog.open({ title, render }).
     {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      closeOnAction: true,
+      label: 'My Action',
+      onClick: (apis) => {
+        apis.network.createNetworkFromEdgeList({ name: 'Example', edgeList: [['A', 'B']] })
+      },
     },
   ],
 
@@ -171,6 +268,7 @@ export const MyApp: CyAppWithLifecycle = {
 | [Registration Patterns](guides/registration-patterns.md) | Panels, menus, context menus, upsert, batch |
 | [Lifecycle & Cleanup](guides/lifecycle-and-cleanup.md)   | mount/unmount, auto-cleanup, re-enable      |
 | [Troubleshooting](guides/troubleshooting.md)             | Build errors, runtime errors, FAQ           |
+| [Cookbook](cookbook/README.md)                           | One recipe per task, verified in a host     |
 
 ### API Reference
 
@@ -205,37 +303,48 @@ All API methods return `ApiResult<T>`. Always check `result.success` before read
 | **VisualStyleApi** | `cyweb/VisualStyleApi` | Set defaults, bypasses, and mappings                                 |
 | **LayoutApi**      | `cyweb/LayoutApi`      | Run layout algorithms                                                |
 | **ExportApi**      | `cyweb/ExportApi`      | Export network as CX2                                                |
+| **PanelApi**       | `cyweb/PanelApi`       | Open a side pane and select a tab in it (`panel.open`)               |
+| **ScopedApi**      | `cyweb/ScopedApi`      | The domain APIs bound to one network (`useScopedApi(networkId?)`)    |
+| **AppDataApi**     | `cyweb/AppDataApi`     | Per-app key/value storage keyed to a network                         |
 | **EventBus**       | `cyweb/EventBus`       | Subscribe to host events (`useCyWebEvent`)                           |
-| **AppIdContext**   | `cyweb/AppIdContext`   | Per-app context (`useAppContext`) for resource and context menu APIs |
+| **AppIdContext**   | `cyweb/AppIdContext`   | Per-app context (`useAppContext`): the app's own `apis`              |
 | **ApiTypes**       | `cyweb/ApiTypes`       | TypeScript types for all of the above                                |
 
 ### Available Events
 
-| Event               | Fires when                                |
-| ------------------- | ----------------------------------------- |
-| `network:created`   | A new network is added to the workspace   |
-| `network:deleted`   | A network is removed                      |
-| `network:switched`  | The user navigates to a different network |
-| `selection:changed` | Node or edge selection changes            |
-| `layout:started`    | A layout algorithm begins                 |
-| `layout:completed`  | A layout algorithm finishes               |
-| `style:changed`     | A visual style property changes           |
-| `data:changed`      | Node or edge attribute data changes       |
+| Event               | Fires when                                                                 |
+| ------------------- | -------------------------------------------------------------------------- |
+| `network:created`   | A new network is added to the workspace                                    |
+| `network:deleted`   | A network is removed                                                       |
+| `network:changed`   | Nodes or edges are added to or removed from an existing network            |
+| `network:switched`  | The current network changes — its data may not be loaded yet              |
+| `network:loaded`    | A network's tables and view are readable; re-read data that failed on the switch |
+| `selection:changed` | Node or edge selection changes                                             |
+| `layout:started`    | A layout algorithm begins                                                  |
+| `layout:completed`  | A layout algorithm finishes successfully                                   |
+| `style:changed`     | A visual style property changes                                            |
+| `style:switched`    | A network's active named style changes                                     |
+| `data:changed`      | Node or edge attribute data changes                                        |
 
 ### Non-React Access
 
 Outside React components, the same APIs are available via `window.CyWebApi`:
 
 ```javascript
-window.addEventListener('cywebapi:ready', () => {
-  const api = window.CyWebApi
-  const result = api.workspace.getCurrentNetworkId()
-  // ...
-})
+const api = await window.CyWebApi.whenReady() // resolves at once if already ready
+const result = api.workspace.getCurrentNetworkId()
+// ...
 ```
 
-> Note: `window.CyWebApi` does not include `resource` or per-app `contextMenu`.
-> Those are only available inside `mount()` via `context.apis` or via `useAppContext()`.
+`window.CyWebApi` exists before the host has finished starting, so await
+`whenReady()` rather than calling it directly. Prefer it to the one-shot
+`cywebapi:ready` event, which a listener added after startup never receives.
+
+> Note: `window.CyWebApi` has no `resource`, `dialog` or `appData`, and its
+> `contextMenu`, `nodeGraphics` and `panel` are anonymous: not tied to an app,
+> so nothing they register is removed when an app is disabled. Use the per-app
+> `apis` instead — `context.apis` in `mount()`, or `useAppContext()?.apis` in a
+> component.
 
 ---
 
@@ -257,24 +366,24 @@ Recommended reading order: project-template → hello-world → network-statisti
 Install the types package for IDE support:
 
 ```bash
-npm install --save-dev @cytoscape-web/api-types
+npm install --save-dev @cytoscape-web/api-types @cytoscape-web/app-runtime
 ```
 
-Reference the package's bundled declarations from your `tsconfig.json` so
-TypeScript resolves the `cyweb/*` ambient modules:
+Reference both packages' bundled declarations from your `tsconfig.json` so
+TypeScript resolves the `cyweb/*` ambient modules and `virtual:cyweb-app-meta`:
 
 ```json
 {
   "include": ["src/**/*"],
   "compilerOptions": {
     "moduleResolution": "bundler",
-    "types": ["@cytoscape-web/api-types"]
+    "types": ["@cytoscape-web/api-types", "@cytoscape-web/app-runtime/meta"]
   }
 }
 ```
 
-> Listing the package in `types` is what pulls in its ambient `cyweb/*`
-> declarations. Do **not** set `typeRoots`: the example apps used to point it
+> Listing them in `types` is what pulls in the ambient `cyweb/*` and
+> `virtual:cyweb-app-meta` declarations — the same mechanism `vite/client` uses. Do **not** set `typeRoots`: the example apps used to point it
 > at `./node_modules/@types`, a directory that does not exist in a workspace,
 > and setting it suppresses the default lookup that actually finds the types.
 > See any of the example apps' `tsconfig.json` for a working reference.
@@ -289,7 +398,6 @@ npm run dev:hello-world         # run one app
 npm run dev:network-statistics
 npm run dev:network-workflows
 npm run dev:project-template
-npm run dev:claude-bridge       # MCP bridge (optional, internal tool)
 npm run build                   # build all workspaces
 npm run deploy                  # build and copy each workspace's dist/ into docs/
 ```

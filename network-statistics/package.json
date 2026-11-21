@@ -1,14 +1,26 @@
 {
   "name": "@cytoscape-web/network-statistics",
-  "description": "Non-React example: compute and log network statistics using the Graph Traversal API",
+  "description": "Logs network topology statistics (density, degree distribution, roots, leaves) to the browser console on every network switch. A non-React example using only mount/unmount lifecycle hooks.",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
+  "//cyweb": [
+    "This app's identity, written ONCE. The federation container name, the",
+    "CyApp.id and the dev install manifest all read from here — before this",
+    "block they were three hand-synced string literals with no import between",
+    "them, and nothing noticed a mismatch until the host refused to load."
+  ],
+  "cyweb": {
+    "id": "networkStatistics",
+    "displayName": "Network Statistics",
+    "port": 3333
+  },
   "scripts": {
     "build": "vite build",
+    "build:zip": "cross-env CYWEB_APP_ZIP=1 vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run"
@@ -25,13 +37,13 @@
     "typecheck."
   ],
   "devDependencies": {
-    "@cytoscape-web/api-types": "^1.0.0-beta.3",
-    "@module-federation/runtime": "2.5.1",
+    "@cytoscape-web/api-types": "^1.0.0-beta.5",
+    "@cytoscape-web/app-runtime": "^0.4.0",
     "@module-federation/vite": "1.16.8",
-    "@types/adm-zip": "^0.5.5",
     "@types/node": "^24.0.0",
     "@types/react": "^18.3.5",
     "adm-zip": "^0.5.10",
+    "cross-env": "^10.1.0",
     "typescript": "^5.6.2",
     "vite": "8.0.13",
     "vitest": "^4.1.8"

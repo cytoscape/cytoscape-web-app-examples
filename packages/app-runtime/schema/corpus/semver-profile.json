@@ -1,0 +1,53 @@
+{
+  "$comment": [
+    "TWO expectations per case, not one binary label.",
+    "",
+    "`grammarValid` is what the runtime reader applies on every dev server and",
+    "every build, and what the scaffolder must agree with. `submissionProfileValid`",
+    "is the bounded operational profile — length, no build metadata, numeric",
+    "identifiers a comparator can order — and applies only where a manifest is",
+    "built, a ZIP is named, or a URL path is generated.",
+    "",
+    "Conflating them would put a 128-character cap into the reader that runs on",
+    "every `vite dev`, which is a submission concern failing an ordinary build."
+  ],
+  "cases": [
+    { "version": "1.0.0", "grammarValid": true, "submissionProfileValid": true },
+    { "version": "0.0.1", "grammarValid": true, "submissionProfileValid": true },
+    { "version": "1.0.0-beta.3", "grammarValid": true, "submissionProfileValid": true },
+    { "version": "1.0.0-dev.0", "grammarValid": true, "submissionProfileValid": true },
+    { "version": "1.0.0-0", "grammarValid": true, "submissionProfileValid": true },
+
+    { "version": "1.0.0+build.1", "grammarValid": true, "submissionProfileValid": false,
+      "why": "SemVer excludes build metadata from precedence, so 1.0.0+a and 1.0.0+b tie for a latest endpoint" },
+    { "version": "1.0.0-beta+exp.sha.5114f85", "grammarValid": true, "submissionProfileValid": false,
+      "why": "build metadata again" },
+
+    { "version": "9007199254740991.0.0", "grammarValid": true, "submissionProfileValid": true,
+      "why": "the largest core component node-semver accepts" },
+    { "version": "9007199254740992.0.0", "grammarValid": true, "submissionProfileValid": false,
+      "why": "node-semver@7.8.5 rejects this outright, so a grammar-only reader would admit a version the agreed comparator refuses" },
+    { "version": "1.0.0-9007199254740991", "grammarValid": true, "submissionProfileValid": true },
+    { "version": "1.0.0-99999999999999999999", "grammarValid": true, "submissionProfileValid": false,
+      "why": "this and 1.0.0-100000000000000000000 are distinct strings that compare EQUAL, so two identities would tie with no defined order" },
+    { "version": "1.0.0-100000000000000000000", "grammarValid": true, "submissionProfileValid": false,
+      "why": "the other half of the tie" },
+
+    { "version": "1.0.0-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "grammarValid": true, "submissionProfileValid": false,
+      "why": "129 characters — it becomes a ZIP filename and a URL path segment" },
+
+    { "version": "1.0", "grammarValid": false, "submissionProfileValid": false },
+    { "version": "v1.0.0", "grammarValid": false, "submissionProfileValid": false },
+    { "version": "^1.0.0", "grammarValid": false, "submissionProfileValid": false },
+    { "version": "1.0.0 ", "grammarValid": false, "submissionProfileValid": false,
+      "why": "never trimmed: whitespace makes an identity string invalid, not trimmable" },
+    { "version": " 1.0.0", "grammarValid": false, "submissionProfileValid": false },
+    { "version": "01.0.0", "grammarValid": false, "submissionProfileValid": false,
+      "why": "leading zeroes in a core component" },
+    { "version": "1.0.0-01", "grammarValid": false, "submissionProfileValid": false,
+      "why": "leading zeroes in a numeric prerelease identifier" },
+    { "version": "1.0.0-", "grammarValid": false, "submissionProfileValid": false },
+    { "version": "", "grammarValid": false, "submissionProfileValid": false }
+  ]
+}

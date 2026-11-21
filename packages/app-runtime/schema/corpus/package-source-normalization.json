@@ -1,0 +1,265 @@
+{
+  "$comment": [
+    "SDK-ONLY. package.json forms this SDK accepts, and what each normalizes to.",
+    "The App Store does not implement these rules: it validates canonical wire",
+    "documents and rejects source forms rather than rewriting them. See",
+    "canonical-wire-validation.json for the half both sides implement.",
+    "",
+    "Each case merges `package` over a valid base package.json. `expect` is a",
+    "partial manifest that must match field for field; `expectInvalid` is a",
+    "substring of the failure; `expectWarning` is a substring of a readiness",
+    "warning that must be emitted."
+  ],
+  "base": {
+    "name": "@example/my-app",
+    "version": "1.0.0",
+    "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000 }
+  },
+  "cases": [
+    {
+      "name": "an author object publishes the name and never the email",
+      "package": { "author": { "name": "Jane Doe", "email": "jane@example.org" } },
+      "expect": { "author": "Jane Doe" }
+    },
+    {
+      "name": "npm's Name <email> (url) string publishes the name only",
+      "package": { "author": "Jane Doe <jane@example.org> (https://example.org)" },
+      "expect": { "author": "Jane Doe" }
+    },
+    {
+      "name": "a name that is itself an email is omitted, not published",
+      "package": { "author": { "name": "jane@example.org" } },
+      "expectWarning": "looks like an email address or a URL"
+    },
+    {
+      "name": "a name that is itself a URL is omitted, not published",
+      "package": { "author": "https://example.org" },
+      "expectWarning": "looks like an email address or a URL"
+    },
+    {
+      "name": "an author object with no name is omitted",
+      "package": { "author": { "email": "jane@example.org" } },
+      "expectWarning": "only contact details"
+    },
+    {
+      "name": "a non-string author name is invalid, not absent",
+      "package": { "author": { "name": 42 } },
+      "expectInvalid": "author.name must be a string"
+    },
+    {
+      "name": "https repository passes through unchanged",
+      "package": { "repository": "https://github.com/example/my-app" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "a .git suffix is removed",
+      "package": { "repository": "https://github.com/example/my-app.git" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "git+https is normalized",
+      "package": { "repository": "git+https://github.com/example/my-app.git" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "an scp-style SSH URL is normalized, and git@ is transport syntax",
+      "package": { "repository": "git@github.com:example/my-app.git" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "ssh:// with the conventional git user is normalized",
+      "package": { "repository": "ssh://git@github.com/example/my-app.git" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "github: shorthand expands",
+      "package": { "repository": "github:example/my-app" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "gitlab: shorthand expands",
+      "package": { "repository": "gitlab:example/my-app" },
+      "expect": { "repository": "https://gitlab.com/example/my-app" }
+    },
+    {
+      "name": "bitbucket: shorthand expands",
+      "package": { "repository": "bitbucket:example/my-app" },
+      "expect": { "repository": "https://bitbucket.org/example/my-app" }
+    },
+    {
+      "name": "plain http is normalized to https",
+      "package": { "repository": "http://github.com/example/my-app" },
+      "expect": { "repository": "https://github.com/example/my-app" }
+    },
+    {
+      "name": "the object form takes url and directory together",
+      "package": {
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/example/monorepo.git",
+          "directory": "apps/my-app"
+        }
+      },
+      "expect": {
+        "repository": "https://github.com/example/monorepo",
+        "repositoryDirectory": "apps/my-app"
+      }
+    },
+    {
+      "name": "a repository type other than git is invalid",
+      "package": { "repository": { "type": "svn", "url": "https://example.org/repo" } },
+      "expectInvalid": "repository.type must be absent or exactly \"git\""
+    },
+    {
+      "name": "an object without a string url is invalid",
+      "package": { "repository": { "type": "git" } },
+      "expectInvalid": "repository.url must be a string"
+    },
+    {
+      "name": "credentials are rejected, not stripped",
+      "package": { "repository": "https://user:pw@github.com/example/my-app" },
+      "expectInvalid": "carries credentials"
+    },
+    {
+      "name": "an explicit port is rejected, not stripped",
+      "package": { "repository": "https://github.com:443/example/my-app" },
+      "expectInvalid": "names an explicit port"
+    },
+    {
+      "name": "a query string is rejected, not stripped",
+      "package": { "repository": "https://github.com/example/my-app?ref=main" },
+      "expectInvalid": "carries a query string"
+    },
+    {
+      "name": "a fragment is rejected, not stripped",
+      "package": { "repository": "https://github.com/example/my-app#readme" },
+      "expectInvalid": "carries a fragment"
+    },
+    {
+      "name": "a percent escape in the repository path is rejected on the raw string",
+      "package": { "repository": "https://github.com/example/my%2Fapp" },
+      "expectInvalid": "contains a percent escape"
+    },
+    {
+      "name": "a bare owner/repo is not one of the accepted forms",
+      "package": { "repository": "example/my-app" },
+      "expectInvalid": "is not a URL this SDK accepts"
+    },
+    {
+      "name": "a directory escaping the repository is invalid",
+      "package": {
+        "repository": { "url": "https://github.com/example/monorepo", "directory": "../secrets" }
+      },
+      "expectInvalid": "has an empty, \".\" or \"..\" segment"
+    },
+    {
+      "name": "a percent escape in the directory is invalid",
+      "package": {
+        "repository": { "url": "https://github.com/example/monorepo", "directory": "apps/a%2Fb" }
+      },
+      "expectInvalid": "contains a percent escape"
+    },
+    {
+      "name": "an absolute directory is invalid",
+      "package": {
+        "repository": { "url": "https://github.com/example/monorepo", "directory": "/apps/a" }
+      },
+      "expectInvalid": "is absolute"
+    },
+    {
+      "name": "homepage keeps its path, query and fragment",
+      "package": { "homepage": "https://example.org/docs?tab=usage#install" },
+      "expect": { "homepage": "https://example.org/docs?tab=usage#install" }
+    },
+    {
+      "name": "a local http homepage with a port passes the producer boundary",
+      "package": { "homepage": "http://localhost:6000/" },
+      "expect": { "homepage": "http://localhost:6000/" }
+    },
+    {
+      "name": "a homepage with credentials is invalid",
+      "package": { "homepage": "https://user:pw@example.org" },
+      "expectInvalid": "carries credentials"
+    },
+    {
+      "name": "a non-http homepage scheme is invalid",
+      "package": { "homepage": "ftp://example.org" },
+      "expectInvalid": "uses the \"ftp\" scheme"
+    },
+    {
+      "name": "keywords become tags, trimmed and de-duplicated by ASCII case",
+      "package": { "keywords": ["Layout", "  analysis  ", "layout", "LAYOUT"] },
+      "expect": { "tags": ["Layout", "analysis"] }
+    },
+    {
+      "name": "non-ASCII case is compared exactly, so these are two tags",
+      "package": { "keywords": ["Ärger", "ärger"] },
+      "expect": { "tags": ["Ärger", "ärger"] }
+    },
+    {
+      "name": "keywords that normalize to nothing omit the field",
+      "package": { "keywords": ["", "   "] },
+      "expectAbsent": ["tags"]
+    },
+    {
+      "name": "a non-array keywords is invalid",
+      "package": { "keywords": "layout" },
+      "expectInvalid": "keywords must be an array of strings"
+    },
+    {
+      "name": "a wrong-typed description is invalid, not silently empty",
+      "package": { "description": 42 },
+      "expectInvalid": "description must be a string"
+    },
+    {
+      "name": "a description that trims away is absent",
+      "package": { "description": "   " },
+      "expectAbsent": ["description"]
+    },
+    {
+      "name": "an SPDX expression passes through as written",
+      "package": { "license": "Apache-2.0 OR MIT" },
+      "expect": { "license": "Apache-2.0 OR MIT" }
+    },
+    {
+      "name": "UNLICENSED passes through as written",
+      "package": { "license": "UNLICENSED" },
+      "expect": { "license": "UNLICENSED" }
+    },
+    {
+      "name": "a reserved id is rejected",
+      "package": { "cyweb": { "id": "toString", "displayName": "My App", "port": 6000 } },
+      "expectInvalid": "is reserved"
+    },
+    {
+      "name": "build metadata is rejected",
+      "package": { "version": "1.0.0+build.1" },
+      "expectInvalid": "carries build metadata"
+    },
+    {
+      "name": "a numeric identifier above MAX_SAFE_INTEGER is rejected",
+      "package": { "version": "9007199254740992.0.0" },
+      "expectInvalid": "above Number.MAX_SAFE_INTEGER"
+    },
+    {
+      "name": "the largest safe numeric identifier is accepted",
+      "package": { "version": "9007199254740991.0.0" },
+      "expect": { "version": "9007199254740991.0.0" }
+    },
+    {
+      "name": "compatibleHostVersions is carried through opaquely",
+      "package": { "cyweb": { "id": "myApp", "displayName": "My App", "port": 6000, "compatibleHostVersions": ">=1.1.0-0" } },
+      "expect": { "compatibleHostVersions": ">=1.1.0-0" }
+    },
+    {
+      "name": "a display name is trimmed",
+      "package": { "cyweb": { "id": "myApp", "displayName": "  My App  ", "port": 6000 } },
+      "expect": { "name": "My App" }
+    },
+    {
+      "name": "a lone surrogate in a display name is rejected",
+      "package": { "cyweb": { "id": "myApp", "displayName": "My \uD800 App", "port": 6000 } },
+      "expectInvalid": "unpaired surrogate"
+    }
+  ]
+}

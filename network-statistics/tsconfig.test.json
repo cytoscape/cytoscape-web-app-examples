@@ -24,6 +24,6 @@
 
     "skipLibCheck": true,
 
-    "types": ["node", "vitest/globals", "@cytoscape-web/api-types"]
+    "types": ["node", "vitest/globals", "@cytoscape-web/api-types", "@cytoscape-web/app-runtime/meta"]
   }
 }

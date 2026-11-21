@@ -59,7 +59,7 @@ plugin does not bundle its own copy, which keeps the download small.
 # Terminal 1 — start the host with the local app registry
 cd ../../cytoscape-web
 npm install
-npm run dev:local    # → http://localhost:5500 (loads apps.local.json)
+npm run dev          # → http://localhost:5500 (serves apps.local.json)
 
 # Terminal 2 — start this plugin
 cd hello-world
@@ -67,11 +67,13 @@ npm install
 npm run dev          # → http://localhost:2222
 ```
 
-> Use `npm run dev:local` (not `npm run dev`) so the host loads
-> `src/assets/apps.local.json` and discovers your locally running plugin.
+> The host's dev server serves `src/assets/apps.local.json` as its app catalog,
+> and that file already lists this app at `localhost:2222`.
 
-Open `http://localhost:5500`, click **Apps** in the toolbar, then **App
-Settings** to enable the Hello World app. The panel appears on the right side.
+Open `http://localhost:5500`. Cytoscape Web 1.1.1 and later turn the Hello World
+app on by themselves. On 1.1.0, or if you turned the app off earlier in this
+workspace, click **Apps** in the toolbar, then **Manage Apps...**, and enable
+it. The panel appears on the right side.
 
 ---
 
@@ -90,7 +92,7 @@ hello-world/
 │       ├── SelectionSection.tsx       ← Example 2: EventBus + SelectionApi
 │       ├── LayoutSection.tsx          ← Example 3: LayoutApi + EventBus (async)
 │       ├── LifecycleSection.tsx       ← Example 4: App lifecycle / useSyncExternalStore
-│       ├── MenuSection.tsx            ← Example 5: Menu component pattern
+│       ├── MenuSection.tsx            ← Example 5: apps-menu entry (plain data + dialog)
 │       ├── ContextMenuSection.tsx     ← Example 6: Context menu items via useAppContext
 │       ├── ElementSection.tsx         ← Example 7: Node/edge CRUD via ElementApi
 │       ├── TableSection.tsx           ← Example 8: Table data read/write via TableApi
@@ -98,12 +100,11 @@ hello-world/
 │       ├── ExportSection.tsx          ← Example 10: CX2 export via ExportApi
 │       ├── NetworkSection.tsx         ← Example 11: Network create/delete via NetworkApi
 │       ├── TsvDownloadSection.tsx     ← Example 12: TSV table download via TableApi
-│       └── NetworkSummaryMenuItem.tsx ← apps-menu item registered in HelloApp.tsx
-├── vite.config.ts                     ← Module Federation config
+│       └── NetworkSummaryDialog.tsx   ← body of the dialog opened by the apps-menu action
+├── src/menuActions.tsx                ← Example 5: the apps-menu action (opens the dialog)
+├── vite.config.ts                     ← one defineCyWebApp() call (@cytoscape-web/app-runtime)
 ├── index.html                         ← remote-only stub (Vite needs an HTML entry)
-├── src/cywebHostSentinel.ts           ← entry a production build ships when no host is known
-├── src/mfRuntimePlugin.ts             ← resolves the host URL at runtime
-├── test/mfRuntimePlugin.test.ts       ← covers both remote arrays + every rejection
+├── test/appConfig.test.ts             ← smoke test: identity and the shape of ./AppConfig
 ├── tsconfig.json / .node.json / .test.json
 └── package.json
 ```
@@ -135,8 +136,8 @@ export const HelloApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'NetworkSummaryMenuItem',
-      title: 'Network Summary',
-      component: lazy(() => import('./components/NetworkSummaryMenuItem')),
+      label: 'Network Summary',
+      onClick: showNetworkSummary, // menuActions.tsx — opens a dialog via apis.dialog.open
     },
   ],
 
@@ -163,7 +164,7 @@ exposes: {
 
 `mount(context)` is called once after your components are registered and the
 host API is fully initialised. `unmount()` is called when the user disables
-the app in App Settings, or when the page unloads.
+the app in **Apps → Manage Apps...**, or when the page unloads.
 
 ```typescript
 mount(context: AppContext): void {
@@ -216,6 +217,11 @@ See `VisualStyleSection.tsx` for a complete in-panel error display example.
 
 ## Examples walkthrough
 
+Each example tours one API. To do one task with it, start from a recipe in the
+[cookbook](../cookbook/README.md) instead: a function to copy, with what it
+changes and what goes wrong written down, verified in a running Cytoscape Web.
+Each example below ends with the recipes that use the same calls.
+
 ### Example 0 — MUI components + finding your own chunk URL (`HelloHeader.tsx`)
 
 **What it shows:**
@@ -240,6 +246,10 @@ const moduleUrl = import.meta.url // URL of THIS chunk
 > production build lives under `assets/` — appending to it yields
 > `…/assets/remoteEntry.js`, a 404. Reconstructing the entry URL from a chunk
 > path is guessing, so the example shows the chunk URL for what it is.
+
+**In the cookbook:** no recipe for this one. A component recipe imports MUI the
+same way:
+[Ask for input in a dialog from an Apps menu item](../cookbook/recipes/ui/menu-action-with-dialog.tsx).
 
 ---
 
@@ -272,6 +282,12 @@ const handleUpdateStyle = () => {
 not during component initialisation. The active network may change between
 renders.
 
+**In the cookbook:**
+- [Set the style's defaults](../cookbook/recipes/style/set-style-defaults.ts)
+- [Color nodes by a numeric column](../cookbook/recipes/style/color-nodes-by-numeric-column.ts)
+- [Color nodes by category](../cookbook/recipes/style/color-by-category.ts)
+- [Highlight some nodes, and remove the highlight later](../cookbook/recipes/style/highlight-with-bypass.ts)
+
 ---
 
 ### Example 2 — EventBus + `SelectionApi` (`SelectionSection.tsx`)
@@ -301,6 +317,11 @@ const handleSelectionChanged = useCallback(({ selectedNodes, selectedEdges }) =>
 useCyWebEvent('selection:changed', handleSelectionChanged)
 ```
 
+**In the cookbook:**
+- [Follow the current network, and read it only when it is ready](../cookbook/recipes/events/follow-current-network.ts)
+- [Select nodes or edges by a column's value](../cookbook/recipes/selection/select-by-attribute.ts)
+- [Select the neighbors of the selected nodes](../cookbook/recipes/selection/select-neighbors.ts)
+
 ---
 
 ### Example 3 — `LayoutApi` + EventBus (`LayoutSection.tsx`)
@@ -308,9 +329,10 @@ useCyWebEvent('selection:changed', handleSelectionChanged)
 **What it shows:**
 - Triggering an async host operation and tracking completion via both the
   returned Promise and the event bus.
-- `layoutApi.applyLayout(networkId)` is async. The Promise resolves when the
-  algorithm finishes (or rejects on error). The `layout:completed` event fires
-  at the same time, allowing multiple components to react independently.
+- `layoutApi.applyLayout(networkId)` is async. Like every App API call it
+  never throws or rejects: the Promise resolves to an `ApiResult`, a failed one
+  when the layout cannot run. `layout:completed` fires on success only, just
+  before the Promise resolves, so several components can react independently.
 - Disable the trigger button while the operation runs to prevent duplicate
   submissions.
 
@@ -321,13 +343,17 @@ useCyWebEvent('layout:completed', useCallback(() => setStatus('done'), []))
 
 const handleApply = () => {
   setStatus('running')
-  layoutApi.applyLayout(networkId)
-    .then(result => { if (!result.success) setStatus('idle') })
-    .catch(() => setStatus('idle'))
-  // Always .catch() even when using the event bus — the event does not
-  // carry error information, only the Promise does.
+  layoutApi.applyLayout(networkId).then((result) => {
+    // A failure resolves (it never rejects) and fires no event, so the
+    // result is the only place its error message appears.
+    if (!result.success) setStatus('idle')
+  })
 }
 ```
+
+**In the cookbook:**
+- [Run a layout and wait for it to finish](../cookbook/recipes/layout/run-layout-and-wait.ts)
+- [Add a layout of your own to the Layout menu](../cookbook/recipes/layout/register-app-layout.ts)
 
 ---
 
@@ -397,12 +423,26 @@ const { mounted, networkSwitchCount, lastNetworkId } = useSyncExternalStore(
 | React context required | Yes | No |
 | Typical use | UI event reactions | Background tasks, SDKs, analytics |
 
+**In the cookbook:**
+- [Follow the current network, and read it only when it is ready](../cookbook/recipes/events/follow-current-network.ts),
+  from `mount()` or from a component
+- [`wiring/from-mount.ts`](../cookbook/wiring/from-mount.ts): calling recipes
+  from `mount(context)`, and stopping what they started in `unmount()`
+
 ---
 
-### Example 5 — Menu component pattern (`MenuSection.tsx`)
+### Example 5 — Apps-menu entry (`MenuSection.tsx`)
 
-Explains how `ComponentType.Menu` items (now via `resources` with
-`slot: 'apps-menu'`) work and the `handleClose` prop contract.
+Explains how `'apps-menu'` entries work: plain data with `label` and
+`onClick(apis)`, rendered by the host, with any UI opened from the action
+through `apis.dialog.open({ title, render })`.
+
+**In the cookbook:**
+- [Ask for input in a dialog from an Apps menu item](../cookbook/recipes/ui/menu-action-with-dialog.tsx)
+- [Show your app's panel after an action](../cookbook/recipes/ui/open-own-panel-after-action.ts)
+- [Keep an app's results for each network](../cookbook/recipes/ui/persist-results-per-network.ts)
+- [`wiring/from-apps-menu.ts`](../cookbook/wiring/from-apps-menu.ts): calling
+  recipes from an entry's `onClick`
 
 ---
 
@@ -413,6 +453,11 @@ Explains how `ComponentType.Menu` items (now via `resources` with
 - Interactive toggle: add/remove context menu items for node, edge, and canvas.
 - `ApiResult<{ itemId }>` pattern for tracking registered items.
 - `useEffect` cleanup for removing items when the component unmounts.
+
+**In the cookbook:**
+- [Open a node's page in an external database from its context menu](../cookbook/recipes/ui/link-out-from-node.ts)
+- [`wiring/from-panel.tsx`](../cookbook/wiring/from-panel.tsx): calling recipes
+  with `useAppContext()?.apis` from a component
 
 ---
 
@@ -426,6 +471,11 @@ Explains how `ComponentType.Menu` items (now via `resources` with
   are deleted automatically).
 - Each operation adds an undo entry automatically.
 
+**In the cookbook:**
+- [Add nodes to a network, and connect them](../cookbook/recipes/elements/add-nodes-to-network.ts)
+- [Connect the selected nodes to each other](../cookbook/recipes/elements/add-edges-between-selected.ts)
+- [Delete the selected nodes and edges](../cookbook/recipes/elements/delete-selected.ts)
+
 ---
 
 ### Example 8 — `TableApi` (`TableSection.tsx`)
@@ -438,6 +488,11 @@ Explains how `ComponentType.Menu` items (now via `resources` with
 - Combines `selectionApi.getSelection()` to pick the target node.
 - Write operations fire `data:changed` events automatically.
 
+**In the cookbook:**
+- [Add a computed column: node degree](../cookbook/recipes/data/add-computed-column.ts)
+- [Read a column's numbers safely](../cookbook/recipes/data/read-column-values-safely.ts)
+- [Join a table of values to the network by a key column](../cookbook/recipes/data/join-table-by-key.ts)
+
 ---
 
 ### Example 9 — `ViewportApi` (`ViewportSection.tsx`)
@@ -448,6 +503,12 @@ Explains how `ComponentType.Menu` items (now via `resources` with
   for selected nodes.
 - Positions are plain `[x, y, z?]` tuples in a `Record<IdType, number[]>`.
 
+**In the cookbook:**
+- [Add nodes to a network, and connect them](../cookbook/recipes/elements/add-nodes-to-network.ts)
+  reads positions to place new nodes
+- [Add a layout of your own to the Layout menu](../cookbook/recipes/layout/register-app-layout.ts)
+  moves nodes in one undoable step; `updateNodePositions` records no undo entry
+
 ---
 
 ### Example 10 — `ExportApi` (`ExportSection.tsx`)
@@ -457,6 +518,10 @@ Explains how `ComponentType.Menu` items (now via `resources` with
   the host's stores (network, tables, visual style, view model).
 - The returned `Cx2` is a JSON-serializable array of aspect objects.
 - Display a summary (aspect count, byte size) instead of the full document.
+
+**In the cookbook:** no recipe for exporting yet.
+[Keep an app's results for each network](../cookbook/recipes/ui/persist-results-per-network.ts)
+puts an app's results into the CX2 export with `share: true`.
 
 ---
 
@@ -469,6 +534,10 @@ Explains how `ComponentType.Menu` items (now via `resources` with
 - `workspaceApi.getWorkspaceInfo()` — read workspace metadata (name, network
   count, current network ID).
 - Network creation fires `network:created` and `network:switched` events.
+
+**In the cookbook:**
+- [Create a network from a table of edges](../cookbook/recipes/network/create-network-from-table.ts)
+- [Create a new network from the selected nodes](../cookbook/recipes/network/subnetwork-from-selection.ts)
 
 ---
 
@@ -494,78 +563,34 @@ if (result.success) {
 }
 ```
 
+**In the cookbook:** no recipe for downloading a table yet. The other
+direction, a TSV into the table, is
+[Join a table of values to the network by a key column](../cookbook/recipes/data/join-table-by-key.ts).
+
 ---
 
 ## Creating your own app
 
-Use `project-template/` as the starting point:
+Use the scaffolder rather than copying this app:
 
 ```bash
-cp -r ../project-template ../my-app
-cd ../my-app
+npm create cytoscape-app my-app
 ```
 
-1. **`package.json`** — change `name` and `version`
-2. **`vite.config.ts`** — change `DEV_SERVER_PORT` (pick an unused port)
-   and `name` in `federation()` (unique camelCase string, no spaces)
-3. **`src/`** — rename and replace the template files; keep `index.ts` as the
-   entry point re-exporting your app config as `default`
-4. **Host registry** — add an entry to the JSON array in
-   `../../cytoscape-web/src/assets/apps.local.json`:
-
-```json
-{
-  "id": "myApp",
-  "name": "My App (display name)",
-  "url": "http://localhost:XXXX/remoteEntry.js",
-  "author": "Your Name",
-  "description": "Short description",
-  "version": "0.1.0"
-}
-```
-
-> The `id` field is the unique identifier and must match your app's `id`
-> and the federation `name`. The `name` field is the human-readable label
-> shown in App Settings.
-
-5. Run `npm run dev` and reload the host at `http://localhost:5500`
+It writes the app's identity into the `cyweb` block of `package.json`, a
+`vite.config.ts` that is one `defineCyWebApp()` call, and a passing smoke test.
+`npm run dev` then prints a `?installApp=` link that installs the app into a
+running host; nothing in the host repository is edited. See
+[Build Your First App](../README.md#build-your-first-app) in the repository
+README.
 
 ---
 
-## Available host APIs
+## Available host APIs and events
 
-Import any of these in your React components using the `cyweb/` prefix:
-
-| Import | Purpose |
-|---|---|
-| `cyweb/WorkspaceApi` | Get current network ID, list networks |
-| `cyweb/ElementApi` | Create / delete nodes and edges |
-| `cyweb/NetworkApi` | Create / delete networks, import CX2 |
-| `cyweb/SelectionApi` | Read and mutate the current selection |
-| `cyweb/VisualStyleApi` | Read and set visual properties |
-| `cyweb/LayoutApi` | Run layout algorithms |
-| `cyweb/ViewportApi` | Pan, zoom, fit the viewport |
-| `cyweb/TableApi` | Read and write node/edge attribute tables |
-| `cyweb/ExportApi` | Export the network as CX2 or image |
-| `cyweb/EventBus` | Subscribe to host events (`useCyWebEvent`) |
-| `cyweb/AppIdContext` | Per-app context (`useAppContext`) for resource and context menu APIs |
-| `cyweb/ApiTypes` | TypeScript types for all of the above |
-
-All API functions return `ApiResult<T>` — check `result.success` before using
-`result.data`.
-
-### Available events (EventBus)
-
-| Event | When it fires |
-|---|---|
-| `network:created` | A new network is added to the workspace |
-| `network:deleted` | A network is removed |
-| `network:switched` | The user navigates to a different network |
-| `selection:changed` | Node or edge selection changes |
-| `layout:started` | A layout algorithm begins |
-| `layout:completed` | A layout algorithm finishes successfully |
-| `style:changed` | A visual style property changes |
-| `data:changed` | Node or edge attribute data changes |
+See [Available APIs](../README.md#available-apis) and
+[Available Events](../README.md#available-events) in the repository README.
+They are kept in one place so that they cannot disagree.
 
 ---
 

@@ -31,7 +31,9 @@ export function registerSelectNeighbors(context: AppContext): void {
       const { nodeIds } = neighborsResult.data
       if (nodeIds.length === 0) return
 
-      context.apis.selection.additiveSelect(ctx.networkId, nodeIds)
+      // Node ids and edge ids are separate arguments since 1.0.0-beta.4. A
+      // single merged array is not accepted — the host reports APP3.
+      context.apis.selection.additiveSelect(ctx.networkId, nodeIds, [])
     },
   })
 }

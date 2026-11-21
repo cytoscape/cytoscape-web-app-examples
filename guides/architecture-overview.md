@@ -55,23 +55,37 @@ and a panel that ignores the host's theme.
 
 ### App Discovery
 
-The host reads `apps.json` (production) or `apps.local.json` (development)
-to discover plugins:
+The host discovers apps from a **manifest**: a JSON array of entries, each
+naming an app and the `remoteEntry.js` to load it from.
 
 ```json
 [
   {
     "id": "myApp",
     "name": "My App (display name)",
-    "url": "http://localhost:3333/remoteEntry.js",
+    "url": "http://localhost:6001/remoteEntry.js",
     "version": "0.1.0"
   }
 ]
 ```
 
-The `id` field is the unique identifier and must match your app's `id`
-(in `CyApp`) and the federation `name` in `vite.config.ts`. The
-`name` field is the human-readable label shown in App Settings.
+There are three ways the host gets one, and **none of them requires editing a
+file in the host repository**:
+
+| Route | When |
+| --- | --- |
+| `?installApp=<manifestUrl>` deep link | Development. Your dev server serves this manifest at `/cyweb-app.json`, generated from your `package.json` per request, and prints the link on startup |
+| **Apps → Manage Apps... → Install from URL** | The same thing by hand, one app at a time |
+| **Apps → Manage Apps... → Manifest Source** | Point the host at a catalog of several apps |
+
+The production instance additionally ships a curated `apps.json` at its own
+origin, which is how the published examples appear without anyone installing
+them.
+
+`id` is the unique identifier, and it has to match the Module Federation
+container name and your `CyApp.id`. You do not keep those in step by hand:
+`defineCyWebApp` reads all three from the `cyweb` block in `package.json`, and
+so does the generated manifest.
 
 ### How your app finds the host
 
@@ -101,8 +115,10 @@ promised because the federation runtime caches a remote's `Module` against the
 loaded could not reach that remote anyway, so the host says so rather than
 implying an update path that does not exist.
 
-`src/mfRuntimePlugin.ts` in your app reads that during the federation runtime's
-`beforeInit` hook and substitutes it before any remote resolves. A production
+The Module Federation runtime plugin that `defineCyWebApp` registers for you —
+it lives in `@cytoscape-web/app-runtime`, not in your sources — reads that
+during the runtime's `beforeInit` hook and substitutes it before any remote
+resolves. A production
 build compiles in a **sentinel** (`cyweb:__CYWEB_HOST_REQUIRED__`) rather than
 a URL, so if the descriptor is missing the app throws a named error instead of
 quietly trying to reach a `localhost` address on the end user's machine.
@@ -132,12 +148,18 @@ interface CyWebApiType {
   layout: LayoutApi
   export: ExportApi
   workspace: WorkspaceApi
-  contextMenu: ContextMenuApi  // anonymous — no appId tracking
+  contextMenu: ContextMenuApi    // anonymous — no appId tracking
+  nodeGraphics: NodeGraphicsApi  // anonymous — no appId tracking
+  panel: PanelApi                // anonymous — no preference for your own tab
 }
 ```
 
-- Does **NOT** include `resource` (resource registration requires React context)
-- `contextMenu` is an anonymous singleton — items are not auto-cleaned
+- Does **NOT** include `resource`, `dialog` or `appData`: those exist only per app
+- `contextMenu`, `nodeGraphics` and `panel` are anonymous. Nothing registered through
+  them is removed when your app is disabled, and `panel.open` may select another app's
+  tab when tab ids collide
+- Await `window.CyWebApi.whenReady()` before using it: the object exists before the host
+  has finished starting
 
 ### 2. `AppContext.apis` — Per-App API (AppContextApis)
 
@@ -145,21 +167,31 @@ Available inside `mount()` and plugin React components via `useAppContext()`.
 
 ```typescript
 interface AppContextApis extends CyWebApiType {
-  readonly resource: ResourceApi     // per-app resource registration
-  readonly contextMenu: ContextMenuApi  // per-app, auto-cleaned on disable
+  readonly resource: ResourceApi          // per-app resource registration
+  readonly contextMenu: ContextMenuApi    // per-app, removed on disable
+  readonly nodeGraphics: NodeGraphicsApi  // per-app, removed on disable
+  readonly appData: AppDataApi            // per-app storage, KEPT on disable
+  readonly dialog: DialogApi              // per-app, closed on disable
+  readonly panel: PanelApi                // prefers your own tab on id collisions
 }
 ```
 
+- These six domains are **owner-bound**: each is replaced with an implementation bound
+  to your app's ID (`buildPerAppApis` in the host)
 - `resource` is bound to your app's ID — you cannot register resources
   under another app
-- `contextMenu` items carry your app's ID and are automatically removed
-  when your app is disabled
+- `contextMenu` items and `nodeGraphics` hooks carry your app's ID and are removed
+  automatically when your app is disabled; open dialogs are closed
+- `appData` entries are deliberately **not** removed on disable — call `appData.remove()`
+  to discard them
+- Use these through `context.apis` or `useAppContext()?.apis`, never through
+  `window.CyWebApi`: the types are the same, so the compiler cannot tell you
 
 ### When to Use Which
 
 | Scenario | Use |
 |----------|-----|
-| Inside a React component | `useAppContext().apis` |
+| Inside a React component | `useAppContext()?.apis` (it is `null` outside the host) |
 | Inside `mount()` / `unmount()` | `context.apis` (from mount parameter) |
 | Browser console debugging | `window.CyWebApi` |
 | Browser extension / non-React | `window.CyWebApi` |
@@ -234,12 +266,15 @@ Subscribe in components with `useCyWebEvent` or in `mount()` with
 |-------|---------|------------|
 | `network:created` | `{ networkId }` | A new network is created |
 | `network:deleted` | `{ networkId }` | A network is deleted |
-| `network:switched` | `{ networkId, previousId }` | Active network changes |
+| `network:changed` | `{ networkId, addedNodeIds, removedNodeIds, addedEdgeIds, removedEdgeIds }` | Nodes or edges are added to or removed from an existing network |
+| `network:switched` | `{ networkId, previousId }` | Active network changes — its data may not be loaded yet |
+| `network:loaded` | `{ networkId }` | A network's tables and view are readable; re-read data that failed on the switch |
 | `selection:changed` | `{ networkId, selectedNodes, selectedEdges }` | Selection updates |
 | `layout:started` | `{ networkId, algorithm }` | Layout begins |
-| `layout:completed` | `{ networkId, algorithm }` | Layout finishes |
+| `layout:completed` | `{ networkId, algorithm }` | Layout finishes successfully (a failure fires no event) |
 | `style:changed` | `{ networkId, property }` | Visual style changes |
-| `data:changed` | `{ networkId, tableType, rowIds }` | Node/edge data modified |
+| `style:switched` | `{ networkId, styleId, previousStyleId }` | A network's active named style changes |
+| `data:changed` | `{ networkId, tableType, rowIds, addedColumns, removedColumns }` | Node/edge data modified |
 
 ### Usage in Components (Recommended)
 
@@ -282,9 +317,12 @@ These modules are available via the `cyweb/` prefix:
 | `cyweb/TableApi` | `import { useTableApi } from 'cyweb/TableApi'` | Node/edge table data |
 | `cyweb/VisualStyleApi` | `import { useVisualStyleApi } from 'cyweb/VisualStyleApi'` | Visual mappings |
 | `cyweb/LayoutApi` | `import { useLayoutApi } from 'cyweb/LayoutApi'` | Layout algorithms |
-| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2/image export |
+| `cyweb/ExportApi` | `import { useExportApi } from 'cyweb/ExportApi'` | CX2 export (there is no image export) |
 | `cyweb/WorkspaceApi` | `import { useWorkspaceApi } from 'cyweb/WorkspaceApi'` | Workspace state |
-| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context |
+| `cyweb/PanelApi` | `import { usePanelApi } from 'cyweb/PanelApi'` | Open a side pane and select a tab in it |
+| `cyweb/ScopedApi` | `import { useScopedApi } from 'cyweb/ScopedApi'` | The domain APIs bound to one network |
+| `cyweb/AppDataApi` | `import { useAppDataApi } from 'cyweb/AppDataApi'` | Per-app key/value storage keyed to a network |
+| `cyweb/AppIdContext` | `import { useAppContext } from 'cyweb/AppIdContext'` | Per-app context: the app's own `apis` |
 | `cyweb/EventBus` | `import { useCyWebEvent } from 'cyweb/EventBus'` | Event subscriptions |
 
 > **Legacy exposes** (`cyweb/NetworkStore`, `cyweb/TableStore`, etc.) are

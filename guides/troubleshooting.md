@@ -53,20 +53,25 @@ Or use the pattern from `project-template` where `src/index.ts` does
 
 ### Host dev server shows "Container missing" or blank panel
 
-**Cause:** The `name` in your `federation()` block does not match the `id` in
-`apps.local.json`.
+**Cause:** The federation container name, your `CyApp.id` and the id the host
+registered are not the same string. The host refuses to load an app whose
+`CyApp.id` does not match the id it registered, and says so only in a
+debug-gated console warning.
 
-**Fix:** Ensure all three match:
+**Fix:** They come from one place — the `cyweb` block in `package.json`:
 
+```json
+"cyweb": { "id": "myApp", "displayName": "My App", "port": 6001 }
 ```
-vite.config.ts:     federation({ name: 'myApp' })
-apps.local.json:    { "id": "myApp", "name": "My App", "url": "..." }
-MyApp.ts:           id: 'myApp'
-```
 
-> The `id` field in `apps.local.json` is the unique identifier (it
-> matches the federation `name`). The `name` field is the
-> display label shown in App Settings — it does not need to match.
+`defineCyWebApp` uses `cyweb.id` as the federation name, your app reads it from
+`virtual:cyweb-app-meta`, and the dev install manifest is generated from it. If
+they disagree, something is not reading it:
+
+- Does `src/MyApp.tsx` still hardcode `id: 'myApp'` instead of importing it?
+- Did you install this app under an older id, before renaming it? Uninstall it
+  in **Apps → Manage Apps...** and open the printed install link again — the host
+  keeps what it installed, not what your dev server now serves.
 
 ### The app "loads" but nothing happens, and there is no error
 
@@ -101,9 +106,9 @@ publish the host descriptor, or is not running inside a Cytoscape Web host at
 all.
 
 A production build deliberately compiles in a sentinel instead of a host URL,
-so `src/mfRuntimePlugin.ts` throws this named error rather than silently
-attempting to reach `localhost:5500` — which, on a deployed app, would mean the
-**end user's own machine**.
+so the runtime plugin throws this named error rather than silently attempting to
+reach `localhost:5500` — which, on a deployed app, would mean the **end user's
+own machine**.
 
 **Check, in order:**
 
@@ -113,13 +118,67 @@ attempting to reach `localhost:5500` — which, on a deployed app, would mean th
    `window.__CYWEB_HOST__` should be a frozen object with `name: 'cyweb'` and
    an absolute `remoteEntry` URL. A host predating this feature has no such
    global and cannot load Vite-built apps.
-3. Is `runtimePlugins: [mfRuntimePlugin]` still in your `federation()` block?
-   Copying `src/mfRuntimePlugin.ts` without registering it leaves it inert, and
-   the symptom is identical.
+3. Are you still going through `defineCyWebApp`? It registers the runtime
+   plugin for you, and a config that assembles `federation()` by hand without
+   `runtimePlugins` leaves the resolver inert — identical symptom. `npx
+   cyweb-app verify` asserts the resolver is present in the built output, which
+   is the fastest way to tell.
 
 ---
 
 ## Runtime Errors
+
+### "Failed to install app from …: Failed to fetch"
+
+The browser refused the host's request to your dev server. **Two unrelated
+causes produce this identical message**, so check the console first — it names
+which one:
+
+| Console says | Cause |
+| --- | --- |
+| `Permission was denied … loopback address space` | the local-network permission, below |
+| `net::ERR_UNSAFE_PORT` | your dev server is on a port browsers refuse |
+
+#### `net::ERR_UNSAFE_PORT` — the port
+
+Browsers refuse to load `http://` from a set of ports whatever is listening;
+`6000` (X11) is the one that catches people. **The host cannot fetch from such a
+port either**, so the app never installs.
+
+Change `cyweb.port` in your `package.json` to something outside that list —
+`6001` and up are fine — and restart the dev server. `create-cytoscape-app`
+0.3.0 and newer will not pick or accept one of these ports; earlier versions
+defaulted to `6000`.
+
+#### The local-network permission
+
+This happens when the host is *not* on localhost — a shared host such as
+`https://dev1.ndexbio.org/cytoscape` — and you have not granted, or have
+previously blocked, permission for it to reach your machine. In the console:
+
+```
+Access to fetch at 'http://localhost:6001/cyweb-app.json' from origin
+'https://dev1.ndexbio.org' has been blocked by CORS policy:
+Permission was denied for this request to access the loopback address space.
+```
+
+**Fix:** allow it. On the first attempt the browser asks:
+
+```
+  dev1.ndexbio.org wants to
+  🖥  Access other apps and services on this device
+                              [ Block ]   [ Allow ]
+```
+
+**If no prompt appears, you have already answered it.** The decision is
+remembered **per site, not per port**, and this host raises the same prompt for
+its Cytoscape Desktop integration — so a Block clicked long ago, for an
+unrelated reason, still applies. Reset it from the icon at the left of the
+address bar, reload, and choose Allow.
+
+No server header fixes this: the request is stopped before it is sent, so CORS
+headers on your dev server have nothing to answer. See
+[getting-started §5d](getting-started.md#5d-develop-against-a-shared-host).
 
 ### "Cannot assign to read only property '_status'"
 
@@ -182,7 +241,7 @@ resources: [
 **Possible causes:**
 
 1. **App is disabled** — Items from disabled apps are removed automatically.
-   Re-enable the app in App Settings.
+   Re-enable the app in **Apps → Manage Apps...**.
 
 2. **Wrong targetTypes** — If you register with `targetTypes: ['node']`,
    the item only appears when right-clicking a node, not an edge or canvas.
@@ -190,28 +249,87 @@ resources: [
 3. **Empty label** — `addContextMenuItem` returns `fail(InvalidInput)` if
    the label is empty. Check the return value.
 
-### Menu item does not close the dropdown
+### Menu item registration fails with `APP9`
 
-**Fix:** Either set `closeOnAction: true` on the resource declaration,
-or call `handleClose()` manually:
+**Cause:** The entry passes a `component` (or `title`, `closeOnAction`,
+`errorFallback`). Since api-types 1.0.0-beta.4 an `'apps-menu'` entry is plain
+data — the host renders the row and closes the dropdown itself.
+
+**Fix:** Replace the component with `label` and `onClick(apis)`. Move the
+component's action into `onClick`; move any UI it rendered into
+`apis.dialog.open({ title, render })` called from there:
 
 ```typescript
-// Option A: Declarative
-{ slot: 'apps-menu', closeOnAction: true, ... }
-
-// Option B: Manual
-const MyMenuItem = ({ handleClose }: MenuItemHostProps) => {
-  const onClick = () => {
-    doSomething()
-    handleClose()  // close the dropdown
-  }
-  return <li onClick={onClick}>Action</li>
+{
+  slot: 'apps-menu',
+  id: 'MyAction',
+  label: 'My Action',
+  onClick: (apis) => {
+    doSomething(apis)
+    // or, for UI: apis.dialog.open({ title: 'My Action', render: ({ close }) => <MyForm onDone={close} /> })
+  },
 }
 ```
+
+There is no dropdown to close manually any more; the host does it after
+`onClick` returns.
 
 ---
 
 ## Development Workflow
+
+### `create-cytoscape-app` behaves like an older version
+
+**Symptom:** the scaffolder does something the documentation says it no longer
+does — offers a port the docs warn against, is missing a script, prompts where
+it should not.
+
+**Cause:** `npm create` may run a **cached copy** of the scaffolder without
+checking the registry. This is npx's behaviour, not something this project
+controls, and it means a developer who ran the tool once keeps getting that
+version.
+
+The tell is a line that is *absent*. On a fresh fetch npm prints:
+
+```
+npm warn exec The following package was not found and will be installed: create-cytoscape-app@<version>
+```
+
+No such line means it came from the cache.
+
+**Check what you actually have:**
+
+```bash
+find ~/.npm/_npx -path '*create-cytoscape-app/package.json' \
+  -exec node -p "require('{}').version" \;
+npm view create-cytoscape-app version     # what the registry has
+```
+
+**Fixes**, either of which works:
+
+```bash
+npm create cytoscape-app@latest my-app      # name the tag
+npm create cytoscape-app@<version> my-app   # or the exact version `npm view` printed
+```
+
+To clear it outright: `npx clear-npx-cache`, or `npm cache clean --force`.
+
+`npm create --prefer-online cytoscape-app my-app` does **not** help, and the
+reason is not that npm skips the registry. A bare initializer is resolved as
+`create-cytoscape-app@*`; npm does fetch the current manifest (an
+`npm http fetch GET … /create-cytoscape-app` line appears at `--loglevel=http`),
+then checks the npx cache with that `*` range, which any cached version
+satisfies — so the fresh result is discarded and the cached copy runs, without
+the "will be installed" line. Measured on npm 11.19 with 0.4.0 cached and
+0.4.1 published. `--prefer-online` only affects the fetch, which already
+happens. Naming a tag makes npm compare the cached copy against the tag's
+resolved tarball, and naming a version requires an exact match; both replace a
+stale copy.
+
+> **When comparing versions, watch the ports.** `pickPort` returns the first
+> *free* port, so an occupied 6000 is skipped by every version — including ones
+> without the blocked-port fix. Testing whether that fix works needs 6000 to be
+> free, or the result means nothing.
 
 ### How to switch between local and production host
 
@@ -316,7 +434,10 @@ cd cytoscape-web && npm run dev  # port 5500
 
 Apps are loaded via Module Federation at runtime, not installed via npm.
 To deploy, host your `remoteEntry.js` on a static server (Netlify, S3,
-etc.) and add the URL to the host's `apps.json`.
+etc.) and have its URL listed in the deployment's curated `apps.json`. That
+list belongs to whoever runs the deployment, and from Cytoscape Web 1.1.1 every
+app in it is on by default for every user. For the public site, see
+[Publishing to the public Cytoscape Web site](../README.md#publishing-to-the-public-cytoscape-web-site).
 
 ### What TypeScript version should I use?
 
@@ -326,14 +447,16 @@ version.
 
 ### How do I test my app without the host?
 
-For unit tests, mock the `cyweb/*` imports:
+For unit tests, mock the `cyweb/*` imports with Vitest:
 
 ```typescript
-jest.mock('cyweb/AppIdContext', () => ({
+import { vi } from 'vitest'
+
+vi.mock('cyweb/AppIdContext', () => ({
   useAppContext: () => ({
     appId: 'test',
     apis: {
-      element: { getNode: jest.fn() },
+      element: { getNode: vi.fn() },
       // ... mock other APIs
     },
   }),
