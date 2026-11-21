@@ -51,6 +51,14 @@ Every recipe compiles against the published API types, and has passed a case
 in a running Cytoscape Web 1.1.0 and 1.1.1. Start at
 [Using a recipe](cookbook/USING-RECIPES.md).
 
+An agent that reads from the web can start at
+[`llms.txt`](https://cytoscape.org/cytoscape-web-app-examples/llms.txt), an
+index of every recipe with a link to each one.
+[`llms-full.txt`](https://cytoscape.org/cytoscape-web-app-examples/llms-full.txt)
+puts the full text of "Using a recipe", the wiring files and every recipe in
+one file. Every link in both files points to the commit they were generated
+from.
+
 ---
 
 ## Quick Start
