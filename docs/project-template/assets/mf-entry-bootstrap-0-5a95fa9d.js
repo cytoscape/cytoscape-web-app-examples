@@ -33,6 +33,6 @@ const __mfImport = (src) =>
     }
     return __mfModuleCache.remote[pendingKey];
   };
-  const __mfRemotePreloads = [__mfPreloadRemote("cyweb/NetworkApi"),__mfPreloadRemote("cyweb/WorkspaceApi")];
+  const __mfRemotePreloads = [__mfPreloadRemote("cyweb/WorkspaceApi")];
   await Promise.allSettled(__mfRemotePreloads);
 })().then(() => __mfImport("./index-FvSqcG4U.js"));
