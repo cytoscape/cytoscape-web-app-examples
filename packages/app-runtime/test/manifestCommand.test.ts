@@ -240,6 +240,7 @@ describe('the packed candidate, as a real process', () => {
     const silent = { error: (m: string) => { throw new Error(m) }, warn: () => {}, info: () => {} }
     plugin.configResolved({ root, build: { outDir: 'dist' } })
     plugin.buildStart.call(silent)
+    plugin.writeBundle.call(silent)
     await plugin.closeBundle.call(silent)
 
     const embedded = new AdmZip(join(root, 'myApp-1.0.0.zip')).readFile('cy-manifest.json') as Buffer

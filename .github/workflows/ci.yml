@@ -140,7 +140,12 @@ jobs:
           npm pack -w @cytoscape-web/app-runtime --pack-destination /tmp
           npm pack -w create-cytoscape-app --pack-destination /tmp
           CREATE=$(ls /tmp/create-cytoscape-app-*.tgz)
-          WORK=$(mktemp -d)
+          # A space in the path, because users have one. The generated smoke
+          # test once took its root from `new URL(..).pathname`, which keeps
+          # `%20`, so every project under such a path started with a red
+          # `npm test`, and nothing here noticed (review of #32).
+          WORK="$(mktemp -d)/with space"
+          mkdir "$WORK"
           cd "$WORK"
           if [ "${{ matrix.pm }}" = pnpm ]; then
             pnpm add "$CREATE"
@@ -260,7 +265,8 @@ jobs:
     # archive member names, and the order those members come out in. The
     # packager turns adm-zip's own sorting off and uses one named comparator
     # precisely so the answer is the same here as it is on Linux — which is
-    # only worth claiming if it is executed here.
+    # only worth claiming if it is executed here. The same holds for starting a
+    # package manager, and for turning a file URL into a path.
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -271,6 +277,16 @@ jobs:
       - run: npm run build:sdk
       - name: Unit tests, including the CLI and archive suites
         run: npm run test -w @cytoscape-web/app-runtime
+      # npm and pnpm are `.cmd` shims here, which spawnSync cannot start
+      # without a shell. The scaffolder spawned them as on POSIX, so on Windows
+      # it wrote the project and then failed its own install (review of #32).
+      # The last case in this file starts a real install.
+      - name: The scaffolder starts the package manager
+        run: npm run test -w create-cytoscape-app -- test/install.test.ts
+      # An app's smoke test reads its root from import.meta.url. `.pathname`
+      # gives `/D:/a/...` here, which no file is at; fileURLToPath does not.
+      - name: An app's smoke test finds its own package.json
+        run: npm run test -w @cytoscape-web/project-template
       - name: Build an archive and read its member order back
         run: npm run build:zip -w @cytoscape-web/hello-world
       - name: Members are POSIX paths in unsigned UTF-8 byte order

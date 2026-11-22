@@ -122,6 +122,12 @@ const collectMembers = (
  *     not extend to an earlier version's archive, which stays deliberately.
  *     There is no glob deletion: removing files this run cannot name is how a
  *     packager deletes a release someone still wanted.
+ *     The guarantee also needs `closeBundle` to stand down. The bundler calls
+ *     it after a failed build too, when `dist/` still holds the previous
+ *     build, and packaging that would put an archive back at this run's path:
+ *     the old code under the new version, if package.json changed. So only a
+ *     run whose `writeBundle` fired, and that no hook reported an error for,
+ *     is packaged.
  *  2. `closeBundle` verifies the build before packaging it, with the snapshot
  *     `defineCyWebApp` already took, so the identity checked and the identity
  *     written into the archive cannot come from two different reads.
@@ -146,6 +152,11 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
   const finalPath = (): string =>
     resolve(root, `${appMeta.id}-${appMeta.version}.zip`)
 
+  // Per run. `written` says this run's output reached the disk; `failed` says a
+  // hook reported an error. Only `written && !failed` is packaged (step 1).
+  let written = false
+  let failed = false
+
   return {
     name: 'zip-for-app-store',
     apply: 'build',
@@ -155,6 +166,9 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
     },
 
     buildStart() {
+      written = false
+      failed = false
+
       // The submission profile — a bounded id and version — is enforced in
       // `closeBundle`, where a violation is reported as the metadata error it
       // is. Acting on the name here first would surface it as ENAMETOOLONG from
@@ -167,6 +181,18 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
       rmSync(finalPath(), { force: true })
     },
 
+    buildEnd(error) {
+      if (error) failed = true
+    },
+
+    renderError() {
+      failed = true
+    },
+
+    writeBundle() {
+      written = true
+    },
+
     // closeBundle, not generateBundle: the files have to exist on disk to be
     // zipped, and generateBundle runs before anything is written.
     //
@@ -176,7 +202,16 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
     // and carry its advisories in their tree for a feature they never turned
     // on. Loading it at the point of use is what lets adm-zip be an OPTIONAL
     // peer: present only for the builds that actually produce a zip.
-    async closeBundle() {
+    async closeBundle(error?: Error) {
+      // A failed build still reaches here, with `dist/` holding the PREVIOUS
+      // build. Packaging it would undo what `buildStart` just removed (step 1).
+      if (error || failed || !written) {
+        this.info(
+          `[zip-for-app-store] the build did not complete, so no archive was written`,
+        )
+        return
+      }
+
       const { default: AdmZip } = await import('adm-zip').catch(() => {
         this.error(
           `[zip-for-app-store] appStoreZip is on but adm-zip is not installed. ` +

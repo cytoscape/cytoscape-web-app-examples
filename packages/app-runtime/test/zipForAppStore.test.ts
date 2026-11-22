@@ -36,18 +36,34 @@ interface Recorded {
   infos: string[]
 }
 
-/** Runs the plugin the way Vite would, and reports what it said. */
-const runPackager = async (
-  root: string,
-): Promise<{ error?: string; recorded: Recorded }> => {
+const makePlugin = (root: string): any => {
   const snapshot = readPackageSnapshot(root)
-  const plugin = zipForAppStore({
+  return zipForAppStore({
     appMeta: parseAppMeta(snapshot),
     submissionMeta: parseSubmissionMeta(snapshot),
     expectedShared: {},
     sdkVersion: '0.4.0',
-  }) as any
+  })
+}
 
+/**
+ * How a build ended, as the bundler tells the plugin. Every outcome but
+ * `written` is a failed build, and each one carries a single signal, so a case
+ * shows that signal alone stops the packager.
+ */
+type Outcome =
+  | 'written' // the output reached the disk, and no hook reported an error
+  | 'build-error' // buildEnd(error): bundling failed, before any output
+  | 'render-error' // renderError, after one output was written
+  | 'close-error' // closeBundle(error), after the output was written
+  | 'not-written' // no hook reported an error, but writeBundle never ran
+
+/** Runs the plugin's hooks the way the bundler would, and reports what it said. */
+const runHooks = async (
+  plugin: any,
+  root: string,
+  outcome: Outcome = 'written',
+): Promise<{ error?: string; recorded: Recorded }> => {
   const recorded: Recorded = { warnings: [], infos: [] }
   const context = {
     error: (message: string) => {
@@ -56,16 +72,28 @@ const runPackager = async (
     warn: (message: string) => recorded.warnings.push(message),
     info: (message: string) => recorded.infos.push(message),
   }
+  const failure = new Error('Build failed with 1 error')
 
   plugin.configResolved({ root, build: { outDir: 'dist' } })
   plugin.buildStart.call(context)
+  plugin.buildEnd.call(context, outcome === 'build-error' ? failure : undefined)
+  if (['written', 'render-error', 'close-error'].includes(outcome)) {
+    plugin.writeBundle.call(context)
+  }
+  if (outcome === 'render-error') plugin.renderError.call(context, failure)
   try {
-    await plugin.closeBundle.call(context)
+    await plugin.closeBundle.call(
+      context,
+      outcome === 'close-error' ? failure : undefined,
+    )
   } catch (cause) {
     return { error: (cause as Error).message, recorded }
   }
   return { recorded }
 }
+
+const runPackager = (root: string, outcome: Outcome = 'written') =>
+  runHooks(makePlugin(root), root, outcome)
 
 const membersOf = (zipPath: string): string[] =>
   new AdmZip(zipPath, { noSort: true } as any)
@@ -249,6 +277,63 @@ describe('the stale-output guarantee, scoped exactly', () => {
   })
 })
 
+describe('a failed build is not packaged', () => {
+  // The bundler calls closeBundle after a failed build too. dist/ then still
+  // holds the PREVIOUS build, which passes verification, so packaging it put
+  // the old code back at this run's path. Found in the review of #32 and
+  // reproduced: a build that failed at 1.0.1 wrote myApp-1.0.1.zip holding the
+  // 1.0.0 output, with a manifest that said 1.0.1.
+  const bumpTo = (root: string, version: string) =>
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: '@example/my-app', version, cyweb: APP_CYWEB }),
+    )
+
+  it('writes no archive when the build fails after a version bump', async () => {
+    const root = appRoot()
+    await runPackager(root) // the previous build, packaged at 1.0.0
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
+
+    bumpTo(root, '1.0.1')
+    const { error, recorded } = await runPackager(root, 'build-error')
+    expect(error).toBeUndefined()
+    expect(existsSync(join(root, 'myApp-1.0.1.zip'))).toBe(false)
+    expect(recorded.infos.join('\n')).toContain('no archive was written')
+    expect(recorded.infos.join('\n')).not.toContain('ready to upload')
+  })
+
+  it("removes this run's stale archive and does not put it back", async () => {
+    const root = appRoot()
+    await runPackager(root)
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
+
+    await runPackager(root, 'build-error')
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
+  })
+
+  it.each(['build-error', 'render-error', 'close-error', 'not-written'] as const)(
+    'writes no archive on %s',
+    async (outcome) => {
+      const root = appRoot()
+      const { error } = await runPackager(root, outcome)
+      expect(error).toBeUndefined()
+      expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
+    },
+  )
+
+  it('packages the next build that succeeds, in the same session', async () => {
+    // Watch mode keeps one plugin instance across runs: buildStart has to
+    // clear the previous run's failure.
+    const root = appRoot()
+    const plugin = makePlugin(root)
+    await runHooks(plugin, root, 'build-error')
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
+
+    await runHooks(plugin, root, 'written')
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
+  })
+})
+
 describe('the captured snapshot is what gets packaged', () => {
   it('ignores a package.json edited after the plugin was constructed', async () => {
     // `defineCyWebApp` takes one snapshot at config time and hands it to the
@@ -285,6 +370,7 @@ describe('the captured snapshot is what gets packaged', () => {
     }
     plugin.configResolved({ root, build: { outDir: 'dist' } })
     plugin.buildStart.call(context)
+    plugin.writeBundle.call(context)
     await plugin.closeBundle.call(context)
 
     expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)

@@ -149,11 +149,15 @@ const smokeTest = (
 // Note what it does NOT do: import a component. Anything that calls a cyweb/*
 // API cannot be imported outside a running host yet.
 
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import { buildInstallManifest, readAppMeta } from '@cytoscape-web/app-runtime/vite'
 
-const root = new URL('..', import.meta.url).pathname
+// fileURLToPath, not \`.pathname\`: that keeps escapes such as %20, and on
+// Windows a slash before the drive letter.
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 describe('app config', () => {
   it('matches the identity declared in package.json', async () => {
