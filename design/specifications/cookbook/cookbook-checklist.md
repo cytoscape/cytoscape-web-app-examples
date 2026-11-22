@@ -6,14 +6,15 @@
 > **Status: Prerequisite and Phase 0 COMPLETE (2026-10-07); the Phase 0 follow-up and
 > Phase 1 COMPLETE (2026-11-17), merged in #27; Phase 2 COMPLETE (2026-11-18), merged in
 > #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 COMPLETE (2026-11-20), merged
-> in #30; Phase 5 STARTED (2026-11-20): the Pages landing page corrected before the merge
-> into `main`. Next: merge `development` into `main` so that Pages serves `llms.txt`; then
-> the README link, and the rest of Phase 5, which needs `llms.txt` live.** The design is at
-> revision 9:
+> in #30; Phase 5 STARTED (2026-11-20). Step 1 is done (2026-11-21): the Pages landing page
+> was corrected (#31) and the published apps rebuilt (#33), then `development` was merged into
+> `main` (#32). Pages now serves `llms.txt`, and the README links it. Next: Step 2, the
+> scaffolder, after fixing the three defects that the review of #32 found in it and in
+> `app-runtime`.** The design is at revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
 > and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
-> level with `development` at `fb5fad8`, the merge of #30.
+> level with `development` at `90acce5`, the merge of #33.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -627,9 +628,39 @@ Hosts: dev servers from clean worktrees of the two tags, as in Phase 1.
       the menu item is "Manage Apps..." on 1.1.0 and on 1.1.1, and from 1.1.1 the listed apps
       are on already. Reworded to hold on both, as the README was in the Phase 0 follow-up
       (2026-11-20). Its other claims (the install allowlist, the manifest the install form
-      takes) hold at both tags
-- [ ] `llms.txt` and `llms-full.txt` are served from Pages, and their links resolve
-- [ ] The README's "Building with an AI assistant" section gains the `llms.txt` link
+      takes) hold at both tags. Merged in
+      [#31](https://github.com/cytoscape/cytoscape-web-app-examples/pull/31), merge commit
+      `2c696ec`; Codex found nothing
+- [x] **Found before the merge: the merge also republishes the apps.** `deploy-pages.yml`
+      had failed at its gate, the production host preflight, on the last two pushes to
+      `main`, so its deploy job had not run since May. The gate passed on 2026-11-20 (10 of
+      10 against https://web.cytoscape.org). Its deploy job builds the apps from source. The
+      builds committed in `docs/` dated from 2026-08-05, before the App SDK. With legacy Pages
+      also publishing `docs/` as committed, the deployment that finished last would decide
+      which apps were served.
+      [#33](https://github.com/cytoscape/cytoscape-web-app-examples/pull/33) committed a
+      fresh build, so that both deployments publish the same apps. It was built in a worktree
+      at `/tmp/cytoscape-web-app-examples`, because the SSR loader writes the build path into
+      each `remoteEntry.js` as dead literals. Before the merge, all four apps loaded from that
+      tree, served locally, in web.cytoscape.org, dev1 and a local host. Merge commit
+      `90acce5`; Codex found nothing
+- [x] **Merged into `main`**:
+      [#32](https://github.com/cytoscape/cytoscape-web-app-examples/pull/32), merge commit
+      `62f23e1` (2026-11-21), from `90acce5`, a merge and not a squash.
+      - Pages serves the Actions deployment, which finished last. 52 of the 56 app files are
+        byte-identical to `docs/`. The four `remoteEntry.js` differ only in the build path.
+      - `CI` and `Deploy GitHub Pages` passed.
+      - The push run of `Verify published apps` finished before the Actions deployment, so it
+        was run again afterwards
+        ([44872111013](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/44872111013)):
+        all four apps load in dev1.
+      - **The review of #32**: Codex left three findings on code already on `development`.
+        None blocks the merge, which publishes `docs/` and no package. They are fixed before
+        the scaffolder is released (Phase 5, Step 2)
+- [x] `llms.txt` and `llms-full.txt` are served from Pages (200, byte-identical to `main`),
+      and their 42 distinct URLs answer 200
+- [x] The README's "Building with an AI assistant" section gains the `llms.txt` and
+      `llms-full.txt` links (2026-11-21)
 
 ---
 
@@ -775,7 +806,7 @@ _Design: §4.9, §5_
 
 ---
 
-## Phase 5: Point the scaffolder at the cookbook 🔄 **STARTED (2026-11-20)** — waiting for the merge into `main`
+## Phase 5: Point the scaffolder at the cookbook 🔄 **STARTED (2026-11-20)** — Step 1 done (2026-11-21)
 
 _Design: §4.7, §4.8, §7_
 
@@ -785,13 +816,26 @@ the pointer.
 
 ### Step 1 — Confirm the cookbook is live
 
-- [ ] `llms.txt` and `llms-full.txt` are served from Pages
-- [ ] Their header names the pinned examples commit, the host commit in `verified.json`, and
-      the api-types version
-- [ ] Every link in `llms.txt` resolves
+- [x] `llms.txt` and `llms-full.txt` are served from Pages, since the merge of #32
+      (2026-11-21)
+- [x] Their header names the pinned examples commit (`591d91c`), the host commits in
+      `verified.json` (`6619411b` for 1.1.0, `c3118c51` for 1.1.1), and the api-types version
+      (`1.0.0-beta.5`)
+- [x] Every link in `llms.txt` and `llms-full.txt` resolves: 42 distinct URLs, all 200
 
 ### Step 2 — Prepare the scaffolder
 
+- [ ] **First, fix what the review of #32 found.** Each finding was answered on the pull
+      request.
+      - `create-cytoscape-app` runs `spawnSync(pm, ['install'])`, which cannot start the
+        `.cmd` shims of npm or pnpm on Windows. The project is written, then the install
+        fails.
+      - `zipForAppStore` packages in `closeBundle` even after a failed build. This was
+        reproduced: a build that failed at 1.0.1 wrote `template-1.0.1.zip` holding the 1.0.0
+        output. Fixing it needs an `app-runtime` release.
+      - The generated smoke test, and the four apps' tests, take `root` from
+        `new URL('..', import.meta.url).pathname`. That breaks on a path with a space, and on
+        Windows.
 - [ ] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
       URL. Regenerate the templates
 - [ ] `API_TYPES_VERSION` equals the version in `verified.json`. If beta.6 was published in
