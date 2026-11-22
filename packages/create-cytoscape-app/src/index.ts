@@ -17,10 +17,12 @@ import { basename, resolve } from 'node:path'
 
 import {
   TEMPLATES,
+  type PackageManager,
   type ScaffoldSpec,
   type Template,
   displayNameFromId,
   idFromDirectory,
+  installCommand,
   isPortFree,
   pickPort,
   scaffold,
@@ -107,8 +109,11 @@ const positionals = argv.filter(
 
 const yes = argv.includes('--yes') || argv.includes('-y')
 const noInstall = argv.includes('--no-install')
-const pm = flag('--pm') ?? 'npm'
-if (pm !== 'npm' && pm !== 'pnpm') die(`create-cytoscape-app: --pm must be npm or pnpm`)
+const pmFlag = flag('--pm') ?? 'npm'
+const pm: PackageManager =
+  pmFlag === 'npm' || pmFlag === 'pnpm'
+    ? pmFlag
+    : die(`create-cytoscape-app: --pm must be npm or pnpm`)
 
 // Interactive only when someone is actually there to answer.
 //
@@ -194,10 +199,18 @@ process.stdout.write(`\nCreated ${resolve(targetDir)} — ${files.length} files\
 
 if (!noInstall) {
   process.stdout.write(`\nInstalling with ${pm}…\n`)
-  const { status } = spawnSync(pm, ['install'], { cwd: resolve(targetDir), stdio: 'inherit' })
+  const { command, args, shell } = installCommand(pm)
+  const { status, error } = spawnSync(command, args, {
+    cwd: resolve(targetDir),
+    stdio: 'inherit',
+    shell,
+  })
   if (status !== 0) {
+    // `error` is set when the package manager could not be started at all;
+    // otherwise it ran, and its own output says what went wrong.
     process.stderr.write(
-      `\n${pm} install failed. The project is written; run it again yourself.\n`,
+      `\n${pm} install failed${error ? ` to start (${error.message})` : ''}. ` +
+        `The project is written; run it again yourself.\n`,
     )
     process.exit(1)
   }

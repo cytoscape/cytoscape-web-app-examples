@@ -8,6 +8,7 @@
 import { existsSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
@@ -120,7 +121,7 @@ describe('validateSpec', () => {
 })
 
 describe('scaffold', () => {
-  const templatesRoot = new URL('../templates', import.meta.url).pathname
+  const templatesRoot = fileURLToPath(new URL('../templates', import.meta.url))
 
   it.each(TEMPLATES)('writes a complete %s project', (template) => {
     const s = spec({ template })
@@ -259,7 +260,7 @@ describe('SDK_VERSION', () => {
 })
 
 describe('build:zip', () => {
-  const templatesRoot = new URL('../templates', import.meta.url).pathname
+  const templatesRoot = fileURLToPath(new URL('../templates', import.meta.url))
   const generated = (): any => {
     const s = spec()
     scaffold(s, templatesRoot)

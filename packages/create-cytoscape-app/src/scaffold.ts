@@ -312,6 +312,34 @@ export const pickPort = async (start = 6000): Promise<number> => {
   return start
 }
 
+export type PackageManager = 'npm' | 'pnpm'
+
+export interface InstallCommand {
+  command: string
+  args: string[]
+  shell: boolean
+}
+
+/**
+ * How to run `<pm> install` on `platform`, for `spawnSync`.
+ *
+ * On Windows, npm and pnpm are `.cmd` shims, and `spawnSync` cannot start a
+ * `.cmd` without a shell: it fails with ENOENT for `npm`, and with EINVAL for
+ * `npm.cmd` since Node 18.20.2 and 20.12.2 (CVE-2024-27980). There the command
+ * goes through the shell as ONE string. An argument array with `shell: true`
+ * is deprecated (DEP0190), because the arguments reach the shell unescaped.
+ * The string is safe because `pm` is one of two fixed names, validated before
+ * this is called. The target directory is the `cwd`, which the shell does not
+ * parse.
+ */
+export const installCommand = (
+  pm: PackageManager,
+  platform: NodeJS.Platform = process.platform,
+): InstallCommand =>
+  platform === 'win32'
+    ? { command: `${pm} install`, args: [], shell: true }
+    : { command: pm, args: ['install'], shell: false }
+
 const packageJsonFor = (spec: ScaffoldSpec): string => {
   const react = spec.template !== 'non-react'
   return `${JSON.stringify(

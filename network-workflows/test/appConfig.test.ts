@@ -9,11 +9,13 @@
 // loads as `./AppConfig`, so a broken re-export fails here rather than in a
 // browser.
 
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import { readAppMeta } from '@cytoscape-web/app-runtime/vite'
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 describe('network-workflows', () => {
   it('declares valid app metadata', () => {

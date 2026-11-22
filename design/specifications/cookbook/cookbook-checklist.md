@@ -8,13 +8,14 @@
 > #28; Phase 3 COMPLETE (2026-11-18), merged in #29; Phase 4 COMPLETE (2026-11-20), merged
 > in #30; Phase 5 STARTED (2026-11-20). Step 1 is done (2026-11-21): the Pages landing page
 > was corrected (#31) and the published apps rebuilt (#33), then `development` was merged into
-> `main` (#32). Pages now serves `llms.txt`, and the README links it. Next: Step 2, the
-> scaffolder, after fixing the three defects that the review of #32 found in it and in
-> `app-runtime`.** The design is at revision 9:
+> `main` (#32). Pages now serves `llms.txt`, and the README links it. Step 2 started
+> (2026-11-21): the three defects that the review of #32 found in the scaffolder and in
+> `app-runtime` are fixed. Next: the rest of Step 2, the scaffolder release.** The design is
+> at revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
 > and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
-> level with `development` at `90acce5`, the merge of #33.
+> level with `development` at `14341f5`, the merge of #34.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -825,17 +826,36 @@ the pointer.
 
 ### Step 2 — Prepare the scaffolder
 
-- [ ] **First, fix what the review of #32 found.** Each finding was answered on the pull
-      request.
-      - `create-cytoscape-app` runs `spawnSync(pm, ['install'])`, which cannot start the
-        `.cmd` shims of npm or pnpm on Windows. The project is written, then the install
-        fails.
-      - `zipForAppStore` packages in `closeBundle` even after a failed build. This was
-        reproduced: a build that failed at 1.0.1 wrote `template-1.0.1.zip` holding the 1.0.0
-        output. Fixing it needs an `app-runtime` release.
-      - The generated smoke test, and the four apps' tests, take `root` from
-        `new URL('..', import.meta.url).pathname`. That breaks on a path with a space, and on
-        Windows.
+- [x] **First, fix what the review of #32 found** (2026-11-21). Each finding was answered on
+      the pull request.
+      - `create-cytoscape-app` ran `spawnSync(pm, ['install'])`, which cannot start the
+        `.cmd` shims of npm or pnpm on Windows. The project was written, then the install
+        failed.
+        - **Fix:** `installCommand(pm, platform)` runs `<pm> install` through the shell as
+          one string on Windows, and directly elsewhere.
+        - **Test:** `test/install.test.ts` covers both shapes, and runs a real install in a
+          directory with a space. The Windows CI job now runs that file.
+      - `zipForAppStore` packaged in `closeBundle` even after a failed build. Reproduced: a
+        build that failed at 1.0.1 wrote `template-1.0.1.zip` holding the 1.0.0 output.
+        - **Fix:** it packages only a run whose `writeBundle` fired, and for which no
+          `buildEnd`, `renderError` or `closeBundle` reported an error.
+        - **Review of #35:** a later plugin's `writeBundle` could still fail unseen, since
+          the bundler then calls `closeBundle` with no error. This plugin's `writeBundle`
+          now runs at `order: 'post'`. Still unseen: a plugin listed after it whose
+          `writeBundle` is also `order: 'post'`.
+        - **Test:** a regression case for each signal, and for watch mode. A real Vite
+          build with a failing plugin after the packager: no archive, then one on the next
+          build.
+        - **Checked:** the same reproduction now writes no archive, and says so.
+        - **Release:** this changes `app-runtime`, so the version bump below includes it.
+      - The generated smoke test, and the four apps' tests, took `root` from
+        `new URL('..', import.meta.url).pathname`, which broke on a path with a space and
+        on Windows.
+        - **Fix:** they use `fileURLToPath`.
+        - **Checked:** a project scaffolded from packed tarballs under a path with a space
+          passes `npm test`. With `.pathname` it fails on `%20`.
+        - **CI:** the scaffold job now works under such a path, and the Windows job runs
+          `project-template`'s smoke test.
 - [ ] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
       URL. Regenerate the templates
 - [ ] `API_TYPES_VERSION` equals the version in `verified.json`. If beta.6 was published in
