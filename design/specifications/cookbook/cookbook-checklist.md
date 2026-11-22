@@ -839,7 +839,13 @@ the pointer.
         build that failed at 1.0.1 wrote `template-1.0.1.zip` holding the 1.0.0 output.
         - **Fix:** it packages only a run whose `writeBundle` fired, and for which no
           `buildEnd`, `renderError` or `closeBundle` reported an error.
-        - **Test:** a regression case for each signal, and for watch mode.
+        - **Review of #35:** a later plugin's `writeBundle` could still fail unseen, since
+          the bundler then calls `closeBundle` with no error. This plugin's `writeBundle`
+          now runs at `order: 'post'`. Still unseen: a plugin listed after it whose
+          `writeBundle` is also `order: 'post'`.
+        - **Test:** a regression case for each signal, and for watch mode. A real Vite
+          build with a failing plugin after the packager: no archive, then one on the next
+          build.
         - **Checked:** the same reproduction now writes no archive, and says so.
         - **Release:** this changes `app-runtime`, so the version bump below includes it.
       - The generated smoke test, and the four apps' tests, took `root` from

@@ -127,7 +127,10 @@ const collectMembers = (
  *     build, and packaging that would put an archive back at this run's path:
  *     the old code under the new version, if package.json changed. So only a
  *     run whose `writeBundle` fired, and that no hook reported an error for,
- *     is packaged.
+ *     is packaged. That `writeBundle` runs at `order: 'post'`, because a later
+ *     plugin's `writeBundle` can fail without any hook here hearing of it. One
+ *     gap remains: a plugin listed after this one whose `writeBundle` is also
+ *     `order: 'post'` runs after it, and its failure is not seen.
  *  2. `closeBundle` verifies the build before packaging it, with the snapshot
  *     `defineCyWebApp` already took, so the identity checked and the identity
  *     written into the archive cannot come from two different reads.
@@ -189,8 +192,16 @@ export const zipForAppStore = (input: AppStoreZipInput): Plugin => {
       failed = true
     },
 
-    writeBundle() {
-      written = true
+    // Last, so that `written` also says every other plugin's writeBundle
+    // succeeded. One that throws stops the hooks after it, and the bundler then
+    // calls closeBundle with no error, exactly as after a build that succeeded
+    // (found in the review of #35). At the default order this ran before, for
+    // example, the federation plugin's, which rewrites files in `dist/`.
+    writeBundle: {
+      order: 'post',
+      handler() {
+        written = true
+      },
     },
 
     // closeBundle, not generateBundle: the files have to exist on disk to be

@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import AdmZip from 'adm-zip'
+import { build, type Plugin } from 'vite'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -78,7 +79,7 @@ const runHooks = async (
   plugin.buildStart.call(context)
   plugin.buildEnd.call(context, outcome === 'build-error' ? failure : undefined)
   if (['written', 'render-error', 'close-error'].includes(outcome)) {
-    plugin.writeBundle.call(context)
+    plugin.writeBundle.handler.call(context)
   }
   if (outcome === 'render-error') plugin.renderError.call(context, failure)
   try {
@@ -334,6 +335,56 @@ describe('a failed build is not packaged', () => {
   })
 })
 
+describe('a later plugin that fails while writing', () => {
+  // Found in the review of #35. A plugin listed after this one, such as one an
+  // app adds through `vite.plugins`, can throw from its own writeBundle. The
+  // build fails, but nothing tells this plugin: closeBundle gets no error, and
+  // the hooks arrive exactly as they do after a build that succeeded. Only the
+  // order in which the bundler runs writeBundle hooks can keep that build from
+  // being packaged, so this case runs a real build rather than the hooks.
+  const failsWhileWriting: Plugin = {
+    name: 'fails-while-writing',
+    writeBundle() {
+      throw new Error('a later plugin failed')
+    },
+  }
+
+  /** A real Vite build that rewrites one chunk of the fixture's output. */
+  const realBuild = (root: string, plugins: Plugin[]) => {
+    writeFileSync(join(root, 'chunk.js'), 'export const x = 1\n')
+    return build({
+      root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins,
+      build: {
+        outDir: 'dist',
+        // Keeps the rest of the fixture's output, which verification reads.
+        emptyOutDir: false,
+        lib: {
+          entry: 'chunk.js',
+          formats: ['es'],
+          fileName: () => 'assets/chunk-Abc.js',
+        },
+      },
+    })
+  }
+
+  it('writes no archive, and does once the build succeeds', async () => {
+    const root = appRoot()
+    const packager = makePlugin(root)
+
+    await expect(realBuild(root, [packager, failsWhileWriting])).rejects.toThrow(
+      'a later plugin failed',
+    )
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(false)
+
+    // The same instance, as in watch mode.
+    await realBuild(root, [packager])
+    expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
+  }, 30_000)
+})
+
 describe('the captured snapshot is what gets packaged', () => {
   it('ignores a package.json edited after the plugin was constructed', async () => {
     // `defineCyWebApp` takes one snapshot at config time and hands it to the
@@ -370,7 +421,7 @@ describe('the captured snapshot is what gets packaged', () => {
     }
     plugin.configResolved({ root, build: { outDir: 'dist' } })
     plugin.buildStart.call(context)
-    plugin.writeBundle.call(context)
+    plugin.writeBundle.handler.call(context)
     await plugin.closeBundle.call(context)
 
     expect(existsSync(join(root, 'myApp-1.0.0.zip'))).toBe(true)
