@@ -17,8 +17,8 @@
 > `AGENTS.md`. Next: the agent acceptance test.** The design is at revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
-> and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
-> level with `development` at `d019950`, the merge of #35.
+> and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which
+> `development` last merged at `2785047`, the merge of #36.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -891,7 +891,13 @@ the pointer.
       `cyweb-app --version` is 0.4.1. Build, `cyweb-app verify`, typecheck, `npm test` (3
       passed) and `build:zip` all pass, and each archive's `generator` is
       `@cytoscape-web/app-runtime@0.4.1`. The CI job repeats this with pnpm
-- [ ] CI is green on the pull request, and it is merged into `development`
+- [x] CI is green on the pull request, and it is merged into `development`
+      ([#36](https://github.com/cytoscape/cytoscape-web-app-examples/pull/36), merge commit
+      `2785047` (2026-11-23), a merge and not a squash). CI passed on the pull request
+      ([45120699091](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/45120699091))
+      and on `development`
+      ([45134563380](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/45134563380)).
+      CodeRabbit and Codex found nothing; Copilot did not review it (no quota left)
 
 ### Step 3 — Publish the scaffolder
 
