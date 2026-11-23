@@ -10,12 +10,13 @@
 > was corrected (#31) and the published apps rebuilt (#33), then `development` was merged into
 > `main` (#32). Pages now serves `llms.txt`, and the README links it. Step 2 started
 > (2026-11-21): the three defects that the review of #32 found in the scaffolder and in
-> `app-runtime` are fixed. Next: the rest of Step 2, the scaffolder release.** The design is
-> at revision 9:
+> `app-runtime` are fixed (#35). The generated `AGENTS.md` now names `llms.txt`, and the
+> versions are bumped to `create-cytoscape-app@0.4.3` and `@cytoscape-web/app-runtime@0.4.1`.
+> Next: Step 3, the release.** The design is at revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
 > and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
-> level with `development` at `14341f5`, the merge of #34.
+> level with `development` at `d019950`, the merge of #35.
 >
 > **Reviewed on 2026-11-16, after five weeks without work.** This repository did not
 > change. The host released 1.1.0 and 1.1.1, and its `development` moved to `7714c138`.
@@ -856,14 +857,38 @@ the pointer.
           passes `npm test`. With `.pathname` it fails on `%20`.
         - **CI:** the scaffold job now works under such a path, and the Windows job runs
           `project-template`'s smoke test.
-- [ ] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
-      URL. Regenerate the templates
-- [ ] `API_TYPES_VERSION` equals the version in `verified.json`. If beta.6 was published in
-      the meantime, its own pull request and a refreshed record come first (design D-15)
-- [ ] Bump the `create-cytoscape-app` version. The release workflow skips a version already on
-      npm. Bump `@cytoscape-web/app-runtime` too, if it changed
-- [ ] Outside the monorepo, scaffold every template from **packed tarballs** and build it. Its
-      `AGENTS.md` names the `llms.txt` URL
+      - **Merged into `development`:**
+        [#35](https://github.com/cytoscape/cytoscape-web-app-examples/pull/35), merge commit
+        `d019950` (2026-11-22), a merge and not a squash. CI on `development` passed
+        ([45007258581](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/45007258581)).
+        Codex found nothing in #35; Copilot did not review it (no quota left).
+- [x] `AGENTS_PLACEHOLDER` in `scripts/sync-templates.mjs`: one section naming the `llms.txt`
+      URL. Regenerate the templates (2026-11-22). The section, "Recipes", comes after "What
+      this is". It gives the URL, says what the index holds and to read "Using a recipe"
+      first, and says to compare the api-types version in its header with the project's
+      pin. It names no version itself, so it cannot go stale. A new case in
+      `test/scaffold.test.ts` checks that every template's `AGENTS.md` names the URL
+- [x] `API_TYPES_VERSION` equals the version in `verified.json`. If beta.6 was published in
+      the meantime, its own pull request and a refreshed record come first (design D-15).
+      Both are `1.0.0-beta.5`. On 2026-11-22 npm's `latest` was still beta.5, and no beta.6
+      was published
+- [x] Bump the `create-cytoscape-app` version. The release workflow skips a version already on
+      npm. Bump `@cytoscape-web/app-runtime` too, if it changed (2026-11-22, approved by the
+      maintainer). Both changed: compared with the published tarballs, the scaffolder has the
+      Windows install fix, the generated smoke test and the `non-react` template's
+      `network:loaded` fix (`f5f03dd`), and the runtime has the archive fix.
+      `create-cytoscape-app` 0.4.2 → **0.4.3** and `@cytoscape-web/app-runtime` 0.4.0 →
+      **0.4.1**, with the two workspace entries in `package-lock.json`. `SDK_VERSION` stays
+      `^0.4.0`: it admits 0.4.1, and a patch release reaches new projects without a
+      scaffolder change
+- [x] Outside the monorepo, scaffold every template from **packed tarballs** and build it. Its
+      `AGENTS.md` names the `llms.txt` URL (2026-11-22, with npm, as CI's scaffold job does,
+      under a path with a space). All five templates, from `create-cytoscape-app-0.4.3.tgz`
+      with the runtime from `cytoscape-web-app-runtime-0.4.1.tgz`: each `AGENTS.md` names
+      the URL, each pins api-types `1.0.0-beta.5`, the version in `verified.json`, and
+      `cyweb-app --version` is 0.4.1. Build, `cyweb-app verify`, typecheck, `npm test` (3
+      passed) and `build:zip` all pass, and each archive's `generator` is
+      `@cytoscape-web/app-runtime@0.4.1`. The CI job repeats this with pnpm
 - [ ] CI is green on the pull request, and it is merged into `development`
 
 ### Step 3 — Publish the scaffolder
