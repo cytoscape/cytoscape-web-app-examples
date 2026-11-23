@@ -11,8 +11,10 @@
 > `main` (#32). Pages now serves `llms.txt`, and the README links it. Step 2 started
 > (2026-11-21): the three defects that the review of #32 found in the scaffolder and in
 > `app-runtime` are fixed (#35). The generated `AGENTS.md` now names `llms.txt`, and the
-> versions are bumped to `create-cytoscape-app@0.4.3` and `@cytoscape-web/app-runtime@0.4.1`.
-> Next: Step 3, the release.** The design is at revision 9:
+> versions are bumped to `create-cytoscape-app@0.4.3` and `@cytoscape-web/app-runtime@0.4.1`
+> (#36). Step 3 is done (2026-11-23): both are published under `latest`. In Step 4, a project
+> made with the released scaffolder passes every check, and the README names its
+> `AGENTS.md`. Next: the agent acceptance test.** The design is at revision 9:
 > three reviews, a catalog of 25 recipes with a backlog, a plan for the published beta.5,
 > `llms.txt` committed into `docs/`, a review after a pause, the reviews of #27 and #28,
 > and Phase 3 as built. Work happens on the `cookbook` branch of this repository, which is
@@ -893,14 +895,35 @@ the pointer.
 
 ### Step 3 — Publish the scaffolder
 
-- [ ] Run the release-packages workflow, and confirm that `create-cytoscape-app` was
-      **published, not skipped**
+- [x] Run the release-packages workflow, and confirm that `create-cytoscape-app` was
+      **published, not skipped** (2026-11-23, from `development` at `2785047`, the merge of
+      [#36](https://github.com/cytoscape/cytoscape-web-app-examples/pull/36)). A dry run first
+      ([45140636870](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/45140636870)):
+      both versions were "not on the registry, will publish", with the tarballs tested in
+      Step 2. Then the release
+      ([45148467599](https://github.com/cytoscape/cytoscape-web-app-examples/actions/runs/45148467599)),
+      each run approved for the `release` environment by the maintainer:
+      `@cytoscape-web/app-runtime@0.4.1` and `create-cytoscape-app@0.4.3` were **published**
+      under `latest`, with provenance. The read-back found `latest` moved for both after about
+      two minutes, and the smoke step built and packaged a project through the dist-tag, with
+      `generator` `@cytoscape-web/app-runtime@0.4.1`
 
 ### Step 4 — Check what was published
 
-- [ ] Outside the monorepo, scaffold with the released `create-cytoscape-app@<version>` and
+- [x] Outside the monorepo, scaffold with the released `create-cytoscape-app@<version>` and
       build. The project pins the version in `verified.json`, and its `AGENTS.md` URL resolves
-- [ ] The README's "Building with an AI assistant" section names the scaffolded `AGENTS.md`
+      (2026-11-23). All five templates, with `npm create cytoscape-app@0.4.3`, under a path
+      with a space, and everything from the registry. `^0.4.0` resolved
+      `@cytoscape-web/app-runtime@0.4.1`. Each project pins api-types `1.0.0-beta.5`, and
+      installs it, as in `verified.json` and in the `llms.txt` header. Each `AGENTS.md` URL
+      answers 200. Build, `cyweb-app verify`, typecheck, `npm test` (3 passed) and
+      `build:zip` pass, with `generator` `@cytoscape-web/app-runtime@0.4.1`. This meets
+      design criterion 9
+- [x] The README's "Building with an AI assistant" section names the scaffolded `AGENTS.md`
+      (2026-11-23). A new paragraph says that a project made with `npm create cytoscape-app`
+      names `llms.txt` in its `AGENTS.md`, that this arrived in 0.4.3, and what to do in a
+      project made earlier. The README is outside `cookbook/` and `guides/`, so the
+      `docs/llms*.txt` pin stays `591d91c`
 - [ ] Run the agent acceptance test below
 
 ### Agent acceptance test (criterion 10)

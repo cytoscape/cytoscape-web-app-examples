@@ -59,6 +59,12 @@ puts the full text of "Using a recipe", the wiring files and every recipe in
 one file. Every link in both files points to the commit they were generated
 from.
 
+A project made with `npm create cytoscape-app` already points its agent there.
+Its `AGENTS.md` names `llms.txt`, so the agent finds the recipes without a copy
+of this repository. That section arrived in `create-cytoscape-app` 0.4.3; in a
+project made with an earlier version, add the `llms.txt` link to its
+`AGENTS.md` yourself.
+
 ---
 
 ## Quick Start
