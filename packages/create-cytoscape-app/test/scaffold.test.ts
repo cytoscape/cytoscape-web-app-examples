@@ -137,6 +137,16 @@ describe('scaffold', () => {
     expect(files.some((f) => f.startsWith('test/'))).toBe(true)
   })
 
+  it.each(TEMPLATES)("points the %s project's agent at the cookbook", (template) => {
+    // The project has no checkout of the examples, so this URL is the only way
+    // its agent finds the recipes (cookbook design §4.7).
+    const s = spec({ template })
+    scaffold(s, templatesRoot)
+    expect(readFileSync(join(s.targetDir, 'AGENTS.md'), 'utf8')).toContain(
+      'https://cytoscape.org/cytoscape-web-app-examples/llms.txt',
+    )
+  })
+
   it('leaves no TODO marker behind', () => {
     // Everything the template's TODOs pointed at is now filled in by the
     // generator, so shipping one would be an instruction to edit something

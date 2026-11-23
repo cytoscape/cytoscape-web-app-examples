@@ -193,6 +193,12 @@ describe('app config', () => {
 })
 `
 
+// The cookbook's index for agents, served from this repository's GitHub Pages
+// (scripts/cookbook-index.mjs writes it to docs/). A generated project has no
+// checkout of this repository, so this URL is how its agent finds the recipes.
+// It went into the template only once Pages served it (cookbook design §4.8).
+const COOKBOOK_LLMS_URL = 'https://cytoscape.org/cytoscape-web-app-examples/llms.txt'
+
 const AGENTS_PLACEHOLDER = `# AGENTS.md
 
 Context for coding agents working in this app.
@@ -205,6 +211,22 @@ Context for coding agents working in this app.
 A Cytoscape Web app, loaded into the host at runtime through Module Federation.
 It is not a standalone page: \`index.html\` exists only because a Vite build needs
 an HTML entry, and the host never loads it.
+
+## Recipes
+
+Before you write code that calls a \`cyweb/*\` API, look for a recipe in the
+Cytoscape Web App Cookbook:
+
+${COOKBOOK_LLMS_URL}
+
+It lists each recipe under the words people use for the task, and links its
+source. Each recipe compiles against the published API types and passed a case
+in a running Cytoscape Web. Read "Using a recipe", linked at the top, first.
+\`llms-full.txt\`, next to it, holds the same text in one file.
+
+The header of \`llms.txt\` names the \`@cytoscape-web/api-types\` version the recipes
+were checked against. If this project's \`package.json\` pins a different one,
+check each call against the installed types.
 
 ## Trust boundary — say this out loud before you publish
 
